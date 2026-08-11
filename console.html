@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Engagement Platform Console</title>
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   :root{--p:#4F46E5;--ok:#16A34A;--okl:#F0FDF4;--err:#DC2626;--errl:#FEF2F2;--warn:#B45309;--warnl:#FFFBEB;--border:#E5E7EB;--muted:#6B7280;--bg:#F9FAFB;}
   *{box-sizing:border-box;}
@@ -79,6 +80,22 @@
   </div>
 
   <div id="dashboard" style="display:none;">
+    <div class="card">
+      <h2>📤 Upload sales data</h2>
+      <p class="muted">Upload an Excel or CSV of your sales/transaction history — this becomes the data the engagement agent learns customer patterns from, and the foundation for deeper analysis later. Works the same regardless of what system you exported it from.</p>
+      <div id="txSummary" class="muted" style="font-size:13px;margin-bottom:12px;"></div>
+      <input type="file" id="uploadFile" accept=".xlsx,.xls,.csv" onchange="handleFileSelect(event)">
+      <div id="uploadMapping" style="display:none;margin-top:14px;">
+        <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">Match your columns</div>
+        <div id="mappingFields"></div>
+        <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;margin:14px 0 8px;">Preview (first 5 rows)</div>
+        <div id="uploadPreview" style="overflow-x:auto;"></div>
+        <button class="btn btn-p btn-sm" style="margin-top:12px;" onclick="submitUpload()">Upload all rows</button>
+      </div>
+      <div id="uploadResult" style="font-size:12.5px;margin-top:10px;"></div>
+      <div id="recentUploads" style="margin-top:14px;"></div>
+    </div>
+
     <div class="card">
       <h2>💬 WhatsApp connection</h2>
       <div id="waStatus" style="font-size:13px;padding:10px 14px;border-radius:10px;margin-bottom:12px;"></div>
@@ -209,6 +226,7 @@ const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 const MW_ADMIN_URL=SB_URL+'/functions/v1/mw-admin';
 const WA_CONFIG_URL=SB_URL+'/functions/v1/whatsapp-config';
 const WA_TEMPLATES_URL=SB_URL+'/functions/v1/whatsapp-templates';
+const MW_INGEST_URL=SB_URL+'/functions/v1/mw-ingest';
 
 const sb=window.supabase.createClient(SB_URL,SB_KEY);
 let session=null, currentTenant=null, myRole=null;
@@ -294,6 +312,7 @@ async function createTenant(){
 function loadDashboard(){
   loadWAStatus();loadTemplateMappings();
   loadSettings();loadPending();loadRuns();loadTeam();loadApiKeys();loadChangeLog();
+  loadTransactionSummary();loadRecentUploads();
 }
 
 // WhatsApp connection
@@ -484,6 +503,125 @@ async function loadChangeLog(){
       <div class="muted" style="margin-top:2px;">${changesText}</div>
     </div>`;
   }).join('');
+}
+
+// ── Sales data upload ──
+async function callIngest(action,extra){
+  const r=await fetch(MW_INGEST_URL,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+session.access_token},
+    body:JSON.stringify({action,tenant_id:currentTenant,...(extra||{})})});
+  return await r.json();
+}
+async function loadTransactionSummary(){
+  const el=document.getElementById('txSummary');
+  if(!el) return;
+  const j=await callIngest('transaction_summary',{});
+  if(!j.ok){el.textContent='';return;}
+  el.textContent=j.total_transactions>0
+    ? `${j.total_transactions} transactions on file, across ${j.distinct_customers??'?'} customers. Most recent: ${j.latest_transaction_date||'—'}.`
+    : 'No sales data uploaded yet.';
+}
+async function loadRecentUploads(){
+  const el=document.getElementById('recentUploads');
+  if(!el) return;
+  const j=await callIngest('recent_uploads',{});
+  if(!j.ok||!j.batches.length){el.innerHTML='';return;}
+  el.innerHTML='<div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:6px;">Recent uploads</div>'+
+    j.batches.map(b=>`<div class="item" style="font-size:12px;">${new Date(b.created_at).toLocaleString()} — ${b.filename||'(unnamed)'} — ${b.rows_inserted} inserted${b.rows_skipped?`, ${b.rows_skipped} skipped`:''}</div>`).join('');
+}
+
+// Auto-guess which spreadsheet column maps to which field, by header name
+const FIELD_GUESSES={
+  mobile:['mobile','phone','contact','whatsapp','cell'],
+  email:['email','e-mail'],
+  name:['name','customer','client','full name'],
+  date:['date','transaction date','purchase date','visit date'],
+  amount:['amount','total','value','price','sales','revenue'],
+  description:['description','item','service','product','notes'],
+};
+let uploadedRows=null,uploadedHeaders=null,uploadedFilename=null;
+function handleFileSelect(evt){
+  const file=evt.target.files[0];
+  if(!file) return;
+  uploadedFilename=file.name;
+  const reader=new FileReader();
+  reader.onload=(e)=>{
+    const wb=XLSX.read(e.target.result,{type:'binary',cellDates:true});
+    const sheet=wb.Sheets[wb.SheetNames[0]];
+    const rows=XLSX.utils.sheet_to_json(sheet,{defval:''});
+    if(!rows.length){alert('No rows found in that file.');return;}
+    uploadedRows=rows;
+    uploadedHeaders=Object.keys(rows[0]);
+    renderMapping();
+  };
+  reader.readAsBinaryString(file);
+}
+function guessColumn(field){
+  const guesses=FIELD_GUESSES[field]||[];
+  const match=uploadedHeaders.find(h=>guesses.some(g=>h.toLowerCase().includes(g)));
+  return match||'';
+}
+function renderMapping(){
+  const fields=[['mobile','Phone number',false],['email','Email',false],['name','Customer name',false],['date','Transaction date',true],['amount','Amount',false],['description','Item / service',false]];
+  document.getElementById('mappingFields').innerHTML=fields.map(([key,label,required])=>`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+      <span style="font-size:12.5px;width:130px;">${label}${required?' *':''}</span>
+      <select class="fi" style="margin:0;" id="map_${key}">
+        <option value="">— not in this file —</option>
+        ${uploadedHeaders.map(h=>`<option value="${h}" ${guessColumn(key)===h?'selected':''}>${h}</option>`).join('')}
+      </select>
+    </div>`).join('')+`<div class="muted" style="font-size:11.5px;margin-top:4px;">* Date is required. Map at least one of Phone or Email to identify customers — rows with no phone number will still be stored, but can't receive WhatsApp messages until a phone is added later.</div>`;
+  renderPreview();
+  document.getElementById('uploadMapping').style.display='block';
+  ['mobile','email','name','date','amount','description'].forEach(key=>{
+    document.getElementById('map_'+key).addEventListener('change',renderPreview);
+  });
+}
+function currentMapping(){
+  return {
+    mobile:document.getElementById('map_mobile').value,
+    email:document.getElementById('map_email').value,
+    name:document.getElementById('map_name').value,
+    date:document.getElementById('map_date').value,
+    amount:document.getElementById('map_amount').value,
+    description:document.getElementById('map_description').value,
+  };
+}
+function mappedRows(){
+  const m=currentMapping();
+  return uploadedRows.map(r=>({
+    mobile:m.mobile?r[m.mobile]:'',
+    email:m.email?r[m.email]:'',
+    name:m.name?r[m.name]:'',
+    date:m.date?r[m.date]:'',
+    amount:m.amount?r[m.amount]:'',
+    description:m.description?r[m.description]:'',
+  }));
+}
+function renderPreview(){
+  const rows=mappedRows().slice(0,5);
+  const el=document.getElementById('uploadPreview');
+  el.innerHTML=`<table style="width:100%;font-size:12px;border-collapse:collapse;">
+    <thead><tr style="text-align:left;color:var(--muted);"><th style="padding:4px 8px;">Phone</th><th style="padding:4px 8px;">Email</th><th style="padding:4px 8px;">Name</th><th style="padding:4px 8px;">Date</th><th style="padding:4px 8px;">Amount</th><th style="padding:4px 8px;">Item</th></tr></thead>
+    <tbody>${rows.map(r=>`<tr style="border-top:1px solid var(--border);"><td style="padding:4px 8px;">${r.mobile}</td><td style="padding:4px 8px;">${r.email}</td><td style="padding:4px 8px;">${r.name}</td><td style="padding:4px 8px;">${r.date}</td><td style="padding:4px 8px;">${r.amount}</td><td style="padding:4px 8px;">${r.description}</td></tr>`).join('')}</tbody>
+  </table>`;
+}
+async function submitUpload(){
+  const m=currentMapping();
+  const resEl=document.getElementById('uploadResult');
+  if(!m.date){resEl.textContent='Transaction date is required — map that column first.';resEl.style.color='var(--err)';return;}
+  if(!m.mobile&&!m.email){resEl.textContent='Map at least one of Phone number or Email — need a way to identify the customer.';resEl.style.color='var(--err)';return;}
+  resEl.textContent=`Uploading ${uploadedRows.length} rows…`;resEl.style.color='var(--muted)';
+  const j=await callIngest('upload_transactions',{rows:mappedRows(),filename:uploadedFilename});
+  if(j.ok){
+    resEl.textContent=`✅ ${j.rows_inserted} of ${j.rows_total} rows uploaded.${j.rows_skipped?` ${j.rows_skipped} skipped — check phone/date columns are mapped correctly.`:''}`;
+    resEl.style.color='var(--ok)';
+    document.getElementById('uploadMapping').style.display='none';
+    document.getElementById('uploadFile').value='';
+    uploadedRows=null;
+    loadTransactionSummary();loadRecentUploads();
+  } else {
+    resEl.textContent='❌ '+j.error;resEl.style.color='var(--err)';
+  }
 }
 
 async function addBlackout(){
