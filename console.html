@@ -3,233 +3,340 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Engagement Platform Console</title>
+<title>Zen Platform</title>
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
-  :root{--p:#4F46E5;--ok:#16A34A;--okl:#F0FDF4;--err:#DC2626;--errl:#FEF2F2;--warn:#B45309;--warnl:#FFFBEB;--border:#E5E7EB;--muted:#6B7280;--bg:#F9FAFB;}
+  :root{--p:#4F46E5;--pl:#F5F4FF;--ok:#16A34A;--okl:#F0FDF4;--err:#DC2626;--errl:#FEF2F2;--warn:#B45309;--warnl:#FFFBEB;--border:#E5E7EB;--muted:#6B7280;--bg:#F7F7F9;--ink:#14141F;--sidebar-w:230px;--topbar-h:60px;}
   *{box-sizing:border-box;}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);margin:0;color:#1A1A2E;}
-  .wrap{max-width:900px;margin:0 auto;padding:24px 16px;}
-  .card{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:20px 22px;margin-bottom:16px;}
-  h1{font-size:20px;margin:0 0 4px;}
-  h2{font-size:15px;margin:0 0 12px;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);margin:0;color:var(--ink);-webkit-font-smoothing:antialiased;}
+  .card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:22px 24px;margin-bottom:18px;box-shadow:0 1px 2px rgba(16,16,40,.04);}
+  h1{font-size:19px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em;}
+  h2{font-size:15px;margin:0 0 4px;font-weight:700;}
+  h3{font-size:13px;margin:0 0 8px;font-weight:700;}
   .muted{color:var(--muted);font-size:13px;}
-  .fi{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;margin-bottom:10px;}
-  .fl{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:4px;}
-  .btn{padding:9px 16px;border-radius:8px;border:none;font-weight:700;font-size:13px;cursor:pointer;}
+  .fi{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;margin-bottom:10px;background:#fff;}
+  .fl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:4px;}
+  .btn{padding:9px 16px;border-radius:8px;border:none;font-weight:700;font-size:13px;cursor:pointer;transition:opacity .12s;}
+  .btn:hover{opacity:.88;}
   .btn-p{background:var(--p);color:#fff;}
-  .btn-s{background:#F3F4F6;color:#1A1A2E;}
+  .btn-s{background:#F1F0F5;color:var(--ink);}
   .btn-sm{padding:6px 12px;font-size:12px;}
   .row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}
   .badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;}
   .b-ok{background:var(--okl);color:var(--ok);}
   .b-warn{background:var(--warnl);color:var(--warn);}
   .b-err{background:var(--errl);color:var(--err);}
-  .item{border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;}
+  .item{border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;}
   select.fi{background:#fff;}
   #app{display:none;}
-  #authScreen{max-width:380px;margin:60px auto;}
+  #authScreen{max-width:380px;margin:80px auto;padding:0 16px;}
   a{color:var(--p);}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;}
+
+  .topbar{position:sticky;top:0;z-index:10;height:var(--topbar-h);background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;}
+  .topbar-left{display:flex;align-items:center;gap:16px;}
+  .logo{font-weight:800;font-size:15px;letter-spacing:-.01em;display:flex;align-items:center;gap:6px;}
+  .logo .dot{width:8px;height:8px;border-radius:50%;background:var(--p);}
+  .tenant-select{padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;background:#fff;max-width:220px;}
+  .topbar-right{display:flex;align-items:center;gap:14px;font-size:13px;color:var(--muted);}
+
+  .shell{display:flex;min-height:calc(100vh - var(--topbar-h));}
+  .sidebar{width:var(--sidebar-w);flex-shrink:0;background:#fff;border-right:1px solid var(--border);padding:16px 12px;position:sticky;top:var(--topbar-h);height:calc(100vh - var(--topbar-h));overflow-y:auto;}
+  .nav-group-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:10px 10px 6px;}
+  .nav-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:9px 10px;border-radius:8px;border:none;background:transparent;font-size:13.5px;font-weight:600;color:var(--ink);cursor:pointer;margin-bottom:2px;}
+  .nav-item:hover{background:#F5F5F8;}
+  .nav-item.active{background:var(--pl);color:var(--p);}
+  .nav-item .ic{font-size:15px;width:18px;text-align:center;}
+
+  .main{flex:1;padding:28px 32px;max-width:920px;}
+  .page{display:none;}
+  .page.active{display:block;}
+  .page-header{margin-bottom:20px;}
+  .page-header h1{font-size:22px;}
+
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;}
+  .stat-tile{background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;}
+  .stat-tile .num{font-size:24px;font-weight:800;letter-spacing:-.02em;}
+  .stat-tile .lbl{font-size:12px;color:var(--muted);margin-top:2px;}
+
+  .agent-tile{border:1.5px solid var(--border);border-radius:12px;padding:16px;background:#fff;}
+  .agent-tile.coming-soon{opacity:.5;}
 </style>
 </head>
 <body>
-<div class="wrap">
 
-<div id="authScreen" class="card">
-  <h1>Engagement Platform</h1>
-  <p class="muted">Log in or create an account to manage your business.</p>
-  <label class="fl">Email</label>
-  <input class="fi" type="email" id="authEmail" placeholder="you@business.com" autocomplete="username">
-  <label class="fl">Password (at least 6 characters)</label>
-  <input class="fi" type="password" id="authPass" placeholder="••••••••" autocomplete="current-password">
-  <div class="row">
-    <button class="btn btn-p" onclick="doLogin()">Log in</button>
-    <button class="btn btn-s" onclick="doSignup()">Create account</button>
+<div id="authScreen">
+  <div class="card">
+    <h1>Zen Platform</h1>
+    <p class="muted">Log in or create an account to manage your business.</p>
+    <label class="fl">Email</label>
+    <input class="fi" type="email" id="authEmail" placeholder="you@business.com" autocomplete="username">
+    <label class="fl">Password (at least 6 characters)</label>
+    <input class="fi" type="password" id="authPass" placeholder="********" autocomplete="current-password">
+    <div class="row">
+      <button class="btn btn-p" onclick="doLogin()">Log in</button>
+      <button class="btn btn-s" onclick="doSignup()">Create account</button>
+    </div>
+    <div id="authResult" style="font-size:13px;margin-top:10px;"></div>
+    <div style="margin-top:10px;font-size:12.5px;"><a href="#" onclick="doForgotPassword();return false;">Forgot password?</a></div>
   </div>
-  <div id="authResult" style="font-size:13px;margin-top:10px;"></div>
-  <div style="margin-top:10px;font-size:12.5px;"><a href="#" onclick="doForgotPassword();return false;">Forgot password?</a></div>
 </div>
 
-
 <div id="app">
-  <div class="card" style="display:flex;justify-content:space-between;align-items:center;">
-    <div>
-      <h1>Engagement Platform</h1>
-      <div class="muted" id="whoami"></div>
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="logo"><span class="dot"></span>Zen Platform</div>
+      <select class="tenant-select" id="tenantSelect" onchange="switchTenant()"></select>
     </div>
-    <button class="btn btn-s btn-sm" onclick="doLogout()">Log out</button>
+    <div class="topbar-right">
+      <span id="whoami"></span>
+      <button class="btn btn-s btn-sm" onclick="doLogout()">Log out</button>
+    </div>
   </div>
 
-  <div class="card">
-    <h2>Business</h2>
-    <div class="row" style="margin-bottom:10px;">
-      <select class="fi" id="tenantSelect" style="flex:1;min-width:200px;" onchange="switchTenant()"></select>
-    </div>
-    <details>
-      <summary style="cursor:pointer;font-size:13px;color:var(--muted);">+ Add a new business</summary>
-      <div style="margin-top:10px;">
-        <label class="fl">Business ID (lowercase, no spaces)</label>
-        <input class="fi" type="text" id="newTenantId" placeholder="e.g. my-salon">
-        <label class="fl">Business name</label>
-        <input class="fi" type="text" id="newTenantName" placeholder="My Salon LLC">
-        <button class="btn btn-p btn-sm" onclick="createTenant()">Create business</button>
-        <div id="createTenantResult" style="font-size:12.5px;margin-top:6px;"></div>
-      </div>
-    </details>
-  </div>
+  <div class="shell">
+    <nav class="sidebar" id="sidebarNav" style="display:none;">
+      <div class="nav-group-label">Workspace</div>
+      <button class="nav-item active" data-page="overview" onclick="showPage('overview')"><span class="ic">&#9635;</span>Overview</button>
+      <button class="nav-item" data-page="agents" onclick="showPage('agents')"><span class="ic">&#9673;</span>Agents</button>
+      <button class="nav-item" data-page="connections" onclick="showPage('connections')"><span class="ic">&#8644;</span>Connections</button>
+      <div class="nav-group-label">Organization</div>
+      <button class="nav-item" data-page="team" onclick="showPage('team')"><span class="ic">&#9687;</span>Team</button>
+      <button class="nav-item" data-page="apikeys" onclick="showPage('apikeys')"><span class="ic">&#9791;</span>API keys</button>
+      <div class="nav-group-label">Business</div>
+      <button class="nav-item" onclick="document.getElementById('newBizPanel').style.display='block';showPage('overview');" ><span class="ic">+</span>Add business</button>
+    </nav>
 
-  <div id="dashboard" style="display:none;">
-    <div class="card">
-      <h2>📤 Upload sales data</h2>
-      <p class="muted">Upload an Excel or CSV of your sales/transaction history — this becomes the data the engagement agent learns customer patterns from, and the foundation for deeper analysis later. Works the same regardless of what system you exported it from.</p>
-      <div id="txSummary" class="muted" style="font-size:13px;margin-bottom:12px;"></div>
-      <input type="file" id="uploadFile" accept=".xlsx,.xls,.csv" onchange="handleFileSelect(event)">
-      <div id="uploadMapping" style="display:none;margin-top:14px;">
-        <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">Match your columns</div>
-        <div id="mappingFields"></div>
-        <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;margin:14px 0 8px;">Preview (first 5 rows)</div>
-        <div id="uploadPreview" style="overflow-x:auto;"></div>
-        <button class="btn btn-p btn-sm" style="margin-top:12px;" onclick="submitUpload()">Upload all rows</button>
+    <main class="main">
+      <div id="noBizNotice" style="display:none;">
+        <div class="card">
+          <h2>No business connected yet</h2>
+          <p class="muted">Create your first business to get started.</p>
+          <label class="fl">Business ID (lowercase, no spaces)</label>
+          <input class="fi" type="text" id="newTenantId" placeholder="e.g. my-salon">
+          <label class="fl">Business name</label>
+          <input class="fi" type="text" id="newTenantName" placeholder="My Salon LLC">
+          <button class="btn btn-p btn-sm" onclick="createTenant()">Create business</button>
+          <div id="createTenantResult" style="font-size:12.5px;margin-top:6px;"></div>
+        </div>
       </div>
-      <div id="uploadResult" style="font-size:12.5px;margin-top:10px;"></div>
-      <div id="recentUploads" style="margin-top:14px;"></div>
 
-      <details style="margin-top:14px;">
-        <summary style="cursor:pointer;font-size:12.5px;color:var(--muted);">Have your own system push data automatically instead? (API push)</summary>
-        <div style="margin-top:10px;font-size:12.5px;">
-          <p class="muted">If you have a POS, booking system, or custom app, it can push transactions directly — same live feed, no manual upload needed. Uses the same API key from the "API keys" section below.</p>
-          <div style="background:#F3F4F6;border-radius:8px;padding:10px 12px;font-family:monospace;font-size:11.5px;white-space:pre-wrap;">curl -X POST https://wtapyfgtwkjyjrjdnhkb.supabase.co/functions/v1/mw-ingest \
+      <div id="pages" style="display:none;">
+
+        <!-- OVERVIEW -->
+        <div class="page active" id="page-overview">
+          <div class="page-header"><h1>Overview</h1><p class="muted">A snapshot of this business on Zen Platform.</p></div>
+          <div class="stat-grid" id="overviewStats" style="margin-bottom:18px;"></div>
+          <div class="card" id="newBizPanel" style="display:none;">
+            <h2>Add a new business</h2>
+            <label class="fl">Business ID (lowercase, no spaces)</label>
+            <input class="fi" type="text" id="newTenantId2" placeholder="e.g. my-salon">
+            <label class="fl">Business name</label>
+            <input class="fi" type="text" id="newTenantName2" placeholder="My Salon LLC">
+            <button class="btn btn-p btn-sm" onclick="createTenant(true)">Create business</button>
+            <div id="createTenantResult2" style="font-size:12.5px;margin-top:6px;"></div>
+          </div>
+        </div>
+
+        <!-- AGENTS -->
+        <div class="page" id="page-agents">
+          <div class="page-header"><h1>Agents</h1><p class="muted">Automated staff working this business - each one reads your rules, makes a decision, and either acts or waits for your review.</p></div>
+
+          <div class="stat-grid" style="margin-bottom:20px;">
+            <div class="agent-tile" onclick="document.getElementById('engagementAgentDetail').scrollIntoView({behavior:'smooth'})" style="cursor:pointer;">
+              <div style="font-size:20px;">&#128172;</div>
+              <div style="font-weight:700;font-size:13px;margin:6px 0 2px;">Engagement agent</div>
+              <div class="muted" style="font-size:12px;">WhatsApp campaigns</div>
+              <span class="badge b-ok" style="margin-top:8px;display:inline-block;">Active</span>
+            </div>
+            <div class="agent-tile coming-soon">
+              <div style="font-size:20px;">&#128222;</div>
+              <div style="font-weight:700;font-size:13px;margin:6px 0 2px;">Call agent</div>
+              <div class="muted" style="font-size:12px;">Missed calls, booking</div>
+              <span class="badge" style="background:var(--border);color:var(--muted);margin-top:8px;display:inline-block;">Coming soon</span>
+            </div>
+            <div class="agent-tile coming-soon">
+              <div style="font-size:20px;">&#128241;</div>
+              <div style="font-weight:700;font-size:13px;margin:6px 0 2px;">Social agent</div>
+              <div class="muted" style="font-size:12px;">Content, campaigns</div>
+              <span class="badge" style="background:var(--border);color:var(--muted);margin-top:8px;display:inline-block;">Coming soon</span>
+            </div>
+          </div>
+
+          <div id="engagementAgentDetail">
+            <div class="card">
+              <h2>&#128172; Engagement agent - WhatsApp campaigns</h2>
+              <div class="row" style="margin-bottom:14px;margin-top:14px;">
+                <select class="fi" id="reviewMode" style="width:auto;" onchange="setReviewMode()">
+                  <option value="review">Review first - I approve each send</option>
+                  <option value="auto">Fully autonomous - send immediately</option>
+                </select>
+                <button class="btn btn-p btn-sm" onclick="runNow()">Run now</button>
+              </div>
+              <div id="runResult" style="font-size:12.5px;margin-bottom:14px;"></div>
+
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <h3 style="margin:0;">Pending review</h3>
+                <button class="btn btn-s btn-sm" onclick="rejectAllPending()">Reject all pending</button>
+              </div>
+              <div id="pendingList" class="muted" style="margin-bottom:18px;">Loading...</div>
+
+              <h3>Rule book - what the agent currently does</h3>
+              <div id="ruleBook" style="margin-bottom:14px;border:1px solid var(--border);border-radius:10px;padding:10px 14px;">Loading...</div>
+
+              <div style="border:1.5px solid var(--p);border-radius:10px;padding:12px;margin-bottom:14px;background:var(--pl);">
+                <div style="font-size:12px;font-weight:700;color:var(--p);text-transform:uppercase;margin-bottom:6px;">Tell the agent what you want</div>
+                <textarea class="fi" id="nlInstruction" rows="2" placeholder="e.g. Only send nudge and birthday messages. Birthday should go out 5 days before, not 3."></textarea>
+                <button class="btn btn-p btn-sm" onclick="proposeStrategy()">Preview changes</button>
+                <div id="nlResult" style="font-size:12.5px;margin-top:8px;"></div>
+                <div id="nlPreview" style="display:none;margin-top:10px;border-top:1px solid var(--border);padding-top:10px;">
+                  <div id="nlSummary" style="font-size:13px;margin-bottom:8px;"></div>
+                  <div id="nlWarnings" style="font-size:12.5px;color:var(--warn);margin-bottom:8px;"></div>
+                  <div id="nlDiff" style="margin-bottom:10px;"></div>
+                  <button class="btn btn-p btn-sm" onclick="applyStrategy()">Apply these changes</button>
+                  <button class="btn btn-s btn-sm" onclick="cancelStrategyPreview()">Cancel</button>
+                </div>
+              </div>
+              <h3>Campaign strategy</h3>
+              <div id="strategyList" class="muted" style="margin-bottom:18px;">Loading...</div>
+
+              <h3>Blackout periods</h3>
+              <div id="blackoutList" class="muted" style="margin-bottom:10px;"></div>
+              <div class="row" style="margin-bottom:18px;">
+                <input class="fi" type="text" id="boLabel" placeholder="Label" style="flex:1;min-width:120px;">
+                <input class="fi" type="date" id="boStart">
+                <input class="fi" type="date" id="boEnd">
+                <button class="btn btn-s btn-sm" onclick="addBlackout()">+ Add</button>
+              </div>
+
+              <h3>Recent runs</h3>
+              <div id="runsList" class="muted" style="margin-bottom:18px;"></div>
+
+              <h3>Recent rule changes</h3>
+              <div id="changeLog" class="muted"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CONNECTIONS -->
+        <div class="page" id="page-connections">
+          <div class="page-header"><h1>Connections</h1><p class="muted">What this business is connected to - where data comes from, and how messages go out.</p></div>
+
+          <div class="card">
+            <h2>Data channels</h2>
+            <p class="muted">Connect however fits your business - use one, or all at once. Every channel feeds the same agents.</p>
+            <div id="channelOverview" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:12px;"></div>
+          </div>
+
+          <div class="card" id="excelChannelCard">
+            <h2>Excel / CSV upload</h2>
+            <p class="muted">Upload a file of your sales/transaction history - this becomes the data agents learn customer patterns from. Works the same regardless of what system you exported it from.</p>
+            <div id="txSummary" class="muted" style="font-size:13px;margin-bottom:12px;"></div>
+            <input type="file" id="uploadFile" accept=".xlsx,.xls,.csv" onchange="handleFileSelect(event)">
+            <div id="uploadMapping" style="display:none;margin-top:14px;">
+              <div class="fl" style="margin-bottom:8px;">Match your columns</div>
+              <div id="mappingFields"></div>
+              <div class="fl" style="margin:14px 0 8px;">Preview (first 5 rows)</div>
+              <div id="uploadPreview" style="overflow-x:auto;"></div>
+              <button class="btn btn-p btn-sm" style="margin-top:12px;" onclick="submitUpload()">Upload all rows</button>
+            </div>
+            <div id="uploadResult" style="font-size:12.5px;margin-top:10px;"></div>
+            <div id="recentUploads" style="margin-top:14px;"></div>
+          </div>
+
+          <div class="card" id="apiChannelCard">
+            <h2>API push</h2>
+            <p class="muted">If you have a POS, booking system, or custom app, it can push transactions directly - a live feed, no manual upload needed. Uses the same API key as the "API keys" page - generate one there first if you haven't.</p>
+            <div style="background:#F3F4F6;border-radius:8px;padding:10px 12px;font-family:ui-monospace,monospace;font-size:11.5px;white-space:pre-wrap;">curl -X POST https://wtapyfgtwkjyjrjdnhkb.supabase.co/functions/v1/mw-ingest \
   -H "x-tenant-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"action":"upload_transactions","rows":[{"mobile":"971501234567","date":"2026-08-11","amount":150,"external_id":"INV-1042"}]}'</div>
-          <p class="muted" style="margin-top:6px;">Including <code>external_id</code> (your own invoice/order number) is optional but recommended if you also upload Excel exports of the same data — it prevents the same sale from being counted twice.</p>
-        </div>
-      </details>
-    </div>
-
-    <div class="card">
-      <h2>💬 WhatsApp connection</h2>
-      <div id="waStatus" style="font-size:13px;padding:10px 14px;border-radius:10px;margin-bottom:12px;"></div>
-      <label class="fl">Access token</label>
-      <input class="fi" type="password" id="waToken" placeholder="Paste permanent access token">
-      <label class="fl">Phone number ID</label>
-      <input class="fi" type="text" id="waPhoneId" placeholder="e.g. 109876543210987">
-      <label class="fl">WABA ID</label>
-      <input class="fi" type="text" id="waWabaId" placeholder="For template management">
-      <button class="btn btn-p btn-sm" onclick="saveWA()">Save & connect</button>
-      <div id="waSaveResult" style="font-size:12.5px;margin-top:8px;"></div>
-    </div>
-
-    <div class="card">
-      <h2>📋 Message templates</h2>
-      <div class="row" style="margin-bottom:12px;">
-        <button class="btn btn-s btn-sm" onclick="loadTemplates()">🔄 Refresh</button>
-        <button class="btn btn-p btn-sm" onclick="toggleTplForm()">+ New template</button>
-      </div>
-      <div id="tplForm" style="display:none;border:1.5px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;">
-        <label class="fl">Name</label><input class="fi" type="text" id="tplName" placeholder="e.g. nudge_reminder">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-          <div><label class="fl">Category</label><select class="fi" id="tplCat"><option value="MARKETING">Marketing</option><option value="UTILITY">Utility</option><option value="AUTHENTICATION">Authentication</option></select></div>
-          <div><label class="fl">Language</label><select class="fi" id="tplLang"><option value="en">English</option><option value="ar">Arabic</option></select></div>
-        </div>
-        <label class="fl">Body — use {{1}}, {{2}} for variables</label><textarea class="fi" id="tplBody" rows="3"></textarea>
-        <label class="fl">Sample values (comma separated)</label><input class="fi" type="text" id="tplExamples">
-        <label class="fl">Footer (optional)</label><input class="fi" type="text" id="tplFooter">
-        <div id="tplWarnings" style="font-size:12px;color:var(--warn);margin-bottom:8px;"></div>
-        <button class="btn btn-p btn-sm" onclick="submitTemplate()">Check & submit</button>
-        <div id="tplCreateResult" style="font-size:12.5px;margin-top:8px;"></div>
-      </div>
-      <div id="tplList" class="muted">Click Refresh to load.</div>
-
-      <details style="margin-top:14px;">
-        <summary style="cursor:pointer;font-size:13px;color:var(--muted);">Type mappings (used by the agent to pick a template per campaign)</summary>
-        <div style="margin-top:10px;">
-          <div class="row">
-            <input class="fi" type="text" id="mapType" placeholder="type_key e.g. boy_nudge" style="flex:1;">
-            <input class="fi" type="text" id="mapTplName" placeholder="approved template name" style="flex:1;">
-            <button class="btn btn-s btn-sm" onclick="saveMapping()">Save mapping</button>
+            <p class="muted" style="margin-top:8px;">Including <code>external_id</code> (your own invoice/order number) is optional but recommended if you also upload Excel exports of the same data - it prevents the same sale from being counted twice.</p>
           </div>
-          <div id="mapList" class="muted" style="margin-top:8px;"></div>
+
+          <div class="card" style="opacity:0.6;">
+            <h2>SQL connector</h2>
+            <p class="muted">Coming soon - connect a read-only database credential and let the platform pull data on a schedule directly from your own system. For businesses with a technical team that wants zero manual steps.</p>
+          </div>
+
+          <div class="card">
+            <h2>WhatsApp connection</h2>
+            <div id="waStatus" style="font-size:13px;padding:10px 14px;border-radius:10px;margin-bottom:12px;"></div>
+            <label class="fl">Access token</label>
+            <input class="fi" type="password" id="waToken" placeholder="Paste permanent access token">
+            <label class="fl">Phone number ID</label>
+            <input class="fi" type="text" id="waPhoneId" placeholder="e.g. 109876543210987">
+            <label class="fl">WABA ID</label>
+            <input class="fi" type="text" id="waWabaId" placeholder="For template management">
+            <button class="btn btn-p btn-sm" onclick="saveWA()">Save and connect</button>
+            <div id="waSaveResult" style="font-size:12.5px;margin-top:8px;"></div>
+          </div>
+
+          <div class="card">
+            <h2>Message templates</h2>
+            <div class="row" style="margin-bottom:12px;">
+              <button class="btn btn-s btn-sm" onclick="loadTemplates()">Refresh</button>
+              <button class="btn btn-p btn-sm" onclick="toggleTplForm()">+ New template</button>
+            </div>
+            <div id="tplForm" style="display:none;border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;">
+              <label class="fl">Name</label><input class="fi" type="text" id="tplName" placeholder="e.g. nudge_reminder">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <div><label class="fl">Category</label><select class="fi" id="tplCat"><option value="MARKETING">Marketing</option><option value="UTILITY">Utility</option><option value="AUTHENTICATION">Authentication</option></select></div>
+                <div><label class="fl">Language</label><select class="fi" id="tplLang"><option value="en">English</option><option value="ar">Arabic</option></select></div>
+              </div>
+              <label class="fl">Body - use {{1}}, {{2}} for variables</label><textarea class="fi" id="tplBody" rows="3"></textarea>
+              <label class="fl">Sample values (comma separated)</label><input class="fi" type="text" id="tplExamples">
+              <label class="fl">Footer (optional)</label><input class="fi" type="text" id="tplFooter">
+              <div id="tplWarnings" style="font-size:12px;color:var(--warn);margin-bottom:8px;"></div>
+              <button class="btn btn-p btn-sm" onclick="submitTemplate()">Check and submit</button>
+              <div id="tplCreateResult" style="font-size:12.5px;margin-top:8px;"></div>
+            </div>
+            <div id="tplList" class="muted">Click Refresh to load.</div>
+
+            <details style="margin-top:14px;">
+              <summary style="cursor:pointer;font-size:13px;color:var(--muted);">Type mappings (used by the agent to pick a template per campaign)</summary>
+              <div style="margin-top:10px;">
+                <div class="row">
+                  <input class="fi" type="text" id="mapType" placeholder="type_key e.g. boy_nudge" style="flex:1;">
+                  <input class="fi" type="text" id="mapTplName" placeholder="approved template name" style="flex:1;">
+                  <button class="btn btn-s btn-sm" onclick="saveMapping()">Save mapping</button>
+                </div>
+                <div id="mapList" class="muted" style="margin-top:8px;"></div>
+              </div>
+            </details>
+          </div>
         </div>
-      </details>
-    </div>
 
-    <div class="card">
-      <h2>🤖 Engagement agent</h2>
-      <div class="row" style="margin-bottom:14px;">
-        <select class="fi" id="reviewMode" style="width:auto;" onchange="setReviewMode()">
-          <option value="review">Review first — I approve each send</option>
-          <option value="auto">Fully autonomous — send immediately</option>
-        </select>
-        <button class="btn btn-p btn-sm" onclick="runNow()">▶ Run now</button>
-      </div>
-      <div id="runResult" style="font-size:12.5px;margin-bottom:14px;"></div>
-
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <h3 style="font-size:13px;margin:0;">Pending review</h3>
-        <button class="btn btn-s btn-sm" onclick="rejectAllPending()">Reject all pending</button>
-      </div>
-      <div id="pendingList" class="muted" style="margin-bottom:18px;">Loading…</div>
-
-      <h3 style="font-size:13px;margin:0 0 8px;">📖 Rule book — what the agent currently does</h3>
-      <div id="ruleBook" style="margin-bottom:14px;border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;">Loading…</div>
-
-      <div style="border:1.5px solid var(--p);border-radius:10px;padding:12px;margin-bottom:14px;background:#F5F4FF;">
-        <div style="font-size:12px;font-weight:700;color:var(--p);text-transform:uppercase;margin-bottom:6px;">💬 Tell the agent what you want</div>
-        <textarea class="fi" id="nlInstruction" rows="2" placeholder="e.g. Only send nudge and birthday messages. Birthday should go out 5 days before, not 3."></textarea>
-        <button class="btn btn-p btn-sm" onclick="proposeStrategy()">Preview changes</button>
-        <div id="nlResult" style="font-size:12.5px;margin-top:8px;"></div>
-        <div id="nlPreview" style="display:none;margin-top:10px;border-top:1px solid var(--border);padding-top:10px;">
-          <div id="nlSummary" style="font-size:13px;margin-bottom:8px;"></div>
-          <div id="nlWarnings" style="font-size:12.5px;color:var(--warn);margin-bottom:8px;"></div>
-          <div id="nlDiff" style="margin-bottom:10px;"></div>
-          <button class="btn btn-p btn-sm" onclick="applyStrategy()">✅ Apply these changes</button>
-          <button class="btn btn-s btn-sm" onclick="cancelStrategyPreview()">Cancel</button>
+        <!-- TEAM -->
+        <div class="page" id="page-team">
+          <div class="page-header"><h1>Team</h1><p class="muted">Who has access to this business.</p></div>
+          <div class="card">
+            <div id="teamList" class="muted" style="margin-bottom:12px;">Loading...</div>
+            <div class="row">
+              <input class="fi" type="email" id="inviteEmail" placeholder="teammate@email.com" style="flex:1;">
+              <select class="fi" id="inviteRole" style="width:auto;"><option value="staff">Staff</option><option value="owner">Owner</option></select>
+              <button class="btn btn-s btn-sm" onclick="inviteTeammate()">Invite</button>
+            </div>
+          </div>
         </div>
+
+        <!-- API KEYS -->
+        <div class="page" id="page-apikeys">
+          <div class="page-header"><h1>API keys</h1><p class="muted">For this business's own systems to authenticate - separate from any person's login.</p></div>
+          <div class="card">
+            <div id="apiKeyList" class="muted" style="margin-bottom:12px;">Loading...</div>
+            <div class="row">
+              <input class="fi" type="text" id="apiKeyLabel" placeholder="Label, e.g. Main app" style="flex:1;">
+              <button class="btn btn-s btn-sm" onclick="createApiKey()">Generate key</button>
+            </div>
+            <div id="newApiKeyResult" style="font-size:12.5px;margin-top:8px;"></div>
+          </div>
+        </div>
+
       </div>
-      <h3 style="font-size:13px;margin:0 0 8px;">Campaign strategy</h3>
-      <div id="strategyList" class="muted" style="margin-bottom:18px;">Loading…</div>
-
-      <h3 style="font-size:13px;margin:0 0 8px;">Blackout periods</h3>
-      <div id="blackoutList" class="muted" style="margin-bottom:10px;"></div>
-      <div class="row" style="margin-bottom:18px;">
-        <input class="fi" type="text" id="boLabel" placeholder="Label" style="flex:1;min-width:120px;">
-        <input class="fi" type="date" id="boStart">
-        <input class="fi" type="date" id="boEnd">
-        <button class="btn btn-s btn-sm" onclick="addBlackout()">+ Add</button>
-      </div>
-
-      <h3 style="font-size:13px;margin:0 0 8px;">Recent runs</h3>
-      <div id="runsList" class="muted"></div>
-
-      <h3 style="font-size:13px;margin:18px 0 8px;">📝 Recent rule changes</h3>
-      <div id="changeLog" class="muted"></div>
-    </div>
-
-    <div class="card">
-      <h2>👥 Team</h2>
-      <div id="teamList" class="muted" style="margin-bottom:12px;">Loading…</div>
-      <div class="row">
-        <input class="fi" type="email" id="inviteEmail" placeholder="teammate@email.com" style="flex:1;">
-        <select class="fi" id="inviteRole" style="width:auto;"><option value="staff">Staff</option><option value="owner">Owner</option></select>
-        <button class="btn btn-s btn-sm" onclick="inviteTeammate()">Invite</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>🔑 API keys — for this business's own app</h2>
-      <p class="muted">Generate a key for MiniCuts' (or any business's) own app to use when calling send-whatsapp — separate from your personal login.</p>
-      <div id="apiKeyList" class="muted" style="margin-bottom:12px;">Loading…</div>
-      <div class="row">
-        <input class="fi" type="text" id="apiKeyLabel" placeholder="Label, e.g. MiniCuts main app" style="flex:1;">
-        <button class="btn btn-s btn-sm" onclick="createApiKey()">Generate key</button>
-      </div>
-      <div id="newApiKeyResult" style="font-size:12.5px;margin-top:8px;"></div>
-    </div>
+    </main>
   </div>
-</div>
-
 </div>
 
 <script>
@@ -247,9 +354,9 @@ async function doSignup(){
   const email=document.getElementById('authEmail').value.trim();
   const password=document.getElementById('authPass').value;
   const r=document.getElementById('authResult');
-  r.textContent='Creating account…';r.style.color='var(--muted)';
+  r.textContent='Creating account...';r.style.color='var(--muted)';
   const {data,error}=await sb.auth.signUp({email,password});
-  if(error){r.textContent='❌ '+error.message;r.style.color='var(--err)';return;}
+  if(error){r.textContent='Error: '+error.message;r.style.color='var(--err)';return;}
   if(data.session){onAuthed(data.session);}
   else {r.textContent='Check your email to confirm your account, then log in.';r.style.color='var(--ok)';}
 }
@@ -257,19 +364,19 @@ async function doLogin(){
   const email=document.getElementById('authEmail').value.trim();
   const password=document.getElementById('authPass').value;
   const r=document.getElementById('authResult');
-  r.textContent='Logging in…';r.style.color='var(--muted)';
+  r.textContent='Logging in...';r.style.color='var(--muted)';
   const {data,error}=await sb.auth.signInWithPassword({email,password});
-  if(error){r.textContent='❌ '+error.message+' — if you\'re unsure of your password, use "Forgot password?" below.';r.style.color='var(--err)';return;}
+  if(error){r.textContent='Error: '+error.message+' - if unsure of your password, use "Forgot password?" below.';r.style.color='var(--err)';return;}
   onAuthed(data.session);
 }
 async function doForgotPassword(){
   const email=document.getElementById('authEmail').value.trim();
   const r=document.getElementById('authResult');
   if(!email){r.textContent='Enter your email above first, then click "Forgot password?".';r.style.color='var(--err)';return;}
-  r.textContent='Sending reset link…';r.style.color='var(--muted)';
+  r.textContent='Sending reset link...';r.style.color='var(--muted)';
   const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});
-  if(error){r.textContent='❌ '+error.message;r.style.color='var(--err)';return;}
-  r.textContent='✅ Check your email for a password reset link.';r.style.color='var(--ok)';
+  if(error){r.textContent='Error: '+error.message;r.style.color='var(--err)';return;}
+  r.textContent='Check your email for a password reset link.';r.style.color='var(--ok)';
 }
 async function doLogout(){
   await sb.auth.signOut();
@@ -286,45 +393,83 @@ async function onAuthed(sess){
   await loadMyTenants();
 }
 
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const pg=document.getElementById('page-'+id);
+  if(pg) pg.classList.add('active');
+  const nav=document.querySelector('.nav-item[data-page="'+id+'"]');
+  if(nav) nav.classList.add('active');
+}
+
 async function call(action,extra){
   const r=await fetch(MW_ADMIN_URL,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+session.access_token},
-    body:JSON.stringify({action,tenant_id:currentTenant,...(extra||{})})});
+    body:JSON.stringify(Object.assign({action,tenant_id:currentTenant},extra||{}))});
   return await r.json();
 }
 async function callWA(url,action,extra){
   const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+session.access_token},
-    body:JSON.stringify({action,tenant_id:currentTenant,...(extra||{})})});
+    body:JSON.stringify(Object.assign({action,tenant_id:currentTenant},extra||{}))});
   return await r.json();
 }
 
 async function loadMyTenants(){
   const j=await call('my_tenants',{});
   const sel=document.getElementById('tenantSelect');
-  if(!j.ok||!j.tenants.length){sel.innerHTML='<option>No businesses yet — create one below</option>';document.getElementById('dashboard').style.display='none';return;}
-  sel.innerHTML=j.tenants.map(t=>`<option value="${t.tenant_id}">${t.mw_tenants.name} (${t.role})</option>`).join('');
+  if(!j.ok||!j.tenants.length){
+    sel.innerHTML='<option>No business yet</option>';
+    document.getElementById('sidebarNav').style.display='none';
+    document.getElementById('pages').style.display='none';
+    document.getElementById('noBizNotice').style.display='block';
+    return;
+  }
+  document.getElementById('noBizNotice').style.display='none';
+  document.getElementById('sidebarNav').style.display='block';
+  document.getElementById('pages').style.display='block';
+  sel.innerHTML=j.tenants.map(function(t){return '<option value="'+t.tenant_id+'">'+t.mw_tenants.name+' ('+t.role+')</option>';}).join('');
   currentTenant=sel.value;
-  myRole=j.tenants.find(t=>t.tenant_id===currentTenant)?.role;
-  document.getElementById('dashboard').style.display='block';
+  myRole=j.tenants.find(function(t){return t.tenant_id===currentTenant;}).role;
   loadDashboard();
 }
 function switchTenant(){
   currentTenant=document.getElementById('tenantSelect').value;
   loadDashboard();
 }
-async function createTenant(){
-  const id=document.getElementById('newTenantId').value.trim();
-  const name=document.getElementById('newTenantName').value.trim();
-  const r=document.getElementById('createTenantResult');
+async function createTenant(fromOverview){
+  const suffix=fromOverview?'2':'';
+  const id=document.getElementById('newTenantId'+suffix).value.trim();
+  const name=document.getElementById('newTenantName'+suffix).value.trim();
+  const r=document.getElementById('createTenantResult'+suffix);
   if(!id||!name){r.textContent='Both fields required.';r.style.color='var(--err)';return;}
-  const j=await call('create_tenant',{id,name});
-  if(j.ok){r.textContent='✅ Created';r.style.color='var(--ok)';loadMyTenants();}
-  else{r.textContent='❌ '+j.error;r.style.color='var(--err)';}
+  const j=await call('create_tenant',{id:id,name:name});
+  if(j.ok){r.textContent='Created';r.style.color='var(--ok)';loadMyTenants();}
+  else{r.textContent='Error: '+j.error;r.style.color='var(--err)';}
 }
 
 function loadDashboard(){
   loadWAStatus();loadTemplateMappings();
   loadSettings();loadPending();loadRuns();loadTeam();loadApiKeys();loadChangeLog();
   loadTransactionSummary();loadRecentUploads();
+  loadOverview();
+}
+async function loadOverview(){
+  const el=document.getElementById('overviewStats');
+  if(!el) return;
+  const results=await Promise.all([
+    call('pending_review',{}),
+    callIngest('transaction_summary',{}),
+    callWA(WA_CONFIG_URL,'status',{})
+  ]);
+  const pending=results[0], tx=results[1], wa=results[2];
+  const pendingCount=pending.ok?(pending.decisions||[]).length:0;
+  const txCount=tx.ok?tx.total_transactions:0;
+  const channelsActive=tx.ok?Object.keys(tx.channel_counts||{}).length:0;
+  const waConnected=wa.ok&&wa.configured;
+  el.innerHTML=
+    '<div class="stat-tile"><div class="num">'+pendingCount+'</div><div class="lbl">Pending review</div></div>'+
+    '<div class="stat-tile"><div class="num">'+txCount+'</div><div class="lbl">Transactions on file</div></div>'+
+    '<div class="stat-tile"><div class="num">'+channelsActive+'</div><div class="lbl">Data channels active</div></div>'+
+    '<div class="stat-tile"><div class="num">'+(waConnected?'Yes':'-')+'</div><div class="lbl">WhatsApp connected</div></div>';
 }
 
 // WhatsApp connection
@@ -333,10 +478,10 @@ async function loadWAStatus(){
   const el=document.getElementById('waStatus');
   if(j.ok&&j.configured){
     el.style.background='var(--okl)';el.style.color='var(--ok)';
-    el.textContent='✅ Connected — number ending '+j.phone_number_id_masked+(j.waba_id?' · WABA set':' · WABA ID missing');
+    el.textContent='Connected - number ending '+j.phone_number_id_masked+(j.waba_id?' - WABA set':' - WABA ID missing');
   } else {
     el.style.background='var(--errl)';el.style.color='var(--err)';
-    el.textContent='⚠️ Not connected yet.';
+    el.textContent='Not connected yet.';
   }
 }
 async function saveWA(){
@@ -345,9 +490,9 @@ async function saveWA(){
   const waba_id=document.getElementById('waWabaId').value.trim();
   const r=document.getElementById('waSaveResult');
   if(!access_token||!phone_number_id){r.textContent='Token and phone number ID required.';r.style.color='var(--err)';return;}
-  const j=await callWA(WA_CONFIG_URL,'save',{access_token,phone_number_id,waba_id});
-  if(j.ok){r.textContent='✅ Saved';r.style.color='var(--ok)';document.getElementById('waToken').value='';loadWAStatus();}
-  else{r.textContent='❌ '+j.error;r.style.color='var(--err)';}
+  const j=await callWA(WA_CONFIG_URL,'save',{access_token:access_token,phone_number_id:phone_number_id,waba_id:waba_id});
+  if(j.ok){r.textContent='Saved';r.style.color='var(--ok)';document.getElementById('waToken').value='';loadWAStatus();}
+  else{r.textContent='Error: '+j.error;r.style.color='var(--err)';}
 }
 
 // Templates
@@ -356,63 +501,63 @@ function validateTemplate(name,category,body,examples,footer){
   const errors=[],warnings=[];
   if(!/^[a-z0-9_]+$/.test(name)) errors.push('Name must be lowercase letters, numbers, underscores only.');
   if(body.length>1024) errors.push('Body over 1024 characters.');
-  const vars=[...body.matchAll(/\{\{(\d+)\}\}/g)].map(m=>parseInt(m[1]));
+  const vars=[].concat(Array.from(body.matchAll(/\{\{(\d+)\}\}/g))).map(function(m){return parseInt(m[1]);});
   if(vars.length){
     if(/^\{\{\d+\}\}/.test(body.trim())) errors.push("Can't start with a variable.");
     if(/\{\{\d+\}\}$/.test(body.trim())) errors.push("Can't end with a variable.");
-    const expected=Array.from({length:Math.max(...vars)},(_,i)=>i+1);
-    if(JSON.stringify([...new Set(vars)].sort((a,b)=>a-b))!==JSON.stringify(expected)) errors.push('Variables must be sequential from {{1}}.');
-    if(examples.length!==vars.length) errors.push(`Need ${vars.length} sample value(s).`);
+    const expected=Array.from({length:Math.max.apply(null,vars)},function(_,i){return i+1;});
+    if(JSON.stringify(Array.from(new Set(vars)).sort(function(a,b){return a-b;}))!==JSON.stringify(expected)) errors.push('Variables must be sequential from {{1}}.');
+    if(examples.length!==vars.length) errors.push('Need '+vars.length+' sample value(s).');
   }
   const caps=(body.match(/\b[A-Z]{4,}\b/g)||[]);
   if(caps.length) warnings.push('ALL-CAPS word(s): '+caps.join(', '));
   if(/[!?]{2,}/.test(body)) warnings.push('Multiple !! or ?? can read as spammy.');
-  if(category==='MARKETING'&&!footer) warnings.push('No opt-out footer — recommended for Marketing.');
-  return {errors,warnings};
+  if(category==='MARKETING'&&!footer) warnings.push('No opt-out footer - recommended for Marketing.');
+  return {errors:errors,warnings:warnings};
 }
 async function submitTemplate(){
   const name=document.getElementById('tplName').value.trim();
   const category=document.getElementById('tplCat').value;
   const language=document.getElementById('tplLang').value;
   const body_text=document.getElementById('tplBody').value.trim();
-  const examples=(document.getElementById('tplExamples').value.trim()||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const examples=(document.getElementById('tplExamples').value.trim()||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
   const footer_text=document.getElementById('tplFooter').value.trim();
   const warnEl=document.getElementById('tplWarnings'), resEl=document.getElementById('tplCreateResult');
   if(!name||!body_text){resEl.textContent='Name and body required.';resEl.style.color='var(--err)';return;}
-  const {errors,warnings}=validateTemplate(name,category,body_text,examples,footer_text);
-  if(errors.length){warnEl.innerHTML='❌ '+errors.join('<br>❌ ');warnEl.style.color='var(--err)';return;}
+  const v=validateTemplate(name,category,body_text,examples,footer_text);
+  if(v.errors.length){warnEl.innerHTML='Error: '+v.errors.join('<br>Error: ');warnEl.style.color='var(--err)';return;}
   warnEl.textContent='';
-  if(warnings.length&&!confirm('Meta may flag this:\n\n'+warnings.join('\n')+'\n\nSubmit anyway?')) return;
-  resEl.textContent='Submitting…';resEl.style.color='var(--muted)';
-  const j=await callWA(WA_TEMPLATES_URL,'create',{name,category,language,body_text,examples,footer_text});
-  if(j.ok){resEl.textContent='✅ Submitted — status '+j.status;resEl.style.color='var(--ok)';loadTemplates();}
-  else{resEl.textContent='❌ '+j.error;resEl.style.color='var(--err)';}
+  if(v.warnings.length&&!confirm('Meta may flag this:\n\n'+v.warnings.join('\n')+'\n\nSubmit anyway?')) return;
+  resEl.textContent='Submitting...';resEl.style.color='var(--muted)';
+  const j=await callWA(WA_TEMPLATES_URL,'create',{name:name,category:category,language:language,body_text:body_text,examples:examples,footer_text:footer_text});
+  if(j.ok){resEl.textContent='Submitted - status '+j.status;resEl.style.color='var(--ok)';loadTemplates();}
+  else{resEl.textContent='Error: '+j.error;resEl.style.color='var(--err)';}
 }
 async function loadTemplates(){
   const el=document.getElementById('tplList');
-  el.textContent='Loading…';
+  el.textContent='Loading...';
   const j=await callWA(WA_TEMPLATES_URL,'list',{});
-  if(!j.ok){el.textContent='❌ '+j.error;el.style.color='var(--err)';return;}
+  if(!j.ok){el.textContent='Error: '+j.error;el.style.color='var(--err)';return;}
   if(!j.templates.length){el.innerHTML='No templates yet.';return;}
   const cls={APPROVED:'b-ok',PENDING:'b-warn',REJECTED:'b-err'};
-  el.innerHTML=j.templates.map(t=>{
-    const b=(t.components||[]).find(c=>c.type==='BODY');
-    return `<div class="item"><div style="display:flex;justify-content:space-between;"><b>${t.name}</b><span class="badge ${cls[t.status]||''}">${t.status}</span></div><div class="muted">${b?b.text:''}</div></div>`;
+  el.innerHTML=j.templates.map(function(t){
+    const b=(t.components||[]).find(function(c){return c.type==='BODY';});
+    return '<div class="item"><div style="display:flex;justify-content:space-between;"><b>'+t.name+'</b><span class="badge '+(cls[t.status]||'')+'">'+t.status+'</span></div><div class="muted">'+(b?b.text:'')+'</div></div>';
   }).join('');
 }
 async function saveMapping(){
   const type_key=document.getElementById('mapType').value.trim();
   const template_name=document.getElementById('mapTplName').value.trim();
   if(!type_key||!template_name){alert('Both fields required.');return;}
-  const j=await callWA(WA_TEMPLATES_URL,'map_type',{type_key,template_name});
+  const j=await callWA(WA_TEMPLATES_URL,'map_type',{type_key:type_key,template_name:template_name});
   if(j.ok){document.getElementById('mapType').value='';document.getElementById('mapTplName').value='';loadTemplateMappings();}
-  else alert('❌ '+j.error);
+  else alert('Error: '+j.error);
 }
 async function loadTemplateMappings(){
   const j=await call('list_template_mappings',{});
   const el=document.getElementById('mapList');
   if(!j.ok){el.textContent='';return;}
-  el.innerHTML=(j.mappings||[]).map(m=>`<div style="font-size:12.5px;padding:4px 0;">${m.type_key} → ${m.template_name} (${m.template_lang})</div>`).join('')||'No mappings yet.';
+  el.innerHTML=(j.mappings||[]).map(function(m){return '<div style="font-size:12.5px;padding:4px 0;">'+m.type_key+' -&gt; '+m.template_name+' ('+m.template_lang+')</div>';}).join('')||'No mappings yet.';
 }
 
 // Agent settings
@@ -422,64 +567,66 @@ async function loadSettings(){
   myRole=j.my_role;
   document.getElementById('reviewMode').value=j.tenant.review_mode;
   renderRuleBook(j.strategy||[]);
-  document.getElementById('strategyList').innerHTML=(j.strategy||[]).map(s=>`
-    <div class="item">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <label style="display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px;"><input type="checkbox" ${s.enabled?'checked':''} id="en_${s.campaign_key}"> ${s.campaign_key}</label>
-        <span class="muted" style="font-size:11px;">cooldown</span><input class="fi" type="number" style="width:60px;padding:5px;margin:0;" id="cd_${s.campaign_key}" value="${s.min_cooldown_days}"><span class="muted" style="font-size:11px;">days</span>
-      </div>
-      ${s.campaign_key==='birthday'?`<div style="margin-bottom:8px;"><span class="muted" style="font-size:11px;">send starting</span> <input class="fi" type="number" style="width:60px;padding:5px;display:inline-block;margin:0 4px;" id="td_${s.campaign_key}" value="${s.trigger_days??3}"> <span class="muted" style="font-size:11px;">days before the birthday</span></div>`:''}
-      <input class="fi" type="text" placeholder="Offer text" id="of_${s.campaign_key}" value="${(s.offer_text||'').replace(/"/g,'&quot;')}">
-      <input class="fi" type="text" placeholder="Notes for the agent" id="nt_${s.campaign_key}" value="${(s.notes||'').replace(/"/g,'&quot;')}">
-      <button class="btn btn-s btn-sm" onclick="saveStrategy('${s.campaign_key}')">Save</button>
-    </div>`).join('');
-  document.getElementById('blackoutList').innerHTML=(j.blackouts||[]).length?j.blackouts.map(b=>`
-    <div class="item" style="display:flex;justify-content:space-between;align-items:center;"><span>${b.label} — ${b.start_date} to ${b.end_date}</span><button class="btn btn-s btn-sm" onclick="delBlackout('${b.id}')">Remove</button></div>`).join(''):'No blackout periods.';
+  document.getElementById('strategyList').innerHTML=(j.strategy||[]).map(function(s){
+    return '<div class="item">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'+
+        '<label style="display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px;"><input type="checkbox" '+(s.enabled?'checked':'')+' id="en_'+s.campaign_key+'"> '+s.campaign_key+'</label>'+
+        '<span class="muted" style="font-size:11px;">cooldown</span><input class="fi" type="number" style="width:60px;padding:5px;margin:0;" id="cd_'+s.campaign_key+'" value="'+s.min_cooldown_days+'"><span class="muted" style="font-size:11px;">days</span>'+
+      '</div>'+
+      (s.campaign_key==='birthday'?('<div style="margin-bottom:8px;"><span class="muted" style="font-size:11px;">send starting</span> <input class="fi" type="number" style="width:60px;padding:5px;display:inline-block;margin:0 4px;" id="td_'+s.campaign_key+'" value="'+(s.trigger_days==null?3:s.trigger_days)+'"> <span class="muted" style="font-size:11px;">days before the birthday</span></div>'):'')+
+      '<input class="fi" type="text" placeholder="Offer text" id="of_'+s.campaign_key+'" value="'+(s.offer_text||'').replace(/"/g,'&quot;')+'">'+
+      '<input class="fi" type="text" placeholder="Notes for the agent" id="nt_'+s.campaign_key+'" value="'+(s.notes||'').replace(/"/g,'&quot;')+'">'+
+      '<button class="btn btn-s btn-sm" onclick="saveStrategy(\''+s.campaign_key+'\')">Save</button>'+
+    '</div>';
+  }).join('');
+  document.getElementById('blackoutList').innerHTML=(j.blackouts||[]).length?j.blackouts.map(function(b){
+    return '<div class="item" style="display:flex;justify-content:space-between;align-items:center;"><span>'+b.label+' - '+b.start_date+' to '+b.end_date+'</span><button class="btn btn-s btn-sm" onclick="delBlackout(\''+b.id+'\')">Remove</button></div>';
+  }).join(''):'No blackout periods.';
 }
 const CAMPAIGN_LABELS={nudge:'Nudge (gentle reminder)',lapsed:'Win-back (lapsed customer)',expiry:'Loyalty expiry reminder',ready:'Reward ready',birthday:'Birthday',after_service:'After-service thank you'};
 function renderRuleBook(strategy){
   const el=document.getElementById('ruleBook');
   if(!el) return;
   if(!strategy.length){el.innerHTML='<span class="muted">No rules configured yet.</span>';return;}
-  el.innerHTML=strategy.map(s=>{
+  el.innerHTML=strategy.map(function(s){
     const label=CAMPAIGN_LABELS[s.campaign_key]||s.campaign_key;
-    if(!s.enabled) return `<div style="font-size:12.5px;padding:4px 0;color:var(--muted);">🔕 <b>${label}</b> — turned off, the agent never sends this.</div>`;
-    let line=`🔔 <b>${label}</b> — on`;
-    if(s.campaign_key==='birthday'&&s.trigger_days!=null) line+=`, sent starting ${s.trigger_days} day(s) before the birthday`;
-    line+=s.min_cooldown_days>0?`, won't re-contact the same person within ${s.min_cooldown_days} day(s)`:`, no cooldown between messages`;
-    if(s.offer_text) line+=`. Offer: "${s.offer_text}"`;
-    if(s.notes) line+=`. Guidance for the agent: "${s.notes}"`;
-    return `<div style="font-size:12.5px;padding:4px 0;">${line}.</div>`;
+    if(!s.enabled) return '<div style="font-size:12.5px;padding:4px 0;color:var(--muted);">Off: <b>'+label+'</b> - the agent never sends this.</div>';
+    let line='On: <b>'+label+'</b>';
+    if(s.campaign_key==='birthday'&&s.trigger_days!=null) line+=', sent starting '+s.trigger_days+' day(s) before the birthday';
+    line+=s.min_cooldown_days>0?(", won't re-contact the same person within "+s.min_cooldown_days+' day(s)'):', no cooldown between messages';
+    if(s.offer_text) line+='. Offer: "'+s.offer_text+'"';
+    if(s.notes) line+='. Guidance for the agent: "'+s.notes+'"';
+    return '<div style="font-size:12.5px;padding:4px 0;">'+line+'.</div>';
   }).join('');
 }
 async function saveStrategy(key){
   const tdEl=document.getElementById('td_'+key);
   const j=await call('save_strategy',{campaign_key:key,enabled:document.getElementById('en_'+key).checked,offer_text:document.getElementById('of_'+key).value.trim(),min_cooldown_days:parseInt(document.getElementById('cd_'+key).value)||0,notes:document.getElementById('nt_'+key).value.trim(),trigger_days:tdEl?(parseInt(tdEl.value)||0):null});
-  if(j.ok) loadSettings(); else alert('❌ '+j.error);
+  if(j.ok) loadSettings(); else alert('Error: '+j.error);
 }
 
-// ── Natural-language strategy config: propose then confirm ──
+// Natural-language strategy config
 let nlProposedStrategy=null,nlLastInstruction='',nlLastSummary='';
 async function proposeStrategy(){
   const instruction=document.getElementById('nlInstruction').value.trim();
   const r=document.getElementById('nlResult');
   document.getElementById('nlPreview').style.display='none';
   if(!instruction){r.textContent='Type what you want first.';r.style.color='var(--err)';return;}
-  r.textContent='Thinking…';r.style.color='var(--muted)';
-  const j=await call('propose_strategy_change',{instruction});
-  if(!j.ok){r.textContent='❌ '+j.error;r.style.color='var(--err)';return;}
+  r.textContent='Thinking...';r.style.color='var(--muted)';
+  const j=await call('propose_strategy_change',{instruction:instruction});
+  if(!j.ok){r.textContent='Error: '+j.error;r.style.color='var(--err)';return;}
   r.textContent='';
   nlProposedStrategy=j.strategy;nlLastInstruction=instruction;nlLastSummary=j.summary||'';
   document.getElementById('nlSummary').textContent=j.summary;
-  document.getElementById('nlWarnings').innerHTML=(j.warnings&&j.warnings.length)?'⚠️ '+j.warnings.join('<br>⚠️ '):'';
+  document.getElementById('nlWarnings').innerHTML=(j.warnings&&j.warnings.length)?('Warning: '+j.warnings.join('<br>Warning: ')):'';
   const diffEl=document.getElementById('nlDiff');
-  const changed=j.strategy.filter(s=>{
-    const before=(j.current||[]).find(c=>c.campaign_key===s.campaign_key)||{};
-    return before.enabled!==s.enabled||before.offer_text!==s.offer_text||before.min_cooldown_days!==s.min_cooldown_days||(before.trigger_days??null)!==(s.trigger_days??null)||before.notes!==s.notes;
+  const changed=j.strategy.filter(function(s){
+    const before=(j.current||[]).find(function(c){return c.campaign_key===s.campaign_key;})||{};
+    return before.enabled!==s.enabled||before.offer_text!==s.offer_text||before.min_cooldown_days!==s.min_cooldown_days||(before.trigger_days==null?null:before.trigger_days)!==(s.trigger_days==null?null:s.trigger_days)||before.notes!==s.notes;
   });
-  diffEl.innerHTML=changed.length?changed.map(s=>{
-    const before=(j.current||[]).find(c=>c.campaign_key===s.campaign_key)||{};
-    return `<div class="item" style="font-size:12.5px;"><b>${s.campaign_key}</b>: enabled ${before.enabled}→${s.enabled}, cooldown ${before.min_cooldown_days}→${s.min_cooldown_days}d${s.trigger_days!=null?`, trigger ${before.trigger_days??'—'}→${s.trigger_days}d before`:''}</div>`;
+  diffEl.innerHTML=changed.length?changed.map(function(s){
+    const before=(j.current||[]).find(function(c){return c.campaign_key===s.campaign_key;})||{};
+    return '<div class="item" style="font-size:12.5px;"><b>'+s.campaign_key+'</b>: enabled '+before.enabled+' -&gt; '+s.enabled+', cooldown '+before.min_cooldown_days+' -&gt; '+s.min_cooldown_days+'d'+(s.trigger_days!=null?(', trigger '+(before.trigger_days==null?'none':before.trigger_days)+' -&gt; '+s.trigger_days+'d before'):'')+'</div>';
   }).join(''):'<div class="muted" style="font-size:12.5px;">No changes detected in the structured settings.</div>';
   document.getElementById('nlPreview').style.display='block';
 }
@@ -491,7 +638,7 @@ async function applyStrategy(){
     cancelStrategyPreview();
     loadSettings();
     loadChangeLog();
-  } else alert('❌ '+j.error);
+  } else alert('Error: '+j.error);
 }
 function cancelStrategyPreview(){
   nlProposedStrategy=null;
@@ -504,52 +651,70 @@ async function loadChangeLog(){
   const j=await call('strategy_change_log',{});
   if(!j.ok){el.textContent='';return;}
   if(!j.entries.length){el.innerHTML='<span class="muted">No changes recorded yet.</span>';return;}
-  el.innerHTML=j.entries.map(e=>{
+  el.innerHTML=j.entries.map(function(e){
     const when=new Date(e.created_at).toLocaleString();
     const who=e.changed_by_email;
-    const via=e.source==='message_box'?`via message box: "${e.instruction}"`:'via manual edit';
-    const changesText=(e.changes||[]).map(c=>`${c.campaign_key}.${c.field}: ${JSON.stringify(c.old_value)}→${JSON.stringify(c.new_value)}`).join(', ');
-    return `<div class="item" style="font-size:12px;">
-      <div><b>${when}</b> — ${who} — ${via}</div>
-      ${e.summary?`<div class="muted" style="margin-top:2px;">${e.summary}</div>`:''}
-      <div class="muted" style="margin-top:2px;">${changesText}</div>
-    </div>`;
+    const via=e.source==='message_box'?('via message box: "'+e.instruction+'"'):'via manual edit';
+    const changesText=(e.changes||[]).map(function(c){return c.campaign_key+'.'+c.field+': '+JSON.stringify(c.old_value)+' -&gt; '+JSON.stringify(c.new_value);}).join(', ');
+    return '<div class="item" style="font-size:12px;">'+
+      '<div><b>'+when+'</b> - '+who+' - '+via+'</div>'+
+      (e.summary?('<div class="muted" style="margin-top:2px;">'+e.summary+'</div>'):'')+
+      '<div class="muted" style="margin-top:2px;">'+changesText+'</div>'+
+    '</div>';
   }).join('');
 }
 
-// ── Sales data upload ──
+// Sales data upload
 async function callIngest(action,extra){
   const r=await fetch(MW_INGEST_URL,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+session.access_token},
-    body:JSON.stringify({action,tenant_id:currentTenant,...(extra||{})})});
+    body:JSON.stringify(Object.assign({action,tenant_id:currentTenant},extra||{}))});
   return await r.json();
 }
 async function loadTransactionSummary(){
   const el=document.getElementById('txSummary');
   if(!el) return;
   const j=await callIngest('transaction_summary',{});
-  if(!j.ok){el.textContent='';return;}
+  if(!j.ok){el.textContent='';renderChannelOverview({});return;}
+  renderChannelOverview(j.channel_counts||{});
   if(j.total_transactions<=0){el.textContent='No sales data uploaded yet.';return;}
   const channelLabels={excel_upload:'Excel/CSV',api_push:'API push',sql_connector:'SQL connector'};
-  const channelText=Object.entries(j.channel_counts||{}).map(([k,v])=>`${v} via ${channelLabels[k]||k}`).join(', ');
-  el.textContent=`${j.total_transactions} transactions on file (${channelText}), across ${j.distinct_customers??'?'} customers. Most recent: ${j.latest_transaction_date||'—'}.`;
+  const channelText=Object.entries(j.channel_counts||{}).map(function(e){return e[1]+' via '+(channelLabels[e[0]]||e[0]);}).join(', ');
+  el.textContent=j.total_transactions+' transactions on file ('+channelText+'), across '+(j.distinct_customers==null?'?':j.distinct_customers)+' customers. Most recent: '+(j.latest_transaction_date||'-')+'.';
+}
+function renderChannelOverview(counts){
+  const el=document.getElementById('channelOverview');
+  if(!el) return;
+  const channels=[
+    {key:'excel_upload',name:'Excel / CSV',anchor:'excelChannelCard'},
+    {key:'api_push',name:'API push',anchor:'apiChannelCard'},
+    {key:'sql_connector',name:'SQL connector',anchor:null}
+  ];
+  el.innerHTML=channels.map(function(c){
+    const count=counts[c.key]||0;
+    const status=c.anchor?(count>0?('<span class="badge b-ok">Connected - '+count+' rows</span>'):'<span class="badge b-warn">Available, not used yet</span>'):'<span class="badge" style="background:var(--border);color:var(--muted);">Coming soon</span>';
+    const clickable=c.anchor?('onclick="document.getElementById(\''+c.anchor+'\').scrollIntoView({behavior:\'smooth\'})" style="cursor:pointer;"'):'';
+    return '<div class="item" '+clickable+'>'+
+      '<div style="font-weight:700;font-size:13px;margin:4px 0;">'+c.name+'</div>'+
+      status+
+    '</div>';
+  }).join('');
 }
 async function loadRecentUploads(){
   const el=document.getElementById('recentUploads');
   if(!el) return;
   const j=await callIngest('recent_uploads',{});
   if(!j.ok||!j.batches.length){el.innerHTML='';return;}
-  el.innerHTML='<div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:6px;">Recent uploads</div>'+
-    j.batches.map(b=>`<div class="item" style="font-size:12px;">${new Date(b.created_at).toLocaleString()} — ${b.filename||'(unnamed)'} — ${b.rows_inserted} inserted${b.rows_skipped?`, ${b.rows_skipped} skipped`:''}</div>`).join('');
+  el.innerHTML='<div class="fl" style="margin-bottom:6px;">Recent uploads</div>'+
+    j.batches.map(function(b){return '<div class="item" style="font-size:12px;">'+new Date(b.created_at).toLocaleString()+' - '+(b.filename||'(unnamed)')+' - '+b.rows_inserted+' inserted'+(b.rows_skipped?(', '+b.rows_skipped+' skipped'):'')+'</div>';}).join('');
 }
 
-// Auto-guess which spreadsheet column maps to which field, by header name
 const FIELD_GUESSES={
   mobile:['mobile','phone','contact','whatsapp','cell'],
   email:['email','e-mail'],
   name:['name','customer','client','full name'],
   date:['date','transaction date','purchase date','visit date'],
   amount:['amount','total','value','price','sales','revenue'],
-  description:['description','item','service','product','notes'],
+  description:['description','item','service','product','notes']
 };
 let uploadedRows=null,uploadedHeaders=null,uploadedFilename=null;
 function handleFileSelect(evt){
@@ -557,7 +722,7 @@ function handleFileSelect(evt){
   if(!file) return;
   uploadedFilename=file.name;
   const reader=new FileReader();
-  reader.onload=(e)=>{
+  reader.onload=function(e){
     const wb=XLSX.read(e.target.result,{type:'binary',cellDates:true});
     const sheet=wb.Sheets[wb.SheetNames[0]];
     const rows=XLSX.utils.sheet_to_json(sheet,{defval:''});
@@ -570,22 +735,24 @@ function handleFileSelect(evt){
 }
 function guessColumn(field){
   const guesses=FIELD_GUESSES[field]||[];
-  const match=uploadedHeaders.find(h=>guesses.some(g=>h.toLowerCase().includes(g)));
+  const match=uploadedHeaders.find(function(h){return guesses.some(function(g){return h.toLowerCase().includes(g);});});
   return match||'';
 }
 function renderMapping(){
   const fields=[['mobile','Phone number',false],['email','Email',false],['name','Customer name',false],['date','Transaction date',true],['amount','Amount',false],['description','Item / service',false]];
-  document.getElementById('mappingFields').innerHTML=fields.map(([key,label,required])=>`
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
-      <span style="font-size:12.5px;width:130px;">${label}${required?' *':''}</span>
-      <select class="fi" style="margin:0;" id="map_${key}">
-        <option value="">— not in this file —</option>
-        ${uploadedHeaders.map(h=>`<option value="${h}" ${guessColumn(key)===h?'selected':''}>${h}</option>`).join('')}
-      </select>
-    </div>`).join('')+`<div class="muted" style="font-size:11.5px;margin-top:4px;">* Date is required. Map at least one of Phone or Email to identify customers — rows with no phone number will still be stored, but can't receive WhatsApp messages until a phone is added later.</div>`;
+  document.getElementById('mappingFields').innerHTML=fields.map(function(f){
+    const key=f[0],label=f[1],required=f[2];
+    return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">'+
+      '<span style="font-size:12.5px;width:130px;">'+label+(required?' *':'')+'</span>'+
+      '<select class="fi" style="margin:0;" id="map_'+key+'">'+
+        '<option value="">- not in this file -</option>'+
+        uploadedHeaders.map(function(h){return '<option value="'+h+'" '+(guessColumn(key)===h?'selected':'')+'>'+h+'</option>';}).join('')+
+      '</select>'+
+    '</div>';
+  }).join('')+'<div class="muted" style="font-size:11.5px;margin-top:4px;">* Date is required. Map at least one of Phone or Email to identify customers - rows with no phone number will still be stored, but cannot receive WhatsApp messages until a phone is added later.</div>';
   renderPreview();
   document.getElementById('uploadMapping').style.display='block';
-  ['mobile','email','name','date','amount','description'].forEach(key=>{
+  ['mobile','email','name','date','amount','description'].forEach(function(key){
     document.getElementById('map_'+key).addEventListener('change',renderPreview);
   });
 }
@@ -596,133 +763,137 @@ function currentMapping(){
     name:document.getElementById('map_name').value,
     date:document.getElementById('map_date').value,
     amount:document.getElementById('map_amount').value,
-    description:document.getElementById('map_description').value,
+    description:document.getElementById('map_description').value
   };
 }
 function mappedRows(){
   const m=currentMapping();
-  return uploadedRows.map(r=>({
-    mobile:m.mobile?r[m.mobile]:'',
-    email:m.email?r[m.email]:'',
-    name:m.name?r[m.name]:'',
-    date:m.date?r[m.date]:'',
-    amount:m.amount?r[m.amount]:'',
-    description:m.description?r[m.description]:'',
-  }));
+  return uploadedRows.map(function(r){
+    return {
+      mobile:m.mobile?r[m.mobile]:'',
+      email:m.email?r[m.email]:'',
+      name:m.name?r[m.name]:'',
+      date:m.date?r[m.date]:'',
+      amount:m.amount?r[m.amount]:'',
+      description:m.description?r[m.description]:''
+    };
+  });
 }
 function renderPreview(){
   const rows=mappedRows().slice(0,5);
   const el=document.getElementById('uploadPreview');
-  el.innerHTML=`<table style="width:100%;font-size:12px;border-collapse:collapse;">
-    <thead><tr style="text-align:left;color:var(--muted);"><th style="padding:4px 8px;">Phone</th><th style="padding:4px 8px;">Email</th><th style="padding:4px 8px;">Name</th><th style="padding:4px 8px;">Date</th><th style="padding:4px 8px;">Amount</th><th style="padding:4px 8px;">Item</th></tr></thead>
-    <tbody>${rows.map(r=>`<tr style="border-top:1px solid var(--border);"><td style="padding:4px 8px;">${r.mobile}</td><td style="padding:4px 8px;">${r.email}</td><td style="padding:4px 8px;">${r.name}</td><td style="padding:4px 8px;">${r.date}</td><td style="padding:4px 8px;">${r.amount}</td><td style="padding:4px 8px;">${r.description}</td></tr>`).join('')}</tbody>
-  </table>`;
+  el.innerHTML='<table style="width:100%;font-size:12px;border-collapse:collapse;">'+
+    '<thead><tr style="text-align:left;color:var(--muted);"><th style="padding:4px 8px;">Phone</th><th style="padding:4px 8px;">Email</th><th style="padding:4px 8px;">Name</th><th style="padding:4px 8px;">Date</th><th style="padding:4px 8px;">Amount</th><th style="padding:4px 8px;">Item</th></tr></thead>'+
+    '<tbody>'+rows.map(function(r){return '<tr style="border-top:1px solid var(--border);"><td style="padding:4px 8px;">'+r.mobile+'</td><td style="padding:4px 8px;">'+r.email+'</td><td style="padding:4px 8px;">'+r.name+'</td><td style="padding:4px 8px;">'+r.date+'</td><td style="padding:4px 8px;">'+r.amount+'</td><td style="padding:4px 8px;">'+r.description+'</td></tr>';}).join('')+'</tbody>'+
+  '</table>';
 }
 async function submitUpload(){
   const m=currentMapping();
   const resEl=document.getElementById('uploadResult');
-  if(!m.date){resEl.textContent='Transaction date is required — map that column first.';resEl.style.color='var(--err)';return;}
-  if(!m.mobile&&!m.email){resEl.textContent='Map at least one of Phone number or Email — need a way to identify the customer.';resEl.style.color='var(--err)';return;}
-  resEl.textContent=`Uploading ${uploadedRows.length} rows…`;resEl.style.color='var(--muted)';
+  if(!m.date){resEl.textContent='Transaction date is required - map that column first.';resEl.style.color='var(--err)';return;}
+  if(!m.mobile&&!m.email){resEl.textContent='Map at least one of Phone number or Email - need a way to identify the customer.';resEl.style.color='var(--err)';return;}
+  resEl.textContent='Uploading '+uploadedRows.length+' rows...';resEl.style.color='var(--muted)';
   const j=await callIngest('upload_transactions',{rows:mappedRows(),filename:uploadedFilename});
   if(j.ok){
-    resEl.textContent=`✅ ${j.rows_inserted} of ${j.rows_total} rows uploaded.${j.rows_skipped?` ${j.rows_skipped} skipped — check phone/date columns are mapped correctly.`:''}`;
+    resEl.textContent='Uploaded '+j.rows_inserted+' of '+j.rows_total+' rows.'+(j.rows_skipped?(' '+j.rows_skipped+' skipped - check phone/date columns are mapped correctly.'):'');
     resEl.style.color='var(--ok)';
     document.getElementById('uploadMapping').style.display='none';
     document.getElementById('uploadFile').value='';
     uploadedRows=null;
-    loadTransactionSummary();loadRecentUploads();
+    loadTransactionSummary();loadRecentUploads();loadOverview();
   } else {
-    resEl.textContent='❌ '+j.error;resEl.style.color='var(--err)';
+    resEl.textContent='Error: '+j.error;resEl.style.color='var(--err)';
   }
 }
 
 async function addBlackout(){
   const label=document.getElementById('boLabel').value.trim(), start_date=document.getElementById('boStart').value, end_date=document.getElementById('boEnd').value;
   if(!label||!start_date||!end_date){alert('All fields required.');return;}
-  const j=await call('add_blackout',{label,start_date,end_date});
-  if(j.ok){document.getElementById('boLabel').value='';loadSettings();} else alert('❌ '+j.error);
+  const j=await call('add_blackout',{label:label,start_date:start_date,end_date:end_date});
+  if(j.ok){document.getElementById('boLabel').value='';loadSettings();} else alert('Error: '+j.error);
 }
-async function delBlackout(id){if(!confirm('Remove?'))return;await call('delete_blackout',{id});loadSettings();}
-async function setReviewMode(){const j=await call('set_review_mode',{review_mode:document.getElementById('reviewMode').value});if(!j.ok)alert('❌ '+j.error);}
+async function delBlackout(id){if(!confirm('Remove?'))return;await call('delete_blackout',{id:id});loadSettings();}
+async function setReviewMode(){const j=await call('set_review_mode',{review_mode:document.getElementById('reviewMode').value});if(!j.ok)alert('Error: '+j.error);}
 async function runNow(){
-  const r=document.getElementById('runResult');r.textContent='Running…';r.style.color='var(--muted)';
+  const r=document.getElementById('runResult');r.textContent='Running...';r.style.color='var(--muted)';
   const j=await call('run_now',{});
-  const res=j.results?.[0]||{};
+  const res=(j.results&&j.results[0])||{};
   if(j.ok&&!res.error){
-    r.textContent=`✅ ${res.candidates||0} scanned, ${res.decisions||0} decisions, ${res.dispatched||0} sent immediately.`;r.style.color='var(--ok)';
-    loadPending();loadRuns();
+    r.textContent=(res.candidates||0)+' scanned, '+(res.decisions||0)+' decisions, '+(res.dispatched||0)+' sent immediately.';r.style.color='var(--ok)';
+    loadPending();loadRuns();loadOverview();
   } else {
-    r.textContent='❌ '+(res.error||j.error||'Unknown error');r.style.color='var(--err)';
+    r.textContent='Error: '+(res.error||j.error||'Unknown error');r.style.color='var(--err)';
   }
 }
 async function loadPending(){
   const j=await call('pending_review',{});
   const el=document.getElementById('pendingList');
-  if(!j.ok){el.textContent='❌ '+j.error;return;}
+  if(!j.ok){el.textContent='Error: '+j.error;return;}
   if(!j.decisions.length){el.innerHTML='Nothing pending.';return;}
-  el.innerHTML=j.decisions.map(d=>`
-    <div class="item"><div style="display:flex;justify-content:space-between;"><b>${d.customer_name||d.mobile}</b><span class="muted">(${d.campaign_key})</span></div>
-    <div class="muted">${d.reasoning||''}</div>
-    <div class="row" style="margin-top:6px;"><button class="btn btn-s btn-sm" onclick="approveDecision('${d.id}')">✅ Approve & send</button><button class="btn btn-s btn-sm" onclick="rejectDecision('${d.id}')">✗ Reject</button></div></div>`).join('');
+  el.innerHTML=j.decisions.map(function(d){
+    return '<div class="item"><div style="display:flex;justify-content:space-between;"><b>'+(d.customer_name||d.mobile)+'</b><span class="muted">('+d.campaign_key+')</span></div>'+
+    '<div class="muted">'+(d.reasoning||'')+'</div>'+
+    '<div class="row" style="margin-top:6px;"><button class="btn btn-s btn-sm" onclick="approveDecision(\''+d.id+'\')">Approve and send</button><button class="btn btn-s btn-sm" onclick="rejectDecision(\''+d.id+'\')">Reject</button></div></div>';
+  }).join('');
 }
-async function approveDecision(id){const j=await call('approve_decision',{id});if(!j.ok)alert('❌ '+j.error);loadPending();}
-async function rejectDecision(id){await call('reject_decision',{id});loadPending();}
+async function approveDecision(id){const j=await call('approve_decision',{id:id});if(!j.ok)alert('Error: '+j.error);loadPending();loadOverview();}
+async function rejectDecision(id){await call('reject_decision',{id:id});loadPending();loadOverview();}
 async function rejectAllPending(){
-  if(!confirm('Reject every pending decision? This just clears the queue — nothing gets sent, and the agent will re-evaluate fresh candidates on the next run.')) return;
+  if(!confirm('Reject every pending decision? This just clears the queue - nothing gets sent, and the agent will re-evaluate fresh candidates on the next run.')) return;
   const j=await call('reject_all_pending',{});
-  if(!j.ok) alert('❌ '+j.error);
-  loadPending();
+  if(!j.ok) alert('Error: '+j.error);
+  loadPending();loadOverview();
 }
 async function loadRuns(){
   const j=await call('recent_runs',{});
-  document.getElementById('runsList').innerHTML=(j.runs||[]).map(r=>`<div style="font-size:12.5px;padding:5px 0;border-bottom:1px solid var(--border);">${r.run_date} — ${r.candidates_scanned} scanned, ${r.decided_send} send, ${r.decided_skip} skip</div>`).join('')||'No runs yet.';
+  document.getElementById('runsList').innerHTML=(j.runs||[]).map(function(r){return '<div style="font-size:12.5px;padding:5px 0;border-bottom:1px solid var(--border);">'+r.run_date+' - '+r.candidates_scanned+' scanned, '+r.decided_send+' send, '+r.decided_skip+' skip</div>';}).join('')||'No runs yet.';
 }
 
 // Team
 async function loadTeam(){
   const j=await call('list_team',{});
   const el=document.getElementById('teamList');
-  if(!j.ok){el.textContent='❌ '+j.error;return;}
-  el.innerHTML=(j.members||[]).map(m=>`<div class="item">${m.email||m.user_id} — ${m.role}</div>`).join('')+
-    (j.pending_invites||[]).map(i=>`<div class="item muted">Pending: ${i.email} (${i.role})</div>`).join('');
+  if(!j.ok){el.textContent='Error: '+j.error;return;}
+  el.innerHTML=(j.members||[]).map(function(m){return '<div class="item">'+(m.email||m.user_id)+' - '+m.role+'</div>';}).join('')+
+    (j.pending_invites||[]).map(function(i){return '<div class="item muted">Pending: '+i.email+' ('+i.role+')</div>';}).join('');
 }
 async function inviteTeammate(){
   const email=document.getElementById('inviteEmail').value.trim(), invite_role=document.getElementById('inviteRole').value;
   if(!email){alert('Email required.');return;}
-  const j=await call('invite_teammate',{email,invite_role});
-  if(j.ok){document.getElementById('inviteEmail').value='';loadTeam();} else alert('❌ '+j.error);
+  const j=await call('invite_teammate',{email:email,invite_role:invite_role});
+  if(j.ok){document.getElementById('inviteEmail').value='';loadTeam();} else alert('Error: '+j.error);
 }
 
 // API keys
 async function loadApiKeys(){
   const j=await call('list_api_keys',{});
-  document.getElementById('apiKeyList').innerHTML=(j.keys||[]).map(k=>`<div class="item" style="display:flex;justify-content:space-between;">${k.label||'(unlabeled)'} ${k.revoked_at?'<span class="badge b-err">revoked</span>':'<span class="badge b-ok">active</span>'}${!k.revoked_at?`<button class="btn btn-s btn-sm" onclick="revokeApiKey('${k.id}')">Revoke</button>`:''}</div>`).join('')||'No keys yet.';
+  document.getElementById('apiKeyList').innerHTML=(j.keys||[]).map(function(k){
+    return '<div class="item" style="display:flex;justify-content:space-between;">'+(k.label||'(unlabeled)')+' '+(k.revoked_at?'<span class="badge b-err">revoked</span>':'<span class="badge b-ok">active</span>')+(!k.revoked_at?('<button class="btn btn-s btn-sm" onclick="revokeApiKey(\''+k.id+'\')">Revoke</button>'):'')+'</div>';
+  }).join('')||'No keys yet.';
 }
 async function createApiKey(){
   const label=document.getElementById('apiKeyLabel').value.trim();
-  const j=await call('create_api_key',{label});
+  const j=await call('create_api_key',{label:label});
   const r=document.getElementById('newApiKeyResult');
-  if(j.ok){r.innerHTML='✅ Key created — copy it now, it will not be shown again:<br><code style="background:#F3F4F6;padding:4px 8px;border-radius:6px;display:inline-block;margin-top:6px;">'+j.key+'</code>';r.style.color='var(--ok)';loadApiKeys();}
-  else{r.textContent='❌ '+j.error;r.style.color='var(--err)';}
+  if(j.ok){r.innerHTML='Key created - copy it now, it will not be shown again:<br><code style="background:#F3F4F6;padding:4px 8px;border-radius:6px;display:inline-block;margin-top:6px;">'+j.key+'</code>';r.style.color='var(--ok)';loadApiKeys();}
+  else{r.textContent='Error: '+j.error;r.style.color='var(--err)';}
 }
-async function revokeApiKey(id){if(!confirm('Revoke this key? Any app using it stops working immediately.'))return;await call('revoke_api_key',{id});loadApiKeys();}
+async function revokeApiKey(id){if(!confirm('Revoke this key? Any app using it stops working immediately.'))return;await call('revoke_api_key',{id:id});loadApiKeys();}
 
 // Resume session on page load
-(async()=>{
-  const {data}=await sb.auth.getSession();
-  if(data.session) onAuthed(data.session);
+(async function(){
+  const s=await sb.auth.getSession();
+  if(s.data.session) onAuthed(s.data.session);
 })();
 
-// Handles the "Forgot password" email link: Supabase logs the user in via
-// the recovery token, then we prompt for a new password before continuing.
-sb.auth.onAuthStateChange((event,sess)=>{
+// Handles the "Forgot password" email link
+sb.auth.onAuthStateChange(function(event,sess){
   if(event==='PASSWORD_RECOVERY'){
     const newPass=prompt('Enter a new password (at least 6 characters):');
     if(newPass&&newPass.length>=6){
-      sb.auth.updateUser({password:newPass}).then(({error})=>{
-        if(error){alert('❌ '+error.message);}
-        else{alert('✅ Password updated. You are now logged in.');}
+      sb.auth.updateUser({password:newPass}).then(function(res){
+        if(res.error){alert('Error: '+res.error.message);}
+        else{alert('Password updated. You are now logged in.');}
       });
     }
   }
