@@ -62,6 +62,14 @@
 
   .agent-tile{border:1.5px solid var(--border);border-radius:12px;padding:16px;background:#fff;}
   .agent-tile.coming-soon{opacity:.5;}
+
+  .agent-section{border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;}
+  .agent-section summary{cursor:pointer;padding:11px 14px;font-size:13px;font-weight:700;list-style:none;display:flex;align-items:center;justify-content:space-between;background:#FAFAFB;}
+  .agent-section summary::-webkit-details-marker{display:none;}
+  .agent-section summary::after{content:'\2304';font-size:14px;color:var(--muted);transition:transform .15s;}
+  .agent-section[open] summary::after{transform:rotate(180deg);}
+  .agent-section-body{padding:14px;border-top:1px solid var(--border);}
+  .count-badge{background:var(--p);color:#fff;border-radius:20px;padding:1px 8px;font-size:11px;font-weight:700;margin-left:8px;}
 </style>
 </head>
 <body>
@@ -182,45 +190,72 @@
               </div>
               <div id="runResult" style="font-size:12.5px;margin-bottom:14px;"></div>
 
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                <h3 style="margin:0;">Pending review</h3>
-                <button class="btn btn-s btn-sm" onclick="rejectAllPending()">Reject all pending</button>
-              </div>
-              <div id="pendingList" class="muted" style="margin-bottom:18px;">Loading...</div>
-
-              <h3>Rule book - what the agent currently does</h3>
-              <div id="ruleBook" style="margin-bottom:14px;border:1px solid var(--border);border-radius:10px;padding:10px 14px;">Loading...</div>
-
-              <div style="border:1.5px solid var(--p);border-radius:10px;padding:12px;margin-bottom:14px;background:var(--pl);">
-                <div style="font-size:12px;font-weight:700;color:var(--p);text-transform:uppercase;margin-bottom:6px;">Tell the agent what you want</div>
-                <textarea class="fi" id="nlInstruction" rows="2" placeholder="e.g. Only send nudge and birthday messages. Birthday should go out 5 days before, not 3."></textarea>
-                <button class="btn btn-p btn-sm" onclick="proposeStrategy()">Preview changes</button>
-                <div id="nlResult" style="font-size:12.5px;margin-top:8px;"></div>
-                <div id="nlPreview" style="display:none;margin-top:10px;border-top:1px solid var(--border);padding-top:10px;">
-                  <div id="nlSummary" style="font-size:13px;margin-bottom:8px;"></div>
-                  <div id="nlWarnings" style="font-size:12.5px;color:var(--warn);margin-bottom:8px;"></div>
-                  <div id="nlDiff" style="margin-bottom:10px;"></div>
-                  <button class="btn btn-p btn-sm" onclick="applyStrategy()">Apply these changes</button>
-                  <button class="btn btn-s btn-sm" onclick="cancelStrategyPreview()">Cancel</button>
+              <details open class="agent-section">
+                <summary><span>Pending review <span id="pendingCountBadge"></span></span></summary>
+                <div class="agent-section-body">
+                  <div style="text-align:right;margin-bottom:8px;"><button class="btn btn-s btn-sm" onclick="rejectAllPending()">Reject all pending</button></div>
+                  <div id="pendingList" class="muted">Loading...</div>
                 </div>
-              </div>
-              <h3>Campaign strategy</h3>
-              <div id="strategyList" class="muted" style="margin-bottom:18px;">Loading...</div>
+              </details>
 
-              <h3>Blackout periods</h3>
-              <div id="blackoutList" class="muted" style="margin-bottom:10px;"></div>
-              <div class="row" style="margin-bottom:18px;">
-                <input class="fi" type="text" id="boLabel" placeholder="Label" style="flex:1;min-width:120px;">
-                <input class="fi" type="date" id="boStart">
-                <input class="fi" type="date" id="boEnd">
-                <button class="btn btn-s btn-sm" onclick="addBlackout()">+ Add</button>
-              </div>
+              <details open class="agent-section">
+                <summary>Rule book - what the agent currently does</summary>
+                <div class="agent-section-body">
+                  <div id="ruleBook" style="border:1px solid var(--border);border-radius:10px;padding:10px 14px;">Loading...</div>
+                </div>
+              </details>
 
-              <h3>Recent runs</h3>
-              <div id="runsList" class="muted" style="margin-bottom:18px;"></div>
+              <details class="agent-section">
+                <summary>Tell the agent what you want</summary>
+                <div class="agent-section-body">
+                  <div style="border:1.5px solid var(--p);border-radius:10px;padding:12px;background:var(--pl);">
+                    <textarea class="fi" id="nlInstruction" rows="2" placeholder="e.g. Only send nudge and birthday messages. Birthday should go out 5 days before, not 3."></textarea>
+                    <button class="btn btn-p btn-sm" onclick="proposeStrategy()">Preview changes</button>
+                    <div id="nlResult" style="font-size:12.5px;margin-top:8px;"></div>
+                    <div id="nlPreview" style="display:none;margin-top:10px;border-top:1px solid var(--border);padding-top:10px;">
+                      <div id="nlSummary" style="font-size:13px;margin-bottom:8px;"></div>
+                      <div id="nlWarnings" style="font-size:12.5px;color:var(--warn);margin-bottom:8px;"></div>
+                      <div id="nlDiff" style="margin-bottom:10px;"></div>
+                      <button class="btn btn-p btn-sm" onclick="applyStrategy()">Apply these changes</button>
+                      <button class="btn btn-s btn-sm" onclick="cancelStrategyPreview()">Cancel</button>
+                    </div>
+                  </div>
+                </div>
+              </details>
 
-              <h3>Recent rule changes</h3>
-              <div id="changeLog" class="muted"></div>
+              <details class="agent-section">
+                <summary>Campaign strategy</summary>
+                <div class="agent-section-body">
+                  <div id="strategyList" class="muted">Loading...</div>
+                </div>
+              </details>
+
+              <details class="agent-section">
+                <summary>Blackout periods</summary>
+                <div class="agent-section-body">
+                  <div id="blackoutList" class="muted" style="margin-bottom:10px;"></div>
+                  <div class="row">
+                    <input class="fi" type="text" id="boLabel" placeholder="Label" style="flex:1;min-width:120px;">
+                    <input class="fi" type="date" id="boStart">
+                    <input class="fi" type="date" id="boEnd">
+                    <button class="btn btn-s btn-sm" onclick="addBlackout()">+ Add</button>
+                  </div>
+                </div>
+              </details>
+
+              <details class="agent-section">
+                <summary>Recent runs</summary>
+                <div class="agent-section-body">
+                  <div id="runsList" class="muted"></div>
+                </div>
+              </details>
+
+              <details class="agent-section">
+                <summary>Recent rule changes</summary>
+                <div class="agent-section-body">
+                  <div id="changeLog" class="muted"></div>
+                </div>
+              </details>
             </div>
           </div>
         </div>
@@ -881,7 +916,9 @@ async function runNow(){
 async function loadPending(){
   const j=await call('pending_review',{});
   const el=document.getElementById('pendingList');
+  const badge=document.getElementById('pendingCountBadge');
   if(!j.ok){el.textContent='Error: '+j.error;return;}
+  if(badge) badge.innerHTML=j.decisions.length?('<span class="count-badge">'+j.decisions.length+'</span>'):'';
   if(!j.decisions.length){el.innerHTML='Nothing pending.';return;}
   el.innerHTML=j.decisions.map(function(d){
     return '<div class="item"><div style="display:flex;justify-content:space-between;"><b>'+(d.customer_name||d.mobile)+'</b><span class="muted">('+d.campaign_key+')</span></div>'+
