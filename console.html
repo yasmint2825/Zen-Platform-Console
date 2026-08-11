@@ -140,6 +140,19 @@
       <h3 style="font-size:13px;margin:0 0 8px;">Pending review</h3>
       <div id="pendingList" class="muted" style="margin-bottom:18px;">Loading…</div>
 
+      <div style="border:1.5px solid var(--p);border-radius:10px;padding:12px;margin-bottom:14px;background:#F5F4FF;">
+        <div style="font-size:12px;font-weight:700;color:var(--p);text-transform:uppercase;margin-bottom:6px;">💬 Tell the agent what you want</div>
+        <textarea class="fi" id="nlInstruction" rows="2" placeholder="e.g. Only send nudge and birthday messages. Birthday should go out 5 days before, not 3."></textarea>
+        <button class="btn btn-p btn-sm" onclick="proposeStrategy()">Preview changes</button>
+        <div id="nlResult" style="font-size:12.5px;margin-top:8px;"></div>
+        <div id="nlPreview" style="display:none;margin-top:10px;border-top:1px solid var(--border);padding-top:10px;">
+          <div id="nlSummary" style="font-size:13px;margin-bottom:8px;"></div>
+          <div id="nlWarnings" style="font-size:12.5px;color:var(--warn);margin-bottom:8px;"></div>
+          <div id="nlDiff" style="margin-bottom:10px;"></div>
+          <button class="btn btn-p btn-sm" onclick="applyStrategy()">✅ Apply these changes</button>
+          <button class="btn btn-s btn-sm" onclick="cancelStrategyPreview()">Cancel</button>
+        </div>
+      </div>
       <h3 style="font-size:13px;margin:0 0 8px;">Campaign strategy</h3>
       <div id="strategyList" class="muted" style="margin-bottom:18px;">Loading…</div>
 
@@ -374,6 +387,7 @@ async function loadSettings(){
         <label style="display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px;"><input type="checkbox" ${s.enabled?'checked':''} id="en_${s.campaign_key}"> ${s.campaign_key}</label>
         <span class="muted" style="font-size:11px;">cooldown</span><input class="fi" type="number" style="width:60px;padding:5px;margin:0;" id="cd_${s.campaign_key}" value="${s.min_cooldown_days}"><span class="muted" style="font-size:11px;">days</span>
       </div>
+      ${s.campaign_key==='birthday'?`<div style="margin-bottom:8px;"><span class="muted" style="font-size:11px;">send starting</span> <input class="fi" type="number" style="width:60px;padding:5px;display:inline-block;margin:0 4px;" id="td_${s.campaign_key}" value="${s.trigger_days??3}"> <span class="muted" style="font-size:11px;">days before the birthday</span></div>`:''}
       <input class="fi" type="text" placeholder="Offer text" id="of_${s.campaign_key}" value="${(s.offer_text||'').replace(/"/g,'&quot;')}">
       <input class="fi" type="text" placeholder="Notes for the agent" id="nt_${s.campaign_key}" value="${(s.notes||'').replace(/"/g,'&quot;')}">
       <button class="btn btn-s btn-sm" onclick="saveStrategy('${s.campaign_key}')">Save</button>
@@ -382,9 +396,51 @@ async function loadSettings(){
     <div class="item" style="display:flex;justify-content:space-between;align-items:center;"><span>${b.label} — ${b.start_date} to ${b.end_date}</span><button class="btn btn-s btn-sm" onclick="delBlackout('${b.id}')">Remove</button></div>`).join(''):'No blackout periods.';
 }
 async function saveStrategy(key){
-  const j=await call('save_strategy',{campaign_key:key,enabled:document.getElementById('en_'+key).checked,offer_text:document.getElementById('of_'+key).value.trim(),min_cooldown_days:parseInt(document.getElementById('cd_'+key).value)||0,notes:document.getElementById('nt_'+key).value.trim()});
+  const tdEl=document.getElementById('td_'+key);
+  const j=await call('save_strategy',{campaign_key:key,enabled:document.getElementById('en_'+key).checked,offer_text:document.getElementById('of_'+key).value.trim(),min_cooldown_days:parseInt(document.getElementById('cd_'+key).value)||0,notes:document.getElementById('nt_'+key).value.trim(),trigger_days:tdEl?(parseInt(tdEl.value)||0):null});
   alert(j.ok?'✅ Saved':'❌ '+j.error);
 }
+
+// ── Natural-language strategy config: propose then confirm ──
+let nlProposedStrategy=null;
+async function proposeStrategy(){
+  const instruction=document.getElementById('nlInstruction').value.trim();
+  const r=document.getElementById('nlResult');
+  document.getElementById('nlPreview').style.display='none';
+  if(!instruction){r.textContent='Type what you want first.';r.style.color='var(--err)';return;}
+  r.textContent='Thinking…';r.style.color='var(--muted)';
+  const j=await call('propose_strategy_change',{instruction});
+  if(!j.ok){r.textContent='❌ '+j.error;r.style.color='var(--err)';return;}
+  r.textContent='';
+  nlProposedStrategy=j.strategy;
+  document.getElementById('nlSummary').textContent=j.summary;
+  document.getElementById('nlWarnings').innerHTML=(j.warnings&&j.warnings.length)?'⚠️ '+j.warnings.join('<br>⚠️ '):'';
+  const diffEl=document.getElementById('nlDiff');
+  const changed=j.strategy.filter(s=>{
+    const before=(j.current||[]).find(c=>c.campaign_key===s.campaign_key)||{};
+    return before.enabled!==s.enabled||before.offer_text!==s.offer_text||before.min_cooldown_days!==s.min_cooldown_days||(before.trigger_days??null)!==(s.trigger_days??null)||before.notes!==s.notes;
+  });
+  diffEl.innerHTML=changed.length?changed.map(s=>{
+    const before=(j.current||[]).find(c=>c.campaign_key===s.campaign_key)||{};
+    return `<div class="item" style="font-size:12.5px;"><b>${s.campaign_key}</b>: enabled ${before.enabled}→${s.enabled}, cooldown ${before.min_cooldown_days}→${s.min_cooldown_days}d${s.trigger_days!=null?`, trigger ${before.trigger_days??'—'}→${s.trigger_days}d before`:''}</div>`;
+  }).join(''):'<div class="muted" style="font-size:12.5px;">No changes detected in the structured settings.</div>';
+  document.getElementById('nlPreview').style.display='block';
+}
+async function applyStrategy(){
+  if(!nlProposedStrategy){alert('Nothing to apply.');return;}
+  const j=await call('apply_strategy_change',{strategy:nlProposedStrategy});
+  if(j.ok){
+    document.getElementById('nlInstruction').value='';
+    cancelStrategyPreview();
+    loadSettings();
+  } else alert('❌ '+j.error);
+}
+function cancelStrategyPreview(){
+  nlProposedStrategy=null;
+  document.getElementById('nlPreview').style.display='none';
+  document.getElementById('nlResult').textContent='';
+}
+
 async function addBlackout(){
   const label=document.getElementById('boLabel').value.trim(), start_date=document.getElementById('boStart').value, end_date=document.getElementById('boEnd').value;
   if(!label||!start_date||!end_date){alert('All fields required.');return;}
