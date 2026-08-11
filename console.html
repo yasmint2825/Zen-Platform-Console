@@ -421,7 +421,7 @@ async function loadTeam(){
   const j=await call('list_team',{});
   const el=document.getElementById('teamList');
   if(!j.ok){el.textContent='❌ '+j.error;return;}
-  el.innerHTML=(j.members||[]).map(m=>`<div class="item">${m.user_id} — ${m.role}</div>`).join('')+
+  el.innerHTML=(j.members||[]).map(m=>`<div class="item">${m.email||m.user_id} — ${m.role}</div>`).join('')+
     (j.pending_invites||[]).map(i=>`<div class="item muted">Pending: ${i.email} (${i.role})</div>`).join('');
 }
 async function inviteTeammate(){
