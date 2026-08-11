@@ -137,8 +137,14 @@
       </div>
       <div id="runResult" style="font-size:12.5px;margin-bottom:14px;"></div>
 
-      <h3 style="font-size:13px;margin:0 0 8px;">Pending review</h3>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <h3 style="font-size:13px;margin:0;">Pending review</h3>
+        <button class="btn btn-s btn-sm" onclick="rejectAllPending()">Reject all pending</button>
+      </div>
       <div id="pendingList" class="muted" style="margin-bottom:18px;">Loading…</div>
+
+      <h3 style="font-size:13px;margin:0 0 8px;">📖 Rule book — what the agent currently does</h3>
+      <div id="ruleBook" style="margin-bottom:14px;border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;">Loading…</div>
 
       <div style="border:1.5px solid var(--p);border-radius:10px;padding:12px;margin-bottom:14px;background:#F5F4FF;">
         <div style="font-size:12px;font-weight:700;color:var(--p);text-transform:uppercase;margin-bottom:6px;">💬 Tell the agent what you want</div>
@@ -167,6 +173,9 @@
 
       <h3 style="font-size:13px;margin:0 0 8px;">Recent runs</h3>
       <div id="runsList" class="muted"></div>
+
+      <h3 style="font-size:13px;margin:18px 0 8px;">📝 Recent rule changes</h3>
+      <div id="changeLog" class="muted"></div>
     </div>
 
     <div class="card">
@@ -284,7 +293,7 @@ async function createTenant(){
 
 function loadDashboard(){
   loadWAStatus();loadTemplateMappings();
-  loadSettings();loadPending();loadRuns();loadTeam();loadApiKeys();
+  loadSettings();loadPending();loadRuns();loadTeam();loadApiKeys();loadChangeLog();
 }
 
 // WhatsApp connection
@@ -381,6 +390,7 @@ async function loadSettings(){
   if(!j.ok) return;
   myRole=j.my_role;
   document.getElementById('reviewMode').value=j.tenant.review_mode;
+  renderRuleBook(j.strategy||[]);
   document.getElementById('strategyList').innerHTML=(j.strategy||[]).map(s=>`
     <div class="item">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
@@ -395,14 +405,30 @@ async function loadSettings(){
   document.getElementById('blackoutList').innerHTML=(j.blackouts||[]).length?j.blackouts.map(b=>`
     <div class="item" style="display:flex;justify-content:space-between;align-items:center;"><span>${b.label} — ${b.start_date} to ${b.end_date}</span><button class="btn btn-s btn-sm" onclick="delBlackout('${b.id}')">Remove</button></div>`).join(''):'No blackout periods.';
 }
+const CAMPAIGN_LABELS={nudge:'Nudge (gentle reminder)',lapsed:'Win-back (lapsed customer)',expiry:'Loyalty expiry reminder',ready:'Reward ready',birthday:'Birthday',after_service:'After-service thank you'};
+function renderRuleBook(strategy){
+  const el=document.getElementById('ruleBook');
+  if(!el) return;
+  if(!strategy.length){el.innerHTML='<span class="muted">No rules configured yet.</span>';return;}
+  el.innerHTML=strategy.map(s=>{
+    const label=CAMPAIGN_LABELS[s.campaign_key]||s.campaign_key;
+    if(!s.enabled) return `<div style="font-size:12.5px;padding:4px 0;color:var(--muted);">🔕 <b>${label}</b> — turned off, the agent never sends this.</div>`;
+    let line=`🔔 <b>${label}</b> — on`;
+    if(s.campaign_key==='birthday'&&s.trigger_days!=null) line+=`, sent starting ${s.trigger_days} day(s) before the birthday`;
+    line+=s.min_cooldown_days>0?`, won't re-contact the same person within ${s.min_cooldown_days} day(s)`:`, no cooldown between messages`;
+    if(s.offer_text) line+=`. Offer: "${s.offer_text}"`;
+    if(s.notes) line+=`. Guidance for the agent: "${s.notes}"`;
+    return `<div style="font-size:12.5px;padding:4px 0;">${line}.</div>`;
+  }).join('');
+}
 async function saveStrategy(key){
   const tdEl=document.getElementById('td_'+key);
   const j=await call('save_strategy',{campaign_key:key,enabled:document.getElementById('en_'+key).checked,offer_text:document.getElementById('of_'+key).value.trim(),min_cooldown_days:parseInt(document.getElementById('cd_'+key).value)||0,notes:document.getElementById('nt_'+key).value.trim(),trigger_days:tdEl?(parseInt(tdEl.value)||0):null});
-  alert(j.ok?'✅ Saved':'❌ '+j.error);
+  if(j.ok) loadSettings(); else alert('❌ '+j.error);
 }
 
 // ── Natural-language strategy config: propose then confirm ──
-let nlProposedStrategy=null;
+let nlProposedStrategy=null,nlLastInstruction='',nlLastSummary='';
 async function proposeStrategy(){
   const instruction=document.getElementById('nlInstruction').value.trim();
   const r=document.getElementById('nlResult');
@@ -412,7 +438,7 @@ async function proposeStrategy(){
   const j=await call('propose_strategy_change',{instruction});
   if(!j.ok){r.textContent='❌ '+j.error;r.style.color='var(--err)';return;}
   r.textContent='';
-  nlProposedStrategy=j.strategy;
+  nlProposedStrategy=j.strategy;nlLastInstruction=instruction;nlLastSummary=j.summary||'';
   document.getElementById('nlSummary').textContent=j.summary;
   document.getElementById('nlWarnings').innerHTML=(j.warnings&&j.warnings.length)?'⚠️ '+j.warnings.join('<br>⚠️ '):'';
   const diffEl=document.getElementById('nlDiff');
@@ -428,17 +454,36 @@ async function proposeStrategy(){
 }
 async function applyStrategy(){
   if(!nlProposedStrategy){alert('Nothing to apply.');return;}
-  const j=await call('apply_strategy_change',{strategy:nlProposedStrategy});
+  const j=await call('apply_strategy_change',{strategy:nlProposedStrategy,instruction:nlLastInstruction,summary:nlLastSummary});
   if(j.ok){
     document.getElementById('nlInstruction').value='';
     cancelStrategyPreview();
     loadSettings();
+    loadChangeLog();
   } else alert('❌ '+j.error);
 }
 function cancelStrategyPreview(){
   nlProposedStrategy=null;
   document.getElementById('nlPreview').style.display='none';
   document.getElementById('nlResult').textContent='';
+}
+async function loadChangeLog(){
+  const el=document.getElementById('changeLog');
+  if(!el) return;
+  const j=await call('strategy_change_log',{});
+  if(!j.ok){el.textContent='';return;}
+  if(!j.entries.length){el.innerHTML='<span class="muted">No changes recorded yet.</span>';return;}
+  el.innerHTML=j.entries.map(e=>{
+    const when=new Date(e.created_at).toLocaleString();
+    const who=e.changed_by_email;
+    const via=e.source==='message_box'?`via message box: "${e.instruction}"`:'via manual edit';
+    const changesText=(e.changes||[]).map(c=>`${c.campaign_key}.${c.field}: ${JSON.stringify(c.old_value)}→${JSON.stringify(c.new_value)}`).join(', ');
+    return `<div class="item" style="font-size:12px;">
+      <div><b>${when}</b> — ${who} — ${via}</div>
+      ${e.summary?`<div class="muted" style="margin-top:2px;">${e.summary}</div>`:''}
+      <div class="muted" style="margin-top:2px;">${changesText}</div>
+    </div>`;
+  }).join('');
 }
 
 async function addBlackout(){
@@ -472,6 +517,12 @@ async function loadPending(){
 }
 async function approveDecision(id){const j=await call('approve_decision',{id});if(!j.ok)alert('❌ '+j.error);loadPending();}
 async function rejectDecision(id){await call('reject_decision',{id});loadPending();}
+async function rejectAllPending(){
+  if(!confirm('Reject every pending decision? This just clears the queue — nothing gets sent, and the agent will re-evaluate fresh candidates on the next run.')) return;
+  const j=await call('reject_all_pending',{});
+  if(!j.ok) alert('❌ '+j.error);
+  loadPending();
+}
 async function loadRuns(){
   const j=await call('recent_runs',{});
   document.getElementById('runsList').innerHTML=(j.runs||[]).map(r=>`<div style="font-size:12.5px;padding:5px 0;border-bottom:1px solid var(--border);">${r.run_date} — ${r.candidates_scanned} scanned, ${r.decided_send} send, ${r.decided_skip} skip</div>`).join('')||'No runs yet.';
