@@ -396,8 +396,13 @@ async function setReviewMode(){const j=await call('set_review_mode',{review_mode
 async function runNow(){
   const r=document.getElementById('runResult');r.textContent='Running…';r.style.color='var(--muted)';
   const j=await call('run_now',{});
-  if(j.ok){const res=j.results?.[0]||{};r.textContent=`✅ ${res.candidates||0} scanned, ${res.decisions||0} decisions, ${res.dispatched||0} sent immediately.`;r.style.color='var(--ok)';loadPending();loadRuns();}
-  else{r.textContent='❌ '+j.error;r.style.color='var(--err)';}
+  const res=j.results?.[0]||{};
+  if(j.ok&&!res.error){
+    r.textContent=`✅ ${res.candidates||0} scanned, ${res.decisions||0} decisions, ${res.dispatched||0} sent immediately.`;r.style.color='var(--ok)';
+    loadPending();loadRuns();
+  } else {
+    r.textContent='❌ '+(res.error||j.error||'Unknown error');r.style.color='var(--err)';
+  }
 }
 async function loadPending(){
   const j=await call('pending_review',{});
