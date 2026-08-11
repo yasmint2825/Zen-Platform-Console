@@ -39,15 +39,17 @@
   <h1>Engagement Platform</h1>
   <p class="muted">Log in or create an account to manage your business.</p>
   <label class="fl">Email</label>
-  <input class="fi" type="email" id="authEmail" placeholder="you@business.com">
-  <label class="fl">Password</label>
-  <input class="fi" type="password" id="authPass" placeholder="••••••••">
+  <input class="fi" type="email" id="authEmail" placeholder="you@business.com" autocomplete="username">
+  <label class="fl">Password (at least 6 characters)</label>
+  <input class="fi" type="password" id="authPass" placeholder="••••••••" autocomplete="current-password">
   <div class="row">
     <button class="btn btn-p" onclick="doLogin()">Log in</button>
     <button class="btn btn-s" onclick="doSignup()">Create account</button>
   </div>
   <div id="authResult" style="font-size:13px;margin-top:10px;"></div>
+  <div style="margin-top:10px;font-size:12.5px;"><a href="#" onclick="doForgotPassword();return false;">Forgot password?</a></div>
 </div>
+
 
 <div id="app">
   <div class="card" style="display:flex;justify-content:space-between;align-items:center;">
@@ -205,8 +207,17 @@ async function doLogin(){
   const r=document.getElementById('authResult');
   r.textContent='Logging in…';r.style.color='var(--muted)';
   const {data,error}=await sb.auth.signInWithPassword({email,password});
-  if(error){r.textContent='❌ '+error.message;r.style.color='var(--err)';return;}
+  if(error){r.textContent='❌ '+error.message+' — if you\'re unsure of your password, use "Forgot password?" below.';r.style.color='var(--err)';return;}
   onAuthed(data.session);
+}
+async function doForgotPassword(){
+  const email=document.getElementById('authEmail').value.trim();
+  const r=document.getElementById('authResult');
+  if(!email){r.textContent='Enter your email above first, then click "Forgot password?".';r.style.color='var(--err)';return;}
+  r.textContent='Sending reset link…';r.style.color='var(--muted)';
+  const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});
+  if(error){r.textContent='❌ '+error.message;r.style.color='var(--err)';return;}
+  r.textContent='✅ Check your email for a password reset link.';r.style.color='var(--ok)';
 }
 async function doLogout(){
   await sb.auth.signOut();
@@ -439,6 +450,20 @@ async function revokeApiKey(id){if(!confirm('Revoke this key? Any app using it s
   const {data}=await sb.auth.getSession();
   if(data.session) onAuthed(data.session);
 })();
+
+// Handles the "Forgot password" email link: Supabase logs the user in via
+// the recovery token, then we prompt for a new password before continuing.
+sb.auth.onAuthStateChange((event,sess)=>{
+  if(event==='PASSWORD_RECOVERY'){
+    const newPass=prompt('Enter a new password (at least 6 characters):');
+    if(newPass&&newPass.length>=6){
+      sb.auth.updateUser({password:newPass}).then(({error})=>{
+        if(error){alert('❌ '+error.message);}
+        else{alert('✅ Password updated. You are now logged in.');}
+      });
+    }
+  }
+});
 </script>
 </body>
 </html>
