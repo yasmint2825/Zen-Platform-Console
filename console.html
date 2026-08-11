@@ -127,7 +127,13 @@
         <!-- OVERVIEW -->
         <div class="page active" id="page-overview">
           <div class="page-header"><h1>Overview</h1><p class="muted">A snapshot of this business on Zen Platform.</p></div>
+
+          <h3 style="margin-bottom:10px;">By agent</h3>
+          <div id="agentOverview" style="margin-bottom:24px;"></div>
+
+          <h3 style="margin-bottom:10px;">Platform</h3>
           <div class="stat-grid" id="overviewStats" style="margin-bottom:18px;"></div>
+
           <div class="card" id="newBizPanel" style="display:none;">
             <h2>Add a new business</h2>
             <label class="fl">Business ID (lowercase, no spaces)</label>
@@ -454,19 +460,42 @@ function loadDashboard(){
 }
 async function loadOverview(){
   const el=document.getElementById('overviewStats');
-  if(!el) return;
+  const agentEl=document.getElementById('agentOverview');
+  if(!el||!agentEl) return;
   const results=await Promise.all([
     call('pending_review',{}),
+    call('recent_runs',{}),
+    call('get_settings',{}),
     callIngest('transaction_summary',{}),
     callWA(WA_CONFIG_URL,'status',{})
   ]);
-  const pending=results[0], tx=results[1], wa=results[2];
+  const pending=results[0], runs=results[1], settings=results[2], tx=results[3], wa=results[4];
   const pendingCount=pending.ok?(pending.decisions||[]).length:0;
+  const lastRun=(runs.ok&&runs.runs&&runs.runs.length)?runs.runs[0]:null;
+  const mode=settings.ok?settings.tenant.review_mode:'review';
+  const modeLabel=mode==='auto'?'Fully autonomous':'Review first';
+
+  agentEl.innerHTML=
+    '<div class="card" style="cursor:pointer;" onclick="showPage(\'agents\')">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;">'+
+        '<div><h2 style="margin-bottom:2px;">Engagement agent</h2><div class="muted">WhatsApp campaigns &middot; '+modeLabel+'</div></div>'+
+        '<span class="badge b-ok">Active</span>'+
+      '</div>'+
+      '<div class="stat-grid" style="margin-top:14px;">'+
+        '<div class="stat-tile"><div class="num">'+pendingCount+'</div><div class="lbl">Awaiting your review</div></div>'+
+        '<div class="stat-tile"><div class="num">'+(lastRun?lastRun.candidates_scanned:'-')+'</div><div class="lbl">Scanned last run'+(lastRun?(' ('+lastRun.run_date+')'):'')+'</div></div>'+
+        '<div class="stat-tile"><div class="num">'+(lastRun?lastRun.decided_send:'-')+'</div><div class="lbl">Decided to send last run</div></div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="agent-tile coming-soon" style="margin-top:12px;">'+
+      '<div style="font-weight:700;font-size:13px;">Call agent &middot; Social agent</div>'+
+      '<div class="muted" style="font-size:12px;">Coming soon - will appear here with their own stats once active.</div>'+
+    '</div>';
+
   const txCount=tx.ok?tx.total_transactions:0;
   const channelsActive=tx.ok?Object.keys(tx.channel_counts||{}).length:0;
   const waConnected=wa.ok&&wa.configured;
   el.innerHTML=
-    '<div class="stat-tile"><div class="num">'+pendingCount+'</div><div class="lbl">Pending review</div></div>'+
     '<div class="stat-tile"><div class="num">'+txCount+'</div><div class="lbl">Transactions on file</div></div>'+
     '<div class="stat-tile"><div class="num">'+channelsActive+'</div><div class="lbl">Data channels active</div></div>'+
     '<div class="stat-tile"><div class="num">'+(waConnected?'Yes':'-')+'</div><div class="lbl">WhatsApp connected</div></div>';
