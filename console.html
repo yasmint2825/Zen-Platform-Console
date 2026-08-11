@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Engagement Platform Console</title>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<style>
+  :root{--p:#4F46E5;--ok:#16A34A;--okl:#F0FDF4;--err:#DC2626;--errl:#FEF2F2;--warn:#B45309;--warnl:#FFFBEB;--border:#E5E7EB;--muted:#6B7280;--bg:#F9FAFB;}
+  *{box-sizing:border-box;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);margin:0;color:#1A1A2E;}
+  .wrap{max-width:900px;margin:0 auto;padding:24px 16px;}
+  .card{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:20px 22px;margin-bottom:16px;}
+  h1{font-size:20px;margin:0 0 4px;}
+  h2{font-size:15px;margin:0 0 12px;}
+  .muted{color:var(--muted);font-size:13px;}
+  .fi{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;margin-bottom:10px;}
+  .fl{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:4px;}
+  .btn{padding:9px 16px;border-radius:8px;border:none;font-weight:700;font-size:13px;cursor:pointer;}
+  .btn-p{background:var(--p);color:#fff;}
+  .btn-s{background:#F3F4F6;color:#1A1A2E;}
+  .btn-sm{padding:6px 12px;font-size:12px;}
+  .row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}
+  .badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;}
+  .b-ok{background:var(--okl);color:var(--ok);}
+  .b-warn{background:var(--warnl);color:var(--warn);}
+  .b-err{background:var(--errl);color:var(--err);}
+  .item{border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;}
+  select.fi{background:#fff;}
+  #app{display:none;}
+  #authScreen{max-width:380px;margin:60px auto;}
+  a{color:var(--p);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div id="authScreen" class="card">
+  <h1>Engagement Platform</h1>
+  <p class="muted">Log in or create an account to manage your business.</p>
+  <label class="fl">Email</label>
+  <input class="fi" type="email" id="authEmail" placeholder="you@business.com">
+  <label class="fl">Password</label>
+  <input class="fi" type="password" id="authPass" placeholder="••••••••">
+  <div class="row">
+    <button class="btn btn-p" onclick="doLogin()">Log in</button>
+    <button class="btn btn-s" onclick="doSignup()">Create account</button>
+  </div>
+  <div id="authResult" style="font-size:13px;margin-top:10px;"></div>
+</div>
+
+<div id="app">
+  <div class="card" style="display:flex;justify-content:space-between;align-items:center;">
+    <div>
+      <h1>Engagement Platform</h1>
+      <div class="muted" id="whoami"></div>
+    </div>
+    <button class="btn btn-s btn-sm" onclick="doLogout()">Log out</button>
+  </div>
+
+  <div class="card">
+    <h2>Business</h2>
+    <div class="row" style="margin-bottom:10px;">
+      <select class="fi" id="tenantSelect" style="flex:1;min-width:200px;" onchange="switchTenant()"></select>
+    </div>
+    <details>
+      <summary style="cursor:pointer;font-size:13px;color:var(--muted);">+ Add a new business</summary>
+      <div style="margin-top:10px;">
+        <label class="fl">Business ID (lowercase, no spaces)</label>
+        <input class="fi" type="text" id="newTenantId" placeholder="e.g. my-salon">
+        <label class="fl">Business name</label>
+        <input class="fi" type="text" id="newTenantName" placeholder="My Salon LLC">
+        <button class="btn btn-p btn-sm" onclick="createTenant()">Create business</button>
+        <div id="createTenantResult" style="font-size:12.5px;margin-top:6px;"></div>
+      </div>
+    </details>
+  </div>
+
+  <div id="dashboard" style="display:none;">
+    <div class="card">
+      <h2>💬 WhatsApp connection</h2>
+      <div id="waStatus" style="font-size:13px;padding:10px 14px;border-radius:10px;margin-bottom:12px;"></div>
+      <label class="fl">Access token</label>
+      <input class="fi" type="password" id="waToken" placeholder="Paste permanent access token">
+      <label class="fl">Phone number ID</label>
+      <input class="fi" type="text" id="waPhoneId" placeholder="e.g. 109876543210987">
+      <label class="fl">WABA ID</label>
+      <input class="fi" type="text" id="waWabaId" placeholder="For template management">
+      <button class="btn btn-p btn-sm" onclick="saveWA()">Save & connect</button>
+      <div id="waSaveResult" style="font-size:12.5px;margin-top:8px;"></div>
+    </div>
+
+    <div class="card">
+      <h2>📋 Message templates</h2>
+      <div class="row" style="margin-bottom:12px;">
+        <button class="btn btn-s btn-sm" onclick="loadTemplates()">🔄 Refresh</button>
+        <button class="btn btn-p btn-sm" onclick="toggleTplForm()">+ New template</button>
+      </div>
+      <div id="tplForm" style="display:none;border:1.5px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;">
+        <label class="fl">Name</label><input class="fi" type="text" id="tplName" placeholder="e.g. nudge_reminder">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div><label class="fl">Category</label><select class="fi" id="tplCat"><option value="MARKETING">Marketing</option><option value="UTILITY">Utility</option><option value="AUTHENTICATION">Authentication</option></select></div>
+          <div><label class="fl">Language</label><select class="fi" id="tplLang"><option value="en">English</option><option value="ar">Arabic</option></select></div>
+        </div>
+        <label class="fl">Body — use {{1}}, {{2}} for variables</label><textarea class="fi" id="tplBody" rows="3"></textarea>
+        <label class="fl">Sample values (comma separated)</label><input class="fi" type="text" id="tplExamples">
+        <label class="fl">Footer (optional)</label><input class="fi" type="text" id="tplFooter">
+        <div id="tplWarnings" style="font-size:12px;color:var(--warn);margin-bottom:8px;"></div>
+        <button class="btn btn-p btn-sm" onclick="submitTemplate()">Check & submit</button>
+        <div id="tplCreateResult" style="font-size:12.5px;margin-top:8px;"></div>
+      </div>
+      <div id="tplList" class="muted">Click Refresh to load.</div>
+
+      <details style="margin-top:14px;">
+        <summary style="cursor:pointer;font-size:13px;color:var(--muted);">Type mappings (used by the agent to pick a template per campaign)</summary>
+        <div style="margin-top:10px;">
+          <div class="row">
+            <input class="fi" type="text" id="mapType" placeholder="type_key e.g. boy_nudge" style="flex:1;">
+            <input class="fi" type="text" id="mapTplName" placeholder="approved template name" style="flex:1;">
+            <button class="btn btn-s btn-sm" onclick="saveMapping()">Save mapping</button>
+          </div>
+          <div id="mapList" class="muted" style="margin-top:8px;"></div>
+        </div>
+      </details>
+    </div>
+
+    <div class="card">
+      <h2>🤖 Engagement agent</h2>
+      <div class="row" style="margin-bottom:14px;">
+        <select class="fi" id="reviewMode" style="width:auto;" onchange="setReviewMode()">
+          <option value="review">Review first — I approve each send</option>
+          <option value="auto">Fully autonomous — send immediately</option>
+        </select>
+        <button class="btn btn-p btn-sm" onclick="runNow()">▶ Run now</button>
+      </div>
+      <div id="runResult" style="font-size:12.5px;margin-bottom:14px;"></div>
+
+      <h3 style="font-size:13px;margin:0 0 8px;">Pending review</h3>
+      <div id="pendingList" class="muted" style="margin-bottom:18px;">Loading…</div>
+
+      <h3 style="font-size:13px;margin:0 0 8px;">Campaign strategy</h3>
+      <div id="strategyList" class="muted" style="margin-bottom:18px;">Loading…</div>
+
+      <h3 style="font-size:13px;margin:0 0 8px;">Blackout periods</h3>
+      <div id="blackoutList" class="muted" style="margin-bottom:10px;"></div>
+      <div class="row" style="margin-bottom:18px;">
+        <input class="fi" type="text" id="boLabel" placeholder="Label" style="flex:1;min-width:120px;">
+        <input class="fi" type="date" id="boStart">
+        <input class="fi" type="date" id="boEnd">
+        <button class="btn btn-s btn-sm" onclick="addBlackout()">+ Add</button>
+      </div>
+
+      <h3 style="font-size:13px;margin:0 0 8px;">Recent runs</h3>
+      <div id="runsList" class="muted"></div>
+    </div>
+
+    <div class="card">
+      <h2>👥 Team</h2>
+      <div id="teamList" class="muted" style="margin-bottom:12px;">Loading…</div>
+      <div class="row">
+        <input class="fi" type="email" id="inviteEmail" placeholder="teammate@email.com" style="flex:1;">
+        <select class="fi" id="inviteRole" style="width:auto;"><option value="staff">Staff</option><option value="owner">Owner</option></select>
+        <button class="btn btn-s btn-sm" onclick="inviteTeammate()">Invite</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🔑 API keys — for this business's own app</h2>
+      <p class="muted">Generate a key for MiniCuts' (or any business's) own app to use when calling send-whatsapp — separate from your personal login.</p>
+      <div id="apiKeyList" class="muted" style="margin-bottom:12px;">Loading…</div>
+      <div class="row">
+        <input class="fi" type="text" id="apiKeyLabel" placeholder="Label, e.g. MiniCuts main app" style="flex:1;">
+        <button class="btn btn-s btn-sm" onclick="createApiKey()">Generate key</button>
+      </div>
+      <div id="newApiKeyResult" style="font-size:12.5px;margin-top:8px;"></div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+const SB_URL='https://wtapyfgtwkjyjrjdnhkb.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0YXB5Zmd0d2tqeWpyamRuaGtiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NDc3ODEsImV4cCI6MjA5NTAyMzc4MX0.y_-iPfb8Pcg9zh42h6RGVBsUVZm80LcA9sPlz_Gl_fA';
+const MW_ADMIN_URL=SB_URL+'/functions/v1/mw-admin';
+const WA_CONFIG_URL=SB_URL+'/functions/v1/whatsapp-config';
+const WA_TEMPLATES_URL=SB_URL+'/functions/v1/whatsapp-templates';
+
+const sb=window.supabase.createClient(SB_URL,SB_KEY);
+let session=null, currentTenant=null, myRole=null;
+
+async function doSignup(){
+  const email=document.getElementById('authEmail').value.trim();
+  const password=document.getElementById('authPass').value;
+  const r=document.getElementById('authResult');
+  r.textContent='Creating account…';r.style.color='var(--muted)';
+  const {data,error}=await sb.auth.signUp({email,password});
+  if(error){r.textContent='❌ '+error.message;r.style.color='var(--err)';return;}
+  if(data.session){onAuthed(data.session);}
+  else {r.textContent='Check your email to confirm your account, then log in.';r.style.color='var(--ok)';}
+}
+async function doLogin(){
+  const email=document.getElementById('authEmail').value.trim();
+  const password=document.getElementById('authPass').value;
+  const r=document.getElementById('authResult');
+  r.textContent='Logging in…';r.style.color='var(--muted)';
+  const {data,error}=await sb.auth.signInWithPassword({email,password});
+  if(error){r.textContent='❌ '+error.message;r.style.color='var(--err)';return;}
+  onAuthed(data.session);
+}
+async function doLogout(){
+  await sb.auth.signOut();
+  session=null;currentTenant=null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('authScreen').style.display='block';
+}
+async function onAuthed(sess){
+  session=sess;
+  document.getElementById('authScreen').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('whoami').textContent=session.user.email;
+  await call('accept_pending_invites',{});
+  await loadMyTenants();
+}
+
+async function call(action,extra){
+  const r=await fetch(MW_ADMIN_URL,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+session.access_token},
+    body:JSON.stringify({action,tenant_id:currentTenant,...(extra||{})})});
+  return await r.json();
+}
+async function callWA(url,action,extra){
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+session.access_token},
+    body:JSON.stringify({action,tenant_id:currentTenant,...(extra||{})})});
+  return await r.json();
+}
+
+async function loadMyTenants(){
+  const j=await call('my_tenants',{});
+  const sel=document.getElementById('tenantSelect');
+  if(!j.ok||!j.tenants.length){sel.innerHTML='<option>No businesses yet — create one below</option>';document.getElementById('dashboard').style.display='none';return;}
+  sel.innerHTML=j.tenants.map(t=>`<option value="${t.tenant_id}">${t.mw_tenants.name} (${t.role})</option>`).join('');
+  currentTenant=sel.value;
+  myRole=j.tenants.find(t=>t.tenant_id===currentTenant)?.role;
+  document.getElementById('dashboard').style.display='block';
+  loadDashboard();
+}
+function switchTenant(){
+  currentTenant=document.getElementById('tenantSelect').value;
+  loadDashboard();
+}
+async function createTenant(){
+  const id=document.getElementById('newTenantId').value.trim();
+  const name=document.getElementById('newTenantName').value.trim();
+  const r=document.getElementById('createTenantResult');
+  if(!id||!name){r.textContent='Both fields required.';r.style.color='var(--err)';return;}
+  const j=await call('create_tenant',{id,name});
+  if(j.ok){r.textContent='✅ Created';r.style.color='var(--ok)';loadMyTenants();}
+  else{r.textContent='❌ '+j.error;r.style.color='var(--err)';}
+}
+
+function loadDashboard(){
+  loadWAStatus();loadTemplateMappings();
+  loadSettings();loadPending();loadRuns();loadTeam();loadApiKeys();
+}
+
+// WhatsApp connection
+async function loadWAStatus(){
+  const j=await callWA(WA_CONFIG_URL,'status',{});
+  const el=document.getElementById('waStatus');
+  if(j.ok&&j.configured){
+    el.style.background='var(--okl)';el.style.color='var(--ok)';
+    el.textContent='✅ Connected — number ending '+j.phone_number_id_masked+(j.waba_id?' · WABA set':' · WABA ID missing');
+  } else {
+    el.style.background='var(--errl)';el.style.color='var(--err)';
+    el.textContent='⚠️ Not connected yet.';
+  }
+}
+async function saveWA(){
+  const access_token=document.getElementById('waToken').value.trim();
+  const phone_number_id=document.getElementById('waPhoneId').value.trim();
+  const waba_id=document.getElementById('waWabaId').value.trim();
+  const r=document.getElementById('waSaveResult');
+  if(!access_token||!phone_number_id){r.textContent='Token and phone number ID required.';r.style.color='var(--err)';return;}
+  const j=await callWA(WA_CONFIG_URL,'save',{access_token,phone_number_id,waba_id});
+  if(j.ok){r.textContent='✅ Saved';r.style.color='var(--ok)';document.getElementById('waToken').value='';loadWAStatus();}
+  else{r.textContent='❌ '+j.error;r.style.color='var(--err)';}
+}
+
+// Templates
+function toggleTplForm(){const f=document.getElementById('tplForm');f.style.display=f.style.display==='none'?'block':'none';}
+function validateTemplate(name,category,body,examples,footer){
+  const errors=[],warnings=[];
+  if(!/^[a-z0-9_]+$/.test(name)) errors.push('Name must be lowercase letters, numbers, underscores only.');
+  if(body.length>1024) errors.push('Body over 1024 characters.');
+  const vars=[...body.matchAll(/\{\{(\d+)\}\}/g)].map(m=>parseInt(m[1]));
+  if(vars.length){
+    if(/^\{\{\d+\}\}/.test(body.trim())) errors.push("Can't start with a variable.");
+    if(/\{\{\d+\}\}$/.test(body.trim())) errors.push("Can't end with a variable.");
+    const expected=Array.from({length:Math.max(...vars)},(_,i)=>i+1);
+    if(JSON.stringify([...new Set(vars)].sort((a,b)=>a-b))!==JSON.stringify(expected)) errors.push('Variables must be sequential from {{1}}.');
+    if(examples.length!==vars.length) errors.push(`Need ${vars.length} sample value(s).`);
+  }
+  const caps=(body.match(/\b[A-Z]{4,}\b/g)||[]);
+  if(caps.length) warnings.push('ALL-CAPS word(s): '+caps.join(', '));
+  if(/[!?]{2,}/.test(body)) warnings.push('Multiple !! or ?? can read as spammy.');
+  if(category==='MARKETING'&&!footer) warnings.push('No opt-out footer — recommended for Marketing.');
+  return {errors,warnings};
+}
+async function submitTemplate(){
+  const name=document.getElementById('tplName').value.trim();
+  const category=document.getElementById('tplCat').value;
+  const language=document.getElementById('tplLang').value;
+  const body_text=document.getElementById('tplBody').value.trim();
+  const examples=(document.getElementById('tplExamples').value.trim()||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const footer_text=document.getElementById('tplFooter').value.trim();
+  const warnEl=document.getElementById('tplWarnings'), resEl=document.getElementById('tplCreateResult');
+  if(!name||!body_text){resEl.textContent='Name and body required.';resEl.style.color='var(--err)';return;}
+  const {errors,warnings}=validateTemplate(name,category,body_text,examples,footer_text);
+  if(errors.length){warnEl.innerHTML='❌ '+errors.join('<br>❌ ');warnEl.style.color='var(--err)';return;}
+  warnEl.textContent='';
+  if(warnings.length&&!confirm('Meta may flag this:\n\n'+warnings.join('\n')+'\n\nSubmit anyway?')) return;
+  resEl.textContent='Submitting…';resEl.style.color='var(--muted)';
+  const j=await callWA(WA_TEMPLATES_URL,'create',{name,category,language,body_text,examples,footer_text});
+  if(j.ok){resEl.textContent='✅ Submitted — status '+j.status;resEl.style.color='var(--ok)';loadTemplates();}
+  else{resEl.textContent='❌ '+j.error;resEl.style.color='var(--err)';}
+}
+async function loadTemplates(){
+  const el=document.getElementById('tplList');
+  el.textContent='Loading…';
+  const j=await callWA(WA_TEMPLATES_URL,'list',{});
+  if(!j.ok){el.textContent='❌ '+j.error;el.style.color='var(--err)';return;}
+  if(!j.templates.length){el.innerHTML='No templates yet.';return;}
+  const cls={APPROVED:'b-ok',PENDING:'b-warn',REJECTED:'b-err'};
+  el.innerHTML=j.templates.map(t=>{
+    const b=(t.components||[]).find(c=>c.type==='BODY');
+    return `<div class="item"><div style="display:flex;justify-content:space-between;"><b>${t.name}</b><span class="badge ${cls[t.status]||''}">${t.status}</span></div><div class="muted">${b?b.text:''}</div></div>`;
+  }).join('');
+}
+async function saveMapping(){
+  const type_key=document.getElementById('mapType').value.trim();
+  const template_name=document.getElementById('mapTplName').value.trim();
+  if(!type_key||!template_name){alert('Both fields required.');return;}
+  const j=await callWA(WA_TEMPLATES_URL,'map_type',{type_key,template_name});
+  if(j.ok){document.getElementById('mapType').value='';document.getElementById('mapTplName').value='';loadTemplateMappings();}
+  else alert('❌ '+j.error);
+}
+async function loadTemplateMappings(){
+  const j=await call('list_template_mappings',{});
+  const el=document.getElementById('mapList');
+  if(!j.ok){el.textContent='';return;}
+  el.innerHTML=(j.mappings||[]).map(m=>`<div style="font-size:12.5px;padding:4px 0;">${m.type_key} → ${m.template_name} (${m.template_lang})</div>`).join('')||'No mappings yet.';
+}
+
+// Agent settings
+async function loadSettings(){
+  const j=await call('get_settings',{});
+  if(!j.ok) return;
+  myRole=j.my_role;
+  document.getElementById('reviewMode').value=j.tenant.review_mode;
+  document.getElementById('strategyList').innerHTML=(j.strategy||[]).map(s=>`
+    <div class="item">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <label style="display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px;"><input type="checkbox" ${s.enabled?'checked':''} id="en_${s.campaign_key}"> ${s.campaign_key}</label>
+        <span class="muted" style="font-size:11px;">cooldown</span><input class="fi" type="number" style="width:60px;padding:5px;margin:0;" id="cd_${s.campaign_key}" value="${s.min_cooldown_days}"><span class="muted" style="font-size:11px;">days</span>
+      </div>
+      <input class="fi" type="text" placeholder="Offer text" id="of_${s.campaign_key}" value="${(s.offer_text||'').replace(/"/g,'&quot;')}">
+      <input class="fi" type="text" placeholder="Notes for the agent" id="nt_${s.campaign_key}" value="${(s.notes||'').replace(/"/g,'&quot;')}">
+      <button class="btn btn-s btn-sm" onclick="saveStrategy('${s.campaign_key}')">Save</button>
+    </div>`).join('');
+  document.getElementById('blackoutList').innerHTML=(j.blackouts||[]).length?j.blackouts.map(b=>`
+    <div class="item" style="display:flex;justify-content:space-between;align-items:center;"><span>${b.label} — ${b.start_date} to ${b.end_date}</span><button class="btn btn-s btn-sm" onclick="delBlackout('${b.id}')">Remove</button></div>`).join(''):'No blackout periods.';
+}
+async function saveStrategy(key){
+  const j=await call('save_strategy',{campaign_key:key,enabled:document.getElementById('en_'+key).checked,offer_text:document.getElementById('of_'+key).value.trim(),min_cooldown_days:parseInt(document.getElementById('cd_'+key).value)||0,notes:document.getElementById('nt_'+key).value.trim()});
+  alert(j.ok?'✅ Saved':'❌ '+j.error);
+}
+async function addBlackout(){
+  const label=document.getElementById('boLabel').value.trim(), start_date=document.getElementById('boStart').value, end_date=document.getElementById('boEnd').value;
+  if(!label||!start_date||!end_date){alert('All fields required.');return;}
+  const j=await call('add_blackout',{label,start_date,end_date});
+  if(j.ok){document.getElementById('boLabel').value='';loadSettings();} else alert('❌ '+j.error);
+}
+async function delBlackout(id){if(!confirm('Remove?'))return;await call('delete_blackout',{id});loadSettings();}
+async function setReviewMode(){const j=await call('set_review_mode',{review_mode:document.getElementById('reviewMode').value});if(!j.ok)alert('❌ '+j.error);}
+async function runNow(){
+  const r=document.getElementById('runResult');r.textContent='Running…';r.style.color='var(--muted)';
+  const j=await call('run_now',{});
+  if(j.ok){const res=j.results?.[0]||{};r.textContent=`✅ ${res.candidates||0} scanned, ${res.decisions||0} decisions, ${res.dispatched||0} sent immediately.`;r.style.color='var(--ok)';loadPending();loadRuns();}
+  else{r.textContent='❌ '+j.error;r.style.color='var(--err)';}
+}
+async function loadPending(){
+  const j=await call('pending_review',{});
+  const el=document.getElementById('pendingList');
+  if(!j.ok){el.textContent='❌ '+j.error;return;}
+  if(!j.decisions.length){el.innerHTML='Nothing pending.';return;}
+  el.innerHTML=j.decisions.map(d=>`
+    <div class="item"><div style="display:flex;justify-content:space-between;"><b>${d.customer_name||d.mobile}</b><span class="muted">(${d.campaign_key})</span></div>
+    <div class="muted">${d.reasoning||''}</div>
+    <div class="row" style="margin-top:6px;"><button class="btn btn-s btn-sm" onclick="approveDecision('${d.id}')">✅ Approve & send</button><button class="btn btn-s btn-sm" onclick="rejectDecision('${d.id}')">✗ Reject</button></div></div>`).join('');
+}
+async function approveDecision(id){const j=await call('approve_decision',{id});if(!j.ok)alert('❌ '+j.error);loadPending();}
+async function rejectDecision(id){await call('reject_decision',{id});loadPending();}
+async function loadRuns(){
+  const j=await call('recent_runs',{});
+  document.getElementById('runsList').innerHTML=(j.runs||[]).map(r=>`<div style="font-size:12.5px;padding:5px 0;border-bottom:1px solid var(--border);">${r.run_date} — ${r.candidates_scanned} scanned, ${r.decided_send} send, ${r.decided_skip} skip</div>`).join('')||'No runs yet.';
+}
+
+// Team
+async function loadTeam(){
+  const j=await call('list_team',{});
+  const el=document.getElementById('teamList');
+  if(!j.ok){el.textContent='❌ '+j.error;return;}
+  el.innerHTML=(j.members||[]).map(m=>`<div class="item">${m.user_id} — ${m.role}</div>`).join('')+
+    (j.pending_invites||[]).map(i=>`<div class="item muted">Pending: ${i.email} (${i.role})</div>`).join('');
+}
+async function inviteTeammate(){
+  const email=document.getElementById('inviteEmail').value.trim(), invite_role=document.getElementById('inviteRole').value;
+  if(!email){alert('Email required.');return;}
+  const j=await call('invite_teammate',{email,invite_role});
+  if(j.ok){document.getElementById('inviteEmail').value='';loadTeam();} else alert('❌ '+j.error);
+}
+
+// API keys
+async function loadApiKeys(){
+  const j=await call('list_api_keys',{});
+  document.getElementById('apiKeyList').innerHTML=(j.keys||[]).map(k=>`<div class="item" style="display:flex;justify-content:space-between;">${k.label||'(unlabeled)'} ${k.revoked_at?'<span class="badge b-err">revoked</span>':'<span class="badge b-ok">active</span>'}${!k.revoked_at?`<button class="btn btn-s btn-sm" onclick="revokeApiKey('${k.id}')">Revoke</button>`:''}</div>`).join('')||'No keys yet.';
+}
+async function createApiKey(){
+  const label=document.getElementById('apiKeyLabel').value.trim();
+  const j=await call('create_api_key',{label});
+  const r=document.getElementById('newApiKeyResult');
+  if(j.ok){r.innerHTML='✅ Key created — copy it now, it will not be shown again:<br><code style="background:#F3F4F6;padding:4px 8px;border-radius:6px;display:inline-block;margin-top:6px;">'+j.key+'</code>';r.style.color='var(--ok)';loadApiKeys();}
+  else{r.textContent='❌ '+j.error;r.style.color='var(--err)';}
+}
+async function revokeApiKey(id){if(!confirm('Revoke this key? Any app using it stops working immediately.'))return;await call('revoke_api_key',{id});loadApiKeys();}
+
+// Resume session on page load
+(async()=>{
+  const {data}=await sb.auth.getSession();
+  if(data.session) onAuthed(data.session);
+})();
+</script>
+</body>
+</html>
