@@ -261,6 +261,14 @@
             <p class="muted" style="margin-top:8px;">Including <code>external_id</code> (your own invoice/order number) is optional but recommended if you also upload Excel exports of the same data - it prevents the same sale from being counted twice.</p>
           </div>
 
+          <div class="card" id="syncChannelCard">
+            <h2>Daily sync</h2>
+            <p class="muted">Pulls MiniCuts' own customer records into this platform automatically, once a day, ahead of the engagement agent's run - no manual upload needed for day-to-day freshness.</p>
+            <div id="syncStatus" class="muted" style="font-size:13px;margin-bottom:10px;">Not run yet, or no access to check.</div>
+            <button class="btn btn-s btn-sm" onclick="runSyncNow()">Sync now</button>
+            <div id="syncResult" style="font-size:12.5px;margin-top:8px;"></div>
+          </div>
+
           <div class="card" style="opacity:0.6;">
             <h2>SQL connector</h2>
             <p class="muted">Coming soon - connect a read-only database credential and let the platform pull data on a schedule directly from your own system. For businesses with a technical team that wants zero manual steps.</p>
@@ -735,6 +743,22 @@ async function loadRecentUploads(){
   if(!j.ok||!j.batches.length){el.innerHTML='';return;}
   el.innerHTML='<div class="fl" style="margin-bottom:6px;">Recent uploads</div>'+
     j.batches.map(function(b){return '<div class="item" style="font-size:12px;">'+new Date(b.created_at).toLocaleString()+' - '+(b.filename||'(unnamed)')+' - '+b.rows_inserted+' inserted'+(b.rows_skipped?(', '+b.rows_skipped+' skipped'):'')+'</div>';}).join('');
+}
+
+const MW_SYNC_URL=SB_URL+'/functions/v1/mw-sync-minicuts';
+async function runSyncNow(){
+  const r=document.getElementById('syncResult');
+  r.textContent='Syncing...';r.style.color='var(--muted)';
+  const res=await fetch(MW_SYNC_URL,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+session.access_token},body:'{}'});
+  const j=await res.json();
+  if(j.ok){
+    r.textContent=j.customers_scanned+' customers scanned, '+j.synced+' transaction rows synced'+(j.backfilled?(' ('+j.backfilled+' backfilled for existing progress)'):'')+'.';
+    r.style.color='var(--ok)';
+    document.getElementById('syncStatus').textContent='Last synced: '+new Date().toLocaleString();
+    loadTransactionSummary();loadOverview();
+  } else {
+    r.textContent='Error: '+j.error;r.style.color='var(--err)';
+  }
 }
 
 const FIELD_GUESSES={
