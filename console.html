@@ -108,6 +108,8 @@
       <div class="nav-group-label">Workspace</div>
       <button class="nav-item active" data-page="overview" onclick="showPage('overview')"><span class="ic">&#9635;</span>Overview</button>
       <button class="nav-item" data-page="agents" onclick="showPage('agents')"><span class="ic">&#9673;</span>Agents</button>
+      <button class="nav-item" data-page="predictive" onclick="showPage('predictive')"><span class="ic">&#8626;</span>Predictive insights</button>
+      <button class="nav-item" data-page="ask" onclick="showPage('ask')"><span class="ic">?</span>Ask a question</button>
       <button class="nav-item" data-page="connections" onclick="showPage('connections')"><span class="ic">&#8644;</span>Connections</button>
       <div class="nav-group-label">Organization</div>
       <button class="nav-item" data-page="team" onclick="showPage('team')"><span class="ic">&#9687;</span>Team</button>
@@ -257,6 +259,29 @@
                 </div>
               </details>
             </div>
+          </div>
+        </div>
+
+        <!-- PREDICTIVE INSIGHTS -->
+        <div class="page" id="page-predictive">
+          <div class="page-header"><h1>Predictive insights</h1><p class="muted">Things the rule-based agents genuinely can't tell you on their own — patterns, not thresholds you already set.</p></div>
+          <div class="card">
+            <p class="muted">This page is kept deliberately separate from the Agents page, on purpose: Agents shows what already happened and what your own rules say should happen next — retrospective and rule-based. This page is reserved for things a trained model finds that your rules can't produce by themselves, like a return-probability score or an early pattern nobody's rule was set up to catch.</p>
+            <p class="muted" style="margin-top:10px;">Nothing here duplicates a number you can already see on Agents - if it's just a threshold restated, it doesn't belong on this page.</p>
+            <div style="margin-top:16px;padding:14px;background:var(--bg);border-radius:10px;text-align:center;">
+              <div class="muted" style="font-size:13px;">No predictive models built yet - the first candidate is customer return-probability, once there's enough history to train on reliably.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ASK A QUESTION -->
+        <div class="page" id="page-ask">
+          <div class="page-header"><h1>Ask a question</h1><p class="muted">Type a real question - every answer is computed fresh from your actual data, never guessed.</p></div>
+          <div class="card">
+            <textarea class="fi" id="askInput" rows="2" placeholder="e.g. How many customers haven't visited in 60 days? Is the win-back campaign working?"></textarea>
+            <button class="btn btn-p btn-sm" onclick="askQuestion()">Ask</button>
+            <div id="askResult" style="margin-top:14px;"></div>
+            <div id="askHistory" style="margin-top:18px;"></div>
           </div>
         </div>
 
@@ -756,6 +781,32 @@ async function loadChangeLog(){
       '<div class="muted" style="margin-top:2px;">'+changesText+'</div>'+
     '</div>';
   }).join('');
+}
+
+// Ask a question — every answer computed fresh from real data via tool
+// calls, never guessed. History kept client-side for this session only.
+let askHistoryLog=[];
+async function askQuestion(){
+  const q=document.getElementById('askInput').value.trim();
+  const r=document.getElementById('askResult');
+  if(!q){r.textContent='Type a question first.';r.style.color='var(--err)';return;}
+  r.textContent='Thinking...';r.style.color='var(--muted)';
+  const j=await call('ask_question',{question:q});
+  if(j.ok){
+    r.innerHTML='<div class="item" style="background:var(--pl);border-color:var(--p);"><div style="font-weight:700;font-size:13px;margin-bottom:4px;">'+q+'</div><div style="font-size:14px;">'+j.answer+'</div></div>';
+    r.style.color='';
+    askHistoryLog.unshift({q:q,a:j.answer,t:new Date().toLocaleTimeString()});
+    document.getElementById('askInput').value='';
+    renderAskHistory();
+  } else {
+    r.textContent='Error: '+j.error;r.style.color='var(--err)';
+  }
+}
+function renderAskHistory(){
+  const el=document.getElementById('askHistory');
+  if(!el||askHistoryLog.length<2) {if(el) el.innerHTML=''; return;}
+  el.innerHTML='<div class="fl" style="margin-bottom:6px;">Earlier this session</div>'+
+    askHistoryLog.slice(1).map(function(h){return '<div class="item" style="font-size:12.5px;"><b>'+h.q+'</b><div class="muted" style="margin-top:2px;">'+h.a+'</div></div>';}).join('');
 }
 
 // Sales data upload
