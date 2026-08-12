@@ -646,6 +646,15 @@ async function loadSettings(){
         '<span class="muted" style="font-size:11px;">cooldown</span><input class="fi" type="number" style="width:60px;padding:5px;margin:0;" id="cd_'+s.campaign_key+'" value="'+s.min_cooldown_days+'"><span class="muted" style="font-size:11px;">days</span>'+
       '</div>'+
       (s.campaign_key==='birthday'?('<div style="margin-bottom:8px;"><span class="muted" style="font-size:11px;">send starting</span> <input class="fi" type="number" style="width:60px;padding:5px;display:inline-block;margin:0 4px;" id="td_'+s.campaign_key+'" value="'+(s.trigger_days==null?3:s.trigger_days)+'"> <span class="muted" style="font-size:11px;">days before the birthday</span></div>'):'')+
+      (s.threshold_value_max!=null||s.applies_at_visit_counts||s.campaign_key==='new_customer_offer'?(
+        '<div style="margin-bottom:8px;">'+
+          '<span class="muted" style="font-size:11px;">valid</span> <input class="fi" type="number" style="width:60px;padding:5px;display:inline-block;margin:0 4px;" id="tv_'+s.campaign_key+'" value="'+(s.threshold_value??'')+'">'+
+          '<span class="muted" style="font-size:11px;">to</span> <input class="fi" type="number" style="width:60px;padding:5px;display:inline-block;margin:0 4px;" id="tvm_'+s.campaign_key+'" value="'+(s.threshold_value_max??'')+'">'+
+          '<span class="muted" style="font-size:11px;">days after last visit</span>'+
+        '</div>'+
+        '<div style="margin-bottom:8px;"><span class="muted" style="font-size:11px;">only at visit count(s)</span> <input class="fi" type="text" style="width:100px;padding:5px;display:inline-block;margin:0 4px;" id="vc_'+s.campaign_key+'" value="'+(s.applies_at_visit_counts?s.applies_at_visit_counts.join(','):'')+'" placeholder="e.g. 1,2"> <span class="muted" style="font-size:11px;">(blank = any)</span></div>'+
+        '<div style="margin-bottom:8px;"><span class="muted" style="font-size:11px;">discount</span> <input class="fi" type="number" style="width:60px;padding:5px;display:inline-block;margin:0 4px;" id="dp_'+s.campaign_key+'" value="'+(s.discount_percent??'')+'"> <span class="muted" style="font-size:11px;">%</span></div>'
+      ):'')+
       '<input class="fi" type="text" placeholder="Offer text" id="of_'+s.campaign_key+'" value="'+(s.offer_text||'').replace(/"/g,'&quot;')+'">'+
       '<input class="fi" type="text" placeholder="Notes for the agent" id="nt_'+s.campaign_key+'" value="'+(s.notes||'').replace(/"/g,'&quot;')+'">'+
       '<button class="btn btn-s btn-sm" onclick="saveStrategy(\''+s.campaign_key+'\')">Save</button>'+
@@ -655,7 +664,7 @@ async function loadSettings(){
     return '<div class="item" style="display:flex;justify-content:space-between;align-items:center;"><span>'+b.label+' - '+b.start_date+' to '+b.end_date+'</span><button class="btn btn-s btn-sm" onclick="delBlackout(\''+b.id+'\')">Remove</button></div>';
   }).join(''):'No blackout periods.';
 }
-const CAMPAIGN_LABELS={nudge:'Nudge (gentle reminder)',lapsed:'Win-back (lapsed customer)',expiry:'Loyalty expiry reminder',ready:'Reward ready',birthday:'Birthday',after_service:'After-service thank you'};
+const CAMPAIGN_LABELS={nudge:'Nudge (gentle reminder)',lapsed:'Win-back (lapsed customer)',expiry:'Loyalty expiry reminder',ready:'Reward ready',birthday:'Birthday',after_service:'After-service thank you',new_customer_offer:'New customer incentive'};
 function renderRuleBook(strategy){
   const el=document.getElementById('ruleBook');
   if(!el) return;
@@ -665,6 +674,9 @@ function renderRuleBook(strategy){
     if(!s.enabled) return '<div style="font-size:12.5px;padding:4px 0;color:var(--muted);">Off: <b>'+label+'</b> - the agent never sends this.</div>';
     let line='On: <b>'+label+'</b>';
     if(s.campaign_key==='birthday'&&s.trigger_days!=null) line+=', sent starting '+s.trigger_days+' day(s) before the birthday';
+    if(s.applies_at_visit_counts&&s.applies_at_visit_counts.length) line+=', only for customers currently on visit '+s.applies_at_visit_counts.join(' or ')+' (nudging toward the next visit)';
+    if(s.threshold_value!=null&&s.threshold_value_max!=null) line+=', valid '+s.threshold_value+' to '+s.threshold_value_max+' days after their last visit';
+    if(s.discount_percent!=null) line+=', discount: '+s.discount_percent+'%';
     line+=s.min_cooldown_days>0?(", won't re-contact the same person within "+s.min_cooldown_days+' day(s)'):', no cooldown between messages';
     if(s.offer_text) line+='. Offer: "'+s.offer_text+'"';
     if(s.notes) line+='. Guidance for the agent: "'+s.notes+'"';
@@ -673,7 +685,17 @@ function renderRuleBook(strategy){
 }
 async function saveStrategy(key){
   const tdEl=document.getElementById('td_'+key);
-  const j=await call('save_strategy',{campaign_key:key,enabled:document.getElementById('en_'+key).checked,offer_text:document.getElementById('of_'+key).value.trim(),min_cooldown_days:parseInt(document.getElementById('cd_'+key).value)||0,notes:document.getElementById('nt_'+key).value.trim(),trigger_days:tdEl?(parseInt(tdEl.value)||0):null});
+  const tvEl=document.getElementById('tv_'+key), tvmEl=document.getElementById('tvm_'+key), vcEl=document.getElementById('vc_'+key), dpEl=document.getElementById('dp_'+key);
+  const visitCounts=vcEl&&vcEl.value.trim()?vcEl.value.split(',').map(function(s){return parseInt(s.trim());}).filter(function(n){return !isNaN(n);}):null;
+  const j=await call('save_strategy',{
+    campaign_key:key,enabled:document.getElementById('en_'+key).checked,offer_text:document.getElementById('of_'+key).value.trim(),
+    min_cooldown_days:parseInt(document.getElementById('cd_'+key).value)||0,notes:document.getElementById('nt_'+key).value.trim(),
+    trigger_days:tdEl?(parseInt(tdEl.value)||0):null,
+    threshold_value:tvEl&&tvEl.value!==''?parseInt(tvEl.value):null,
+    threshold_value_max:tvmEl&&tvmEl.value!==''?parseInt(tvmEl.value):null,
+    applies_at_visit_counts:visitCounts,
+    discount_percent:dpEl&&dpEl.value!==''?parseFloat(dpEl.value):null,
+  });
   if(j.ok) loadSettings(); else alert('Error: '+j.error);
 }
 
