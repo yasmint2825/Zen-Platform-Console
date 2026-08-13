@@ -279,8 +279,16 @@
             <h2>Return likelihood</h2>
             <p class="muted" id="modelMeta" style="margin-bottom:14px;"></p>
             <div class="stat-grid" id="predictiveTiers" style="margin-bottom:18px;"></div>
-            <h3>Customers least likely to return</h3>
+            <h3>At-risk customers — what's actually happening</h3>
+            <p class="muted" style="font-size:12.5px;margin-bottom:8px;">Cross-checked against your live campaigns — not just a score, but whether anything is actually being done about it.</p>
             <div id="atRiskList" class="muted">Loading...</div>
+          </div>
+
+          <div class="card" id="loadForecastCard" style="display:none;">
+            <h2>Expected load this week</h2>
+            <p class="muted" style="margin-bottom:14px;">A repeating weekly pattern from your visit history — not individual date predictions. Honest given ~15 months of data: enough Mondays to trust "what a typical Monday looks like," not enough distinct Decembers to claim real yearly seasonality.</p>
+            <div id="loadForecastToday" style="margin-bottom:14px;"></div>
+            <div id="loadForecastWeek"></div>
           </div>
         </div>
 
@@ -498,22 +506,55 @@ async function loadPredictive(){
   const hasModel=statusRes.ok&&statusRes.model;
   document.getElementById('predictiveNoModel').style.display=hasModel?'none':'block';
   document.getElementById('predictiveContent').style.display=hasModel?'block':'none';
-  if(!hasModel) return;
-  const m=statusRes.model;
-  document.getElementById('modelMeta').textContent='Model v'+m.version+' - trained on '+m.training_examples+' real visits, '+Math.round((m.validation_accuracy||0)*100)+'% accurate on visits it never saw during training.';
-  if(summaryRes.ok&&summaryRes.has_predictions){
-    const t=summaryRes.tiers||{};
-    document.getElementById('predictiveTiers').innerHTML=
-      '<div class="stat-tile"><div class="num">'+(t.likely||0)+'</div><div class="lbl">Likely to return</div></div>'+
-      '<div class="stat-tile"><div class="num">'+(t.uncertain||0)+'</div><div class="lbl">Uncertain</div></div>'+
-      '<div class="stat-tile"><div class="num">'+(t.at_risk||0)+'</div><div class="lbl">At risk</div></div>';
+  if(hasModel){
+    const m=statusRes.model;
+    document.getElementById('modelMeta').textContent='Model v'+m.version+' - trained on '+m.training_examples+' real visits, '+Math.round((m.validation_accuracy||0)*100)+'% accurate on visits it never saw during training.';
+    if(summaryRes.ok&&summaryRes.has_predictions){
+      const t=summaryRes.tiers||{};
+      document.getElementById('predictiveTiers').innerHTML=
+        '<div class="stat-tile"><div class="num">'+(t.likely||0)+'</div><div class="lbl">Likely to return</div></div>'+
+        '<div class="stat-tile"><div class="num">'+(t.uncertain||0)+'</div><div class="lbl">Uncertain</div></div>'+
+        '<div class="stat-tile"><div class="num">'+(t.at_risk||0)+'</div><div class="lbl">At risk</div></div>';
+    }
+    const atRisk=await callML('at_risk_actions',{});
+    const el=document.getElementById('atRiskList');
+    const statusStyle={
+      already_covered:{icon:'✅',color:'var(--ok)'},
+      eligible_now:{icon:'⚠️',color:'var(--warn)'},
+      not_yet_eligible:{icon:'⏳',color:'var(--muted)'},
+      no_active_campaign:{icon:'🔕',color:'var(--err)'},
+      no_recent_visit_data:{icon:'❓',color:'var(--muted)'},
+    };
+    if(atRisk.ok&&atRisk.actions&&atRisk.actions.length){
+      el.innerHTML=atRisk.actions.map(function(c){
+        const s=statusStyle[c.status]||{icon:'',color:'var(--muted)'};
+        return '<div class="item">'+
+          '<div style="display:flex;justify-content:space-between;font-size:13px;"><b>'+(c.customer_name||'(unnamed)')+'</b><span class="muted">'+Math.round(c.probability*100)+'% likely to return</span></div>'+
+          '<div style="font-size:12px;color:'+s.color+';margin-top:3px;">'+s.icon+' '+c.detail+'</div>'+
+        '</div>';
+      }).join('');
+    } else {
+      el.innerHTML='None currently.';
+    }
   }
-  const atRisk=await callML('at_risk_customers',{});
-  const el=document.getElementById('atRiskList');
-  if(atRisk.ok&&atRisk.customers.length){
-    el.innerHTML=atRisk.customers.map(function(c){return '<div class="item" style="display:flex;justify-content:space-between;font-size:13px;"><span>'+(c.customer_name||'(unnamed)')+'</span><span class="muted">'+Math.round(c.probability*100)+'% likely to return</span></div>';}).join('');
-  } else {
-    el.innerHTML='None currently.';
+
+  const forecastRes=await callML('load_forecast',{});
+  document.getElementById('loadForecastCard').style.display=(forecastRes.ok&&forecastRes.has_forecast)?'block':'none';
+  if(forecastRes.ok&&forecastRes.has_forecast){
+    const today=forecastRes.today;
+    if(today){
+      const trendArrow=today.recent_avg_visits>today.avg_visits?'📈':today.recent_avg_visits<today.avg_visits?'📉':'➡️';
+      document.getElementById('loadForecastToday').innerHTML='<div class="item" style="background:var(--pl);border-color:var(--p);"><div style="font-weight:700;font-size:14px;">Today ('+today.day_name+')</div><div style="font-size:13px;margin-top:2px;">Typically ~'+Math.round(today.avg_visits)+' visits · recently trending ~'+Math.round(today.recent_avg_visits)+' '+trendArrow+'</div></div>';
+    }
+    document.getElementById('loadForecastWeek').innerHTML=forecastRes.days.map(function(d){
+      const maxV=Math.max.apply(null,forecastRes.days.map(function(x){return x.avg_visits;}));
+      const pct=maxV>0?Math.round((d.avg_visits/maxV)*100):0;
+      return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">'+
+        '<span style="width:80px;font-size:12.5px;">'+d.day_name+'</span>'+
+        '<div style="flex:1;background:var(--bg);border-radius:6px;height:16px;overflow:hidden;"><div style="width:'+pct+'%;background:var(--p);height:100%;"></div></div>'+
+        '<span style="width:70px;font-size:12px;text-align:right;color:var(--muted);">'+Math.round(d.avg_visits)+' avg</span>'+
+      '</div>';
+    }).join('');
   }
 }
 
@@ -922,7 +963,9 @@ const FIELD_GUESSES={
   name:['name','customer','client','full name'],
   date:['date','transaction date','purchase date','visit date'],
   amount:['amount','total','value','price','sales','revenue'],
-  description:['description','item','service','product','notes']
+  description:['description','item','service','product','notes'],
+  dob:['dob','birth','birthday'],
+  segment:['segment','gender','category']
 };
 let uploadedRows=null,uploadedHeaders=null,uploadedFilename=null;
 function handleFileSelect(evt){
@@ -947,7 +990,7 @@ function guessColumn(field){
   return match||'';
 }
 function renderMapping(){
-  const fields=[['mobile','Phone number',false],['email','Email',false],['name','Customer name',false],['date','Transaction date',true],['amount','Amount',false],['description','Item / service',false]];
+  const fields=[['mobile','Phone number',false],['email','Email',false],['name','Customer name',false],['date','Transaction date',true],['amount','Amount',false],['description','Item / service',false],['dob','Date of birth',false],['segment','Segment (e.g. gender)',false]];
   document.getElementById('mappingFields').innerHTML=fields.map(function(f){
     const key=f[0],label=f[1],required=f[2];
     return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">'+
@@ -957,10 +1000,10 @@ function renderMapping(){
         uploadedHeaders.map(function(h){return '<option value="'+h+'" '+(guessColumn(key)===h?'selected':'')+'>'+h+'</option>';}).join('')+
       '</select>'+
     '</div>';
-  }).join('')+'<div class="muted" style="font-size:11.5px;margin-top:4px;">* Date is required. Map at least one of Phone or Email to identify customers - rows with no phone number will still be stored, but cannot receive WhatsApp messages until a phone is added later.</div>';
+  }).join('')+'<div class="muted" style="font-size:11.5px;margin-top:4px;">* Date is required. Map at least one of Phone or Email to identify customers - rows with no phone number will still be stored, but cannot receive WhatsApp messages until a phone is added later. Mapping Name too is recommended - it helps correctly tell apart people who share a contact (e.g. family members under one phone number). Date of birth and Segment are optional, but power birthday and segmented campaigns if you have them.</div>';
   renderPreview();
   document.getElementById('uploadMapping').style.display='block';
-  ['mobile','email','name','date','amount','description'].forEach(function(key){
+  ['mobile','email','name','date','amount','description','dob','segment'].forEach(function(key){
     document.getElementById('map_'+key).addEventListener('change',renderPreview);
   });
 }
@@ -971,7 +1014,9 @@ function currentMapping(){
     name:document.getElementById('map_name').value,
     date:document.getElementById('map_date').value,
     amount:document.getElementById('map_amount').value,
-    description:document.getElementById('map_description').value
+    description:document.getElementById('map_description').value,
+    dob:document.getElementById('map_dob').value,
+    segment:document.getElementById('map_segment').value
   };
 }
 function mappedRows(){
@@ -983,7 +1028,9 @@ function mappedRows(){
       name:m.name?r[m.name]:'',
       date:m.date?r[m.date]:'',
       amount:m.amount?r[m.amount]:'',
-      description:m.description?r[m.description]:''
+      description:m.description?r[m.description]:'',
+      dob:m.dob?r[m.dob]:'',
+      segment:m.segment?r[m.segment]:''
     };
   });
 }
@@ -991,8 +1038,8 @@ function renderPreview(){
   const rows=mappedRows().slice(0,5);
   const el=document.getElementById('uploadPreview');
   el.innerHTML='<table style="width:100%;font-size:12px;border-collapse:collapse;">'+
-    '<thead><tr style="text-align:left;color:var(--muted);"><th style="padding:4px 8px;">Phone</th><th style="padding:4px 8px;">Email</th><th style="padding:4px 8px;">Name</th><th style="padding:4px 8px;">Date</th><th style="padding:4px 8px;">Amount</th><th style="padding:4px 8px;">Item</th></tr></thead>'+
-    '<tbody>'+rows.map(function(r){return '<tr style="border-top:1px solid var(--border);"><td style="padding:4px 8px;">'+r.mobile+'</td><td style="padding:4px 8px;">'+r.email+'</td><td style="padding:4px 8px;">'+r.name+'</td><td style="padding:4px 8px;">'+r.date+'</td><td style="padding:4px 8px;">'+r.amount+'</td><td style="padding:4px 8px;">'+r.description+'</td></tr>';}).join('')+'</tbody>'+
+    '<thead><tr style="text-align:left;color:var(--muted);"><th style="padding:4px 8px;">Phone</th><th style="padding:4px 8px;">Email</th><th style="padding:4px 8px;">Name</th><th style="padding:4px 8px;">Date</th><th style="padding:4px 8px;">Amount</th><th style="padding:4px 8px;">Item</th><th style="padding:4px 8px;">DOB</th><th style="padding:4px 8px;">Segment</th></tr></thead>'+
+    '<tbody>'+rows.map(function(r){return '<tr style="border-top:1px solid var(--border);"><td style="padding:4px 8px;">'+r.mobile+'</td><td style="padding:4px 8px;">'+r.email+'</td><td style="padding:4px 8px;">'+r.name+'</td><td style="padding:4px 8px;">'+r.date+'</td><td style="padding:4px 8px;">'+r.amount+'</td><td style="padding:4px 8px;">'+r.description+'</td><td style="padding:4px 8px;">'+r.dob+'</td><td style="padding:4px 8px;">'+r.segment+'</td></tr>';}).join('')+'</tbody>'+
   '</table>';
 }
 async function submitUpload(){
