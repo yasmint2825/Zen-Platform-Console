@@ -901,8 +901,14 @@ async function runSyncNow(){
   const res=await fetch(MW_SYNC_URL,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+session.access_token},body:'{}'});
   const j=await res.json();
   if(j.ok){
-    r.textContent=j.customers_scanned+' customers scanned, '+j.synced+' transaction rows synced'+(j.backfilled?(' ('+j.backfilled+' backfilled for existing progress)'):'')+'.';
-    r.style.color='var(--ok)';
+    let msg=j.customers_scanned+' customers scanned, '+j.synced+' transaction rows synced'+(j.backfilled?(' ('+j.backfilled+' backfilled for existing progress)'):'')+'.';
+    if(j.errors&&j.errors.length){
+      msg+=' \u26a0\ufe0f '+j.errors.length+' batch error(s): '+j.errors.join('; ');
+      r.style.color='var(--warn)';
+    } else {
+      r.style.color='var(--ok)';
+    }
+    r.textContent=msg;
     document.getElementById('syncStatus').textContent='Last synced: '+new Date().toLocaleString();
     loadTransactionSummary();loadOverview();
   } else {
