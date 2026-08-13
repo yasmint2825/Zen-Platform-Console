@@ -880,7 +880,10 @@ async function generateInsights(){
   const r=document.getElementById('insightsResult');
   r.textContent='Generating...';r.style.color='var(--muted)';
   const j=await call('generate_insights',{});
-  if(!j.ok){r.textContent='Error: '+j.error;r.style.color='var(--err)';return;}
+  if(!j.ok){
+    r.innerHTML='Error: '+j.error+(j.raw_preview?('<div class="muted" style="font-size:11px;margin-top:6px;white-space:pre-wrap;">Raw response start: '+j.raw_preview+'...</div>'):'');
+    r.style.color='var(--err)';return;
+  }
   r.style.color='';
   let html='<div class="item" style="background:var(--pl);border-color:var(--p);margin-bottom:12px;"><div style="font-size:14px;">'+j.summary+'</div></div>';
   html+=(j.recommendations||[]).map(function(rec){
