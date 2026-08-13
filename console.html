@@ -266,11 +266,21 @@
         <div class="page" id="page-predictive">
           <div class="page-header"><h1>Predictive insights</h1><p class="muted">Things the rule-based agents genuinely can't tell you on their own — patterns, not thresholds you already set.</p></div>
           <div class="card">
-            <p class="muted">This page is kept deliberately separate from the Agents page, on purpose: Agents shows what already happened and what your own rules say should happen next — retrospective and rule-based. This page is reserved for things a trained model finds that your rules can't produce by themselves, like a return-probability score or an early pattern nobody's rule was set up to catch.</p>
-            <p class="muted" style="margin-top:10px;">Nothing here duplicates a number you can already see on Agents - if it's just a threshold restated, it doesn't belong on this page.</p>
-            <div style="margin-top:16px;padding:14px;background:var(--bg);border-radius:10px;text-align:center;">
-              <div class="muted" style="font-size:13px;">No predictive models built yet - the first candidate is customer return-probability, once there's enough history to train on reliably.</div>
+            <p class="muted">This page is kept deliberately separate from Agents, on purpose: Agents shows what already happened and what your own rules say should happen next. This page is reserved for what a trained model finds that your rules can't produce by themselves.</p>
+          </div>
+
+          <div class="card" id="predictiveNoModel" style="display:none;">
+            <div style="padding:14px;background:var(--bg);border-radius:10px;text-align:center;">
+              <div class="muted" style="font-size:13px;">No trained model yet. Run the training pipeline to get your first return-probability scores.</div>
             </div>
+          </div>
+
+          <div class="card" id="predictiveContent" style="display:none;">
+            <h2>Return likelihood</h2>
+            <p class="muted" id="modelMeta" style="margin-bottom:14px;"></p>
+            <div class="stat-grid" id="predictiveTiers" style="margin-bottom:18px;"></div>
+            <h3>Customers least likely to return</h3>
+            <div id="atRiskList" class="muted">Loading...</div>
           </div>
         </div>
 
@@ -474,6 +484,37 @@ function showPage(id){
   if(pg) pg.classList.add('active');
   const nav=document.querySelector('.nav-item[data-page="'+id+'"]');
   if(nav) nav.classList.add('active');
+  if(id==='predictive') loadPredictive();
+}
+
+const MW_ML_URL=SB_URL+'/functions/v1/mw-ml';
+async function callML(action,extra){
+  const r=await fetch(MW_ML_URL,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+session.access_token},
+    body:JSON.stringify(Object.assign({action,tenant_id:currentTenant},extra||{}))});
+  return await r.json();
+}
+async function loadPredictive(){
+  const [statusRes,summaryRes]=await Promise.all([callML('model_status',{}),callML('predictions_summary',{})]);
+  const hasModel=statusRes.ok&&statusRes.model;
+  document.getElementById('predictiveNoModel').style.display=hasModel?'none':'block';
+  document.getElementById('predictiveContent').style.display=hasModel?'block':'none';
+  if(!hasModel) return;
+  const m=statusRes.model;
+  document.getElementById('modelMeta').textContent='Model v'+m.version+' - trained on '+m.training_examples+' real visits, '+Math.round((m.validation_accuracy||0)*100)+'% accurate on visits it never saw during training.';
+  if(summaryRes.ok&&summaryRes.has_predictions){
+    const t=summaryRes.tiers||{};
+    document.getElementById('predictiveTiers').innerHTML=
+      '<div class="stat-tile"><div class="num">'+(t.likely||0)+'</div><div class="lbl">Likely to return</div></div>'+
+      '<div class="stat-tile"><div class="num">'+(t.uncertain||0)+'</div><div class="lbl">Uncertain</div></div>'+
+      '<div class="stat-tile"><div class="num">'+(t.at_risk||0)+'</div><div class="lbl">At risk</div></div>';
+  }
+  const atRisk=await callML('at_risk_customers',{});
+  const el=document.getElementById('atRiskList');
+  if(atRisk.ok&&atRisk.customers.length){
+    el.innerHTML=atRisk.customers.map(function(c){return '<div class="item" style="display:flex;justify-content:space-between;font-size:13px;"><span>'+(c.customer_name||'(unnamed)')+'</span><span class="muted">'+Math.round(c.probability*100)+'% likely to return</span></div>';}).join('');
+  } else {
+    el.innerHTML='None currently.';
+  }
 }
 
 async function call(action,extra){
