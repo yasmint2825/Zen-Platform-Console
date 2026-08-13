@@ -1,11 +1,13 @@
 """
-train_and_score.py — MiniCuts / Zen Platform return-probability model.
+train_and_score.py — MiniCuts / Zen Platform return-probability model +
+weekly load forecast.
 
 Real, full-cycle ML pipeline: pulls transaction history from Postgres,
 builds a labeled dataset with pandas, trains a scikit-learn logistic
 regression, evaluates it on a genuine held-out split, then scores every
 current customer and writes both the model and the predictions back to
-the database.
+the database. Also computes a weekly visit-load pattern (day-of-week
+averages) for staffing/planning.
 
 Usage:
     export DATABASE_URL="postgresql://user:pass@host:port/dbname"
@@ -13,7 +15,7 @@ Usage:
     python3 train_and_score.py
 
 Designed to be run on a schedule (see the GitHub Actions workflow) — each
-run trains a fresh model on the latest data and rescoring every customer,
+run trains a fresh model on the latest data and rescores every customer,
 so predictions never go stale.
 """
 import os
@@ -30,7 +32,11 @@ from sklearn.metrics import accuracy_score, roc_auc_score, classification_report
 
 RETURN_WINDOW_DAYS = 90
 MIN_TRAINING_EXAMPLES = 30
-FEATURE_NAMES = ["days_since_previous_visit", "visit_number", "days_since_first_visit", "is_girl_segment"]
+# avg_spend is new here — closes a real gap where 'amount' data existed
+# but the model never used it (the "Monetary" in Recency/Frequency/
+# Monetary — only the first two were being used before).
+FEATURE_NAMES = ["days_since_previous_visit", "visit_number", "days_since_first_visit", "is_girl_segment", "avg_spend"]
+DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 TENANT_ID = os.environ.get("TENANT_ID", "minicuts")
@@ -42,20 +48,23 @@ if not DATABASE_URL:
 
 def load_transactions(engine) -> pd.DataFrame:
     """Pull every transaction for this tenant into a DataFrame — the raw
-    material for feature engineering below."""
+    material for feature engineering below. Grouped by customer_key (the
+    real per-person identity), not phone number — a shared phone number
+    across siblings must never merge two people into one record here."""
     query = """
-        select customer_mobile, customer_name, transaction_date
+        select customer_key, customer_mobile, customer_name, transaction_date, amount
         from mw_transactions
-        where tenant_id = %(tenant_id)s and customer_mobile is not null
-        order by customer_mobile, transaction_date asc
+        where tenant_id = %(tenant_id)s and customer_key is not null
+        order by customer_key, transaction_date asc
     """
     df = pd.read_sql(query, engine, params={"tenant_id": TENANT_ID})
     df["transaction_date"] = pd.to_datetime(df["transaction_date"])
+    df["amount"] = pd.to_numeric(df["amount"], errors="coerce").fillna(0)
     return df
 
 
 def load_profiles(engine) -> pd.DataFrame:
-    query = "select customer_mobile, segment from mw_customer_profile where tenant_id = %(tenant_id)s"
+    query = "select customer_key, segment from mw_customer_profile where tenant_id = %(tenant_id)s"
     return pd.read_sql(query, engine, params={"tenant_id": TENANT_ID})
 
 
@@ -71,10 +80,12 @@ def build_training_set(tx: pd.DataFrame, profiles: pd.DataFrame, as_of: pd.Times
     up as ground truth, which is exactly the kind of shortcut we're
     avoiding here.
     """
-    tx = tx.merge(profiles, on="customer_mobile", how="left")
+    tx = tx.merge(profiles, on="customer_key", how="left")
     rows = []
-    for mobile, g in tx.groupby("customer_mobile"):
-        dates = g["transaction_date"].sort_values().tolist()
+    for key, g in tx.groupby("customer_key"):
+        g = g.sort_values("transaction_date")
+        dates = g["transaction_date"].tolist()
+        amounts = g["amount"].tolist()
         segment = g["segment"].iloc[0] if "segment" in g.columns else None
         first_date = dates[0]
         for i in range(1, len(dates)):
@@ -84,38 +95,87 @@ def build_training_set(tx: pd.DataFrame, profiles: pd.DataFrame, as_of: pd.Times
                 continue  # not enough elapsed time to know the true outcome yet
             future_dates = dates[i + 1:]
             returned = any((d - this_date).days <= RETURN_WINDOW_DAYS for d in future_dates)
+            # Cumulative average up to AND INCLUDING this visit — never
+            # peek at amounts from visits that haven't happened yet at
+            # this point in the customer's history, or the label would be
+            # leaking future information into a "past" feature.
+            avg_spend_so_far = sum(amounts[: i + 1]) / (i + 1)
             rows.append({
-                "customer_mobile": mobile,
+                "customer_key": key,
                 "days_since_previous_visit": (this_date - dates[i - 1]).days,
                 "visit_number": i + 1,
                 "days_since_first_visit": (this_date - first_date).days,
                 "is_girl_segment": 1 if segment == "girl" else 0,
+                "avg_spend": avg_spend_so_far,
                 "label": int(returned),
             })
     return pd.DataFrame(rows)
 
 
 def build_scoring_set(tx: pd.DataFrame, profiles: pd.DataFrame, as_of: pd.Timestamp) -> pd.DataFrame:
-    """One row per customer using their CURRENT situation (most recent
-    visit) — what we actually want a prediction for. Needs at least 2
-    visits total, same reason as training: the 'days since previous
-    visit' feature isn't defined on a single visit."""
-    tx = tx.merge(profiles, on="customer_mobile", how="left")
+    """One row per customer identity using their CURRENT situation (most
+    recent visit) — what we actually want a prediction for. Needs at
+    least 2 visits total, same reason as training."""
+    tx = tx.merge(profiles, on="customer_key", how="left")
     rows = []
-    for mobile, g in tx.groupby("customer_mobile"):
-        dates = g["transaction_date"].sort_values().tolist()
+    for key, g in tx.groupby("customer_key"):
+        g = g.sort_values("transaction_date")
+        dates = g["transaction_date"].tolist()
         if len(dates) < 2:
             continue
+        amounts = g["amount"].tolist()
+        mobile = g["customer_mobile"].iloc[-1]
         name = g["customer_name"].iloc[-1]
         segment = g["segment"].iloc[0] if "segment" in g.columns else None
         first_date, last_date, prev_date = dates[0], dates[-1], dates[-2]
         rows.append({
+            "customer_key": key,
             "customer_mobile": mobile,
             "customer_name": name,
             "days_since_previous_visit": (last_date - prev_date).days,
             "visit_number": len(dates),
             "days_since_first_visit": (last_date - first_date).days,
             "is_girl_segment": 1 if segment == "girl" else 0,
+            "avg_spend": sum(amounts) / len(amounts),
+        })
+    return pd.DataFrame(rows)
+
+
+def compute_load_forecast(tx: pd.DataFrame) -> pd.DataFrame:
+    """
+    Weekly visit-LOAD pattern, not individual future-date predictions —
+    the honest version of "load forecast" given ~15 months of history:
+    enough repetitions of "what does a typical Monday look like" (60+
+    Mondays in the data) to be genuinely defensible. NOT enough distinct
+    Decembers or Ramadans to claim real yearly seasonality from a single
+    year — so that claim is deliberately NOT made here.
+
+    Two numbers per weekday: the all-time average, and a recent-8-week
+    average — the gap between them is what actually reveals a trend
+    (getting busier or quieter lately), which the all-time number alone
+    would hide.
+    """
+    daily_counts = tx.groupby(tx["transaction_date"].dt.date).size()
+    daily_counts.index = pd.to_datetime(daily_counts.index)
+    full_range = pd.date_range(daily_counts.index.min(), daily_counts.index.max(), freq="D")
+    daily_counts = daily_counts.reindex(full_range, fill_value=0)
+
+    df = pd.DataFrame({"date": daily_counts.index, "visits": daily_counts.values})
+    df["day_of_week"] = df["date"].dt.dayofweek.map(lambda x: (x + 1) % 7)  # pandas: Mon=0..Sun=6 -> convert to Sun=0..Sat=6
+
+    all_time_avg = df.groupby("day_of_week")["visits"].mean()
+
+    recent_cutoff = df["date"].max() - pd.Timedelta(days=56)  # last 8 weeks
+    recent = df[df["date"] > recent_cutoff]
+    recent_avg = recent.groupby("day_of_week")["visits"].mean()
+
+    rows = []
+    for dow in range(7):
+        rows.append({
+            "day_of_week": dow,
+            "day_name": DAY_NAMES[dow],
+            "avg_visits": round(float(all_time_avg.get(dow, 0)), 2),
+            "recent_avg_visits": round(float(recent_avg.get(dow, 0)), 2),
         })
     return pd.DataFrame(rows)
 
@@ -128,7 +188,7 @@ def main():
     print(f"Loading data for tenant '{TENANT_ID}'...")
     tx = load_transactions(engine)
     profiles = load_profiles(engine)
-    print(f"  {len(tx)} transactions across {tx['customer_mobile'].nunique()} customers")
+    print(f"  {len(tx)} transactions across {tx['customer_key'].nunique()} distinct customer identities")
 
     print("Building labeled training set...")
     train_df = build_training_set(tx, profiles, as_of)
@@ -197,15 +257,27 @@ def main():
     cur.execute("delete from mw_customer_predictions where tenant_id = %s", (TENANT_ID,))
     for _, row in score_df.iterrows():
         cur.execute(
-            """insert into mw_customer_predictions (tenant_id, customer_mobile, customer_name, probability, tier, model_version)
-               values (%s, %s, %s, %s, %s, %s)""",
-            (TENANT_ID, row["customer_mobile"], row["customer_name"], float(row["probability"]), str(row["tier"]), next_version),
+            """insert into mw_customer_predictions (tenant_id, customer_key, customer_mobile, customer_name, probability, tier, model_version)
+               values (%s, %s, %s, %s, %s, %s, %s)""",
+            (TENANT_ID, row["customer_key"], row["customer_mobile"], row["customer_name"], float(row["probability"]), str(row["tier"]), next_version),
         )
-    conn.commit()
 
     tier_counts = score_df["tier"].value_counts()
-    print(f"  Scored {len(score_df)} customers: {tier_counts.to_dict()}")
+    print(f"  Scored {len(score_df)} customer identities: {tier_counts.to_dict()}")
 
+    # ── Weekly load forecast ──
+    print("\nComputing weekly load forecast...")
+    forecast_df = compute_load_forecast(tx)
+    cur.execute("delete from mw_load_forecast where tenant_id = %s", (TENANT_ID,))
+    for _, row in forecast_df.iterrows():
+        cur.execute(
+            """insert into mw_load_forecast (tenant_id, day_of_week, day_name, avg_visits, recent_avg_visits, model_version)
+               values (%s, %s, %s, %s, %s, %s)""",
+            (TENANT_ID, int(row["day_of_week"]), row["day_name"], row["avg_visits"], row["recent_avg_visits"], next_version),
+        )
+    print(forecast_df.to_string(index=False))
+
+    conn.commit()
     cur.close()
     conn.close()
     print("\nDone.")
