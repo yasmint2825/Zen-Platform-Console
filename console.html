@@ -290,6 +290,13 @@
             <div id="loadForecastToday" style="margin-bottom:14px;"></div>
             <div id="loadForecastWeek"></div>
           </div>
+
+          <div class="card" id="insightsCard" style="display:none;">
+            <h2>Suggested actions</h2>
+            <p class="muted" style="margin-bottom:14px;">Generated from your actual model results and campaign state — every recommendation below is tied to a real number, not generic advice.</p>
+            <button class="btn btn-p btn-sm" onclick="generateInsights()">Generate insights</button>
+            <div id="insightsResult" style="margin-top:14px;"></div>
+          </div>
         </div>
 
         <!-- ASK A QUESTION -->
@@ -503,6 +510,7 @@ async function callML(action,extra){
 }
 async function loadPredictive(){
   const [statusRes,summaryRes]=await Promise.all([callML('model_status',{}),callML('predictions_summary',{})]);
+  document.getElementById('insightsCard').style.display=(statusRes.ok&&statusRes.model)?'block':'none';
   const hasModel=statusRes.ok&&statusRes.model;
   document.getElementById('predictiveNoModel').style.display=hasModel?'none':'block';
   document.getElementById('predictiveContent').style.display=hasModel?'block':'none';
@@ -863,6 +871,23 @@ async function loadChangeLog(){
       '<div class="muted" style="margin-top:2px;">'+changesText+'</div>'+
     '</div>';
   }).join('');
+}
+
+// Generate insights — Claude synthesizes real ML results + campaign
+// state into grounded recommendations. Triggered on demand, not
+// auto-run, so it never runs (and costs) without you asking for it.
+async function generateInsights(){
+  const r=document.getElementById('insightsResult');
+  r.textContent='Generating...';r.style.color='var(--muted)';
+  const j=await call('generate_insights',{});
+  if(!j.ok){r.textContent='Error: '+j.error;r.style.color='var(--err)';return;}
+  r.style.color='';
+  let html='<div class="item" style="background:var(--pl);border-color:var(--p);margin-bottom:12px;"><div style="font-size:14px;">'+j.summary+'</div></div>';
+  html+=(j.recommendations||[]).map(function(rec){
+    return '<div class="item"><div style="font-size:12px;color:var(--muted);margin-bottom:4px;">'+rec.finding+'</div><div style="font-size:13.5px;font-weight:600;">'+rec.suggestion+'</div></div>';
+  }).join('');
+  html+='<div class="muted" style="font-size:11px;margin-top:8px;">Generated '+new Date(j.generated_at).toLocaleString()+'</div>';
+  r.innerHTML=html;
 }
 
 // Ask a question — every answer computed fresh from real data via tool
