@@ -180,6 +180,48 @@ def compute_load_forecast(tx: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def compute_analytics_snapshot(tx: pd.DataFrame, profiles: pd.DataFrame, as_of: pd.Timestamp) -> pd.DataFrame:
+    """
+    Precomputes the same metrics the semantic layer (mw_metrics) defines,
+    for the whole customer base AND each segment separately — this is
+    what makes get_metric's "check the snapshot first" fast path real
+    rather than empty plumbing. Refreshed every training run (weekly),
+    same cadence as the model itself.
+    """
+    tx = tx.merge(profiles, on="customer_key", how="left")
+    rows = []
+
+    def metrics_for(subset: pd.DataFrame, segment_label: str):
+        if subset.empty:
+            return
+        last_visit = subset.groupby("customer_key")["transaction_date"].max()
+        active_30d = int((last_visit >= as_of - pd.Timedelta(days=30)).sum())
+        lapsed_90d = int((last_visit <= as_of - pd.Timedelta(days=90)).sum())
+        total_revenue = float(subset["amount"].sum())
+        gaps = []
+        for _, g in subset.groupby("customer_key"):
+            dates = g["transaction_date"].sort_values().tolist()
+            for i in range(1, len(dates)):
+                gaps.append((dates[i] - dates[i - 1]).days)
+        avg_gap = float(sum(gaps) / len(gaps)) if gaps else None
+
+        rows.append({"metric_key": "active_customers_30d", "segment": segment_label, "value": active_30d})
+        rows.append({"metric_key": "lapsed_customers_90d", "segment": segment_label, "value": lapsed_90d})
+        rows.append({"metric_key": "total_revenue", "segment": segment_label, "value": round(total_revenue, 2)})
+        if avg_gap is not None:
+            rows.append({"metric_key": "avg_visit_gap_days", "segment": segment_label, "value": round(avg_gap, 1)})
+
+    # "all" is a real value here, not a placeholder for missing data —
+    # segment is part of this table's primary key, and primary key
+    # columns can never be NULL in Postgres. Using an actual sentinel
+    # string avoids that entirely, rather than fighting it.
+    metrics_for(tx, "all")
+    for seg in ["boy", "girl"]:
+        metrics_for(tx[tx["segment"].str.lower().fillna("") == seg], seg)
+
+    return pd.DataFrame(rows)
+
+
 def main():
     engine = create_engine(DATABASE_URL)
     conn = psycopg2.connect(DATABASE_URL)  # separate raw connection for writes — psycopg2 handles arrays/transactions more directly than going back through SQLAlchemy for inserts
@@ -276,6 +318,19 @@ def main():
             (TENANT_ID, int(row["day_of_week"]), row["day_name"], row["avg_visits"], row["recent_avg_visits"], next_version),
         )
     print(forecast_df.to_string(index=False))
+
+    # ── Analytics snapshot — the "mini read replica" performance layer ──
+    print("\nComputing analytics snapshot...")
+    snapshot_df = compute_analytics_snapshot(tx, profiles, as_of)
+    cur.execute("delete from mw_analytics_snapshot where tenant_id = %s", (TENANT_ID,))
+    for _, row in snapshot_df.iterrows():
+        cur.execute(
+            """insert into mw_analytics_snapshot (tenant_id, metric_key, segment, value)
+               values (%s, %s, %s, %s)
+               on conflict (tenant_id, metric_key, segment) do update set value = excluded.value, computed_at = now()""",
+            (TENANT_ID, row["metric_key"], row["segment"], row["value"]),
+        )
+    print(f"  {len(snapshot_df)} snapshot values computed")
 
     conn.commit()
     cur.close()
