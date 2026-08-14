@@ -361,12 +361,14 @@
 
           <div class="card" id="stylistsCard">
             <h2>Stylists</h2>
-            <p class="muted">Map a phone number to a real name so visits can be attributed to the stylist who served them - powers "which stylist is losing customers" style questions in Ask a question. Map "Stylist phone number" when uploading Excel/CSV data for this to actually populate.</p>
+            <p class="muted">Real names sync in automatically from MiniCuts' own check-in records (no upkeep needed) - this roster is mainly for adding aliases when the same person shows up spelled differently (e.g. "Hyden" vs "Heyden"), and as a fallback for phone-only Excel data.</p>
             <div class="row" style="margin-bottom:10px;">
               <input class="fi" type="text" id="stylistPhone" placeholder="Phone number" style="flex:1;min-width:120px;">
-              <input class="fi" type="text" id="stylistName" placeholder="Name" style="flex:1;min-width:120px;">
+              <input class="fi" type="text" id="stylistName" placeholder="Canonical name" style="flex:1;min-width:120px;">
+              <input class="fi" type="text" id="stylistAliases" placeholder="Other spellings (comma-separated, optional)" style="flex:1;min-width:160px;">
               <button class="btn btn-s btn-sm" onclick="addStylist()">+ Add</button>
             </div>
+            <p class="muted" style="font-size:11px;margin-bottom:8px;">After adding aliases for an existing person, click "Sync now" under Daily sync once more - it re-checks every visit each time, so past rows get corrected automatically, not just new ones.</p>
             <div id="stylistsList" class="muted">Loading...</div>
           </div>
 
@@ -1034,15 +1036,18 @@ async function loadStylists(){
   if(!j.ok){el.textContent='Error: '+j.error;return;}
   if(!j.stylists.length){el.innerHTML='No stylists added yet.';return;}
   el.innerHTML=j.stylists.map(function(s){
-    return '<div class="item" style="display:flex;justify-content:space-between;align-items:center;"><span>'+s.name+' <span class="muted">('+s.phone_number+')</span></span><button class="btn btn-s btn-sm" onclick="deleteStylist(\''+s.id+'\')">Remove</button></div>';
+    const aliasText=(s.aliases&&s.aliases.length)?(' <span class="muted" style="font-size:11px;">aka: '+s.aliases.join(', ')+'</span>'):'';
+    return '<div class="item" style="display:flex;justify-content:space-between;align-items:center;"><span>'+s.name+' <span class="muted">('+s.phone_number+')</span>'+aliasText+'</span><button class="btn btn-s btn-sm" onclick="deleteStylist(\''+s.id+'\')">Remove</button></div>';
   }).join('');
 }
 async function addStylist(){
   const phone=document.getElementById('stylistPhone').value.trim();
   const name=document.getElementById('stylistName').value.trim();
+  const aliasesRaw=document.getElementById('stylistAliases').value.trim();
+  const aliases=aliasesRaw?aliasesRaw.split(',').map(function(a){return a.trim();}).filter(Boolean):[];
   if(!phone||!name){alert('Both phone number and name are required.');return;}
-  const j=await call('add_stylist',{phone_number:phone,name:name});
-  if(j.ok){document.getElementById('stylistPhone').value='';document.getElementById('stylistName').value='';loadStylists();}
+  const j=await call('add_stylist',{phone_number:phone,name:name,aliases:aliases});
+  if(j.ok){document.getElementById('stylistPhone').value='';document.getElementById('stylistName').value='';document.getElementById('stylistAliases').value='';loadStylists();}
   else alert('Error: '+j.error);
 }
 async function deleteStylist(id){
