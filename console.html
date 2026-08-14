@@ -281,6 +281,16 @@
             <div class="stat-grid" id="predictiveTiers" style="margin-bottom:18px;"></div>
             <h3>At-risk customers — what's actually happening</h3>
             <p class="muted" style="font-size:12.5px;margin-bottom:8px;">Cross-checked against your live campaigns — not just a score, but whether anything is actually being done about it.</p>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+              <span class="muted" style="font-size:12.5px;">Reach uncovered at-risk customers using</span>
+              <select class="fi" id="outreachCampaign" style="width:auto;margin:0;">
+                <option value="lapsed">lapsed (win-back)</option>
+                <option value="nudge">nudge</option>
+                <option value="new_customer_offer">new_customer_offer</option>
+              </select>
+              <button class="btn btn-p btn-sm" onclick="triggerOutreach()">Trigger outreach</button>
+            </div>
+            <div id="outreachResult" style="font-size:12.5px;margin-bottom:10px;"></div>
             <div id="atRiskList" class="muted">Loading...</div>
           </div>
 
@@ -876,6 +886,19 @@ async function loadChangeLog(){
 // Generate insights — Claude synthesizes real ML results + campaign
 // state into grounded recommendations. Triggered on demand, not
 // auto-run, so it never runs (and costs) without you asking for it.
+async function triggerOutreach(){
+  const campaign=document.getElementById('outreachCampaign').value;
+  const r=document.getElementById('outreachResult');
+  if(!confirm('This will send real WhatsApp messages (or queue them for review, depending on your review mode) to every currently-uncovered at-risk customer, using the "'+campaign+'" campaign. Continue?')) return;
+  r.textContent='Working...';r.style.color='var(--muted)';
+  const j=await call('trigger_at_risk_outreach',{campaign_key:campaign});
+  if(!j.ok){r.textContent='Error: '+j.error;r.style.color='var(--err)';return;}
+  let msg=j.created+' decision(s) created, '+j.mode+'.';
+  if(j.skipped_already_covered) msg+=' '+j.skipped_already_covered+' were already covered, skipped.';
+  if(j.skipped_no_mobile) msg+=' '+j.skipped_no_mobile+' had no phone on file, skipped.';
+  r.textContent=msg;r.style.color='var(--ok)';
+  loadPredictive();
+}
 async function generateInsights(){
   const r=document.getElementById('insightsResult');
   r.textContent='Generating...';r.style.color='var(--muted)';
@@ -1101,11 +1124,16 @@ async function addBlackout(){
 async function delBlackout(id){if(!confirm('Remove?'))return;await call('delete_blackout',{id:id});loadSettings();}
 async function setReviewMode(){const j=await call('set_review_mode',{review_mode:document.getElementById('reviewMode').value});if(!j.ok)alert('Error: '+j.error);}
 async function runNow(){
-  const r=document.getElementById('runResult');r.textContent='Running...';r.style.color='var(--muted)';
+  const r=document.getElementById('runResult');r.textContent='Submitting...';r.style.color='var(--muted)';
   const j=await call('run_now',{});
   const res=(j.results&&j.results[0])||{};
   if(j.ok&&!res.error){
-    r.textContent=(res.candidates||0)+' scanned, '+(res.decisions||0)+' decisions, '+(res.dispatched||0)+' sent immediately.';r.style.color='var(--ok)';
+    if(res.submitted){
+      r.textContent=(res.candidates||0)+' candidates scanned, '+(res.chunks||0)+' batch(es) submitted for processing. Decisions will appear once results are ready (usually within a couple hours, not immediately) — check back or refresh Pending review shortly.';
+    } else {
+      r.textContent=(res.candidates||0)+' candidates scanned, nothing to submit ('+(res.reason||'no eligible candidates today')+').';
+    }
+    r.style.color='var(--ok)';
     loadPending();loadRuns();loadOverview();
   } else {
     r.textContent='Error: '+(res.error||j.error||'Unknown error');r.style.color='var(--err)';
