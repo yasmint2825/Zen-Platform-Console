@@ -52,13 +52,14 @@ def load_transactions(engine) -> pd.DataFrame:
     real per-person identity), not phone number — a shared phone number
     across siblings must never merge two people into one record here."""
     query = """
-        select customer_key, customer_mobile, customer_name, transaction_date, amount
+        select customer_key, customer_mobile, customer_name, transaction_date, transaction_datetime, amount, stylist_phone
         from mw_transactions
         where tenant_id = %(tenant_id)s and customer_key is not null
         order by customer_key, transaction_date asc
     """
     df = pd.read_sql(query, engine, params={"tenant_id": TENANT_ID})
     df["transaction_date"] = pd.to_datetime(df["transaction_date"])
+    df["transaction_datetime"] = pd.to_datetime(df["transaction_datetime"])
     df["amount"] = pd.to_numeric(df["amount"], errors="coerce").fillna(0)
     return df
 
@@ -178,6 +179,32 @@ def compute_load_forecast(tx: pd.DataFrame) -> pd.DataFrame:
             "recent_avg_visits": round(float(recent_avg.get(dow, 0)), 2),
         })
     return pd.DataFrame(rows)
+
+
+def compute_hourly_load_forecast(tx: pd.DataFrame) -> tuple[pd.DataFrame, float]:
+    """
+    Average visits by hour-of-day — deliberately NOT crossed with day of
+    week, which would leave too few real historical data points per
+    bucket to trust (a specific "Tuesday 11am" bucket might have only a
+    handful of visits across 15 months; "11am generally" has far more).
+
+    Honest limitation, stated in the return value, not hidden: this can
+    only use rows that actually have a real timestamp, not just a date.
+    Historical rows uploaded before the ingest fix don't have one yet —
+    the coverage percentage this returns tells you exactly how much of
+    your data can currently answer this question.
+    """
+    with_time = tx.dropna(subset=["transaction_datetime"])
+    coverage = len(with_time) / len(tx) if len(tx) else 0.0
+    if with_time.empty:
+        return pd.DataFrame(columns=["hour_of_day", "avg_visits"]), coverage
+
+    daily_hourly = with_time.groupby([with_time["transaction_datetime"].dt.date, with_time["transaction_datetime"].dt.hour]).size()
+    daily_hourly.index.names = ["date", "hour"]
+    hourly_avg = daily_hourly.groupby("hour").mean()
+
+    rows = [{"hour_of_day": h, "avg_visits": round(float(hourly_avg.get(h, 0)), 2)} for h in range(24)]
+    return pd.DataFrame(rows), coverage
 
 
 def compute_analytics_snapshot(tx: pd.DataFrame, profiles: pd.DataFrame, as_of: pd.Timestamp) -> pd.DataFrame:
@@ -331,6 +358,20 @@ def main():
             (TENANT_ID, row["metric_key"], row["segment"], row["value"]),
         )
     print(f"  {len(snapshot_df)} snapshot values computed")
+
+    # ── Hourly load pattern ──
+    print("\nComputing hourly load pattern...")
+    hourly_df, time_coverage = compute_hourly_load_forecast(tx)
+    print(f"  {time_coverage:.1%} of transactions have real time-of-day data — {'usable' if time_coverage > 0.3 else 'too sparse to trust yet, needs more time-stamped data'}")
+    if not hourly_df.empty:
+        cur.execute("delete from mw_hourly_load_forecast where tenant_id = %s", (TENANT_ID,))
+        for _, row in hourly_df.iterrows():
+            cur.execute(
+                """insert into mw_hourly_load_forecast (tenant_id, hour_of_day, avg_visits, model_version)
+                   values (%s, %s, %s, %s)""",
+                (TENANT_ID, int(row["hour_of_day"]), row["avg_visits"], next_version),
+            )
+        print(hourly_df.to_string(index=False))
 
     conn.commit()
     cur.close()
