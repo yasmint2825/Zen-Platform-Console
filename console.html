@@ -359,6 +359,17 @@
             <p class="muted" style="margin-top:8px;">Including <code>external_id</code> (your own invoice/order number) is optional but recommended if you also upload Excel exports of the same data - it prevents the same sale from being counted twice.</p>
           </div>
 
+          <div class="card" id="stylistsCard">
+            <h2>Stylists</h2>
+            <p class="muted">Map a phone number to a real name so visits can be attributed to the stylist who served them - powers "which stylist is losing customers" style questions in Ask a question. Map "Stylist phone number" when uploading Excel/CSV data for this to actually populate.</p>
+            <div class="row" style="margin-bottom:10px;">
+              <input class="fi" type="text" id="stylistPhone" placeholder="Phone number" style="flex:1;min-width:120px;">
+              <input class="fi" type="text" id="stylistName" placeholder="Name" style="flex:1;min-width:120px;">
+              <button class="btn btn-s btn-sm" onclick="addStylist()">+ Add</button>
+            </div>
+            <div id="stylistsList" class="muted">Loading...</div>
+          </div>
+
           <div class="card" id="syncChannelCard">
             <h2>Daily sync</h2>
             <p class="muted">Pulls MiniCuts' own customer records into this platform automatically, once a day, ahead of the engagement agent's run - no manual upload needed for day-to-day freshness.</p>
@@ -627,7 +638,7 @@ async function createTenant(fromOverview){
 function loadDashboard(){
   loadWAStatus();loadTemplateMappings();
   loadSettings();loadPending();loadRuns();loadTeam();loadApiKeys();loadChangeLog();
-  loadTransactionSummary();loadRecentUploads();
+  loadTransactionSummary();loadRecentUploads();loadStylists();
   loadOverview();
 }
 async function loadOverview(){
@@ -1016,6 +1027,29 @@ async function loadRecentUploads(){
     j.batches.map(function(b){return '<div class="item" style="font-size:12px;">'+new Date(b.created_at).toLocaleString()+' - '+(b.filename||'(unnamed)')+' - '+b.rows_inserted+' inserted'+(b.rows_skipped?(', '+b.rows_skipped+' skipped'):'')+'</div>';}).join('');
 }
 
+async function loadStylists(){
+  const el=document.getElementById('stylistsList');
+  if(!el) return;
+  const j=await call('list_stylists',{});
+  if(!j.ok){el.textContent='Error: '+j.error;return;}
+  if(!j.stylists.length){el.innerHTML='No stylists added yet.';return;}
+  el.innerHTML=j.stylists.map(function(s){
+    return '<div class="item" style="display:flex;justify-content:space-between;align-items:center;"><span>'+s.name+' <span class="muted">('+s.phone_number+')</span></span><button class="btn btn-s btn-sm" onclick="deleteStylist(\''+s.id+'\')">Remove</button></div>';
+  }).join('');
+}
+async function addStylist(){
+  const phone=document.getElementById('stylistPhone').value.trim();
+  const name=document.getElementById('stylistName').value.trim();
+  if(!phone||!name){alert('Both phone number and name are required.');return;}
+  const j=await call('add_stylist',{phone_number:phone,name:name});
+  if(j.ok){document.getElementById('stylistPhone').value='';document.getElementById('stylistName').value='';loadStylists();}
+  else alert('Error: '+j.error);
+}
+async function deleteStylist(id){
+  const j=await call('delete_stylist',{id:id});
+  if(j.ok) loadStylists(); else alert('Error: '+j.error);
+}
+
 const MW_SYNC_URL=SB_URL+'/functions/v1/mw-sync-minicuts';
 async function runSyncNow(){
   const r=document.getElementById('syncResult');
@@ -1047,7 +1081,8 @@ const FIELD_GUESSES={
   description:['description','item','service','product','notes'],
   dob:['dob','birth','birthday'],
   segment:['segment','gender','category'],
-  external_id:['external_id','invoice','order id','order_id','transaction_id','invoice_number']
+  external_id:['external_id','invoice','order id','order_id','transaction_id','invoice_number'],
+  stylist_phone:['stylist_phone','stylist','employee_phone_number','employee_phone','staff_phone']
 };
 let uploadedRows=null,uploadedHeaders=null,uploadedFilename=null;
 function handleFileSelect(evt){
@@ -1072,7 +1107,7 @@ function guessColumn(field){
   return match||'';
 }
 function renderMapping(){
-  const fields=[['mobile','Phone number',false],['email','Email',false],['name','Customer name',false],['date','Transaction date',true],['amount','Amount',false],['description','Item / service',false],['dob','Date of birth',false],['segment','Segment (e.g. gender)',false],['external_id','Invoice / order ID',false]];
+  const fields=[['mobile','Phone number',false],['email','Email',false],['name','Customer name',false],['date','Transaction date',true],['amount','Amount',false],['description','Item / service',false],['dob','Date of birth',false],['segment','Segment (e.g. gender)',false],['external_id','Invoice / order ID',false],['stylist_phone','Stylist phone number',false]];
   document.getElementById('mappingFields').innerHTML=fields.map(function(f){
     const key=f[0],label=f[1],required=f[2];
     return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">'+
@@ -1082,10 +1117,10 @@ function renderMapping(){
         uploadedHeaders.map(function(h){return '<option value="'+h+'" '+(guessColumn(key)===h?'selected':'')+'>'+h+'</option>';}).join('')+
       '</select>'+
     '</div>';
-  }).join('')+'<div class="muted" style="font-size:11.5px;margin-top:4px;">* Date is required. Map at least one of Phone or Email to identify customers - rows with no phone number will still be stored, but cannot receive WhatsApp messages until a phone is added later. Mapping Name too is recommended - it helps correctly tell apart people who share a contact (e.g. family members under one phone number). Date of birth and Segment are optional, but power birthday and segmented campaigns if you have them. <b>Invoice / order ID matters if you might ever re-upload this same file or an overlapping export</b> - without it, re-uploading creates duplicate rows instead of safely updating existing ones.</div>';
+  }).join('')+'<div class="muted" style="font-size:11.5px;margin-top:4px;">* Date is required. Map at least one of Phone or Email to identify customers - rows with no phone number will still be stored, but cannot receive WhatsApp messages until a phone is added later. Mapping Name too is recommended - it helps correctly tell apart people who share a contact (e.g. family members under one phone number). Date of birth and Segment are optional, but power birthday and segmented campaigns if you have them. Stylist phone number is optional too, but powers per-stylist retention tracking if mapped (map it under Connections → Stylists first so the phone number resolves to a real name). <b>Invoice / order ID matters if you might ever re-upload this same file or an overlapping export</b> - without it, re-uploading creates duplicate rows instead of safely updating existing ones.</div>';
   renderPreview();
   document.getElementById('uploadMapping').style.display='block';
-  ['mobile','email','name','date','amount','description','dob','segment','external_id'].forEach(function(key){
+  ['mobile','email','name','date','amount','description','dob','segment','external_id','stylist_phone'].forEach(function(key){
     document.getElementById('map_'+key).addEventListener('change',renderPreview);
   });
 }
@@ -1099,7 +1134,8 @@ function currentMapping(){
     description:document.getElementById('map_description').value,
     dob:document.getElementById('map_dob').value,
     segment:document.getElementById('map_segment').value,
-    external_id:document.getElementById('map_external_id').value
+    external_id:document.getElementById('map_external_id').value,
+    stylist_phone:document.getElementById('map_stylist_phone').value
   };
 }
 function mappedRows(){
@@ -1114,7 +1150,8 @@ function mappedRows(){
       description:m.description?r[m.description]:'',
       dob:m.dob?r[m.dob]:'',
       segment:m.segment?r[m.segment]:'',
-      external_id:m.external_id?r[m.external_id]:''
+      external_id:m.external_id?r[m.external_id]:'',
+      stylist_phone:m.stylist_phone?r[m.stylist_phone]:''
     };
   });
 }
@@ -1122,8 +1159,8 @@ function renderPreview(){
   const rows=mappedRows().slice(0,5);
   const el=document.getElementById('uploadPreview');
   el.innerHTML='<table style="width:100%;font-size:12px;border-collapse:collapse;">'+
-    '<thead><tr style="text-align:left;color:var(--muted);"><th style="padding:4px 8px;">Phone</th><th style="padding:4px 8px;">Email</th><th style="padding:4px 8px;">Name</th><th style="padding:4px 8px;">Date</th><th style="padding:4px 8px;">Amount</th><th style="padding:4px 8px;">Item</th><th style="padding:4px 8px;">DOB</th><th style="padding:4px 8px;">Segment</th><th style="padding:4px 8px;">Invoice ID</th></tr></thead>'+
-    '<tbody>'+rows.map(function(r){return '<tr style="border-top:1px solid var(--border);"><td style="padding:4px 8px;">'+r.mobile+'</td><td style="padding:4px 8px;">'+r.email+'</td><td style="padding:4px 8px;">'+r.name+'</td><td style="padding:4px 8px;">'+r.date+'</td><td style="padding:4px 8px;">'+r.amount+'</td><td style="padding:4px 8px;">'+r.description+'</td><td style="padding:4px 8px;">'+r.dob+'</td><td style="padding:4px 8px;">'+r.segment+'</td><td style="padding:4px 8px;">'+r.external_id+'</td></tr>';}).join('')+'</tbody>'+
+    '<thead><tr style="text-align:left;color:var(--muted);"><th style="padding:4px 8px;">Phone</th><th style="padding:4px 8px;">Email</th><th style="padding:4px 8px;">Name</th><th style="padding:4px 8px;">Date</th><th style="padding:4px 8px;">Amount</th><th style="padding:4px 8px;">Item</th><th style="padding:4px 8px;">DOB</th><th style="padding:4px 8px;">Segment</th><th style="padding:4px 8px;">Invoice ID</th><th style="padding:4px 8px;">Stylist phone</th></tr></thead>'+
+    '<tbody>'+rows.map(function(r){return '<tr style="border-top:1px solid var(--border);"><td style="padding:4px 8px;">'+r.mobile+'</td><td style="padding:4px 8px;">'+r.email+'</td><td style="padding:4px 8px;">'+r.name+'</td><td style="padding:4px 8px;">'+r.date+'</td><td style="padding:4px 8px;">'+r.amount+'</td><td style="padding:4px 8px;">'+r.description+'</td><td style="padding:4px 8px;">'+r.dob+'</td><td style="padding:4px 8px;">'+r.segment+'</td><td style="padding:4px 8px;">'+r.external_id+'</td><td style="padding:4px 8px;">'+r.stylist_phone+'</td></tr>';}).join('')+'</tbody>'+
   '</table>';
 }
 async function submitUpload(){
