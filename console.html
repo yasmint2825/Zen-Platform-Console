@@ -316,6 +316,8 @@
         <div class="page" id="page-ask">
           <div class="page-header"><h1>Ask a question</h1><p class="muted">Type a real question - every answer is computed fresh from your actual data, never guessed.</p></div>
           <div class="card">
+            <div class="muted" style="font-size:11.5px;margin-bottom:6px;">Quick questions - click any of these, or just type your own below:</div>
+            <div id="quickQuestions" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;"></div>
             <textarea class="fi" id="askInput" rows="2" placeholder="e.g. How many customers haven't visited in 60 days? Is the win-back campaign working?"></textarea>
             <button class="btn btn-p btn-sm" onclick="askQuestion()">Ask</button>
             <div id="askResult" style="margin-top:14px;"></div>
@@ -526,6 +528,7 @@ function showPage(id){
   const nav=document.querySelector('.nav-item[data-page="'+id+'"]');
   if(nav) nav.classList.add('active');
   if(id==='predictive') loadPredictive();
+  if(id==='ask') renderQuickQuestions();
 }
 
 const MW_ML_URL=SB_URL+'/functions/v1/mw-ml';
@@ -962,10 +965,27 @@ async function generateInsights(){
 // Ask a question — every answer computed fresh from real data via tool
 // calls, never guessed. History kept client-side for this session only.
 let askHistoryLog=[];
-async function askQuestion(){
-  const q=document.getElementById('askInput').value.trim();
+const QUICK_QUESTIONS=[
+  'What is our total revenue?',
+  'How many active customers do we have?',
+  'How many lapsed customers do we have?',
+  "What's our retention rate?",
+  'What is the average time between visits?',
+  'Which stylist is losing customers?',
+  'Is the lapsed campaign working?',
+];
+function renderQuickQuestions(){
+  const el=document.getElementById('quickQuestions');
+  if(!el) return;
+  el.innerHTML=QUICK_QUESTIONS.map(function(q){
+    return '<button class="btn btn-s btn-sm" style="font-size:11.5px;padding:5px 10px;" onclick="askQuestion('+JSON.stringify(q)+')">'+q+'</button>';
+  }).join('');
+}
+async function askQuestion(prefilled){
+  const q=(typeof prefilled==='string'?prefilled:document.getElementById('askInput').value).trim();
   const r=document.getElementById('askResult');
   if(!q){r.textContent='Type a question first.';r.style.color='var(--err)';return;}
+  document.getElementById('askInput').value=q; // shows what's actually being asked, even when triggered by a chip
   r.textContent='Thinking...';r.style.color='var(--muted)';
   const j=await call('ask_question',{question:q});
   if(j.ok){
