@@ -69,6 +69,96 @@ def load_profiles(engine) -> pd.DataFrame:
     return pd.read_sql(query, engine, params={"tenant_id": TENANT_ID})
 
 
+def load_stylists_roster(engine) -> pd.DataFrame:
+    query = "select phone_number, name from mw_stylists where tenant_id = %(tenant_id)s"
+    return pd.read_sql(query, engine, params={"tenant_id": TENANT_ID})
+
+
+def compute_stylist_performance(tx: pd.DataFrame, score_df: pd.DataFrame, roster: pd.DataFrame) -> pd.DataFrame:
+    """
+    Same logic as the (now-retired) live stylist_performance tool: for
+    every customer a stylist has EVER served, check their CURRENT
+    return-probability tier. stylist_name (from the queue-based sync,
+    a real name) is preferred over stylist_phone (resolved via the
+    roster — the Excel-upload path, which only ever has a phone number).
+    """
+    name_by_phone = dict(zip(roster["phone_number"], roster["name"]))
+    tier_by_key = dict(zip(score_df["customer_key"], score_df["tier"]))
+
+    def resolve_label(row):
+        if pd.notna(row.get("stylist_name")):
+            return row["stylist_name"]
+        if pd.notna(row.get("stylist_phone")):
+            return name_by_phone.get(row["stylist_phone"], f"Unmapped ({row['stylist_phone']})")
+        return None
+
+    tx = tx.copy()
+    tx["stylist_label"] = tx.apply(resolve_label, axis=1)
+    attributed = tx.dropna(subset=["stylist_label"])
+    if attributed.empty:
+        return pd.DataFrame(columns=["stylist", "total_customers", "at_risk", "likely_to_return", "at_risk_percent"])
+
+    rows = []
+    for stylist, group in attributed.groupby("stylist_label"):
+        customers = group["customer_key"].unique()
+        tiers = [tier_by_key.get(c) for c in customers]
+        at_risk = sum(1 for t in tiers if t == "at_risk")
+        likely = sum(1 for t in tiers if t == "likely")
+        total = len(customers)
+        rows.append({
+            "stylist": stylist,
+            "total_customers": total,
+            "at_risk": at_risk,
+            "likely_to_return": likely,
+            "at_risk_percent": round(at_risk / total * 100, 1) if total else 0.0,
+        })
+    return pd.DataFrame(rows)
+
+
+def compute_campaign_performance(engine, return_window_days: int = 30) -> pd.DataFrame:
+    """Same 'did the message actually work' measure as the live tool —
+    checks whether each sent customer had a NEW transaction within the
+    window afterward, not just how many messages went out."""
+    decisions = pd.read_sql(
+        "select customer_id, campaign_key, status, created_at from mw_agent_decisions where tenant_id = %(tenant_id)s",
+        engine, params={"tenant_id": TENANT_ID},
+    )
+    if decisions.empty:
+        return pd.DataFrame(columns=["campaign_key", "total_decisions", "total_sent", "returned_within_window", "return_rate_percent"])
+    # tz_localize(None) strips timezone info — mw_agent_decisions.created_at
+    # is timestamptz (timezone-aware) but mw_transactions.transaction_date
+    # is a plain date (timezone-naive); comparing the two directly raises
+    # a TypeError otherwise. The date column has no timezone to begin
+    # with, so normalizing to naive is the correct fix, not a workaround.
+    decisions["created_at"] = pd.to_datetime(decisions["created_at"]).dt.tz_localize(None)
+
+    tx_dates = pd.read_sql(
+        "select customer_key, transaction_date from mw_transactions where tenant_id = %(tenant_id)s",
+        engine, params={"tenant_id": TENANT_ID},
+    )
+    tx_dates["transaction_date"] = pd.to_datetime(tx_dates["transaction_date"])
+    tx_by_customer = tx_dates.groupby("customer_key")["transaction_date"].apply(list).to_dict()
+
+    rows = []
+    for campaign_key, group in decisions.groupby("campaign_key"):
+        sent = group[group["status"].isin(["sent", "auto_sent"])]
+        returned = 0
+        for _, d in sent.iterrows():
+            dates = tx_by_customer.get(d["customer_id"], [])
+            sent_at = d["created_at"]
+            if any(sent_at < dt <= sent_at + pd.Timedelta(days=return_window_days) for dt in dates):
+                returned += 1
+        total_sent = len(sent)
+        rows.append({
+            "campaign_key": campaign_key,
+            "total_decisions": len(group),
+            "total_sent": total_sent,
+            "returned_within_window": returned,
+            "return_rate_percent": round(returned / total_sent * 100, 1) if total_sent else 0.0,
+        })
+    return pd.DataFrame(rows)
+
+
 def build_training_set(tx: pd.DataFrame, profiles: pd.DataFrame, as_of: pd.Timestamp) -> pd.DataFrame:
     """
     Builds one labeled row per visit (from each customer's 2nd visit
@@ -333,6 +423,34 @@ def main():
 
     tier_counts = score_df["tier"].value_counts()
     print(f"  Scored {len(score_df)} customer identities: {tier_counts.to_dict()}")
+
+    # ── Stylist performance snapshot — replaces the old live-computed
+    #    tool, same "instant read instead of live compute every time"
+    #    upgrade already proven for the 4 core metrics ──
+    print("\nComputing stylist performance snapshot...")
+    roster = load_stylists_roster(engine)
+    stylist_df = compute_stylist_performance(tx, score_df, roster)
+    cur.execute("delete from mw_stylist_performance_snapshot where tenant_id = %s", (TENANT_ID,))
+    for _, row in stylist_df.iterrows():
+        cur.execute(
+            """insert into mw_stylist_performance_snapshot (tenant_id, stylist, total_customers, at_risk, likely_to_return, at_risk_percent)
+               values (%s, %s, %s, %s, %s, %s)""",
+            (TENANT_ID, row["stylist"], int(row["total_customers"]), int(row["at_risk"]), int(row["likely_to_return"]), float(row["at_risk_percent"])),
+        )
+    print(f"  {len(stylist_df)} stylists computed" if not stylist_df.empty else "  No stylist-attributed transactions found yet")
+
+    # ── Campaign performance snapshot — same 30-day return-window
+    #    default the live tool always used ──
+    print("\nComputing campaign performance snapshot...")
+    campaign_df = compute_campaign_performance(engine, return_window_days=30)
+    cur.execute("delete from mw_campaign_performance_snapshot where tenant_id = %s and return_window_days = 30", (TENANT_ID,))
+    for _, row in campaign_df.iterrows():
+        cur.execute(
+            """insert into mw_campaign_performance_snapshot (tenant_id, campaign_key, return_window_days, total_decisions, total_sent, returned_within_window, return_rate_percent)
+               values (%s, %s, %s, %s, %s, %s, %s)""",
+            (TENANT_ID, row["campaign_key"], 30, int(row["total_decisions"]), int(row["total_sent"]), int(row["returned_within_window"]), float(row["return_rate_percent"])),
+        )
+    print(f"  {len(campaign_df)} campaigns computed" if not campaign_df.empty else "  No campaign decisions found yet")
 
     # ── Weekly load forecast ──
     print("\nComputing weekly load forecast...")
