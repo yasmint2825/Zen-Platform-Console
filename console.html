@@ -978,9 +978,20 @@ const QUICK_QUESTIONS=[
 function renderQuickQuestions(){
   const el=document.getElementById('quickQuestions');
   if(!el) return;
-  el.innerHTML=QUICK_QUESTIONS.map(function(q){
-    return '<button class="btn btn-s btn-sm" style="font-size:11.5px;padding:5px 10px;" onclick="askQuestion('+JSON.stringify(q)+')">'+q+'</button>';
+  // Not using inline onclick with an embedded string here on purpose —
+  // any question containing an apostrophe (like "What's our retention
+  // rate?") breaks quote-matching in the generated HTML attribute,
+  // silently corrupting that button and everything rendered after it.
+  // addEventListener with a numeric index sidesteps the whole problem —
+  // no question text ever gets embedded as a quoted attribute value.
+  el.innerHTML=QUICK_QUESTIONS.map(function(q,i){
+    return '<button class="btn btn-s btn-sm" style="font-size:11.5px;padding:5px 10px;" data-quick-question-index="'+i+'">'+q+'</button>';
   }).join('');
+  el.querySelectorAll('[data-quick-question-index]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      askQuestion(QUICK_QUESTIONS[parseInt(btn.getAttribute('data-quick-question-index'), 10)]);
+    });
+  });
 }
 async function askQuestion(prefilled){
   const q=(typeof prefilled==='string'?prefilled:document.getElementById('askInput').value).trim();
