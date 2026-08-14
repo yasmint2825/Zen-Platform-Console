@@ -342,7 +342,13 @@ def main():
         cur.execute(
             """insert into mw_load_forecast (tenant_id, day_of_week, day_name, avg_visits, recent_avg_visits, model_version)
                values (%s, %s, %s, %s, %s, %s)""",
-            (TENANT_ID, int(row["day_of_week"]), row["day_name"], row["avg_visits"], row["recent_avg_visits"], next_version),
+            # float() here isn't optional — pandas silently re-casts even
+            # explicitly-Python-float values back into numpy.float64 once
+            # they're inside a DataFrame column, and psycopg2 can't adapt
+            # that type on its own. Same fix already applied to the model
+            # weights insert earlier; needed again at every new insert
+            # point that pulls a value out of a DataFrame row.
+            (TENANT_ID, int(row["day_of_week"]), row["day_name"], float(row["avg_visits"]), float(row["recent_avg_visits"]), next_version),
         )
     print(forecast_df.to_string(index=False))
 
@@ -355,7 +361,7 @@ def main():
             """insert into mw_analytics_snapshot (tenant_id, metric_key, segment, value)
                values (%s, %s, %s, %s)
                on conflict (tenant_id, metric_key, segment) do update set value = excluded.value, computed_at = now()""",
-            (TENANT_ID, row["metric_key"], row["segment"], row["value"]),
+            (TENANT_ID, row["metric_key"], row["segment"], float(row["value"])),
         )
     print(f"  {len(snapshot_df)} snapshot values computed")
 
@@ -369,7 +375,7 @@ def main():
             cur.execute(
                 """insert into mw_hourly_load_forecast (tenant_id, hour_of_day, avg_visits, model_version)
                    values (%s, %s, %s, %s)""",
-                (TENANT_ID, int(row["hour_of_day"]), row["avg_visits"], next_version),
+                (TENANT_ID, int(row["hour_of_day"]), float(row["avg_visits"]), next_version),
             )
         print(hourly_df.to_string(index=False))
 
