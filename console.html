@@ -304,7 +304,10 @@
           <div class="card" id="insightsCard" style="display:none;">
             <h2>Suggested actions</h2>
             <p class="muted" style="margin-bottom:14px;">Generated from your actual model results and campaign state — every recommendation below is tied to a real number, not generic advice.</p>
-            <button class="btn btn-p btn-sm" onclick="generateInsights()">Generate insights</button>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+              <button class="btn btn-p btn-sm" onclick="generateInsights()">Generate new insights</button>
+              <select class="fi" id="insightsHistoryPicker" style="width:auto;margin:0;display:none;" onchange="showInsightsFromHistory(this.value)"></select>
+            </div>
             <div id="insightsResult" style="margin-top:14px;"></div>
           </div>
         </div>
@@ -521,6 +524,7 @@ async function callML(action,extra){
 async function loadPredictive(){
   const [statusRes,summaryRes]=await Promise.all([callML('model_status',{}),callML('predictions_summary',{})]);
   document.getElementById('insightsCard').style.display=(statusRes.ok&&statusRes.model)?'block':'none';
+  if(statusRes.ok&&statusRes.model) loadInsightsHistory();
   const hasModel=statusRes.ok&&statusRes.model;
   document.getElementById('predictiveNoModel').style.display=hasModel?'none':'block';
   document.getElementById('predictiveContent').style.display=hasModel?'block':'none';
@@ -899,6 +903,37 @@ async function triggerOutreach(){
   r.textContent=msg;r.style.color='var(--ok)';
   loadPredictive();
 }
+let insightsHistoryCache=[];
+function renderInsightsContent(summary,recommendations,generatedAt){
+  const r=document.getElementById('insightsResult');
+  r.style.color='';
+  let html='<div class="item" style="background:var(--pl);border-color:var(--p);margin-bottom:12px;"><div style="font-size:14px;">'+summary+'</div></div>';
+  html+=(recommendations||[]).map(function(rec){
+    return '<div class="item"><div style="font-size:12px;color:var(--muted);margin-bottom:4px;">'+rec.finding+'</div><div style="font-size:13.5px;font-weight:600;">'+rec.suggestion+'</div></div>';
+  }).join('');
+  html+='<div class="muted" style="font-size:11px;margin-top:8px;">Generated '+new Date(generatedAt).toLocaleString()+'</div>';
+  r.innerHTML=html;
+}
+function renderInsightsHistoryPicker(){
+  const picker=document.getElementById('insightsHistoryPicker');
+  if(insightsHistoryCache.length<2){picker.style.display='none';return;}
+  picker.style.display='inline-block';
+  picker.innerHTML=insightsHistoryCache.map(function(h,i){return '<option value="'+i+'">'+new Date(h.generated_at).toLocaleString()+(i===0?' (latest)':'')+'</option>';}).join('');
+}
+function showInsightsFromHistory(index){
+  const h=insightsHistoryCache[parseInt(index)];
+  if(h) renderInsightsContent(h.summary,h.recommendations,h.generated_at);
+}
+async function loadInsightsHistory(){
+  const j=await call('get_insights_history',{});
+  if(!j.ok||!j.history.length) return;
+  insightsHistoryCache=j.history;
+  renderInsightsHistoryPicker();
+  // Show the most recent one immediately — this is the actual fix for
+  // "vanishes on refresh": no Claude call needed just to see what was
+  // already generated.
+  renderInsightsContent(j.history[0].summary,j.history[0].recommendations,j.history[0].generated_at);
+}
 async function generateInsights(){
   const r=document.getElementById('insightsResult');
   r.textContent='Generating...';r.style.color='var(--muted)';
@@ -907,13 +942,8 @@ async function generateInsights(){
     r.innerHTML='Error: '+j.error+(j.raw_preview?('<div class="muted" style="font-size:11px;margin-top:6px;white-space:pre-wrap;">Raw response start: '+j.raw_preview+'...</div>'):'');
     r.style.color='var(--err)';return;
   }
-  r.style.color='';
-  let html='<div class="item" style="background:var(--pl);border-color:var(--p);margin-bottom:12px;"><div style="font-size:14px;">'+j.summary+'</div></div>';
-  html+=(j.recommendations||[]).map(function(rec){
-    return '<div class="item"><div style="font-size:12px;color:var(--muted);margin-bottom:4px;">'+rec.finding+'</div><div style="font-size:13.5px;font-weight:600;">'+rec.suggestion+'</div></div>';
-  }).join('');
-  html+='<div class="muted" style="font-size:11px;margin-top:8px;">Generated '+new Date(j.generated_at).toLocaleString()+'</div>';
-  r.innerHTML=html;
+  renderInsightsContent(j.summary,j.recommendations,j.generated_at);
+  loadInsightsHistory(); // refresh the picker so the new run shows up in it
 }
 
 // Ask a question — every answer computed fresh from real data via tool
