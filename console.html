@@ -346,6 +346,10 @@
 
           <div class="card">
             <h2>Review queue</h2>
+            <div style="margin-bottom:14px;">
+              <button class="btn btn-p btn-sm" onclick="generateNewSocialPost()">Generate a new post now</button>
+              <span id="generatePostResult" style="font-size:12px;margin-left:10px;"></span>
+            </div>
             <div id="socialPostsList" class="muted">Loading...</div>
           </div>
         </div>
@@ -1199,6 +1203,13 @@ async function requestSocialPostChanges(id){
     alert('Error: '+j.error);
   }
   loadSocialContent();
+}
+async function generateNewSocialPost(){
+  const r=document.getElementById('generatePostResult');
+  r.textContent='Triggering...';r.style.color='var(--muted)';
+  const j=await call('generate_new_social_post',{});
+  if(j.ok){r.textContent=j.note;r.style.color='var(--ok)';}
+  else{r.textContent='Error: '+j.error;r.style.color='var(--err)';}
 }
 async function loadBrandSettings(){
   const j=await call('get_brand_settings',{});
