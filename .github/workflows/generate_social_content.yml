@@ -4,7 +4,16 @@ on:
   schedule:
     # 07:00 UTC (~11:00 Gulf time) Monday, Wednesday, Friday
     - cron: '0 7 * * 1,3,5'
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      post_id:
+        description: 'Existing post ID to regenerate (leave blank for a fresh scheduled post)'
+        required: false
+        type: string
+      feedback:
+        description: 'What to change, if regenerating an existing post'
+        required: false
+        type: string
 
 jobs:
   generate:
@@ -22,5 +31,8 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           TENANT_ID: minicuts
+          REGEN_POST_ID: ${{ inputs.post_id }}
+          REGEN_FEEDBACK: ${{ inputs.feedback }}
         run: python3 ml_pipeline/generate_social_content.py
