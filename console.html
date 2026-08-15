@@ -70,6 +70,8 @@
   .agent-section[open] summary::after{transform:rotate(180deg);}
   .agent-section-body{padding:14px;border-top:1px solid var(--border);}
   .count-badge{background:var(--p);color:#fff;border-radius:20px;padding:1px 8px;font-size:11px;font-weight:700;margin-left:8px;}
+@keyframes mw-spin{to{transform:rotate(360deg);}}
+.mw-spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--p);border-radius:50%;animation:mw-spin 0.7s linear infinite;vertical-align:middle;margin-right:8px;}
 </style>
 </head>
 <body>
@@ -852,7 +854,7 @@ async function proposeStrategy(){
   const r=document.getElementById('nlResult');
   document.getElementById('nlPreview').style.display='none';
   if(!instruction){r.textContent='Type what you want first.';r.style.color='var(--err)';return;}
-  r.textContent='Thinking...';r.style.color='var(--muted)';
+  r.innerHTML='<span class="mw-spinner"></span>Reading your instruction and checking it against your current settings...';r.style.color='var(--muted)';
   const j=await call('propose_strategy_change',{instruction:instruction});
   if(!j.ok){r.textContent='Error: '+j.error;r.style.color='var(--err)';return;}
   r.textContent='';
@@ -1001,7 +1003,7 @@ async function askQuestion(prefilled){
   // THEN answering made it look like a two-step process (type, then
   // press Ask), even though the answer was already being fetched
   // automatically. One click, straight to the answer, nothing else.
-  r.textContent='Thinking...';r.style.color='var(--muted)';
+  r.innerHTML='<div class="item" style="background:var(--pl);border-color:var(--p);"><span class="mw-spinner"></span>Checking your data for a real answer...</div>';r.style.color='';
   const j=await call('ask_question',{question:q});
   if(j.ok){
     r.innerHTML='<div class="item" style="background:var(--pl);border-color:var(--p);"><div style="font-weight:700;font-size:13px;margin-bottom:4px;">'+q+'</div><div style="font-size:14px;">'+j.answer+'</div></div>';
