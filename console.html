@@ -1116,6 +1116,20 @@ async function loadRecentUploads(){
 }
 
 let brandSettingsCache=null;
+function openImageLightbox(url){
+  let overlay=document.getElementById('imageLightboxOverlay');
+  if(!overlay){
+    overlay=document.createElement('div');
+    overlay.id='imageLightboxOverlay';
+    overlay.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:pointer;';
+    overlay.onclick=function(){overlay.style.display='none';};
+    document.body.appendChild(overlay);
+  }
+  overlay.innerHTML='<img id="lightboxImg" style="max-width:90%;max-height:90%;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,0.5);">'+
+    '<div style="position:absolute;top:20px;right:30px;color:white;font-size:28px;cursor:pointer;">&times;</div>';
+  document.getElementById('lightboxImg').src=url;
+  overlay.style.display='flex';
+}
 async function loadSocialContent(){
   const statusEl=document.getElementById('instagramStatus');
   const j=await call('get_instagram_status',{});
@@ -1136,12 +1150,16 @@ async function loadSocialContent(){
     const actions=p.status==='pending_review'?(
       '<div style="margin-top:10px;display:flex;gap:8px;">'+
         '<button class="btn btn-p btn-sm" onclick="approveSocialPost(\''+p.id+'\')">Approve &amp; publish</button>'+
+        '<button class="btn btn-s btn-sm" onclick="requestSocialPostChanges(\''+p.id+'\')">Request changes</button>'+
         '<button class="btn btn-s btn-sm" onclick="rejectSocialPost(\''+p.id+'\')">Reject</button>'+
       '</div>'
     ):'';
     const errorLine=p.error?('<div style="font-size:11px;color:var(--err);margin-top:4px;">'+p.error+'</div>'):'';
     return '<div class="item" style="display:flex;gap:14px;align-items:flex-start;">'+
-      '<img src="'+p.image_url+'" style="width:110px;height:110px;object-fit:cover;border-radius:8px;flex-shrink:0;">'+
+      '<div style="flex-shrink:0;">'+
+        '<img src="'+p.image_url+'" style="width:110px;height:110px;object-fit:cover;border-radius:8px;cursor:pointer;display:block;" onclick="openImageLightbox(\''+p.image_url+'\')" title="Click to view full-size">'+
+        '<a href="'+p.image_url+'" download style="font-size:11px;display:block;text-align:center;margin-top:4px;">Download</a>'+
+      '</div>'+
       '<div style="flex:1;">'+
         '<div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:11px;font-weight:700;color:'+badge.color+';">'+badge.label+'</span><span class="muted" style="font-size:11px;">'+new Date(p.created_at).toLocaleString()+'</span></div>'+
         '<div style="font-size:13px;margin-top:4px;white-space:pre-wrap;">'+p.caption+'</div>'+
@@ -1169,6 +1187,17 @@ async function approveSocialPost(id){
 async function rejectSocialPost(id){
   const j=await call('reject_social_post',{id:id});
   if(!j.ok) alert('Error: '+j.error);
+  loadSocialContent();
+}
+async function requestSocialPostChanges(id){
+  const feedback=prompt('What should change about this post?');
+  if(!feedback||!feedback.trim()) return;
+  const j=await call('request_social_post_changes',{id:id,feedback:feedback.trim()});
+  if(j.ok){
+    alert(j.note||'Regeneration triggered.');
+  } else {
+    alert('Error: '+j.error);
+  }
   loadSocialContent();
 }
 async function loadBrandSettings(){
