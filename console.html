@@ -112,6 +112,7 @@
       <button class="nav-item" data-page="agents" onclick="showPage('agents')"><span class="ic">&#9673;</span>Agents</button>
       <button class="nav-item" data-page="predictive" onclick="showPage('predictive')"><span class="ic">&#8626;</span>Predictive insights</button>
       <button class="nav-item" data-page="ask" onclick="showPage('ask')"><span class="ic">?</span>Ask a question</button>
+      <button class="nav-item" data-page="social" onclick="showPage('social')"><span class="ic">&#9737;</span>Social content</button>
       <button class="nav-item" data-page="connections" onclick="showPage('connections')"><span class="ic">&#8644;</span>Connections</button>
       <div class="nav-group-label">Organization</div>
       <button class="nav-item" data-page="team" onclick="showPage('team')"><span class="ic">&#9687;</span>Team</button>
@@ -328,6 +329,27 @@
           </div>
         </div>
 
+        <!-- SOCIAL CONTENT -->
+        <div class="page" id="page-social">
+          <div class="page-header"><h1>Social content</h1><p class="muted">Generated automatically 3x/week from real salon data - nothing publishes until you approve it. Branded graphics only, never real customer photos.</p></div>
+
+          <div class="card" id="instagramConnectCard">
+            <h2>Instagram connection</h2>
+            <div id="instagramStatus" class="muted" style="margin-bottom:10px;">Checking...</div>
+            <div class="row" style="margin-bottom:8px;flex-wrap:wrap;">
+              <input class="fi" type="text" id="igAccountId" placeholder="Instagram Business Account ID" style="flex:1;min-width:220px;">
+              <input class="fi" type="password" id="igAccessToken" placeholder="Access token" style="flex:1;min-width:220px;">
+              <button class="btn btn-s btn-sm" onclick="saveInstagramCredentials()">Save</button>
+            </div>
+            <div id="instagramSaveResult" style="font-size:12px;"></div>
+          </div>
+
+          <div class="card">
+            <h2>Review queue</h2>
+            <div id="socialPostsList" class="muted">Loading...</div>
+          </div>
+        </div>
+
         <!-- CONNECTIONS -->
         <div class="page" id="page-connections">
           <div class="page-header"><h1>Connections</h1><p class="muted">What this business is connected to - where data comes from, and how messages go out.</p></div>
@@ -375,6 +397,32 @@
             </div>
             <p class="muted" style="font-size:11px;margin-bottom:8px;">After adding aliases for an existing person, click "Sync now" under Daily sync once more - it re-checks every visit each time, so past rows get corrected automatically, not just new ones.</p>
             <div id="stylistsList" class="muted">Loading...</div>
+          </div>
+
+          <div class="card" id="brandCard">
+            <h2>Brand assets</h2>
+            <p class="muted">Used by the social content agent to generate branded graphics - never real customer photos, just your logo and colors on promotional posts.</p>
+            <div id="brandLogoPreview" style="margin-bottom:10px;"></div>
+            <div class="row" style="margin-bottom:10px;align-items:center;">
+              <input type="file" id="brandLogoFile" accept="image/png,image/svg+xml,image/jpeg" style="flex:1;">
+              <button class="btn btn-s btn-sm" onclick="uploadBrandLogo()">Upload logo</button>
+            </div>
+            <div class="row" style="margin-bottom:10px;flex-wrap:wrap;gap:10px;">
+              <div>
+                <label class="muted" style="font-size:11px;display:block;margin-bottom:3px;">Primary color</label>
+                <input class="fi" type="color" id="brandPrimaryColor" style="width:60px;height:34px;padding:2px;">
+              </div>
+              <div>
+                <label class="muted" style="font-size:11px;display:block;margin-bottom:3px;">Secondary color</label>
+                <input class="fi" type="color" id="brandSecondaryColor" style="width:60px;height:34px;padding:2px;">
+              </div>
+              <div>
+                <label class="muted" style="font-size:11px;display:block;margin-bottom:3px;">Accent color</label>
+                <input class="fi" type="color" id="brandAccentColor" style="width:60px;height:34px;padding:2px;">
+              </div>
+            </div>
+            <button class="btn btn-p btn-sm" onclick="saveBrandColors()">Save colors</button>
+            <div id="brandSaveResult" style="margin-top:8px;font-size:12px;"></div>
           </div>
 
           <div class="card" id="syncChannelCard">
@@ -532,6 +580,7 @@ function showPage(id){
   if(nav) nav.classList.add('active');
   if(id==='predictive') loadPredictive();
   if(id==='ask') renderQuickQuestions();
+  if(id==='social') loadSocialContent();
 }
 
 const MW_ML_URL=SB_URL+'/functions/v1/mw-ml';
@@ -646,7 +695,7 @@ async function createTenant(fromOverview){
 function loadDashboard(){
   loadWAStatus();loadTemplateMappings();
   loadSettings();loadPending();loadRuns();loadTeam();loadApiKeys();loadChangeLog();
-  loadTransactionSummary();loadRecentUploads();loadStylists();
+  loadTransactionSummary();loadRecentUploads();loadStylists();loadBrandSettings();
   loadOverview();
 }
 async function loadOverview(){
@@ -1066,6 +1115,99 @@ async function loadRecentUploads(){
     j.batches.map(function(b){return '<div class="item" style="font-size:12px;">'+new Date(b.created_at).toLocaleString()+' - '+(b.filename||'(unnamed)')+' - '+b.rows_inserted+' inserted'+(b.rows_skipped?(', '+b.rows_skipped+' skipped'):'')+'</div>';}).join('');
 }
 
+let brandSettingsCache=null;
+async function loadSocialContent(){
+  const statusEl=document.getElementById('instagramStatus');
+  const j=await call('get_instagram_status',{});
+  if(j.ok){
+    statusEl.textContent=j.connected?('Connected - Business Account ID: '+j.instagram_business_account_id):'Not connected yet - add your Instagram Business Account ID and access token below.';
+    statusEl.style.color=j.connected?'var(--ok)':'var(--muted)';
+  }
+
+  const postsEl=document.getElementById('socialPostsList');
+  const pj=await call('list_social_posts',{});
+  if(!pj.ok){postsEl.textContent='Error: '+pj.error;return;}
+  if(!pj.posts.length){postsEl.innerHTML='No posts generated yet - the first run happens automatically Mon/Wed/Fri, or trigger the GitHub Action manually to test.';return;}
+
+  const statusBadge={pending_review:{label:'Awaiting review',color:'var(--warn)'},approved:{label:'Approved',color:'var(--ok)'},published:{label:'Published',color:'var(--ok)'},rejected:{label:'Rejected',color:'var(--muted)'},failed:{label:'Failed',color:'var(--err)'}};
+
+  postsEl.innerHTML=pj.posts.map(function(p){
+    const badge=statusBadge[p.status]||{label:p.status,color:'var(--muted)'};
+    const actions=p.status==='pending_review'?(
+      '<div style="margin-top:10px;display:flex;gap:8px;">'+
+        '<button class="btn btn-p btn-sm" onclick="approveSocialPost(\''+p.id+'\')">Approve &amp; publish</button>'+
+        '<button class="btn btn-s btn-sm" onclick="rejectSocialPost(\''+p.id+'\')">Reject</button>'+
+      '</div>'
+    ):'';
+    const errorLine=p.error?('<div style="font-size:11px;color:var(--err);margin-top:4px;">'+p.error+'</div>'):'';
+    return '<div class="item" style="display:flex;gap:14px;align-items:flex-start;">'+
+      '<img src="'+p.image_url+'" style="width:110px;height:110px;object-fit:cover;border-radius:8px;flex-shrink:0;">'+
+      '<div style="flex:1;">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:11px;font-weight:700;color:'+badge.color+';">'+badge.label+'</span><span class="muted" style="font-size:11px;">'+new Date(p.created_at).toLocaleString()+'</span></div>'+
+        '<div style="font-size:13px;margin-top:4px;white-space:pre-wrap;">'+p.caption+'</div>'+
+        (p.reasoning?('<div class="muted" style="font-size:11px;margin-top:4px;">'+p.reasoning+'</div>'):'')+
+        errorLine+actions+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+async function saveInstagramCredentials(){
+  const accountId=document.getElementById('igAccountId').value.trim();
+  const token=document.getElementById('igAccessToken').value.trim();
+  if(!accountId||!token){alert('Both fields are required.');return;}
+  const j=await call('save_instagram_credentials',{instagram_business_account_id:accountId,access_token:token});
+  const r=document.getElementById('instagramSaveResult');
+  if(j.ok){r.textContent='Saved.';r.style.color='var(--ok)';document.getElementById('igAccessToken').value='';loadSocialContent();}
+  else{r.textContent='Error: '+j.error;r.style.color='var(--err)';}
+}
+async function approveSocialPost(id){
+  if(!confirm('This will publish this post to Instagram right now. Continue?')) return;
+  const j=await call('approve_social_post',{id:id});
+  if(!j.ok) alert('Error: '+j.error);
+  loadSocialContent();
+}
+async function rejectSocialPost(id){
+  const j=await call('reject_social_post',{id:id});
+  if(!j.ok) alert('Error: '+j.error);
+  loadSocialContent();
+}
+async function loadBrandSettings(){
+  const j=await call('get_brand_settings',{});
+  if(!j.ok) return;
+  brandSettingsCache=j.settings||{};
+  const el=document.getElementById('brandLogoPreview');
+  el.innerHTML=brandSettingsCache.logo_url?('<img src="'+brandSettingsCache.logo_url+'" style="max-height:60px;max-width:200px;border:1px solid var(--border);border-radius:6px;padding:6px;">'):'<span class="muted" style="font-size:12px;">No logo uploaded yet.</span>';
+  if(brandSettingsCache.primary_color) document.getElementById('brandPrimaryColor').value=brandSettingsCache.primary_color;
+  if(brandSettingsCache.secondary_color) document.getElementById('brandSecondaryColor').value=brandSettingsCache.secondary_color;
+  if(brandSettingsCache.accent_color) document.getElementById('brandAccentColor').value=brandSettingsCache.accent_color;
+}
+async function uploadBrandLogo(){
+  const fileInput=document.getElementById('brandLogoFile');
+  const file=fileInput.files[0];
+  if(!file){alert('Choose a logo file first.');return;}
+  const path=currentTenant+'/logo-'+Date.now()+'-'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+  const {data,error}=await sb.storage.from('brand-assets').upload(path,file,{upsert:true});
+  if(error){alert('Upload failed: '+error.message);return;}
+  const {data:urlData}=sb.storage.from('brand-assets').getPublicUrl(path);
+  // Merge with existing settings so this doesn't wipe out previously
+  // saved colors - save_brand_settings replaces the whole row, so the
+  // frontend has to send the complete picture, not just what changed.
+  const merged=Object.assign({},brandSettingsCache,{logo_url:urlData.publicUrl});
+  const j=await call('save_brand_settings',merged);
+  if(j.ok){loadBrandSettings();document.getElementById('brandSaveResult').textContent='Logo uploaded.';document.getElementById('brandSaveResult').style.color='var(--ok)';}
+  else{document.getElementById('brandSaveResult').textContent='Error: '+j.error;document.getElementById('brandSaveResult').style.color='var(--err)';}
+}
+async function saveBrandColors(){
+  const merged=Object.assign({},brandSettingsCache,{
+    primary_color:document.getElementById('brandPrimaryColor').value,
+    secondary_color:document.getElementById('brandSecondaryColor').value,
+    accent_color:document.getElementById('brandAccentColor').value,
+  });
+  const j=await call('save_brand_settings',merged);
+  const r=document.getElementById('brandSaveResult');
+  if(j.ok){r.textContent='Colors saved.';r.style.color='var(--ok)';brandSettingsCache=merged;}
+  else{r.textContent='Error: '+j.error;r.style.color='var(--err)';}
+}
 async function loadStylists(){
   const el=document.getElementById('stylistsList');
   if(!el) return;
