@@ -25,6 +25,7 @@ import os
 import sys
 import json
 import io
+import base64
 import requests
 import psycopg2
 from datetime import datetime, timezone
@@ -34,13 +35,21 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
+GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 TENANT_ID = os.environ.get("TENANT_ID", "minicuts")
 CLAUDE_MODEL = "claude-sonnet-5"
+GEMINI_IMAGE_MODEL = "gemini-3.1-flash-image"
+
+# Set when this run is a "request changes" regeneration rather than a
+# fresh scheduled post — REGEN_POST_ID identifies which existing draft
+# to revise, REGEN_FEEDBACK is what the reviewer asked to change.
+REGEN_POST_ID = os.environ.get("REGEN_POST_ID")
+REGEN_FEEDBACK = os.environ.get("REGEN_FEEDBACK")
 
 CANVAS_SIZE = 1080
 DEFAULT_FONT_PATH = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"  # present by default on GitHub Actions ubuntu-latest runners
 
-for var_name, var_val in [("DATABASE_URL", DATABASE_URL), ("SUPABASE_URL", SUPABASE_URL), ("SUPABASE_SERVICE_ROLE_KEY", SUPABASE_SERVICE_ROLE_KEY), ("ANTHROPIC_API_KEY", ANTHROPIC_API_KEY)]:
+for var_name, var_val in [("DATABASE_URL", DATABASE_URL), ("SUPABASE_URL", SUPABASE_URL), ("SUPABASE_SERVICE_ROLE_KEY", SUPABASE_SERVICE_ROLE_KEY), ("ANTHROPIC_API_KEY", ANTHROPIC_API_KEY), ("GOOGLE_API_KEY", GOOGLE_API_KEY)]:
     if not var_val:
         print(f"ERROR: {var_name} is not set.", file=sys.stderr)
         sys.exit(1)
@@ -81,11 +90,13 @@ def load_brand_settings(cur) -> dict:
     return {"logo_url": row[0], "primary_color": row[1] or "#4A5568", "secondary_color": row[2] or "#FFFFFF", "accent_color": row[3] or "#ED8936"}
 
 
-def generate_content_with_claude(context: dict) -> dict:
+def generate_content_with_claude(context: dict, previous_caption: str = None, feedback: str = None) -> dict:
     """Asks Claude for a caption and a short graphic headline — both
     grounded in the real context gathered above. Explicit instruction to
     say so if the data doesn't support an interesting angle, rather than
-    invent one."""
+    invent one. When previous_caption + feedback are given, this is a
+    revision request, not a fresh draft — Claude sees exactly what it
+    wrote before and exactly what the reviewer asked to change."""
     context_lines = []
     if context.get("popular_service_30d"):
         context_lines.append(f"Most popular service in the last 30 days: {context['popular_service_30d']}")
@@ -103,7 +114,10 @@ Write warm, friendly, brief copy — not corporate, not salesy.
 
 Respond ONLY with JSON: {"caption": "the full Instagram caption, including 2-4 relevant hashtags at the end", "graphic_headline": "a SHORT (under 8 words) headline to display ON the image itself"}"""
 
-    user_message = f"Real data for this week:\n{context_text}\n\nGenerate today's post."
+    if previous_caption and feedback:
+        user_message = f"Real data for this week:\n{context_text}\n\nYou previously wrote this caption:\n\"{previous_caption}\"\n\nThe reviewer asked for this change:\n\"{feedback}\"\n\nRevise it accordingly."
+    else:
+        user_message = f"Real data for this week:\n{context_text}\n\nGenerate today's post."
 
     res = requests.post(
         "https://api.anthropic.com/v1/messages",
@@ -125,14 +139,61 @@ def hex_to_rgb(hex_color: str) -> tuple:
     return tuple(int(hex_color[i:i + 2], 16) for i in (0, 2, 4))
 
 
-def generate_graphic(headline: str, brand: dict) -> bytes:
-    """Builds a branded square graphic — solid brand-color background,
-    logo if available, headline text. No real photos anywhere."""
-    bg_color = hex_to_rgb(brand["primary_color"])
-    text_color = hex_to_rgb(brand["secondary_color"])
-    accent_color = hex_to_rgb(brand["accent_color"])
+def generate_ai_background(headline: str) -> Image.Image:
+    """
+    Generates an illustrated (never photorealistic) background scene via
+    Gemini's native image model. The safety boundary is structural, not
+    just a good intention — it's baked directly into every prompt sent,
+    every single time, not something that depends on remembering to add
+    it manually:
+      - Illustrated/stylized only, explicitly never photorealistic —
+        this avoids the real ambiguity a photorealistic AI child could
+        create ("is that an actual customer?"), independent of whether
+        Google's policy would technically allow it.
+      - No real customer likeness is possible here at all — this
+        function has no photo input, nothing to base a real person on.
+      - No text requested in the generated image — Pillow's text overlay
+        (below) is what actually renders the headline, since AI image
+        models are still unreliable at clean, correctly-spelled text.
+    """
+    prompt = (
+        f"A warm, cheerful, FLAT ILLUSTRATED cartoon-style scene for a children's hair salon's Instagram post. "
+        f"Bright, friendly children's-book illustration art style — explicitly NOT photorealistic, NOT a photograph. "
+        f"Theme: {headline}. "
+        f"Absolutely no text, letters, or words anywhere in the image. Square composition, colorful, welcoming."
+    )
+    res = requests.post(
+        f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_IMAGE_MODEL}:generateContent",
+        headers={"x-goog-api-key": GOOGLE_API_KEY, "Content-Type": "application/json"},
+        json={"contents": [{"parts": [{"text": prompt}]}]},
+        timeout=60,
+    )
+    res.raise_for_status()
+    data = res.json()
+    parts = data.get("candidates", [{}])[0].get("content", {}).get("parts", [])
+    for part in parts:
+        if "inlineData" in part:
+            image_bytes = base64.b64decode(part["inlineData"]["data"])
+            return Image.open(io.BytesIO(image_bytes)).convert("RGB").resize((CANVAS_SIZE, CANVAS_SIZE))
+    raise ValueError("Gemini response contained no image data")
 
-    img = Image.new("RGB", (CANVAS_SIZE, CANVAS_SIZE), bg_color)
+
+def generate_graphic(headline: str, brand: dict) -> bytes:
+    """Builds a branded square graphic. Tries the AI-illustrated
+    background first; falls back to a solid brand-color background if
+    Gemini is unavailable or errors — a temporary image-API hiccup
+    should never be able to break the whole pipeline. No real photos
+    anywhere, either way."""
+    accent_color = hex_to_rgb(brand["accent_color"])
+    text_color = hex_to_rgb(brand["secondary_color"])
+
+    try:
+        img = generate_ai_background(headline)
+        print("  Using AI-generated illustrated background")
+    except Exception as e:
+        print(f"  Warning: AI background generation failed ({e}) — falling back to solid color")
+        img = Image.new("RGB", (CANVAS_SIZE, CANVAS_SIZE), hex_to_rgb(brand["primary_color"]))
+
     draw = ImageDraw.Draw(img)
 
     # Accent stripe along the bottom — simple, deliberate branding
@@ -208,8 +269,22 @@ def main():
     brand = load_brand_settings(cur)
     print(f"  Context: {context}")
 
+    if REGEN_POST_ID:
+        # Regeneration — revising an existing draft with feedback, not
+        # creating a new row. The existing post is the source of truth
+        # for what was there before; feedback is what changes.
+        print(f"Regenerating post {REGEN_POST_ID} with feedback: {REGEN_FEEDBACK}")
+        cur.execute("select caption from mw_social_posts where id = %s and tenant_id = %s", (REGEN_POST_ID, TENANT_ID))
+        row = cur.fetchone()
+        if not row:
+            print(f"ERROR: post {REGEN_POST_ID} not found for tenant {TENANT_ID}.", file=sys.stderr)
+            sys.exit(1)
+        previous_caption = row[0]
+        content = generate_content_with_claude(context, previous_caption=previous_caption, feedback=REGEN_FEEDBACK)
+    else:
+        content = generate_content_with_claude(context)
+
     print("Asking Claude for caption + headline...")
-    content = generate_content_with_claude(context)
     print(f"  Headline: {content['graphic_headline']}")
 
     print("Generating branded graphic...")
@@ -220,12 +295,22 @@ def main():
     print(f"  {image_url}")
 
     reasoning = "Based on: " + "; ".join(f"{k}={v}" for k, v in context.items() if v is not None) if any(context.values()) else "No standout data this run — general seasonal content."
+    if REGEN_POST_ID:
+        reasoning = f"Revised per feedback: \"{REGEN_FEEDBACK}\". " + reasoning
 
-    cur.execute(
-        """insert into mw_social_posts (tenant_id, caption, image_url, reasoning, status)
-           values (%s, %s, %s, %s, 'pending_review')""",
-        (TENANT_ID, content["caption"], image_url, reasoning),
-    )
+    if REGEN_POST_ID:
+        cur.execute(
+            """update mw_social_posts
+               set caption = %s, image_url = %s, reasoning = %s, status = 'pending_review', error = null, reviewed_at = null
+               where id = %s and tenant_id = %s""",
+            (content["caption"], image_url, reasoning, REGEN_POST_ID, TENANT_ID),
+        )
+    else:
+        cur.execute(
+            """insert into mw_social_posts (tenant_id, caption, image_url, reasoning, status)
+               values (%s, %s, %s, %s, 'pending_review')""",
+            (TENANT_ID, content["caption"], image_url, reasoning),
+        )
     conn.commit()
     cur.close()
     conn.close()
