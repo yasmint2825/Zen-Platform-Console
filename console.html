@@ -997,7 +997,10 @@ async function askQuestion(prefilled){
   const q=(typeof prefilled==='string'?prefilled:document.getElementById('askInput').value).trim();
   const r=document.getElementById('askResult');
   if(!q){r.textContent='Type a question first.';r.style.color='var(--err)';return;}
-  document.getElementById('askInput').value=q; // shows what's actually being asked, even when triggered by a chip
+  // Chip clicks no longer touch the text box at all — filling it and
+  // THEN answering made it look like a two-step process (type, then
+  // press Ask), even though the answer was already being fetched
+  // automatically. One click, straight to the answer, nothing else.
   r.textContent='Thinking...';r.style.color='var(--muted)';
   const j=await call('ask_question',{question:q});
   if(j.ok){
