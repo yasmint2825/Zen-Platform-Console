@@ -1,0 +1,26 @@
+name: Generate social content
+
+on:
+  schedule:
+    # 07:00 UTC (~11:00 Gulf time) Monday, Wednesday, Friday
+    - cron: '0 7 * * 1,3,5'
+  workflow_dispatch: {}
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: pip install -r ml_pipeline/social_requirements.txt
+      - name: Generate content
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TENANT_ID: minicuts
+        run: python3 ml_pipeline/generate_social_content.py
