@@ -184,10 +184,17 @@ def upload_image(image_bytes: bytes) -> str:
     path = f"{TENANT_ID}/post-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}.png"
     res = requests.post(
         f"{SUPABASE_URL}/storage/v1/object/social-posts/{path}",
-        headers={"Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}", "Content-Type": "image/png"},
+        # Supabase's storage API expects BOTH headers for a direct REST
+        # call like this — apikey identifies the project to the gateway,
+        # Authorization carries the actual permission level. Missing
+        # apikey specifically can surface as a plain 400, not an
+        # obviously-auth-related error, which is exactly what happened.
+        headers={"apikey": SUPABASE_SERVICE_ROLE_KEY, "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}", "Content-Type": "image/png"},
         data=image_bytes,
         timeout=30,
     )
+    if not res.ok:
+        print(f"  Upload failed ({res.status_code}): {res.text}")
     res.raise_for_status()
     return f"{SUPABASE_URL}/storage/v1/object/public/social-posts/{path}"
 
