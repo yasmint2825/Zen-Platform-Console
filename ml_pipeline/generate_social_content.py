@@ -25,7 +25,7 @@ import os
 import sys
 import json
 import io
-import base64
+import time
 import requests
 import psycopg2
 from datetime import datetime, timezone
@@ -35,10 +35,9 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
-GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
+REPLICATE_API_TOKEN = os.environ.get("REPLICATE_API_TOKEN")
 TENANT_ID = os.environ.get("TENANT_ID", "minicuts")
 CLAUDE_MODEL = "claude-sonnet-5"
-GEMINI_IMAGE_MODEL = "gemini-3.1-flash-image"
 
 # Set when this run is a "request changes" regeneration rather than a
 # fresh scheduled post — REGEN_POST_ID identifies which existing draft
@@ -49,7 +48,7 @@ REGEN_FEEDBACK = os.environ.get("REGEN_FEEDBACK")
 CANVAS_SIZE = 1080
 DEFAULT_FONT_PATH = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"  # present by default on GitHub Actions ubuntu-latest runners
 
-for var_name, var_val in [("DATABASE_URL", DATABASE_URL), ("SUPABASE_URL", SUPABASE_URL), ("SUPABASE_SERVICE_ROLE_KEY", SUPABASE_SERVICE_ROLE_KEY), ("ANTHROPIC_API_KEY", ANTHROPIC_API_KEY), ("GOOGLE_API_KEY", GOOGLE_API_KEY)]:
+for var_name, var_val in [("DATABASE_URL", DATABASE_URL), ("SUPABASE_URL", SUPABASE_URL), ("SUPABASE_SERVICE_ROLE_KEY", SUPABASE_SERVICE_ROLE_KEY), ("ANTHROPIC_API_KEY", ANTHROPIC_API_KEY), ("REPLICATE_API_TOKEN", REPLICATE_API_TOKEN)]:
     if not var_val:
         print(f"ERROR: {var_name} is not set.", file=sys.stderr)
         sys.exit(1)
@@ -151,14 +150,13 @@ def hex_to_rgb(hex_color: str) -> tuple:
 def generate_ai_background(headline: str) -> Image.Image:
     """
     Generates an illustrated (never photorealistic) background scene via
-    Gemini's native image model. The safety boundary is structural, not
-    just a good intention — it's baked directly into every prompt sent,
-    every single time, not something that depends on remembering to add
-    it manually:
+    Replicate's flux-schnell model. The safety boundary is structural,
+    not just a good intention — it's baked directly into every prompt
+    sent, every single time, not something that depends on remembering
+    to add it manually:
       - Illustrated/stylized only, explicitly never photorealistic —
         this avoids the real ambiguity a photorealistic AI child could
-        create ("is that an actual customer?"), independent of whether
-        Google's policy would technically allow it.
+        create ("is that an actual customer?").
       - No real customer likeness is possible here at all — this
         function has no photo input, nothing to base a real person on.
       - No text requested in the generated image — Pillow's text overlay
@@ -171,20 +169,39 @@ def generate_ai_background(headline: str) -> Image.Image:
         f"Theme: {headline}. "
         f"Absolutely no text, letters, or words anywhere in the image. Square composition, colorful, welcoming."
     )
+    headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json", "Prefer": "wait"}
     res = requests.post(
-        f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_IMAGE_MODEL}:generateContent",
-        headers={"x-goog-api-key": GOOGLE_API_KEY, "Content-Type": "application/json"},
-        json={"contents": [{"parts": [{"text": prompt}]}]},
-        timeout=60,
+        "https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions",
+        headers=headers,
+        json={"input": {"prompt": prompt, "aspect_ratio": "1:1"}},
+        timeout=65,
     )
     res.raise_for_status()
-    data = res.json()
-    parts = data.get("candidates", [{}])[0].get("content", {}).get("parts", [])
-    for part in parts:
-        if "inlineData" in part:
-            image_bytes = base64.b64decode(part["inlineData"]["data"])
-            return Image.open(io.BytesIO(image_bytes)).convert("RGB").resize((CANVAS_SIZE, CANVAS_SIZE))
-    raise ValueError("Gemini response contained no image data")
+    prediction = res.json()
+
+    # "Prefer: wait" usually completes synchronously for a fast model
+    # like flux-schnell, but if it times out before finishing, fall back
+    # to polling rather than treating an unfinished prediction as a
+    # failure — same "don't crash on a partial state" philosophy as the
+    # rest of this pipeline.
+    get_url = prediction.get("urls", {}).get("get")
+    while prediction.get("status") not in ("succeeded", "failed", "canceled") and get_url:
+        time.sleep(1)
+        poll_res = requests.get(get_url, headers=headers, timeout=30)
+        poll_res.raise_for_status()
+        prediction = poll_res.json()
+
+    if prediction.get("status") != "succeeded":
+        raise ValueError(f"Replicate prediction did not succeed: {prediction.get('error')}")
+
+    output = prediction.get("output")
+    image_url = output[0] if isinstance(output, list) else output
+    if not image_url:
+        raise ValueError("Replicate response contained no output image URL")
+
+    img_res = requests.get(image_url, timeout=30)
+    img_res.raise_for_status()
+    return Image.open(io.BytesIO(img_res.content)).convert("RGB").resize((CANVAS_SIZE, CANVAS_SIZE))
 
 
 def generate_graphic(headline: str, brand: dict) -> bytes:
