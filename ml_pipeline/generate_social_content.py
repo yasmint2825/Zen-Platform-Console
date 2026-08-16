@@ -150,7 +150,7 @@ def hex_to_rgb(hex_color: str) -> tuple:
 def generate_ai_background(headline: str) -> Image.Image:
     """
     Generates an illustrated (never photorealistic) background scene via
-    Replicate's flux-schnell model. The safety boundary is structural,
+    Replicate's flux-1.1-pro model. The safety boundary is structural,
     not just a good intention — it's baked directly into every prompt
     sent, every single time, not something that depends on remembering
     to add it manually:
@@ -171,7 +171,7 @@ def generate_ai_background(headline: str) -> Image.Image:
     )
     headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json", "Prefer": "wait"}
     res = requests.post(
-        "https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions",
+        "https://api.replicate.com/v1/models/black-forest-labs/flux-1.1-pro/predictions",
         headers=headers,
         json={"input": {"prompt": prompt, "aspect_ratio": "1:1"}},
         timeout=65,
@@ -179,8 +179,9 @@ def generate_ai_background(headline: str) -> Image.Image:
     res.raise_for_status()
     prediction = res.json()
 
-    # "Prefer: wait" usually completes synchronously for a fast model
-    # like flux-schnell, but if it times out before finishing, fall back
+    # "Prefer: wait" usually completes synchronously for a fast model,
+    # but flux-1.1-pro takes longer than schnell did — if it times out
+    # before finishing, fall back
     # to polling rather than treating an unfinished prediction as a
     # failure — same "don't crash on a partial state" philosophy as the
     # rest of this pipeline.
