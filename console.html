@@ -425,7 +425,11 @@
                 <input class="fi" type="color" id="brandAccentColor" style="width:60px;height:34px;padding:2px;">
               </div>
             </div>
-            <button class="btn btn-p btn-sm" onclick="saveBrandColors()">Save colors</button>
+            <div style="margin-bottom:10px;">
+              <label class="muted" style="font-size:11px;display:block;margin-bottom:3px;">Visual brand description (used in AI-generated image prompts - shop look, stylist uniforms, aesthetic)</label>
+              <textarea class="fi" id="brandVisualDescription" rows="2" placeholder="e.g. Stylists wear teal polo uniforms, the shop has a jungle-safari theme with animal murals"></textarea>
+            </div>
+            <button class="btn btn-p btn-sm" onclick="saveBrandColors()">Save</button>
             <div id="brandSaveResult" style="margin-top:8px;font-size:12px;"></div>
           </div>
 
@@ -1220,6 +1224,7 @@ async function loadBrandSettings(){
   if(brandSettingsCache.primary_color) document.getElementById('brandPrimaryColor').value=brandSettingsCache.primary_color;
   if(brandSettingsCache.secondary_color) document.getElementById('brandSecondaryColor').value=brandSettingsCache.secondary_color;
   if(brandSettingsCache.accent_color) document.getElementById('brandAccentColor').value=brandSettingsCache.accent_color;
+  if(brandSettingsCache.visual_brand_description) document.getElementById('brandVisualDescription').value=brandSettingsCache.visual_brand_description;
 }
 async function uploadBrandLogo(){
   const fileInput=document.getElementById('brandLogoFile');
@@ -1242,10 +1247,11 @@ async function saveBrandColors(){
     primary_color:document.getElementById('brandPrimaryColor').value,
     secondary_color:document.getElementById('brandSecondaryColor').value,
     accent_color:document.getElementById('brandAccentColor').value,
+    visual_brand_description:document.getElementById('brandVisualDescription').value,
   });
   const j=await call('save_brand_settings',merged);
   const r=document.getElementById('brandSaveResult');
-  if(j.ok){r.textContent='Colors saved.';r.style.color='var(--ok)';brandSettingsCache=merged;}
+  if(j.ok){r.textContent='Saved.';r.style.color='var(--ok)';brandSettingsCache=merged;}
   else{r.textContent='Error: '+j.error;r.style.color='var(--err)';}
 }
 async function loadStylists(){
