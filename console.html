@@ -344,6 +344,18 @@
             <div id="instagramSaveResult" style="font-size:12px;"></div>
           </div>
 
+          <div class="card" id="mascotCard">
+            <h2>Minicuts Panda mascot</h2>
+            <p class="muted">A consistent reference character used in generated images - one approved image becomes the reference every future post's illustration points to.</p>
+            <div id="mascotCurrentPreview" style="margin-bottom:10px;"></div>
+            <div class="row" style="margin-bottom:10px;">
+              <input class="fi" type="text" id="mascotDescriptionOverride" placeholder="Optional: describe changes for a new candidate (leave blank to reuse saved description)" style="flex:1;">
+              <button class="btn btn-s btn-sm" onclick="generateMascotCandidate()">Generate candidate</button>
+            </div>
+            <div id="mascotGenerateResult" style="font-size:12px;margin-bottom:10px;"></div>
+            <div id="mascotCandidatesList"></div>
+          </div>
+
           <div class="card">
             <h2>Review queue</h2>
             <div style="margin-bottom:14px;">
@@ -1138,6 +1150,50 @@ function openImageLightbox(url){
   document.getElementById('lightboxImg').src=url;
   overlay.style.display='flex';
 }
+async function loadMascotSection(){
+  const bj=await call('get_brand_settings',{});
+  const preview=document.getElementById('mascotCurrentPreview');
+  if(bj.ok && bj.settings && bj.settings.mascot_reference_url){
+    preview.innerHTML='<div class="muted" style="font-size:11px;margin-bottom:4px;">Current approved reference:</div><img src="'+bj.settings.mascot_reference_url+'" style="width:120px;height:120px;object-fit:cover;border-radius:8px;cursor:pointer;" onclick="openImageLightbox(\''+bj.settings.mascot_reference_url+'\')">';
+  } else {
+    preview.innerHTML='<span class="muted" style="font-size:12px;">No approved mascot reference yet - generate and approve a candidate below.</span>';
+  }
+
+  const cj=await call('list_mascot_candidates',{});
+  const listEl=document.getElementById('mascotCandidatesList');
+  if(!cj.ok){listEl.textContent='Error: '+cj.error;return;}
+  const pending=cj.candidates.filter(c=>c.status==='pending_review');
+  if(!pending.length){listEl.innerHTML='';return;}
+  listEl.innerHTML='<div class="muted" style="font-size:11px;margin-bottom:6px;">Pending candidates:</div>'+pending.map(function(c){
+    return '<div class="item" style="display:flex;gap:12px;align-items:center;margin-bottom:8px;">'+
+      '<img src="'+c.image_url+'" style="width:80px;height:80px;object-fit:cover;border-radius:6px;cursor:pointer;" onclick="openImageLightbox(\''+c.image_url+'\')">'+
+      '<div style="flex:1;">'+
+        '<div style="display:flex;gap:8px;">'+
+          '<button class="btn btn-p btn-sm" onclick="approveMascotCandidate(\''+c.id+'\')">Approve as reference</button>'+
+          '<button class="btn btn-s btn-sm" onclick="rejectMascotCandidate(\''+c.id+'\')">Reject</button>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+async function generateMascotCandidate(){
+  const override=document.getElementById('mascotDescriptionOverride').value.trim();
+  const r=document.getElementById('mascotGenerateResult');
+  r.textContent='Triggering...';r.style.color='var(--muted)';
+  const j=await call('generate_mascot_candidate',override?{description_override:override}:{});
+  if(j.ok){r.textContent=j.note;r.style.color='var(--ok)';}
+  else{r.textContent='Error: '+j.error;r.style.color='var(--err)';}
+}
+async function approveMascotCandidate(id){
+  const j=await call('approve_mascot_candidate',{id:id});
+  if(!j.ok) alert('Error: '+j.error);
+  loadMascotSection();
+}
+async function rejectMascotCandidate(id){
+  const j=await call('reject_mascot_candidate',{id:id});
+  if(!j.ok) alert('Error: '+j.error);
+  loadMascotSection();
+}
 async function loadSocialContent(){
   const statusEl=document.getElementById('instagramStatus');
   const j=await call('get_instagram_status',{});
@@ -1145,6 +1201,7 @@ async function loadSocialContent(){
     statusEl.textContent=j.connected?('Connected - Business Account ID: '+j.instagram_business_account_id):'Not connected yet - add your Instagram Business Account ID and access token below.';
     statusEl.style.color=j.connected?'var(--ok)':'var(--muted)';
   }
+  loadMascotSection();
 
   const postsEl=document.getElementById('socialPostsList');
   const pj=await call('list_social_posts',{});
