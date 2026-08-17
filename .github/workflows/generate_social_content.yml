@@ -1,10 +1,17 @@
-name: Generate mascot reference
+name: Generate social content
 
 on:
+  schedule:
+    # 07:00 UTC (~11:00 Gulf time) Monday, Wednesday, Friday
+    - cron: '0 7 * * 1,3,5'
   workflow_dispatch:
     inputs:
-      description_override:
-        description: 'Optional: override the description for this candidate (leave blank to use the saved one)'
+      post_id:
+        description: 'Existing post ID to regenerate (leave blank for a fresh scheduled post)'
+        required: false
+        type: string
+      feedback:
+        description: 'What to change, if regenerating an existing post'
         required: false
         type: string
 
@@ -18,12 +25,14 @@ jobs:
           python-version: '3.12'
       - name: Install dependencies
         run: pip install -r ml_pipeline/social_requirements.txt
-      - name: Generate mascot candidate
+      - name: Generate content
         env:
           DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}
           TENANT_ID: minicuts
-          MASCOT_DESCRIPTION: ${{ inputs.description_override }}
-        run: python3 ml_pipeline/generate_mascot_reference.py
+          REGEN_POST_ID: ${{ inputs.post_id }}
+          REGEN_FEEDBACK: ${{ inputs.feedback }}
+        run: python3 ml_pipeline/generate_social_content.py
