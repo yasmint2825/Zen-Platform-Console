@@ -1,0 +1,29 @@
+name: Generate mascot reference
+
+on:
+  workflow_dispatch:
+    inputs:
+      description_override:
+        description: 'Optional: override the description for this candidate (leave blank to use the saved one)'
+        required: false
+        type: string
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: pip install -r ml_pipeline/social_requirements.txt
+      - name: Generate mascot candidate
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}
+          TENANT_ID: minicuts
+          MASCOT_DESCRIPTION: ${{ inputs.description_override }}
+        run: python3 ml_pipeline/generate_mascot_reference.py
