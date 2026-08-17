@@ -78,15 +78,33 @@ def gather_real_context(cur) -> dict:
     return context
 
 
+def load_prompt_template(cur, template_key: str, placeholders: dict) -> str:
+    """Same tenant-override-falls-back-to-platform-default pattern as
+    mw-admin's loadPromptTemplate in TypeScript — editable from the
+    database without a code deploy, tenant-specific override wins if one
+    exists."""
+    cur.execute(
+        """select template_text from mw_prompt_templates
+           where template_key = %s and active = true and (tenant_id = %s or tenant_id is null)
+           order by tenant_id nulls last limit 1""",
+        (template_key, TENANT_ID),
+    )
+    row = cur.fetchone()
+    text = row[0] if row else ""
+    for key, value in placeholders.items():
+        text = text.replace("{{" + key + "}}", value)
+    return text
+
+
 def load_brand_settings(cur) -> dict:
-    cur.execute("select logo_url, primary_color, secondary_color, accent_color from mw_brand_settings where tenant_id=%s", (TENANT_ID,))
+    cur.execute("select logo_url, primary_color, secondary_color, accent_color, visual_brand_description from mw_brand_settings where tenant_id=%s", (TENANT_ID,))
     row = cur.fetchone()
     if not row:
         # Reasonable neutral defaults so the pipeline still produces
         # something usable before brand assets are uploaded, rather than
         # failing outright.
-        return {"logo_url": None, "primary_color": "#4A5568", "secondary_color": "#FFFFFF", "accent_color": "#ED8936"}
-    return {"logo_url": row[0], "primary_color": row[1] or "#4A5568", "secondary_color": row[2] or "#FFFFFF", "accent_color": row[3] or "#ED8936"}
+        return {"logo_url": None, "primary_color": "#4A5568", "secondary_color": "#FFFFFF", "accent_color": "#ED8936", "visual_brand_description": None}
+    return {"logo_url": row[0], "primary_color": row[1] or "#4A5568", "secondary_color": row[2] or "#FFFFFF", "accent_color": row[3] or "#ED8936", "visual_brand_description": row[4]}
 
 
 def generate_content_with_claude(context: dict, previous_caption: str = None, feedback: str = None) -> dict:
@@ -147,7 +165,7 @@ def hex_to_rgb(hex_color: str) -> tuple:
     return tuple(int(hex_color[i:i + 2], 16) for i in (0, 2, 4))
 
 
-def generate_ai_background(headline: str) -> Image.Image:
+def generate_ai_background(cur, headline: str, brand: dict) -> Image.Image:
     """
     Generates an illustrated (never photorealistic) background scene via
     Replicate's flux-1.1-pro model. The safety boundary is structural,
@@ -162,13 +180,30 @@ def generate_ai_background(headline: str) -> Image.Image:
       - No text requested in the generated image — Pillow's text overlay
         (below) is what actually renders the headline, since AI image
         models are still unreliable at clean, correctly-spelled text.
+
+    The actual prompt wording is loaded from mw_prompt_templates, not
+    hardcoded — editable without a redeploy, same pattern as
+    generate_insights. Also matters because Flux specifically doesn't
+    support negative prompts (confirmed directly from Black Forest Labs'
+    own guidance) — a bolt-on "no text" instruction is weak for this
+    model family; positive reframing (a picture-book illustration, not
+    an "Instagram post") is what actually suppresses the poster-with-
+    text association that was producing garbled text in the output.
     """
-    prompt = (
-        f"A warm, cheerful, FLAT ILLUSTRATED cartoon-style scene for a children's hair salon's Instagram post. "
-        f"Bright, friendly children's-book illustration art style — explicitly NOT photorealistic, NOT a photograph. "
-        f"Theme: {headline}. "
-        f"Absolutely no text, letters, or words anywhere in the image. Square composition, colorful, welcoming."
-    )
+    # Trailing space matters here — brand_context sits between the
+    # headline sentence and the "no signage/no writing" clause in the
+    # template, so it needs to read as its own sentence when present,
+    # and disappear cleanly (no double space or dangling punctuation)
+    # when it's empty.
+    brand_context = (brand.get("visual_brand_description") or "").strip()
+    brand_context = (brand_context + ". ") if brand_context else ""
+    prompt = load_prompt_template(cur, "social_image_prompt", {"headline": headline, "brand_context": brand_context})
+    if not prompt:
+        # Defensive fallback if the template row is somehow missing —
+        # keeps the pipeline working rather than crashing outright,
+        # though this should only ever happen before the SQL migration
+        # has been run.
+        prompt = f"A charming children's picture-book illustration, flat cartoon style, bright colors. Scene: {headline}. No writing or lettering anywhere. Square composition."
     headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}", "Content-Type": "application/json", "Prefer": "wait"}
     res = requests.post(
         "https://api.replicate.com/v1/models/black-forest-labs/flux-1.1-pro/predictions",
@@ -205,7 +240,7 @@ def generate_ai_background(headline: str) -> Image.Image:
     return Image.open(io.BytesIO(img_res.content)).convert("RGB").resize((CANVAS_SIZE, CANVAS_SIZE))
 
 
-def generate_graphic(headline: str, brand: dict) -> bytes:
+def generate_graphic(cur, headline: str, brand: dict) -> bytes:
     """Builds a branded square graphic. Tries the AI-illustrated
     background first; falls back to a solid brand-color background if
     Gemini is unavailable or errors — a temporary image-API hiccup
@@ -215,7 +250,7 @@ def generate_graphic(headline: str, brand: dict) -> bytes:
     text_color = hex_to_rgb(brand["secondary_color"])
 
     try:
-        img = generate_ai_background(headline)
+        img = generate_ai_background(cur, headline, brand)
         print("  Using AI-generated illustrated background")
     except Exception as e:
         print(f"  Warning: AI background generation failed ({e}) — falling back to solid color")
@@ -315,7 +350,7 @@ def main():
     print(f"  Headline: {content['graphic_headline']}")
 
     print("Generating branded graphic...")
-    image_bytes = generate_graphic(content["graphic_headline"], brand)
+    image_bytes = generate_graphic(cur, content["graphic_headline"], brand)
 
     print("Uploading image...")
     image_url = upload_image(image_bytes)
