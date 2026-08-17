@@ -348,7 +348,35 @@
             <h2>Test Replicate generation</h2>
             <p class="muted">Fire a prompt at any Replicate model directly - no result shown here, check your Replicate dashboard for the image.</p>
             <textarea class="fi" id="testReplicatePrompt" rows="2" placeholder="Your prompt..." style="margin-bottom:8px;"></textarea>
-            <input class="fi" type="text" id="testReplicateModel" placeholder="Model, e.g. black-forest-labs/flux-2-pro" style="margin-bottom:8px;">
+            <div class="row" style="margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+              <select class="fi" id="testReplicateModel" style="flex:1;min-width:180px;">
+                <option value="black-forest-labs/flux-schnell">flux-schnell (fastest, cheapest)</option>
+                <option value="black-forest-labs/flux-1.1-pro">flux-1.1-pro</option>
+                <option value="black-forest-labs/flux-2-pro" selected>flux-2-pro (current default)</option>
+                <option value="black-forest-labs/flux-2-max">flux-2-max (highest fidelity)</option>
+                <option value="black-forest-labs/flux-kontext-pro">flux-kontext-pro (reference-image editing)</option>
+              </select>
+              <select class="fi" id="testReplicateAspectRatio" style="flex:1;min-width:100px;">
+                <option value="1:1" selected>1:1 (square)</option>
+                <option value="16:9">16:9</option>
+                <option value="9:16">9:16</option>
+                <option value="4:3">4:3</option>
+                <option value="3:4">3:4</option>
+                <option value="3:2">3:2</option>
+                <option value="2:3">2:3</option>
+              </select>
+              <select class="fi" id="testReplicateFormat" style="flex:1;min-width:100px;">
+                <option value="png" selected>PNG (lossless)</option>
+                <option value="webp">WebP</option>
+                <option value="jpg">JPG</option>
+              </select>
+              <select class="fi" id="testReplicateQuality" style="flex:1;min-width:100px;">
+                <option value="100">Quality: 100</option>
+                <option value="90" selected>Quality: 90</option>
+                <option value="80">Quality: 80</option>
+                <option value="70">Quality: 70</option>
+              </select>
+            </div>
             <button class="btn btn-p btn-sm" onclick="testReplicatePrompt()">Generate</button>
             <div id="testReplicateResult" style="font-size:12px;margin-top:8px;"></div>
           </div>
@@ -1161,11 +1189,14 @@ function openImageLightbox(url){
 }
 async function testReplicatePrompt(){
   const prompt=document.getElementById('testReplicatePrompt').value.trim();
-  const model=document.getElementById('testReplicateModel').value.trim();
+  const model=document.getElementById('testReplicateModel').value;
+  const aspectRatio=document.getElementById('testReplicateAspectRatio').value;
+  const outputFormat=document.getElementById('testReplicateFormat').value;
+  const outputQuality=document.getElementById('testReplicateQuality').value;
   const r=document.getElementById('testReplicateResult');
-  if(!prompt||!model){r.textContent='Both prompt and model are required.';r.style.color='var(--err)';return;}
+  if(!prompt){r.textContent='Prompt is required.';r.style.color='var(--err)';return;}
   r.textContent='Submitting...';r.style.color='var(--muted)';
-  const j=await call('test_replicate_prompt',{prompt:prompt,model:model});
+  const j=await call('test_replicate_prompt',{prompt:prompt,model:model,aspect_ratio:aspectRatio,output_format:outputFormat,output_quality:outputQuality});
   if(j.ok){r.textContent='Submitted (prediction '+j.prediction_id+', status: '+j.status+'). '+j.note;r.style.color='var(--ok)';}
   else{r.textContent='Error: '+j.error;r.style.color='var(--err)';}
 }
