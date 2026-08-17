@@ -328,6 +328,71 @@
               <p class="muted">Generated automatically from your Brand DNA - nothing publishes until you approve it. Branded graphics only, never real customer photos.</p>
             </div>
 
+            <div class="card" id="brandDnaCard">
+              <h2>Brand DNA</h2>
+              <p class="muted">Describe your business once - Claude proposes a structured Brand DNA, you review and approve before anything becomes real.</p>
+              <div id="brandDnaApproved" style="display:none;margin-bottom:14px;padding:10px 14px;background:var(--pl);border-radius:10px;font-size:12.5px;"></div>
+              <div id="brandDnaOnboardingForm">
+                <label class="fl">Business name</label><input class="fi" type="text" id="dnaBusinessName">
+                <label class="fl">Industry</label><input class="fi" type="text" id="dnaIndustry" placeholder="e.g. children's hair salon">
+                <label class="fl">Business description</label><textarea class="fi" id="dnaBusinessDescription" rows="2"></textarea>
+                <label class="fl">Target audience</label><input class="fi" type="text" id="dnaTargetAudience">
+                <label class="fl">Visual style notes</label><textarea class="fi" id="dnaVisualNotes" rows="2" placeholder="Colors, style, mood"></textarea>
+                <label class="fl">Environment notes</label><textarea class="fi" id="dnaEnvironmentNotes" rows="2" placeholder="What your space looks like"></textarea>
+                <label class="fl">Uniform notes</label><textarea class="fi" id="dnaUniformNotes" rows="2"></textarea>
+                <label class="fl">Mascot/character notes</label><textarea class="fi" id="dnaMascotNotes" rows="2"></textarea>
+                <label class="fl">Things that must NEVER appear</label><textarea class="fi" id="dnaNegativeNotes" rows="2"></textarea>
+                <button class="btn btn-p btn-sm" onclick="proposeBrandDna()" style="margin-top:8px;">Propose Brand DNA with AI</button>
+                <div id="brandDnaProposeResult" style="font-size:12px;margin-top:8px;"></div>
+              </div>
+              <div id="brandDnaProposedReview" style="display:none;margin-top:16px;">
+                <h3>Proposed rules - review before approving</h3>
+                <div id="brandDnaRulesList"></div>
+                <button class="btn btn-p btn-sm" onclick="approveBrandDna()" style="margin-top:10px;">Approve and save</button>
+                <button class="btn btn-s btn-sm" onclick="document.getElementById('brandDnaProposedReview').style.display='none';" style="margin-top:10px;">Cancel</button>
+                <div id="brandDnaApproveResult" style="font-size:12px;margin-top:8px;"></div>
+              </div>
+              <div id="brandDnaCurrentRules" style="margin-top:16px;"></div>
+            </div>
+
+            <div class="card" id="creativeLabCard">
+              <h2>Creative Lab</h2>
+              <p class="muted">Describe what you want, built automatically from your approved Brand DNA - the compiled prompt is always shown before anything generates.</p>
+              <textarea class="fi" id="labIdea" rows="2" placeholder="e.g. Create a back-to-school image where our expert rates four hairstyles"></textarea>
+              <div class="row" style="margin:8px 0;flex-wrap:wrap;gap:8px;">
+                <select class="fi" id="labPlatform" style="flex:1;min-width:140px;">
+                  <option value="instagram_post">Instagram post</option>
+                  <option value="instagram_story">Instagram story</option>
+                  <option value="instagram_reel_cover">Reel cover</option>
+                </select>
+                <select class="fi" id="labAspectRatio" style="flex:1;min-width:100px;">
+                  <option value="1:1" selected>1:1</option>
+                  <option value="9:16">9:16</option>
+                  <option value="16:9">16:9</option>
+                </select>
+              </div>
+              <button class="btn btn-p btn-sm" onclick="buildCreativeBrief()">Build brief</button>
+              <div id="labBriefResult" style="margin-top:10px;"></div>
+
+              <div id="labPromptSection" style="display:none;margin-top:14px;">
+                <label class="fl">Compiled prompt - edit freely before generating</label>
+                <textarea class="fi" id="labCompiledPrompt" rows="4"></textarea>
+                <select class="fi" id="labModel" style="margin-top:8px;">
+                  <option value="black-forest-labs/flux-2-pro" selected>flux-2-pro</option>
+                  <option value="black-forest-labs/flux-1.1-pro">flux-1.1-pro</option>
+                  <option value="black-forest-labs/flux-kontext-pro">flux-kontext-pro</option>
+                </select>
+                <button class="btn btn-p btn-sm" onclick="runLabGeneration()" style="margin-top:8px;">Generate image</button>
+                <div id="labGenerateResult" style="margin-top:10px;"></div>
+              </div>
+            </div>
+
+            <div class="card" id="generationHistoryCard">
+              <h2>Generation history</h2>
+              <button class="btn btn-s btn-sm" onclick="loadGenerationHistory()">Refresh</button>
+              <div id="generationHistoryList" class="muted" style="margin-top:10px;">Click Refresh to load.</div>
+            </div>
+
             <div class="card" id="brandCard">
               <h2>Brand assets</h2>
               <p class="muted">Used by the marketing agent to generate branded graphics - never real customer photos, just your logo and colors on promotional posts.</p>
@@ -654,7 +719,7 @@ function showPage(id){
   const nav=document.querySelector('.nav-item[data-page="'+id+'"]');
   if(nav) nav.classList.add('active');
   if(id==='intelligence'){loadPredictive();renderQuickQuestions();}
-  if(id==='agents') loadSocialContent();
+  if(id==='agents'){loadSocialContent();loadBrandDna();loadGenerationHistory();}
 }
 
 const MW_ML_URL=SB_URL+'/functions/v1/mw-ml';
@@ -1261,6 +1326,119 @@ async function rejectMascotCandidate(id){
   if(!j.ok) alert('Error: '+j.error);
   loadMascotSection();
 }
+// ── Brand DNA ──
+let proposedBrandDna=null;
+async function loadBrandDna(){
+  const j=await call('get_brand_dna',{});
+  if(!j.ok) return;
+  const approvedEl=document.getElementById('brandDnaApproved');
+  const rulesEl=document.getElementById('brandDnaCurrentRules');
+  if(j.profile && j.profile.approved){
+    approvedEl.style.display='block';
+    approvedEl.textContent='Approved Brand DNA for '+j.profile.business_name+' ('+j.rules.length+' rules saved).';
+    document.getElementById('dnaBusinessName').value=j.profile.business_name||'';
+    document.getElementById('dnaIndustry').value=j.profile.industry||'';
+    document.getElementById('dnaBusinessDescription').value=j.profile.business_description||'';
+    document.getElementById('dnaTargetAudience').value=j.profile.target_audience||'';
+  } else {
+    approvedEl.style.display='none';
+  }
+  if(j.rules && j.rules.length){
+    rulesEl.innerHTML='<h3 style="font-size:13px;">Current saved rules</h3>'+j.rules.map(function(r){
+      return '<div class="item" style="font-size:12px;padding:8px 12px;"><b>'+r.category+'.'+r.attribute_key+'</b> ('+r.priority+'): '+r.attribute_value+'</div>';
+    }).join('');
+  } else {
+    rulesEl.innerHTML='';
+  }
+}
+async function proposeBrandDna(){
+  const r=document.getElementById('brandDnaProposeResult');
+  const businessName=document.getElementById('dnaBusinessName').value.trim();
+  const businessDescription=document.getElementById('dnaBusinessDescription').value.trim();
+  if(!businessName||!businessDescription){r.textContent='Business name and description are required.';r.style.color='var(--err)';return;}
+  r.innerHTML='<span class="mw-spinner"></span>Asking Claude to propose your Brand DNA...';r.style.color='var(--muted)';
+  const j=await call('propose_brand_dna',{
+    business_name:businessName, industry:document.getElementById('dnaIndustry').value.trim(),
+    business_description:businessDescription, target_audience:document.getElementById('dnaTargetAudience').value.trim(),
+    visual_notes:document.getElementById('dnaVisualNotes').value.trim(), environment_notes:document.getElementById('dnaEnvironmentNotes').value.trim(),
+    uniform_notes:document.getElementById('dnaUniformNotes').value.trim(), mascot_notes:document.getElementById('dnaMascotNotes').value.trim(),
+    negative_notes:document.getElementById('dnaNegativeNotes').value.trim(),
+  });
+  if(!j.ok){r.textContent='Error: '+j.error;r.style.color='var(--err)';return;}
+  r.textContent='';
+  proposedBrandDna={profile:j.proposed_profile, rules:j.proposed_rules};
+  document.getElementById('brandDnaProposedReview').style.display='block';
+  document.getElementById('brandDnaRulesList').innerHTML=j.proposed_rules.map(function(rule,i){
+    return '<div class="item" style="font-size:12px;padding:8px 12px;margin-bottom:6px;">'+
+      '<div style="display:flex;justify-content:space-between;"><b>'+rule.category+'.'+rule.attribute_key+'</b>'+
+      '<select class="fi" style="width:auto;padding:2px 6px;font-size:11px;" onchange="proposedBrandDna.rules['+i+'].priority=this.value">'+
+        ['mandatory','preferred','optional','forbidden'].map(function(p){return '<option value="'+p+'"'+(p===rule.priority?' selected':'')+'>'+p+'</option>';}).join('')+
+      '</select></div>'+
+      '<div class="muted" style="margin-top:2px;">'+rule.attribute_value+'</div>'+
+    '</div>';
+  }).join('');
+}
+async function approveBrandDna(){
+  if(!proposedBrandDna) return;
+  const r=document.getElementById('brandDnaApproveResult');
+  r.textContent='Saving...';r.style.color='var(--muted)';
+  const j=await call('approve_brand_dna',proposedBrandDna);
+  if(j.ok){r.textContent='Saved '+j.rules_saved+' rules.';r.style.color='var(--ok)';document.getElementById('brandDnaProposedReview').style.display='none';loadBrandDna();}
+  else{r.textContent='Error: '+j.error;r.style.color='var(--err)';}
+}
+
+// ── Creative Lab ──
+let currentBriefId=null, currentAssetUrls=[];
+async function buildCreativeBrief(){
+  const idea=document.getElementById('labIdea').value.trim();
+  const r=document.getElementById('labBriefResult');
+  if(!idea){r.textContent='Describe your idea first.';r.style.color='var(--err)';return;}
+  document.getElementById('labPromptSection').style.display='none';
+  r.innerHTML='<span class="mw-spinner"></span>Building the creative brief...';r.style.color='var(--muted)';
+  const j=await call('generate_creative_brief',{user_request:idea, platform:document.getElementById('labPlatform').value, aspect_ratio:document.getElementById('labAspectRatio').value});
+  if(!j.ok){r.textContent='Error: '+j.error;r.style.color='var(--err)';return;}
+  currentBriefId=j.brief.id;
+  r.innerHTML='<div class="item" style="font-size:12px;"><b>Subject:</b> '+(j.brief.subject||'-')+'<br><b>Scene:</b> '+(j.brief.scene||'-')+'<br><b>Mood:</b> '+(j.brief.mood||'-')+'</div>';
+
+  const assetsJ=await call('select_reference_assets',{creative_brief_id:currentBriefId});
+  currentAssetUrls=(assetsJ.ok?assetsJ.assets:[]).map(a=>a.storage_url);
+  const assetIds=(assetsJ.ok?assetsJ.assets:[]).map(a=>a.id);
+
+  const compileJ=await call('compile_prompt',{creative_brief_id:currentBriefId, asset_ids:assetIds});
+  if(!compileJ.ok){r.innerHTML+='<div style="color:var(--err);margin-top:6px;">Prompt compilation error: '+compileJ.error+'</div>';return;}
+  document.getElementById('labCompiledPrompt').value=compileJ.compiled_prompt;
+  currentAssetUrls=compileJ.reference_asset_urls||[];
+  document.getElementById('labPromptSection').style.display='block';
+}
+async function runLabGeneration(){
+  const prompt=document.getElementById('labCompiledPrompt').value.trim();
+  const r=document.getElementById('labGenerateResult');
+  if(!prompt){r.textContent='Prompt is empty.';r.style.color='var(--err)';return;}
+  r.innerHTML='<span class="mw-spinner"></span>Generating - this can take a minute...';r.style.color='var(--muted)';
+  const j=await call('run_generation',{
+    creative_brief_id:currentBriefId, compiled_prompt:prompt, model:document.getElementById('labModel').value,
+    aspect_ratio:document.getElementById('labAspectRatio').value, reference_asset_urls:currentAssetUrls,
+  });
+  if(j.ok){
+    r.innerHTML='<img src="'+j.output_url+'" style="max-width:280px;border-radius:8px;cursor:pointer;" onclick="openImageLightbox(\''+j.output_url+'\')">';
+    loadGenerationHistory();
+  } else {
+    r.textContent='Error: '+j.error;r.style.color='var(--err)';
+  }
+}
+async function loadGenerationHistory(){
+  const j=await call('list_generations',{});
+  const el=document.getElementById('generationHistoryList');
+  if(!j.ok){el.textContent='Error: '+j.error;return;}
+  if(!j.generations.length){el.textContent='No generations yet.';return;}
+  el.innerHTML=j.generations.map(function(g){
+    const thumb=g.output_url?('<img src="'+g.output_url+'" style="width:60px;height:60px;object-fit:cover;border-radius:6px;cursor:pointer;" onclick="openImageLightbox(\''+g.output_url+'\')">'):'<div style="width:60px;height:60px;border-radius:6px;background:var(--bg);"></div>';
+    return '<div class="item" style="display:flex;gap:10px;align-items:center;margin-bottom:6px;">'+thumb+
+      '<div style="flex:1;font-size:11.5px;"><b>'+g.status+'</b> - '+g.model+'<br><span class="muted">'+new Date(g.created_at).toLocaleString()+'</span></div>'+
+    '</div>';
+  }).join('');
+}
+
 async function loadSocialContent(){
   const statusEl=document.getElementById('instagramStatus');
   const j=await call('get_instagram_status',{});
