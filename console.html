@@ -110,8 +110,7 @@
       <div class="nav-group-label">Workspace</div>
       <button class="nav-item active" data-page="overview" onclick="showPage('overview')"><span class="ic">&#9635;</span>Overview</button>
       <button class="nav-item" data-page="agents" onclick="showPage('agents')"><span class="ic">&#9673;</span>Agents</button>
-      <button class="nav-item" data-page="predictive" onclick="showPage('predictive')"><span class="ic">&#8626;</span>Predictive insights</button>
-      <button class="nav-item" data-page="ask" onclick="showPage('ask')"><span class="ic">?</span>Ask a question</button>
+      <button class="nav-item" data-page="intelligence" onclick="showPage('intelligence')"><span class="ic">&#128202;</span>Intelligence</button>
       <button class="nav-item" data-page="connections" onclick="showPage('connections')"><span class="ic">&#8644;</span>Connections</button>
       <div class="nav-group-label">Organization</div>
       <button class="nav-item" data-page="team" onclick="showPage('team')"><span class="ic">&#9687;</span>Team</button>
@@ -261,12 +260,102 @@
                 </div>
               </details>
             </div>
+
+            <div class="card" id="stylistsCard">
+              <h2>Stylists</h2>
+              <p class="muted">Real names sync in automatically from your business's own check-in records (no upkeep needed) - this roster is mainly for adding aliases when the same person shows up spelled differently (e.g. "Hyden" vs "Heyden"), and as a fallback for phone-only Excel data.</p>
+              <div class="row" style="margin-bottom:10px;">
+                <input class="fi" type="text" id="stylistPhone" placeholder="Phone number" style="flex:1;min-width:120px;">
+                <input class="fi" type="text" id="stylistName" placeholder="Canonical name" style="flex:1;min-width:120px;">
+                <input class="fi" type="text" id="stylistAliases" placeholder="Other spellings (comma-separated, optional)" style="flex:1;min-width:160px;">
+                <button class="btn btn-s btn-sm" onclick="addStylist()">+ Add</button>
+              </div>
+              <p class="muted" style="font-size:11px;margin-bottom:8px;">After adding aliases for an existing person, click "Sync now" under Connections &rarr; Daily sync once more - it re-checks every visit each time, so past rows get corrected automatically, not just new ones.</p>
+              <div id="stylistsList" class="muted">Loading...</div>
+            </div>
+
+            <div class="card">
+              <h2>WhatsApp connection</h2>
+              <div id="waStatus" style="font-size:13px;padding:10px 14px;border-radius:10px;margin-bottom:12px;"></div>
+              <label class="fl">Access token</label>
+              <input class="fi" type="password" id="waToken" placeholder="Paste permanent access token">
+              <label class="fl">Phone number ID</label>
+              <input class="fi" type="text" id="waPhoneId" placeholder="e.g. 109876543210987">
+              <label class="fl">WABA ID</label>
+              <input class="fi" type="text" id="waWabaId" placeholder="For template management">
+              <button class="btn btn-p btn-sm" onclick="saveWA()">Save and connect</button>
+              <div id="waSaveResult" style="font-size:12.5px;margin-top:8px;"></div>
+            </div>
+
+            <div class="card">
+              <h2>Message templates</h2>
+              <div class="row" style="margin-bottom:12px;">
+                <button class="btn btn-s btn-sm" onclick="loadTemplates()">Refresh</button>
+                <button class="btn btn-p btn-sm" onclick="toggleTplForm()">+ New template</button>
+              </div>
+              <div id="tplForm" style="display:none;border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;">
+                <label class="fl">Name</label><input class="fi" type="text" id="tplName" placeholder="e.g. nudge_reminder">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                  <div><label class="fl">Category</label><select class="fi" id="tplCat"><option value="MARKETING">Marketing</option><option value="UTILITY">Utility</option><option value="AUTHENTICATION">Authentication</option></select></div>
+                  <div><label class="fl">Language</label><select class="fi" id="tplLang"><option value="en">English</option><option value="ar">Arabic</option></select></div>
+                </div>
+                <label class="fl">Body - use {{1}}, {{2}} for variables</label><textarea class="fi" id="tplBody" rows="3"></textarea>
+                <label class="fl">Sample values (comma separated)</label><input class="fi" type="text" id="tplExamples">
+                <label class="fl">Footer (optional)</label><input class="fi" type="text" id="tplFooter">
+                <div id="tplWarnings" style="font-size:12px;color:var(--warn);margin-bottom:8px;"></div>
+                <button class="btn btn-p btn-sm" onclick="submitTemplate()">Check and submit</button>
+                <div id="tplCreateResult" style="font-size:12.5px;margin-top:8px;"></div>
+              </div>
+              <div id="tplList" class="muted">Click Refresh to load.</div>
+
+              <details style="margin-top:14px;">
+                <summary style="cursor:pointer;font-size:13px;color:var(--muted);">Type mappings (used by the agent to pick a template per campaign)</summary>
+                <div style="margin-top:10px;">
+                  <div class="row">
+                    <input class="fi" type="text" id="mapType" placeholder="type_key e.g. boy_nudge" style="flex:1;">
+                    <input class="fi" type="text" id="mapTplName" placeholder="approved template name" style="flex:1;">
+                    <button class="btn btn-s btn-sm" onclick="saveMapping()">Save mapping</button>
+                  </div>
+                  <div id="mapList" class="muted" style="margin-top:8px;"></div>
+                </div>
+              </details>
+            </div>
           </div>
 
           <div id="marketingAgentDetail">
             <div class="card">
               <h2>&#128241; Marketing agent</h2>
               <p class="muted">Generated automatically from your Brand DNA - nothing publishes until you approve it. Branded graphics only, never real customer photos.</p>
+            </div>
+
+            <div class="card" id="brandCard">
+              <h2>Brand assets</h2>
+              <p class="muted">Used by the marketing agent to generate branded graphics - never real customer photos, just your logo and colors on promotional posts.</p>
+              <div id="brandLogoPreview" style="margin-bottom:10px;"></div>
+              <div class="row" style="margin-bottom:10px;align-items:center;">
+                <input type="file" id="brandLogoFile" accept="image/png,image/svg+xml,image/jpeg" style="flex:1;">
+                <button class="btn btn-s btn-sm" onclick="uploadBrandLogo()">Upload logo</button>
+              </div>
+              <div class="row" style="margin-bottom:10px;flex-wrap:wrap;gap:10px;">
+                <div>
+                  <label class="muted" style="font-size:11px;display:block;margin-bottom:3px;">Primary color</label>
+                  <input class="fi" type="color" id="brandPrimaryColor" style="width:60px;height:34px;padding:2px;">
+                </div>
+                <div>
+                  <label class="muted" style="font-size:11px;display:block;margin-bottom:3px;">Secondary color</label>
+                  <input class="fi" type="color" id="brandSecondaryColor" style="width:60px;height:34px;padding:2px;">
+                </div>
+                <div>
+                  <label class="muted" style="font-size:11px;display:block;margin-bottom:3px;">Accent color</label>
+                  <input class="fi" type="color" id="brandAccentColor" style="width:60px;height:34px;padding:2px;">
+                </div>
+              </div>
+              <div style="margin-bottom:10px;">
+                <label class="muted" style="font-size:11px;display:block;margin-bottom:3px;">Visual brand description (used in AI-generated image prompts - shop look, stylist uniforms, aesthetic)</label>
+                <textarea class="fi" id="brandVisualDescription" rows="2" placeholder="e.g. Stylists wear teal polo uniforms, the shop has a jungle-safari theme with animal murals"></textarea>
+              </div>
+              <button class="btn btn-p btn-sm" onclick="saveBrandColors()">Save</button>
+              <div id="brandSaveResult" style="margin-top:8px;font-size:12px;"></div>
             </div>
 
             <div class="card" id="instagramConnectCard">
@@ -341,10 +430,28 @@
         </div>
 
         <!-- PREDICTIVE INSIGHTS -->
-        <div class="page" id="page-predictive">
-          <div class="page-header"><h1>Predictive insights</h1><p class="muted">Things the rule-based agents genuinely can't tell you on their own — patterns, not thresholds you already set.</p></div>
+        <!-- INTELLIGENCE -->
+        <div class="page" id="page-intelligence">
+          <div class="page-header"><h1>Intelligence</h1><p class="muted">Shared analysis every agent draws from - predictions, patterns, and answers to whatever you ask.</p></div>
+
+          <div class="stat-grid" style="margin-bottom:20px;">
+            <div class="agent-tile" onclick="document.getElementById('predictiveInsightsDetail').scrollIntoView({behavior:'smooth'})" style="cursor:pointer;">
+              <div style="font-size:20px;">&#128202;</div>
+              <div style="font-weight:700;font-size:13px;margin:6px 0 2px;">Predictive insights</div>
+              <div class="muted" style="font-size:12px;">Patterns, forecasts</div>
+              <span class="badge b-ok" style="margin-top:8px;display:inline-block;">Active</span>
+            </div>
+            <div class="agent-tile" onclick="document.getElementById('askQuestionDetail').scrollIntoView({behavior:'smooth'})" style="cursor:pointer;">
+              <div style="font-size:20px;">?</div>
+              <div style="font-weight:700;font-size:13px;margin:6px 0 2px;">Ask a question</div>
+              <div class="muted" style="font-size:12px;">Anything, answered live</div>
+              <span class="badge b-ok" style="margin-top:8px;display:inline-block;">Active</span>
+            </div>
+          </div>
+
+          <div id="predictiveInsightsDetail">
           <div class="card">
-            <p class="muted">This page is kept deliberately separate from Agents, on purpose: Agents shows what already happened and what your own rules say should happen next. This page is reserved for what a trained model finds that your rules can't produce by themselves.</p>
+            <p class="muted">This is kept deliberately separate from what Agents already do, on purpose: Agents shows what already happened and what your own rules say should happen next. This section is reserved for what a trained model finds that your rules can't produce by themselves.</p>
           </div>
 
           <div class="card" id="predictiveNoModel" style="display:none;">
@@ -388,11 +495,9 @@
             </div>
             <div id="insightsResult" style="margin-top:14px;"></div>
           </div>
-        </div>
+          </div>
 
-        <!-- ASK A QUESTION -->
-        <div class="page" id="page-ask">
-          <div class="page-header"><h1>Ask a question</h1><p class="muted">Type a real question - every answer is computed fresh from your actual data, never guessed.</p></div>
+          <div id="askQuestionDetail">
           <div class="card">
             <div class="muted" style="font-size:11.5px;margin-bottom:6px;">Quick questions - click any of these, or just type your own below:</div>
             <div id="quickQuestions" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
@@ -401,6 +506,7 @@
             <button class="btn btn-p btn-sm" onclick="askQuestion()">Ask</button>
             <div id="askResult" style="margin-top:14px;"></div>
             <div id="askHistory" style="margin-top:18px;"></div>
+          </div>
           </div>
         </div>
 
@@ -441,49 +547,6 @@
             <p class="muted" style="margin-top:8px;">Including <code>external_id</code> (your own invoice/order number) is optional but recommended if you also upload Excel exports of the same data - it prevents the same sale from being counted twice.</p>
           </div>
 
-          <div class="card" id="stylistsCard">
-            <h2>Stylists</h2>
-            <p class="muted">Real names sync in automatically from MiniCuts' own check-in records (no upkeep needed) - this roster is mainly for adding aliases when the same person shows up spelled differently (e.g. "Hyden" vs "Heyden"), and as a fallback for phone-only Excel data.</p>
-            <div class="row" style="margin-bottom:10px;">
-              <input class="fi" type="text" id="stylistPhone" placeholder="Phone number" style="flex:1;min-width:120px;">
-              <input class="fi" type="text" id="stylistName" placeholder="Canonical name" style="flex:1;min-width:120px;">
-              <input class="fi" type="text" id="stylistAliases" placeholder="Other spellings (comma-separated, optional)" style="flex:1;min-width:160px;">
-              <button class="btn btn-s btn-sm" onclick="addStylist()">+ Add</button>
-            </div>
-            <p class="muted" style="font-size:11px;margin-bottom:8px;">After adding aliases for an existing person, click "Sync now" under Daily sync once more - it re-checks every visit each time, so past rows get corrected automatically, not just new ones.</p>
-            <div id="stylistsList" class="muted">Loading...</div>
-          </div>
-
-          <div class="card" id="brandCard">
-            <h2>Brand assets</h2>
-            <p class="muted">Used by the social content agent to generate branded graphics - never real customer photos, just your logo and colors on promotional posts.</p>
-            <div id="brandLogoPreview" style="margin-bottom:10px;"></div>
-            <div class="row" style="margin-bottom:10px;align-items:center;">
-              <input type="file" id="brandLogoFile" accept="image/png,image/svg+xml,image/jpeg" style="flex:1;">
-              <button class="btn btn-s btn-sm" onclick="uploadBrandLogo()">Upload logo</button>
-            </div>
-            <div class="row" style="margin-bottom:10px;flex-wrap:wrap;gap:10px;">
-              <div>
-                <label class="muted" style="font-size:11px;display:block;margin-bottom:3px;">Primary color</label>
-                <input class="fi" type="color" id="brandPrimaryColor" style="width:60px;height:34px;padding:2px;">
-              </div>
-              <div>
-                <label class="muted" style="font-size:11px;display:block;margin-bottom:3px;">Secondary color</label>
-                <input class="fi" type="color" id="brandSecondaryColor" style="width:60px;height:34px;padding:2px;">
-              </div>
-              <div>
-                <label class="muted" style="font-size:11px;display:block;margin-bottom:3px;">Accent color</label>
-                <input class="fi" type="color" id="brandAccentColor" style="width:60px;height:34px;padding:2px;">
-              </div>
-            </div>
-            <div style="margin-bottom:10px;">
-              <label class="muted" style="font-size:11px;display:block;margin-bottom:3px;">Visual brand description (used in AI-generated image prompts - shop look, stylist uniforms, aesthetic)</label>
-              <textarea class="fi" id="brandVisualDescription" rows="2" placeholder="e.g. Stylists wear teal polo uniforms, the shop has a jungle-safari theme with animal murals"></textarea>
-            </div>
-            <button class="btn btn-p btn-sm" onclick="saveBrandColors()">Save</button>
-            <div id="brandSaveResult" style="margin-top:8px;font-size:12px;"></div>
-          </div>
-
           <div class="card" id="syncChannelCard">
             <h2>Daily sync</h2>
             <p class="muted">Pulls MiniCuts' own customer records into this platform automatically, once a day, ahead of the engagement agent's run - no manual upload needed for day-to-day freshness.</p>
@@ -495,53 +558,6 @@
           <div class="card" style="opacity:0.6;">
             <h2>SQL connector</h2>
             <p class="muted">Coming soon - connect a read-only database credential and let the platform pull data on a schedule directly from your own system. For businesses with a technical team that wants zero manual steps.</p>
-          </div>
-
-          <div class="card">
-            <h2>WhatsApp connection</h2>
-            <div id="waStatus" style="font-size:13px;padding:10px 14px;border-radius:10px;margin-bottom:12px;"></div>
-            <label class="fl">Access token</label>
-            <input class="fi" type="password" id="waToken" placeholder="Paste permanent access token">
-            <label class="fl">Phone number ID</label>
-            <input class="fi" type="text" id="waPhoneId" placeholder="e.g. 109876543210987">
-            <label class="fl">WABA ID</label>
-            <input class="fi" type="text" id="waWabaId" placeholder="For template management">
-            <button class="btn btn-p btn-sm" onclick="saveWA()">Save and connect</button>
-            <div id="waSaveResult" style="font-size:12.5px;margin-top:8px;"></div>
-          </div>
-
-          <div class="card">
-            <h2>Message templates</h2>
-            <div class="row" style="margin-bottom:12px;">
-              <button class="btn btn-s btn-sm" onclick="loadTemplates()">Refresh</button>
-              <button class="btn btn-p btn-sm" onclick="toggleTplForm()">+ New template</button>
-            </div>
-            <div id="tplForm" style="display:none;border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;">
-              <label class="fl">Name</label><input class="fi" type="text" id="tplName" placeholder="e.g. nudge_reminder">
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                <div><label class="fl">Category</label><select class="fi" id="tplCat"><option value="MARKETING">Marketing</option><option value="UTILITY">Utility</option><option value="AUTHENTICATION">Authentication</option></select></div>
-                <div><label class="fl">Language</label><select class="fi" id="tplLang"><option value="en">English</option><option value="ar">Arabic</option></select></div>
-              </div>
-              <label class="fl">Body - use {{1}}, {{2}} for variables</label><textarea class="fi" id="tplBody" rows="3"></textarea>
-              <label class="fl">Sample values (comma separated)</label><input class="fi" type="text" id="tplExamples">
-              <label class="fl">Footer (optional)</label><input class="fi" type="text" id="tplFooter">
-              <div id="tplWarnings" style="font-size:12px;color:var(--warn);margin-bottom:8px;"></div>
-              <button class="btn btn-p btn-sm" onclick="submitTemplate()">Check and submit</button>
-              <div id="tplCreateResult" style="font-size:12.5px;margin-top:8px;"></div>
-            </div>
-            <div id="tplList" class="muted">Click Refresh to load.</div>
-
-            <details style="margin-top:14px;">
-              <summary style="cursor:pointer;font-size:13px;color:var(--muted);">Type mappings (used by the agent to pick a template per campaign)</summary>
-              <div style="margin-top:10px;">
-                <div class="row">
-                  <input class="fi" type="text" id="mapType" placeholder="type_key e.g. boy_nudge" style="flex:1;">
-                  <input class="fi" type="text" id="mapTplName" placeholder="approved template name" style="flex:1;">
-                  <button class="btn btn-s btn-sm" onclick="saveMapping()">Save mapping</button>
-                </div>
-                <div id="mapList" class="muted" style="margin-top:8px;"></div>
-              </div>
-            </details>
           </div>
         </div>
 
@@ -637,8 +653,7 @@ function showPage(id){
   if(pg) pg.classList.add('active');
   const nav=document.querySelector('.nav-item[data-page="'+id+'"]');
   if(nav) nav.classList.add('active');
-  if(id==='predictive') loadPredictive();
-  if(id==='ask') renderQuickQuestions();
+  if(id==='intelligence'){loadPredictive();renderQuickQuestions();}
   if(id==='agents') loadSocialContent();
 }
 
