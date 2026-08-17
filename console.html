@@ -355,6 +355,39 @@
               <div id="brandDnaCurrentRules" style="margin-top:16px;"></div>
             </div>
 
+            <div class="card" id="assetLibraryCard">
+              <h2>Asset library</h2>
+              <p class="muted">Reference photos the Creative Lab can draw on for consistency - a recurring expert, your space, hero products. What each asset is FOR matters as much as the file itself.</p>
+              <div class="row" style="margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+                <input type="file" id="assetFile" accept="image/png,image/jpeg,image/webp" style="flex:1;min-width:160px;">
+                <select class="fi" id="assetType" style="flex:1;min-width:130px;">
+                  <option value="person">Person</option>
+                  <option value="environment">Environment</option>
+                  <option value="product">Product</option>
+                  <option value="uniform">Uniform</option>
+                  <option value="mascot">Mascot</option>
+                  <option value="logo">Logo</option>
+                  <option value="reference_style">Style reference</option>
+                  <option value="previous_creative">Previous creative</option>
+                  <option value="other">Other</option>
+                </select>
+                <input class="fi" type="text" id="assetRole" placeholder="Role, e.g. recurring_expert" style="flex:1;min-width:150px;">
+              </div>
+              <div class="row" style="margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+                <input class="fi" type="text" id="assetName" placeholder="Name" style="flex:1;">
+                <input class="fi" type="text" id="assetTags" placeholder="Tags, comma-separated" style="flex:1;">
+                <select class="fi" id="assetPriority" style="flex:1;min-width:120px;">
+                  <option value="mandatory">Mandatory</option>
+                  <option value="preferred" selected>Preferred</option>
+                  <option value="optional">Optional</option>
+                </select>
+              </div>
+              <textarea class="fi" id="assetDescription" rows="2" placeholder="Description - what this asset shows, when to use it" style="margin-bottom:8px;"></textarea>
+              <button class="btn btn-p btn-sm" onclick="uploadAsset()">Upload asset</button>
+              <div id="assetUploadResult" style="font-size:12px;margin-top:8px;"></div>
+              <div id="assetLibraryList" style="margin-top:14px;"></div>
+            </div>
+
             <div class="card" id="creativeLabCard">
               <h2>Creative Lab</h2>
               <p class="muted">Describe what you want, built automatically from your approved Brand DNA - the compiled prompt is always shown before anything generates.</p>
@@ -369,6 +402,11 @@
                   <option value="1:1" selected>1:1</option>
                   <option value="9:16">9:16</option>
                   <option value="16:9">16:9</option>
+                </select>
+                <select class="fi" id="labTargetSegment" style="flex:1;min-width:160px;">
+                  <option value="">All customers (no segment targeting)</option>
+                  <option value="boy">Boy segment - data-driven</option>
+                  <option value="girl">Girl segment - data-driven</option>
                 </select>
               </div>
               <button class="btn btn-p btn-sm" onclick="buildCreativeBrief()">Build brief</button>
@@ -719,7 +757,7 @@ function showPage(id){
   const nav=document.querySelector('.nav-item[data-page="'+id+'"]');
   if(nav) nav.classList.add('active');
   if(id==='intelligence'){loadPredictive();renderQuickQuestions();}
-  if(id==='agents'){loadSocialContent();loadBrandDna();loadGenerationHistory();}
+  if(id==='agents'){loadSocialContent();loadBrandDna();loadGenerationHistory();loadAssetLibrary();}
 }
 
 const MW_ML_URL=SB_URL+'/functions/v1/mw-ml';
@@ -1387,6 +1425,51 @@ async function approveBrandDna(){
   else{r.textContent='Error: '+j.error;r.style.color='var(--err)';}
 }
 
+// ── Asset library ──
+async function uploadAsset(){
+  const fileInput=document.getElementById('assetFile');
+  const file=fileInput.files[0];
+  const name=document.getElementById('assetName').value.trim();
+  const r=document.getElementById('assetUploadResult');
+  if(!file||!name){r.textContent='A file and a name are both required.';r.style.color='var(--err)';return;}
+  r.textContent='Uploading...';r.style.color='var(--muted)';
+  const path=currentTenant+'/asset-'+Date.now()+'-'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+  const {error:uploadErr}=await sb.storage.from('marketing-assets').upload(path,file,{upsert:true});
+  if(uploadErr){r.textContent='Upload failed: '+uploadErr.message;r.style.color='var(--err)';return;}
+  const {data:urlData}=sb.storage.from('marketing-assets').getPublicUrl(path);
+  const tags=document.getElementById('assetTags').value.split(',').map(t=>t.trim()).filter(Boolean);
+  const j=await call('save_asset',{
+    asset_type:document.getElementById('assetType').value, asset_role:document.getElementById('assetRole').value.trim(),
+    name:name, description:document.getElementById('assetDescription').value.trim(),
+    storage_url:urlData.publicUrl, mime_type:file.type, tags:tags, priority:document.getElementById('assetPriority').value,
+  });
+  if(j.ok){
+    r.textContent='Asset saved.';r.style.color='var(--ok)';
+    document.getElementById('assetName').value='';document.getElementById('assetRole').value='';document.getElementById('assetTags').value='';document.getElementById('assetDescription').value='';
+    loadAssetLibrary();
+  } else {
+    r.textContent='Error: '+j.error;r.style.color='var(--err)';
+  }
+}
+async function loadAssetLibrary(){
+  const j=await call('list_assets',{});
+  const el=document.getElementById('assetLibraryList');
+  if(!j.ok){el.textContent='Error: '+j.error;return;}
+  if(!j.assets.length){el.innerHTML='<span class="muted" style="font-size:12px;">No assets uploaded yet.</span>';return;}
+  el.innerHTML=j.assets.map(function(a){
+    return '<div class="item" style="display:flex;gap:10px;align-items:center;margin-bottom:6px;">'+
+      '<img src="'+a.storage_url+'" style="width:50px;height:50px;object-fit:cover;border-radius:6px;cursor:pointer;" onclick="openImageLightbox(\''+a.storage_url+'\')">'+
+      '<div style="flex:1;font-size:11.5px;"><b>'+a.name+'</b> ('+a.asset_type+(a.asset_role?', '+a.asset_role:'')+') - '+a.priority+'</div>'+
+      '<button class="btn btn-s btn-sm" onclick="deactivateAsset(\''+a.id+'\')">Remove</button>'+
+    '</div>';
+  }).join('');
+}
+async function deactivateAsset(id){
+  const j=await call('deactivate_asset',{id:id});
+  if(!j.ok) alert('Error: '+j.error);
+  loadAssetLibrary();
+}
+
 // ── Creative Lab ──
 let currentBriefId=null, currentAssetUrls=[];
 async function buildCreativeBrief(){
@@ -1395,10 +1478,10 @@ async function buildCreativeBrief(){
   if(!idea){r.textContent='Describe your idea first.';r.style.color='var(--err)';return;}
   document.getElementById('labPromptSection').style.display='none';
   r.innerHTML='<span class="mw-spinner"></span>Building the creative brief...';r.style.color='var(--muted)';
-  const j=await call('generate_creative_brief',{user_request:idea, platform:document.getElementById('labPlatform').value, aspect_ratio:document.getElementById('labAspectRatio').value});
+  const j=await call('generate_creative_brief',{user_request:idea, platform:document.getElementById('labPlatform').value, aspect_ratio:document.getElementById('labAspectRatio').value, target_segment:document.getElementById('labTargetSegment').value||null});
   if(!j.ok){r.textContent='Error: '+j.error;r.style.color='var(--err)';return;}
   currentBriefId=j.brief.id;
-  r.innerHTML='<div class="item" style="font-size:12px;"><b>Subject:</b> '+(j.brief.subject||'-')+'<br><b>Scene:</b> '+(j.brief.scene||'-')+'<br><b>Mood:</b> '+(j.brief.mood||'-')+'</div>';
+  r.innerHTML='<div class="item" style="font-size:12px;"><b>Subject:</b> '+(j.brief.subject||'-')+'<br><b>Scene:</b> '+(j.brief.scene||'-')+'<br><b>Mood:</b> '+(j.brief.mood||'-')+(j.brief.target_segment?'<br><b>Targeting:</b> '+j.brief.target_segment+' segment, data-driven':'')+'</div>';
 
   const assetsJ=await call('select_reference_assets',{creative_brief_id:currentBriefId});
   currentAssetUrls=(assetsJ.ok?assetsJ.assets:[]).map(a=>a.storage_url);
