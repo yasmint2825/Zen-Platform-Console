@@ -147,6 +147,7 @@
       <button class="nav-item" data-page="approvals" onclick="showPage('approvals')"><span class="ic">&#9989;</span>Approvals<span id="approvalsBadge" style="display:none;background:var(--amber);color:#fff;border-radius:999px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:auto;"></span></button>
       <button class="nav-item" data-page="content" onclick="showPage('content')"><span class="ic">&#128197;</span>Content</button>
       <button class="nav-item" data-page="customers" onclick="showPage('customers')"><span class="ic">&#128100;</span>Customers</button>
+      <button class="nav-item" data-page="reports" onclick="showPage('reports')"><span class="ic">&#128200;</span>Reports</button>
       <button class="nav-item" data-page="connections" onclick="showPage('connections')"><span class="ic">&#8644;</span>Connections</button>
       <div class="nav-group-label">Organization</div>
       <button class="nav-item" data-page="team" onclick="showPage('team')"><span class="ic">&#9687;</span>Team</button>
@@ -726,6 +727,26 @@
           <div id="customerProfileArea"></div>
         </div>
 
+        <!-- REPORTS -->
+        <div class="page" id="page-reports">
+          <div class="page-header"><h1>Reports</h1><p class="muted">Performance across every agent, in one place - all from data already computed, nothing duplicated.</p></div>
+
+          <div class="card">
+            <h2>Engagement - campaign performance</h2>
+            <div id="reportsEngagement" class="muted">Loading...</div>
+          </div>
+
+          <div class="card">
+            <h2>Marketing - generation &amp; publishing</h2>
+            <div id="reportsMarketing" class="muted">Loading...</div>
+          </div>
+
+          <div class="card">
+            <h2>Stylist performance</h2>
+            <div id="reportsStylists" class="muted">Loading...</div>
+          </div>
+        </div>
+
         <!-- CONNECTIONS -->
         <div class="page" id="page-connections">
           <div class="page-header"><h1>Connections</h1><p class="muted">What this business is connected to - where data comes from, and how messages go out.</p></div>
@@ -872,6 +893,7 @@ function showPage(id){
   if(id==='agents'){loadSocialContent();loadBrandDna();loadGenerationHistory();loadAssetLibrary();loadBusinessStrategy();loadMonthlyStrategy();}
   if(id==='approvals') loadApprovals();
   if(id==='content') loadCalendar();
+  if(id==='reports') loadReports();
 }
 
 const MW_ML_URL=SB_URL+'/functions/v1/mw-ml';
@@ -1487,6 +1509,30 @@ function currentMonthYear(){
 // ── Unified Approvals inbox ──
 // ── Content calendar ──
 // ── Customer profile ──
+// ── Reports ──
+async function loadReports(){
+  const j=await call('get_reports_data',{});
+  if(!j.ok){document.getElementById('reportsEngagement').textContent='Error: '+j.error;return;}
+
+  const engEl=document.getElementById('reportsEngagement');
+  engEl.innerHTML=j.engagement.campaigns.length?j.engagement.campaigns.map(function(c){
+    return '<div class="item" style="display:flex;justify-content:space-between;"><span>'+c.campaign_key+' - '+c.total_sent+' sent</span><span class="mono-num badge b-ok">'+c.return_rate_percent+'% returned</span></div>';
+  }).join(''):'No campaigns sent yet.';
+
+  const mEl=document.getElementById('reportsMarketing');
+  const gc=j.marketing.generation_counts,pc=j.marketing.post_counts;
+  mEl.innerHTML='<div class="stat-grid">'+
+    '<div class="item"><div class="muted" style="font-size:11px;">Images generated</div><div class="mono-num" style="font-size:20px;font-weight:700;">'+(gc.succeeded||0)+'</div></div>'+
+    '<div class="item"><div class="muted" style="font-size:11px;">Failed generations</div><div class="mono-num" style="font-size:20px;font-weight:700;color:var(--err);">'+(gc.failed||0)+'</div></div>'+
+    '<div class="item"><div class="muted" style="font-size:11px;">Posts published</div><div class="mono-num" style="font-size:20px;font-weight:700;color:var(--teal);">'+(pc.published||0)+'</div></div>'+
+    '<div class="item"><div class="muted" style="font-size:11px;">Awaiting review</div><div class="mono-num" style="font-size:20px;font-weight:700;">'+(pc.pending_review||0)+'</div></div>'+
+  '</div>';
+
+  const sEl=document.getElementById('reportsStylists');
+  sEl.innerHTML=j.stylists.length?j.stylists.map(function(s){
+    return '<div class="item" style="display:flex;justify-content:space-between;"><span>'+s.stylist+' - '+s.total_customers+' customers</span><span class="mono-num badge '+(s.at_risk_percent>30?'b-err':'b-ok')+'">'+s.at_risk_percent+'% at-risk</span></div>';
+  }).join(''):'No stylist data yet.';
+}
 async function searchCustomers(){
   const q=document.getElementById('customerSearchInput').value.trim();
   const el=document.getElementById('customerSearchResults');
