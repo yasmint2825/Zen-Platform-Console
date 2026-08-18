@@ -1751,17 +1751,102 @@ async function proposeMonthlyStrategy(){
   if(!j.ok){r.innerHTML='Error: '+j.error+(j.raw_preview?('<div class="muted" style="font-size:11px;margin-top:4px;">Raw response preview: '+j.raw_preview+'</div>'):'');r.style.color='var(--err)';return;}
   r.textContent='';
   currentMonthlyStrategy=j.strategy;
+  renderStrategyReviewBoxes(j.strategy.ai_proposed_strategy);
+}
+function strategyFieldBox(label,fieldId,value,rows){
+  return '<div class="item" style="margin-bottom:8px;">'+
+    '<div class="fl" style="margin-bottom:4px;">'+label+'</div>'+
+    '<textarea class="fi" id="'+fieldId+'" rows="'+(rows||2)+'" style="margin-bottom:0;">'+(value||'')+'</textarea>'+
+  '</div>';
+}
+function renderStrategyReviewBoxes(s){
   const reviewEl=document.getElementById('msReviewArea');
-  reviewEl.innerHTML='<h3 style="font-size:13px;">Proposed - review before approving</h3>'+
-    '<textarea class="fi" id="msProposedJson" rows="10" style="font-family:monospace;font-size:11px;">'+JSON.stringify(j.strategy.ai_proposed_strategy,null,2)+'</textarea>'+
-    '<button class="btn btn-p btn-sm" onclick="approveMonthlyStrategyNow()" style="margin-top:8px;">Approve and save</button>'+
+  let html='<h3 style="font-size:13px;">Proposed - review before approving</h3>';
+
+  html+=strategyFieldBox('Core campaign','msf-core_campaign',s.core_campaign,2);
+  html+=strategyFieldBox('Primary objective','msf-primary_objective',s.primary_objective,2);
+  html+=strategyFieldBox('Secondary objectives (one per line)','msf-secondary_objectives',(s.secondary_objectives||[]).join('\n'),2);
+  html+=strategyFieldBox('Target customer','msf-target_customer',s.target_customer,2);
+
+  const bo=s.business_opportunity||{};
+  html+='<div class="item" style="margin-bottom:8px;"><div class="fl" style="margin-bottom:4px;">Business opportunity '+provenanceTag(bo.reasoning_type)+'</div>'+
+    '<textarea class="fi" id="msf-business_opportunity" rows="2" style="margin-bottom:2px;">'+(bo.text||'')+'</textarea>'+
+    '<div class="muted" style="font-size:11px;">'+(bo.reasoning||'')+'</div></div>';
+
+  html+='<div class="item" style="margin-bottom:8px;"><div class="fl" style="margin-bottom:6px;">Content pillars</div>';
+  (s.content_pillars||[]).forEach(function(p,i){
+    html+='<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap;">'+
+      '<input class="fi" type="text" id="msf-pillar-name-'+i+'" value="'+(p.name||'').replace(/"/g,'&quot;')+'" style="flex:2;min-width:140px;margin-bottom:0;">'+
+      '<input class="fi" type="number" id="msf-pillar-percent-'+i+'" value="'+(p.percent||0)+'" style="width:70px;margin-bottom:0;">%'+
+      provenanceTag(p.reasoning_type)+
+    '</div>'+
+    '<div class="muted" style="font-size:11px;margin-top:-4px;margin-bottom:8px;">'+(p.reasoning||'')+'</div>';
+  });
+  html+='<div class="muted" style="font-size:11px;">Percentages should add up to 100.</div></div>';
+
+  html+=strategyFieldBox('Key messages (one per line)','msf-key_messages',(s.key_messages||[]).join('\n'),3);
+
+  html+='<div class="item" style="margin-bottom:8px;"><div class="fl" style="margin-bottom:6px;">Products/services to feature</div>';
+  (s.products_services_to_feature||[]).forEach(function(p,i){
+    html+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">'+
+      '<input class="fi" type="text" id="msf-product-name-'+i+'" value="'+(p.name||'').replace(/"/g,'&quot;')+'" style="flex:1;min-width:140px;margin-bottom:0;">'+
+      provenanceTag(p.reasoning_type)+
+    '</div>'+
+    '<div class="muted" style="font-size:11px;margin-top:-4px;margin-bottom:8px;">'+(p.reasoning||'')+'</div>';
+  });
+  html+='</div>';
+
+  html+=strategyFieldBox('Segments to target (one per line, e.g. boy, girl)','msf-segments_to_target',(s.segments_to_target||[]).join('\n'),2);
+  html+=strategyFieldBox('Call-to-action strategy','msf-cta_strategy',s.cta_strategy,3);
+
+  html+='<button class="btn btn-p btn-sm" onclick="approveMonthlyStrategyNow()" style="margin-top:8px;">Approve and save</button>'+
     '<div id="msApproveResult" style="font-size:12px;margin-top:8px;"></div>';
+
+  reviewEl.innerHTML=html;
+  reviewEl.dataset.pillarCount=(s.content_pillars||[]).length;
+  reviewEl.dataset.productCount=(s.products_services_to_feature||[]).length;
+  reviewEl.dataset.businessOpportunityReasoningType=bo.reasoning_type||'ai_reasoning';
+  reviewEl.dataset.businessOpportunityReasoning=bo.reasoning||'';
 }
 async function approveMonthlyStrategyNow(){
+  const reviewEl=document.getElementById('msReviewArea');
   const r=document.getElementById('msApproveResult');
-  let parsed;
-  try{ parsed=JSON.parse(document.getElementById('msProposedJson').value); }
-  catch(e){ r.textContent='Invalid JSON - check your edits.';r.style.color='var(--err)';return; }
+  const pillarCount=Number(reviewEl.dataset.pillarCount||0);
+  const productCount=Number(reviewEl.dataset.productCount||0);
+  const val=id=>{const el=document.getElementById(id);return el?el.value:'';};
+  const lines=id=>val(id).split('\n').map(s=>s.trim()).filter(Boolean);
+
+  const content_pillars=[];
+  for(let i=0;i<pillarCount;i++){
+    content_pillars.push({
+      name:val('msf-pillar-name-'+i),
+      percent:Number(val('msf-pillar-percent-'+i))||0,
+      reasoning_type:currentMonthlyStrategy.ai_proposed_strategy.content_pillars[i]?.reasoning_type,
+      reasoning:currentMonthlyStrategy.ai_proposed_strategy.content_pillars[i]?.reasoning,
+    });
+  }
+  const products_services_to_feature=[];
+  for(let i=0;i<productCount;i++){
+    products_services_to_feature.push({
+      name:val('msf-product-name-'+i),
+      reasoning_type:currentMonthlyStrategy.ai_proposed_strategy.products_services_to_feature[i]?.reasoning_type,
+      reasoning:currentMonthlyStrategy.ai_proposed_strategy.products_services_to_feature[i]?.reasoning,
+    });
+  }
+
+  const parsed={
+    core_campaign:val('msf-core_campaign'),
+    primary_objective:val('msf-primary_objective'),
+    secondary_objectives:lines('msf-secondary_objectives'),
+    target_customer:val('msf-target_customer'),
+    business_opportunity:{text:val('msf-business_opportunity'),reasoning_type:reviewEl.dataset.businessOpportunityReasoningType,reasoning:reviewEl.dataset.businessOpportunityReasoning},
+    content_pillars:content_pillars,
+    key_messages:lines('msf-key_messages'),
+    products_services_to_feature:products_services_to_feature,
+    segments_to_target:lines('msf-segments_to_target'),
+    cta_strategy:val('msf-cta_strategy'),
+  };
+
   r.textContent='Saving...';r.style.color='var(--muted)';
   const j=await call('approve_monthly_strategy',{strategy_id:currentMonthlyStrategy.id,approved_strategy:parsed});
   if(j.ok){r.textContent='Approved.';r.style.color='var(--ok)';document.getElementById('msReviewArea').innerHTML='';loadMonthlyStrategy();}
