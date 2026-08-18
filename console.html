@@ -46,6 +46,16 @@
   .row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}
   .badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;}
   .b-ok{background:var(--okl);color:var(--ok);}
+  /* Provenance tags — genuinely tied to the reasoning_type field on
+     Monthly Strategy content (data_based vs ai_reasoning), not applied
+     elsewhere, since Brand DNA priority and content-plan status are
+     different concepts that already have their own correct badges. */
+  .prov-tag{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:2px 9px 2px 7px;border-radius:999px;white-space:nowrap;}
+  .prov-tag::before{content:'';width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+  .prov-data{background:var(--teal-l);color:var(--teal);}
+  .prov-data::before{background:var(--teal);}
+  .prov-reasoning{background:#fff;color:var(--muted);border:1px solid var(--border);}
+  .prov-reasoning::before{border:1.5px solid var(--teal);box-sizing:border-box;}
   .b-warn{background:var(--warnl);color:var(--warn);}
   .b-err{background:var(--errl);color:var(--err);}
   .item{border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px;transition:box-shadow .12s;}
@@ -134,6 +144,7 @@
       <button class="nav-item active" data-page="overview" onclick="showPage('overview')"><span class="ic">&#9635;</span>Overview</button>
       <button class="nav-item" data-page="agents" onclick="showPage('agents')"><span class="ic">&#9673;</span>Agents</button>
       <button class="nav-item" data-page="intelligence" onclick="showPage('intelligence')"><span class="ic">&#128202;</span>Intelligence</button>
+      <button class="nav-item" data-page="approvals" onclick="showPage('approvals')"><span class="ic">&#9989;</span>Approvals<span id="approvalsBadge" style="display:none;background:var(--amber);color:#fff;border-radius:999px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:auto;"></span></button>
       <button class="nav-item" data-page="connections" onclick="showPage('connections')"><span class="ic">&#8644;</span>Connections</button>
       <div class="nav-group-label">Organization</div>
       <button class="nav-item" data-page="team" onclick="showPage('team')"><span class="ic">&#9687;</span>Team</button>
@@ -677,6 +688,14 @@
         </div>
 
         <!-- SOCIAL CONTENT -->
+        <!-- APPROVALS -->
+        <div class="page" id="page-approvals">
+          <div class="page-header"><h1>Approvals</h1><p class="muted">Everything waiting on you, across every agent, in one place - newest first.</p></div>
+          <div class="card">
+            <div id="approvalsList" class="muted">Loading...</div>
+          </div>
+        </div>
+
         <!-- CONNECTIONS -->
         <div class="page" id="page-connections">
           <div class="page-header"><h1>Connections</h1><p class="muted">What this business is connected to - where data comes from, and how messages go out.</p></div>
@@ -821,6 +840,7 @@ function showPage(id){
   if(nav) nav.classList.add('active');
   if(id==='intelligence'){loadPredictive();renderQuickQuestions();}
   if(id==='agents'){loadSocialContent();loadBrandDna();loadGenerationHistory();loadAssetLibrary();loadBusinessStrategy();loadMonthlyStrategy();}
+  if(id==='approvals') loadApprovals();
 }
 
 const MW_ML_URL=SB_URL+'/functions/v1/mw-ml';
@@ -936,7 +956,7 @@ function loadDashboard(){
   loadWAStatus();loadTemplateMappings();
   loadSettings();loadPending();loadRuns();loadTeam();loadApiKeys();loadChangeLog();
   loadTransactionSummary();loadRecentUploads();loadStylists();loadBrandSettings();
-  loadOverview();
+  loadOverview();loadApprovals();
 }
 async function loadOverview(){
   const el=document.getElementById('overviewStats');
@@ -1420,18 +1440,51 @@ async function generateMascotCandidate(){
 async function approveMascotCandidate(id){
   const j=await call('approve_mascot_candidate',{id:id});
   if(!j.ok) alert('Error: '+j.error);
-  loadMascotSection();
+  loadMascotSection();loadApprovals();
 }
 async function rejectMascotCandidate(id){
   const j=await call('reject_mascot_candidate',{id:id});
   if(!j.ok) alert('Error: '+j.error);
-  loadMascotSection();
+  loadMascotSection();loadApprovals();
 }
 // ── Monthly strategy ──
 let currentMonthlyStrategy=null;
 function currentMonthYear(){
   const d=new Date();
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+}
+// ── Unified Approvals inbox ──
+async function loadApprovals(){
+  const j=await call('list_all_approvals',{});
+  const el=document.getElementById('approvalsList');
+  const badge=document.getElementById('approvalsBadge');
+  if(!j.ok){el.textContent='Error: '+j.error;return;}
+  if(!j.approvals.length){
+    el.innerHTML='Nothing waiting on you right now.';
+    badge.style.display='none';
+    return;
+  }
+  badge.textContent=j.approvals.length;
+  badge.style.display='inline-block';
+  const typeConfig={
+    whatsapp_decision:{icon:'&#128172;',label:'Engagement',approve:'approveDecision',reject:'rejectDecision'},
+    social_post:{icon:'&#128241;',label:'Marketing',approve:'approveSocialPost',reject:'rejectSocialPost'},
+    mascot_candidate:{icon:'&#128053;',label:'Marketing',approve:'approveMascotCandidate',reject:'rejectMascotCandidate'},
+    content_plan_item:{icon:'&#128221;',label:'Marketing',approve:'approveContentPlanItem',reject:null},
+  };
+  el.innerHTML=j.approvals.map(function(a){
+    const cfg=typeConfig[a.type];
+    const rejectBtn=cfg.reject?('<button class="btn btn-s btn-sm" onclick="'+cfg.reject+'(\''+a.id+'\')">Reject</button>'):'';
+    return '<div class="item" style="display:flex;justify-content:space-between;align-items:center;gap:10px;">'+
+      '<div><span class="badge b-warn" style="margin-right:8px;">'+cfg.label+'</span>'+cfg.icon+' '+a.title+'</div>'+
+      '<div style="display:flex;gap:8px;flex-shrink:0;"><button class="btn btn-p btn-sm" onclick="'+cfg.approve+'(\''+a.id+'\')">Approve</button>'+rejectBtn+'</div>'+
+    '</div>';
+  }).join('');
+}
+async function approveContentPlanItem(id){
+  const j=await call('approve_content_plan_item',{id:id});
+  if(!j.ok) alert('Error: '+j.error);
+  loadApprovals();
 }
 async function loadMonthlyStrategy(){
   document.getElementById('msMonthYear').value=currentMonthYear();
@@ -1442,11 +1495,15 @@ async function loadMonthlyStrategy(){
   renderStrategySummary(j.strategy,el);
   if(j.strategy.status==='approved') loadContentPlanBlocks(j.strategy.id);
 }
+function provenanceTag(reasoningType){
+  if(reasoningType==='data_based') return '<span class="prov-tag prov-data">Data-based</span>';
+  return '<span class="prov-tag prov-reasoning">AI reasoning</span>';
+}
 function renderStrategySummary(strategy,el){
   const s=strategy.approved_strategy||strategy.ai_proposed_strategy;
   if(!s){el.innerHTML='';return;}
   const pillars=(s.content_pillars||[]).map(function(p){
-    return '<div style="font-size:12px;margin-bottom:4px;"><b>'+p.name+'</b> ('+p.percent+'%) - <span class="muted">'+(p.reasoning_type==='data_based'?'DATA-BASED: ':'AI REASONING: ')+p.reasoning+'</span></div>';
+    return '<div style="font-size:12px;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><b>'+p.name+'</b> ('+p.percent+'%) '+provenanceTag(p.reasoning_type)+' <span class="muted">'+p.reasoning+'</span></div>';
   }).join('');
   el.innerHTML='<div class="item" style="background:'+(strategy.status==='approved'?'var(--pl)':'var(--bg)')+';">'+
     '<div style="font-weight:700;margin-bottom:6px;">'+strategy.month_year+' - '+strategy.status+'</div>'+
@@ -1768,12 +1825,12 @@ async function approveSocialPost(id){
   if(!confirm('This will publish this post to Instagram right now. Continue?')) return;
   const j=await call('approve_social_post',{id:id});
   if(!j.ok) alert('Error: '+j.error);
-  loadSocialContent();
+  loadSocialContent();loadApprovals();
 }
 async function rejectSocialPost(id){
   const j=await call('reject_social_post',{id:id});
   if(!j.ok) alert('Error: '+j.error);
-  loadSocialContent();
+  loadSocialContent();loadApprovals();
 }
 async function requestSocialPostChanges(id){
   const feedback=prompt('What should change about this post?');
@@ -2027,8 +2084,8 @@ async function loadPending(){
     '<div class="row" style="margin-top:6px;"><button class="btn btn-s btn-sm" onclick="approveDecision(\''+d.id+'\')">Approve and send</button><button class="btn btn-s btn-sm" onclick="rejectDecision(\''+d.id+'\')">Reject</button></div></div>';
   }).join('');
 }
-async function approveDecision(id){const j=await call('approve_decision',{id:id});if(!j.ok)alert('Error: '+j.error);loadPending();loadOverview();}
-async function rejectDecision(id){await call('reject_decision',{id:id});loadPending();loadOverview();}
+async function approveDecision(id){const j=await call('approve_decision',{id:id});if(!j.ok)alert('Error: '+j.error);loadPending();loadOverview();loadApprovals();}
+async function rejectDecision(id){await call('reject_decision',{id:id});loadPending();loadOverview();loadApprovals();}
 async function rejectAllPending(){
   if(!confirm('Reject every pending decision? This just clears the queue - nothing gets sent, and the agent will re-evaluate fresh candidates on the next run.')) return;
   const j=await call('reject_all_pending',{});
