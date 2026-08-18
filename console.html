@@ -4,13 +4,33 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Zen Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
-  :root{--p:#4F46E5;--pl:#F5F4FF;--ok:#16A34A;--okl:#F0FDF4;--err:#DC2626;--errl:#FEF2F2;--warn:#B45309;--warnl:#FFFBEB;--border:#E5E7EB;--muted:#6B7280;--bg:#F7F7F9;--ink:#14141F;--sidebar-w:230px;--topbar-h:60px;}
+  :root{
+    /* Navy Provenance palette — primary/pl kept as existing names so every
+       existing var(--p) reference across the app updates automatically,
+       zero risk to any JS logic or element structure. */
+    --p:#1E3A8A;--pl:#E8EEFB;
+    --ok:#059669;--okl:#ECFDF5;
+    --err:#DC2626;--errl:#FEF2F2;
+    --warn:#D97706;--warnl:#FFFBEB;
+    --border:#E2E8F0;--muted:#64748B;--bg:#F8FAFC;--ink:#0F172A;
+    --sidebar-w:230px;--topbar-h:60px;
+    /* New tokens for the provenance/signature system — additive only,
+       nothing existing references these yet, so adding them changes
+       nothing until they're deliberately used. */
+    --teal:#0D9488;--teal-l:#F0FDFA;
+    --amber:#F59E0B;--amber-l:#FFFBEB;
+    --info:#0891B2;
+  }
   *{box-sizing:border-box;}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);margin:0;color:var(--ink);-webkit-font-smoothing:antialiased;}
+  body{font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);margin:0;color:var(--ink);-webkit-font-smoothing:antialiased;}
   .card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:22px 24px;margin-bottom:18px;box-shadow:0 1px 2px rgba(16,16,40,.04);}
+  h1,h2,h3{font-family:'Sora',-apple-system,BlinkMacSystemFont,sans-serif;}
   h1{font-size:19px;margin:0 0 4px;font-weight:700;letter-spacing:-.01em;}
   h2{font-size:15px;margin:0 0 4px;font-weight:700;}
   h3{font-size:13px;margin:0 0 8px;font-weight:700;}
@@ -32,7 +52,7 @@
   #app{display:none;}
   #authScreen{max-width:380px;margin:80px auto;padding:0 16px;}
   a{color:var(--p);}
-  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;}
+  code{font-family:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;}
 
   .topbar{position:sticky;top:0;z-index:10;height:var(--topbar-h);background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;}
   .topbar-left{display:flex;align-items:center;gap:16px;}
@@ -56,6 +76,7 @@
   .page-header h1{font-size:22px;}
 
   .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;}
+  .mono-num{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;}
   .stat-tile{background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;}
   .stat-tile .num{font-size:24px;font-weight:800;letter-spacing:-.02em;}
   .stat-tile .lbl{font-size:12px;color:var(--muted);margin-top:2px;}
