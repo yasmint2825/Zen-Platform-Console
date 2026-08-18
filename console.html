@@ -1774,52 +1774,72 @@ function strategyFieldBox(label,fieldId,value,rows){
 }
 function renderStrategyReviewBoxes(s){
   const reviewEl=document.getElementById('msReviewArea');
-  let html='<h3 style="font-size:13px;">Proposed - review before approving</h3>';
-
-  html+=strategyFieldBox('Core campaign','msf-core_campaign',s.core_campaign,2);
-  html+=strategyFieldBox('Primary objective','msf-primary_objective',s.primary_objective,2);
-  html+=strategyFieldBox('Secondary objectives (one per line)','msf-secondary_objectives',(s.secondary_objectives||[]).join('\n'),2);
-  html+=strategyFieldBox('Target customer','msf-target_customer',s.target_customer,2);
-
   const bo=s.business_opportunity||{};
-  html+='<div class="item" style="margin-bottom:8px;"><div class="fl" style="margin-bottom:4px;">Business opportunity '+provenanceTag(bo.reasoning_type)+'</div>'+
+
+  // Read-only summary - shown by default, matching Business Strategy's
+  // pattern exactly: plain readable text, Edit to reveal the form.
+  let summaryHtml='<h3 style="font-size:13px;">Proposed strategy</h3>';
+  const sumItem=(label,value)=>'<div class="item" style="margin-bottom:6px;"><b style="font-size:12px;">'+label+'</b><div style="font-size:12.5px;margin-top:2px;white-space:pre-wrap;">'+(value||'-')+'</div></div>';
+  summaryHtml+=sumItem('Core campaign',s.core_campaign);
+  summaryHtml+=sumItem('Primary objective',s.primary_objective);
+  summaryHtml+=sumItem('Secondary objectives',(s.secondary_objectives||[]).join(', '));
+  summaryHtml+=sumItem('Target customer',s.target_customer);
+  summaryHtml+='<div class="item" style="margin-bottom:6px;"><b style="font-size:12px;">Business opportunity</b> '+provenanceTag(bo.reasoning_type)+'<div style="font-size:12.5px;margin-top:2px;">'+(bo.text||'-')+'</div><div class="muted" style="font-size:11px;margin-top:2px;">'+(bo.reasoning||'')+'</div></div>';
+  summaryHtml+='<div class="item" style="margin-bottom:6px;"><b style="font-size:12px;">Content pillars</b>'+(s.content_pillars||[]).map(p=>'<div style="font-size:12.5px;margin-top:4px;">'+p.name+' ('+p.percent+'%) '+provenanceTag(p.reasoning_type)+'<div class="muted" style="font-size:11px;">'+(p.reasoning||'')+'</div></div>').join('')+'</div>';
+  summaryHtml+=sumItem('Key messages',(s.key_messages||[]).join(' • '));
+  summaryHtml+='<div class="item" style="margin-bottom:6px;"><b style="font-size:12px;">Products/services to feature</b>'+(s.products_services_to_feature||[]).map(p=>'<div style="font-size:12.5px;margin-top:4px;">'+p.name+' '+provenanceTag(p.reasoning_type)+'<div class="muted" style="font-size:11px;">'+(p.reasoning||'')+'</div></div>').join('')+'</div>';
+  summaryHtml+=sumItem('Segments to target',(s.segments_to_target||[]).join(', '));
+  summaryHtml+=sumItem('Call-to-action strategy',s.cta_strategy);
+  summaryHtml+='<button class="btn btn-s btn-sm" onclick="editMonthlyStrategy()">Edit</button> '+
+    '<button class="btn btn-p btn-sm" onclick="approveMonthlyStrategyNow()">Approve and save</button>';
+
+  // Editable form - hidden by default, same fields as before.
+  let formHtml='<h3 style="font-size:13px;">Edit before approving</h3>';
+  formHtml+=strategyFieldBox('Core campaign','msf-core_campaign',s.core_campaign,2);
+  formHtml+=strategyFieldBox('Primary objective','msf-primary_objective',s.primary_objective,2);
+  formHtml+=strategyFieldBox('Secondary objectives (one per line)','msf-secondary_objectives',(s.secondary_objectives||[]).join('\n'),2);
+  formHtml+=strategyFieldBox('Target customer','msf-target_customer',s.target_customer,2);
+  formHtml+='<div class="item" style="margin-bottom:8px;"><div class="fl" style="margin-bottom:4px;">Business opportunity '+provenanceTag(bo.reasoning_type)+'</div>'+
     '<textarea class="fi" id="msf-business_opportunity" rows="2" style="margin-bottom:2px;">'+(bo.text||'')+'</textarea>'+
     '<div class="muted" style="font-size:11px;">'+(bo.reasoning||'')+'</div></div>';
-
-  html+='<div class="item" style="margin-bottom:8px;"><div class="fl" style="margin-bottom:6px;">Content pillars</div>';
+  formHtml+='<div class="item" style="margin-bottom:8px;"><div class="fl" style="margin-bottom:6px;">Content pillars</div>';
   (s.content_pillars||[]).forEach(function(p,i){
-    html+='<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap;">'+
+    formHtml+='<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap;">'+
       '<input class="fi" type="text" id="msf-pillar-name-'+i+'" value="'+(p.name||'').replace(/"/g,'&quot;')+'" style="flex:2;min-width:140px;margin-bottom:0;">'+
       '<input class="fi" type="number" id="msf-pillar-percent-'+i+'" value="'+(p.percent||0)+'" style="width:70px;margin-bottom:0;">%'+
       provenanceTag(p.reasoning_type)+
     '</div>'+
     '<div class="muted" style="font-size:11px;margin-top:-4px;margin-bottom:8px;">'+(p.reasoning||'')+'</div>';
   });
-  html+='<div class="muted" style="font-size:11px;">Percentages should add up to 100.</div></div>';
-
-  html+=strategyFieldBox('Key messages (one per line)','msf-key_messages',(s.key_messages||[]).join('\n'),3);
-
-  html+='<div class="item" style="margin-bottom:8px;"><div class="fl" style="margin-bottom:6px;">Products/services to feature</div>';
+  formHtml+='<div class="muted" style="font-size:11px;">Percentages should add up to 100.</div></div>';
+  formHtml+=strategyFieldBox('Key messages (one per line)','msf-key_messages',(s.key_messages||[]).join('\n'),3);
+  formHtml+='<div class="item" style="margin-bottom:8px;"><div class="fl" style="margin-bottom:6px;">Products/services to feature</div>';
   (s.products_services_to_feature||[]).forEach(function(p,i){
-    html+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">'+
+    formHtml+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">'+
       '<input class="fi" type="text" id="msf-product-name-'+i+'" value="'+(p.name||'').replace(/"/g,'&quot;')+'" style="flex:1;min-width:140px;margin-bottom:0;">'+
       provenanceTag(p.reasoning_type)+
     '</div>'+
     '<div class="muted" style="font-size:11px;margin-top:-4px;margin-bottom:8px;">'+(p.reasoning||'')+'</div>';
   });
-  html+='</div>';
+  formHtml+='</div>';
+  formHtml+=strategyFieldBox('Segments to target (one per line, e.g. boy, girl)','msf-segments_to_target',(s.segments_to_target||[]).join('\n'),2);
+  formHtml+=strategyFieldBox('Call-to-action strategy','msf-cta_strategy',s.cta_strategy,3);
+  formHtml+='<button class="btn btn-s btn-sm" onclick="cancelEditMonthlyStrategy()">Cancel</button> '+
+    '<button class="btn btn-p btn-sm" onclick="approveMonthlyStrategyNow()">Approve and save</button>';
 
-  html+=strategyFieldBox('Segments to target (one per line, e.g. boy, girl)','msf-segments_to_target',(s.segments_to_target||[]).join('\n'),2);
-  html+=strategyFieldBox('Call-to-action strategy','msf-cta_strategy',s.cta_strategy,3);
-
-  html+='<button class="btn btn-p btn-sm" onclick="approveMonthlyStrategyNow()" style="margin-top:8px;">Approve and save</button>'+
-    '<div id="msApproveResult" style="font-size:12px;margin-top:8px;"></div>';
-
-  reviewEl.innerHTML=html;
+  reviewEl.innerHTML='<div id="msReviewSummary">'+summaryHtml+'</div><div id="msReviewForm" style="display:none;">'+formHtml+'</div><div id="msApproveResult" style="font-size:12px;margin-top:8px;"></div>';
   reviewEl.dataset.pillarCount=(s.content_pillars||[]).length;
   reviewEl.dataset.productCount=(s.products_services_to_feature||[]).length;
   reviewEl.dataset.businessOpportunityReasoningType=bo.reasoning_type||'ai_reasoning';
   reviewEl.dataset.businessOpportunityReasoning=bo.reasoning||'';
+}
+function editMonthlyStrategy(){
+  document.getElementById('msReviewSummary').style.display='none';
+  document.getElementById('msReviewForm').style.display='block';
+}
+function cancelEditMonthlyStrategy(){
+  document.getElementById('msReviewForm').style.display='none';
+  document.getElementById('msReviewSummary').style.display='block';
 }
 async function approveMonthlyStrategyNow(){
   const reviewEl=document.getElementById('msReviewArea');
