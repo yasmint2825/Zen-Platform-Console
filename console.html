@@ -148,10 +148,7 @@
       <button class="nav-item" data-page="content" onclick="showPage('content')"><span class="ic">&#128197;</span>Content</button>
       <button class="nav-item" data-page="customers" onclick="showPage('customers')"><span class="ic">&#128100;</span>Customers</button>
       <button class="nav-item" data-page="reports" onclick="showPage('reports')"><span class="ic">&#128200;</span>Reports</button>
-      <button class="nav-item" data-page="connections" onclick="showPage('connections')"><span class="ic">&#8644;</span>Connections</button>
-      <div class="nav-group-label">Organization</div>
-      <button class="nav-item" data-page="team" onclick="showPage('team')"><span class="ic">&#9687;</span>Team</button>
-      <button class="nav-item" data-page="apikeys" onclick="showPage('apikeys')"><span class="ic">&#9791;</span>API keys</button>
+      <button class="nav-item" data-page="settings" onclick="showPage('settings')"><span class="ic">&#9881;</span>Settings</button>
       <div class="nav-group-label">Business</div>
       <button class="nav-item" onclick="document.getElementById('newBizPanel').style.display='block';showPage('overview');" ><span class="ic">+</span>Add business</button>
     </nav>
@@ -748,78 +745,92 @@
         </div>
 
         <!-- CONNECTIONS -->
-        <div class="page" id="page-connections">
-          <div class="page-header"><h1>Connections</h1><p class="muted">What this business is connected to - where data comes from, and how messages go out.</p></div>
+        <!-- SETTINGS -->
+        <div class="page" id="page-settings">
+          <div class="page-header"><h1>Settings</h1><p class="muted">What's genuinely shared across every agent - data connections, team access, and billing.</p></div>
 
-          <div class="card">
-            <h2>Data channels</h2>
-            <p class="muted">Connect however fits your business - use one, or all at once. Every channel feeds the same agents.</p>
-            <div id="channelOverview" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:12px;"></div>
+          <div class="row" style="margin-bottom:20px;">
+            <button class="btn btn-p btn-sm settings-tab-btn" data-tab="channels" onclick="showSettingsTab('channels')">Channels &amp; Integrations</button>
+            <button class="btn btn-s btn-sm settings-tab-btn" data-tab="team" onclick="showSettingsTab('team')">Team</button>
+            <button class="btn btn-s btn-sm settings-tab-btn" data-tab="billing" onclick="showSettingsTab('billing')">Billing</button>
           </div>
 
-          <div class="card" id="excelChannelCard">
-            <h2>Excel / CSV upload</h2>
-            <p class="muted">Upload a file of your sales/transaction history - this becomes the data agents learn customer patterns from. Works the same regardless of what system you exported it from.</p>
-            <div id="txSummary" class="muted" style="font-size:13px;margin-bottom:12px;"></div>
-            <input type="file" id="uploadFile" accept=".xlsx,.xls,.csv" onchange="handleFileSelect(event)">
-            <div id="uploadMapping" style="display:none;margin-top:14px;">
-              <div class="fl" style="margin-bottom:8px;">Match your columns</div>
-              <div id="mappingFields"></div>
-              <div class="fl" style="margin:14px 0 8px;">Preview (first 5 rows)</div>
-              <div id="uploadPreview" style="overflow-x:auto;"></div>
-              <button class="btn btn-p btn-sm" style="margin-top:12px;" onclick="submitUpload()">Upload all rows</button>
+          <div id="settingsTab-channels" class="settings-tab-content">
+            <div class="card">
+              <h2>Data channels</h2>
+              <p class="muted">Connect however fits your business - use one, or all at once. Every channel feeds the same agents.</p>
+              <div id="channelOverview" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:12px;"></div>
             </div>
-            <div id="uploadResult" style="font-size:12.5px;margin-top:10px;"></div>
-            <div id="recentUploads" style="margin-top:14px;"></div>
-          </div>
 
-          <div class="card" id="apiChannelCard">
-            <h2>API push</h2>
-            <p class="muted">If you have a POS, booking system, or custom app, it can push transactions directly - a live feed, no manual upload needed. Uses the same API key as the "API keys" page - generate one there first if you haven't.</p>
-            <div style="background:#F3F4F6;border-radius:8px;padding:10px 12px;font-family:ui-monospace,monospace;font-size:11.5px;white-space:pre-wrap;">curl -X POST https://wtapyfgtwkjyjrjdnhkb.supabase.co/functions/v1/mw-ingest \
+            <div class="card" id="excelChannelCard">
+              <h2>Excel / CSV upload</h2>
+              <p class="muted">Upload a file of your sales/transaction history - this becomes the data agents learn customer patterns from. Works the same regardless of what system you exported it from.</p>
+              <div id="txSummary" class="muted" style="font-size:13px;margin-bottom:12px;"></div>
+              <input type="file" id="uploadFile" accept=".xlsx,.xls,.csv" onchange="handleFileSelect(event)">
+              <div id="uploadMapping" style="display:none;margin-top:14px;">
+                <div class="fl" style="margin-bottom:8px;">Match your columns</div>
+                <div id="mappingFields"></div>
+                <div class="fl" style="margin:14px 0 8px;">Preview (first 5 rows)</div>
+                <div id="uploadPreview" style="overflow-x:auto;"></div>
+                <button class="btn btn-p btn-sm" style="margin-top:12px;" onclick="submitUpload()">Upload all rows</button>
+              </div>
+              <div id="uploadResult" style="font-size:12.5px;margin-top:10px;"></div>
+              <div id="recentUploads" style="margin-top:14px;"></div>
+            </div>
+
+            <div class="card" id="apiChannelCard">
+              <h2>API push</h2>
+              <p class="muted">If you have a POS, booking system, or custom app, it can push transactions directly - a live feed, no manual upload needed. Uses the same API key as below - generate one first if you haven't.</p>
+              <div style="background:#F3F4F6;border-radius:8px;padding:10px 12px;font-family:ui-monospace,monospace;font-size:11.5px;white-space:pre-wrap;">curl -X POST https://wtapyfgtwkjyjrjdnhkb.supabase.co/functions/v1/mw-ingest \
   -H "x-tenant-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"action":"upload_transactions","rows":[{"mobile":"971501234567","date":"2026-08-11","amount":150,"external_id":"INV-1042"}]}'</div>
-            <p class="muted" style="margin-top:8px;">Including <code>external_id</code> (your own invoice/order number) is optional but recommended if you also upload Excel exports of the same data - it prevents the same sale from being counted twice.</p>
-          </div>
+              <p class="muted" style="margin-top:8px;">Including <code>external_id</code> (your own invoice/order number) is optional but recommended if you also upload Excel exports of the same data - it prevents the same sale from being counted twice.</p>
+            </div>
 
-          <div class="card" id="syncChannelCard">
-            <h2>Daily sync</h2>
-            <p class="muted">Pulls MiniCuts' own customer records into this platform automatically, once a day, ahead of the engagement agent's run - no manual upload needed for day-to-day freshness.</p>
-            <div id="syncStatus" class="muted" style="font-size:13px;margin-bottom:10px;">Not run yet, or no access to check.</div>
-            <button class="btn btn-s btn-sm" onclick="runSyncNow()">Sync now</button>
-            <div id="syncResult" style="font-size:12.5px;margin-top:8px;"></div>
-          </div>
+            <div class="card" id="syncChannelCard">
+              <h2>Daily sync</h2>
+              <p class="muted">Pulls MiniCuts' own customer records into this platform automatically, once a day, ahead of the engagement agent's run - no manual upload needed for day-to-day freshness.</p>
+              <div id="syncStatus" class="muted" style="font-size:13px;margin-bottom:10px;">Not run yet, or no access to check.</div>
+              <button class="btn btn-s btn-sm" onclick="runSyncNow()">Sync now</button>
+              <div id="syncResult" style="font-size:12.5px;margin-top:8px;"></div>
+            </div>
 
-          <div class="card" style="opacity:0.6;">
-            <h2>SQL connector</h2>
-            <p class="muted">Coming soon - connect a read-only database credential and let the platform pull data on a schedule directly from your own system. For businesses with a technical team that wants zero manual steps.</p>
-          </div>
-        </div>
+            <div class="card" style="opacity:0.6;">
+              <h2>SQL connector</h2>
+              <p class="muted">Coming soon - connect a read-only database credential and let the platform pull data on a schedule directly from your own system. For businesses with a technical team that wants zero manual steps.</p>
+            </div>
 
-        <!-- TEAM -->
-        <div class="page" id="page-team">
-          <div class="page-header"><h1>Team</h1><p class="muted">Who has access to this business.</p></div>
-          <div class="card">
-            <div id="teamList" class="muted" style="margin-bottom:12px;">Loading...</div>
-            <div class="row">
-              <input class="fi" type="email" id="inviteEmail" placeholder="teammate@email.com" style="flex:1;">
-              <select class="fi" id="inviteRole" style="width:auto;"><option value="staff">Staff</option><option value="owner">Owner</option></select>
-              <button class="btn btn-s btn-sm" onclick="inviteTeammate()">Invite</button>
+            <div class="card">
+              <h2>API keys</h2>
+              <p class="muted">For this business's own systems to authenticate - separate from any person's login.</p>
+              <div id="apiKeyList" class="muted" style="margin-bottom:12px;">Loading...</div>
+              <div class="row">
+                <input class="fi" type="text" id="apiKeyLabel" placeholder="Label, e.g. Main app" style="flex:1;">
+                <button class="btn btn-s btn-sm" onclick="createApiKey()">Generate key</button>
+              </div>
+              <div id="newApiKeyResult" style="font-size:12.5px;margin-top:8px;"></div>
             </div>
           </div>
-        </div>
 
-        <!-- API KEYS -->
-        <div class="page" id="page-apikeys">
-          <div class="page-header"><h1>API keys</h1><p class="muted">For this business's own systems to authenticate - separate from any person's login.</p></div>
-          <div class="card">
-            <div id="apiKeyList" class="muted" style="margin-bottom:12px;">Loading...</div>
-            <div class="row">
-              <input class="fi" type="text" id="apiKeyLabel" placeholder="Label, e.g. Main app" style="flex:1;">
-              <button class="btn btn-s btn-sm" onclick="createApiKey()">Generate key</button>
+          <div id="settingsTab-team" class="settings-tab-content" style="display:none;">
+            <div class="card">
+              <h2>Team</h2>
+              <p class="muted">Who has access to this business.</p>
+              <div id="teamList" class="muted" style="margin-bottom:12px;">Loading...</div>
+              <div class="row">
+                <input class="fi" type="email" id="inviteEmail" placeholder="teammate@email.com" style="flex:1;">
+                <select class="fi" id="inviteRole" style="width:auto;"><option value="staff">Staff</option><option value="owner">Owner</option></select>
+                <button class="btn btn-s btn-sm" onclick="inviteTeammate()">Invite</button>
+              </div>
             </div>
-            <div id="newApiKeyResult" style="font-size:12.5px;margin-top:8px;"></div>
+          </div>
+
+          <div id="settingsTab-billing" class="settings-tab-content" style="display:none;">
+            <div class="card" style="opacity:0.6;">
+              <h2>Billing</h2>
+              <p class="muted">Coming soon - no billing infrastructure exists yet, this is a placeholder for when it does.</p>
+            </div>
           </div>
         </div>
 
@@ -882,6 +893,14 @@ async function onAuthed(sess){
   await loadMyTenants();
 }
 
+function showSettingsTab(tab){
+  document.querySelectorAll('.settings-tab-content').forEach(el=>el.style.display='none');
+  document.getElementById('settingsTab-'+tab).style.display='block';
+  document.querySelectorAll('.settings-tab-btn').forEach(function(btn){
+    const active=btn.getAttribute('data-tab')===tab;
+    btn.className='btn btn-sm settings-tab-btn '+(active?'btn-p':'btn-s');
+  });
+}
 function showPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
