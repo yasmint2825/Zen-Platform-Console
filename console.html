@@ -386,20 +386,23 @@
               <details class="card" open>
                 <summary><h2 style="display:inline;">Business strategy</h2></summary>
                 <p class="muted">Your standing marketing direction - what you want marketing to achieve. Edit anytime; this never gets overwritten by AI.</p>
-                <label class="fl">Marketing objectives</label><textarea class="fi" id="bsObjectives" rows="3"></textarea>
-                <label class="fl">Business priorities</label><textarea class="fi" id="bsPriorities" rows="3"></textarea>
-                <label class="fl">Target audiences</label><textarea class="fi" id="bsAudiences" rows="3"></textarea>
-                <label class="fl">Products/services to focus on</label><textarea class="fi" id="bsFocusProducts" rows="3"></textarea>
-                <label class="fl">Positioning</label><textarea class="fi" id="bsPositioning" rows="3"></textarea>
-                <label class="fl">Campaign priorities</label><textarea class="fi" id="bsCampaignPriorities" rows="3"></textarea>
-                <label class="fl">Promotions already approved</label><textarea class="fi" id="bsPromotions" rows="3"></textarea>
-                <label class="fl">Content preferences</label><textarea class="fi" id="bsContentPrefs" rows="3"></textarea>
-                <label class="fl">Upcoming events</label><textarea class="fi" id="bsUpcomingEvents" rows="3"></textarea>
-                <label class="fl">Things you do NOT want promoted</label><textarea class="fi" id="bsExclusions" rows="3"></textarea>
-                <label class="fl">Competitor/market considerations</label><textarea class="fi" id="bsCompetitor" rows="3"></textarea>
-                <label class="fl">Additional instructions</label><textarea class="fi" id="bsAdditional" rows="3"></textarea>
-                <button class="btn btn-p btn-sm" onclick="saveBusinessStrategy()" style="margin-top:8px;">Save</button>
-                <div id="businessStrategyResult" style="font-size:12px;margin-top:8px;"></div>
+                <div id="businessStrategySummary" style="display:none;"></div>
+                <div id="businessStrategyForm">
+                  <label class="fl">Marketing objectives</label><textarea class="fi" id="bsObjectives" rows="3"></textarea>
+                  <label class="fl">Business priorities</label><textarea class="fi" id="bsPriorities" rows="3"></textarea>
+                  <label class="fl">Target audiences</label><textarea class="fi" id="bsAudiences" rows="3"></textarea>
+                  <label class="fl">Products/services to focus on</label><textarea class="fi" id="bsFocusProducts" rows="3"></textarea>
+                  <label class="fl">Positioning</label><textarea class="fi" id="bsPositioning" rows="3"></textarea>
+                  <label class="fl">Campaign priorities</label><textarea class="fi" id="bsCampaignPriorities" rows="3"></textarea>
+                  <label class="fl">Promotions already approved</label><textarea class="fi" id="bsPromotions" rows="3"></textarea>
+                  <label class="fl">Content preferences</label><textarea class="fi" id="bsContentPrefs" rows="3"></textarea>
+                  <label class="fl">Upcoming events</label><textarea class="fi" id="bsUpcomingEvents" rows="3"></textarea>
+                  <label class="fl">Things you do NOT want promoted</label><textarea class="fi" id="bsExclusions" rows="3"></textarea>
+                  <label class="fl">Competitor/market considerations</label><textarea class="fi" id="bsCompetitor" rows="3"></textarea>
+                  <label class="fl">Additional instructions</label><textarea class="fi" id="bsAdditional" rows="3"></textarea>
+                  <button class="btn btn-p btn-sm" onclick="saveBusinessStrategy()" style="margin-top:8px;">Save</button>
+                  <div id="businessStrategyResult" style="font-size:12px;margin-top:8px;"></div>
+                </div>
               </details>
 
               <details class="card" open>
@@ -946,7 +949,7 @@ function showPage(id){
   const nav=document.querySelector('.nav-item[data-page="'+id+'"]');
   if(nav) nav.classList.add('active');
   if(id==='intelligence'){loadPredictive();renderQuickQuestions();}
-  if(id==='agents'){loadSocialContent();loadBrandDna();loadGenerationHistory();loadAssetLibrary();loadBusinessStrategy();loadMonthlyStrategy();}
+  if(id==='agents'){showAgentDetail('engagement');loadSocialContent();loadBrandDna();loadGenerationHistory();loadAssetLibrary();loadBusinessStrategy();loadMonthlyStrategy();}
   if(id==='approvals') loadApprovals();
   if(id==='content') loadCalendar();
   if(id==='reports') loadReports();
@@ -1722,7 +1725,17 @@ async function loadMonthlyStrategy(){
   const el=document.getElementById('msCurrentStrategy');
   if(!j.ok||!j.strategy){el.innerHTML='';currentMonthlyStrategy=null;return;}
   currentMonthlyStrategy=j.strategy;
-  renderStrategySummary(j.strategy,el);
+  if(j.strategy.status==='proposed'){
+    // Already proposed but not yet approved - show the same editable
+    // review boxes as right after clicking Propose, so the approve
+    // button is reachable without re-calling Claude and possibly
+    // overwriting what was already proposed.
+    renderStrategyReviewBoxes(j.strategy.ai_proposed_strategy);
+    el.innerHTML='';
+  } else {
+    renderStrategySummary(j.strategy,el);
+    document.getElementById('msReviewArea').innerHTML='';
+  }
   if(j.strategy.status==='approved') loadContentPlanBlocks(j.strategy.id);
 }
 function provenanceTag(reasoningType){
@@ -1911,6 +1924,21 @@ async function generateBlockImage(itemId){
 
 // ── Business strategy ──
 const BS_FIELDS={bsObjectives:'marketing_objectives',bsPriorities:'business_priorities',bsAudiences:'target_audiences',bsFocusProducts:'focus_products_services',bsPositioning:'positioning',bsCampaignPriorities:'campaign_priorities',bsPromotions:'approved_promotions',bsContentPrefs:'content_preferences',bsUpcomingEvents:'upcoming_events',bsExclusions:'exclusions',bsCompetitor:'competitor_notes',bsAdditional:'additional_instructions'};
+const BS_LABELS={bsObjectives:'Marketing objectives',bsPriorities:'Business priorities',bsAudiences:'Target audiences',bsFocusProducts:'Products/services to focus on',bsPositioning:'Positioning',bsCampaignPriorities:'Campaign priorities',bsPromotions:'Promotions already approved',bsContentPrefs:'Content preferences',bsUpcomingEvents:'Upcoming events',bsExclusions:'Things you do NOT want promoted',bsCompetitor:'Competitor/market considerations',bsAdditional:'Additional instructions'};
+function renderBusinessStrategySummary(){
+  const summaryEl=document.getElementById('businessStrategySummary');
+  const filled=Object.keys(BS_FIELDS).filter(elId=>document.getElementById(elId).value.trim());
+  if(!filled.length){summaryEl.style.display='none';document.getElementById('businessStrategyForm').style.display='block';return;}
+  summaryEl.innerHTML=filled.map(function(elId){
+    return '<div class="item" style="margin-bottom:6px;"><b style="font-size:12px;">'+BS_LABELS[elId]+'</b><div style="font-size:12.5px;margin-top:2px;white-space:pre-wrap;">'+document.getElementById(elId).value.trim()+'</div></div>';
+  }).join('')+'<button class="btn btn-s btn-sm" onclick="editBusinessStrategy()" style="margin-top:8px;">Edit</button>';
+  summaryEl.style.display='block';
+  document.getElementById('businessStrategyForm').style.display='none';
+}
+function editBusinessStrategy(){
+  document.getElementById('businessStrategySummary').style.display='none';
+  document.getElementById('businessStrategyForm').style.display='block';
+}
 async function loadBusinessStrategy(){
   const j=await call('get_business_strategy',{});
   if(!j.ok||!j.strategy) return;
@@ -1918,6 +1946,7 @@ async function loadBusinessStrategy(){
     const val=j.strategy[BS_FIELDS[elId]];
     if(val) document.getElementById(elId).value=val;
   });
+  renderBusinessStrategySummary();
 }
 async function saveBusinessStrategy(){
   const payload={};
@@ -1925,7 +1954,7 @@ async function saveBusinessStrategy(){
   const r=document.getElementById('businessStrategyResult');
   r.textContent='Saving...';r.style.color='var(--muted)';
   const j=await call('save_business_strategy',payload);
-  if(j.ok){r.textContent='Saved.';r.style.color='var(--ok)';}
+  if(j.ok){r.textContent='Saved.';r.style.color='var(--ok)';renderBusinessStrategySummary();}
   else{r.textContent='Error: '+j.error;r.style.color='var(--err)';}
 }
 
