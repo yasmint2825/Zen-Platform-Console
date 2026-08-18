@@ -1982,7 +1982,7 @@ async function generateBlockCreative(itemId){
     if(!saveJ.ok){alert('Could not save your edits: '+saveJ.error);return;}
   }
   const j=await call('generate_content_block_creative',{item_id:itemId});
-  if(!j.ok){alert('Error: '+j.error);return;}
+  if(!j.ok){alert('Error: '+j.error+(j.raw_preview?('\n\nRaw response preview:\n'+j.raw_preview):''));return;}
   contentPlanState[itemId]={compiled_prompt:j.compiled_prompt,reference_asset_urls:j.reference_asset_urls};
   loadMonthlyStrategy(); // full re-render - the prompt is now persisted server-side, so this shows it correctly pre-filled
 }
