@@ -347,6 +347,27 @@
               <div id="businessStrategyResult" style="font-size:12px;margin-top:8px;"></div>
             </div>
 
+            <div class="card" id="monthlyStrategyCard">
+              <h2>Monthly strategy</h2>
+              <p class="muted">Two-part input: your specific focus for this month, combined with ZEN's proposal from real data and your Brand DNA. Every recommendation is labeled data-based or reasoning-based - review before approving.</p>
+              <div class="row" style="margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+                <input class="fi" type="month" id="msMonthYear" style="flex:1;min-width:140px;">
+                <input class="fi" type="text" id="msBrandInput" placeholder="This month's focus, e.g. Back to school offers" style="flex:2;">
+              </div>
+              <button class="btn btn-p btn-sm" onclick="proposeMonthlyStrategy()">Propose strategy with AI</button>
+              <div id="msProposeResult" style="font-size:12px;margin-top:8px;"></div>
+              <div id="msReviewArea" style="margin-top:14px;"></div>
+              <div id="msCurrentStrategy" style="margin-top:14px;"></div>
+            </div>
+
+            <div class="card" id="contentPlanCard">
+              <h2>Content plan</h2>
+              <p class="muted">8 image posts + 4 video concepts, generated from your approved strategy as one coordinated campaign. Generating the actual creative for each block is optional and one at a time.</p>
+              <button class="btn btn-p btn-sm" onclick="generateContentPlan()">Generate content plan</button>
+              <div id="planGenerateResult" style="font-size:12px;margin-top:8px;"></div>
+              <div id="contentPlanBlocks" style="margin-top:14px;"></div>
+            </div>
+
             <div class="card" id="brandDnaCard">
               <h2>Brand DNA</h2>
               <p class="muted">Describe your business once - Claude proposes a structured Brand DNA, you review and approve before anything becomes real.</p>
@@ -776,7 +797,7 @@ function showPage(id){
   const nav=document.querySelector('.nav-item[data-page="'+id+'"]');
   if(nav) nav.classList.add('active');
   if(id==='intelligence'){loadPredictive();renderQuickQuestions();}
-  if(id==='agents'){loadSocialContent();loadBrandDna();loadGenerationHistory();loadAssetLibrary();loadBusinessStrategy();}
+  if(id==='agents'){loadSocialContent();loadBrandDna();loadGenerationHistory();loadAssetLibrary();loadBusinessStrategy();loadMonthlyStrategy();}
 }
 
 const MW_ML_URL=SB_URL+'/functions/v1/mw-ml';
@@ -1383,6 +1404,116 @@ async function rejectMascotCandidate(id){
   if(!j.ok) alert('Error: '+j.error);
   loadMascotSection();
 }
+// ── Monthly strategy ──
+let currentMonthlyStrategy=null;
+function currentMonthYear(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+}
+async function loadMonthlyStrategy(){
+  document.getElementById('msMonthYear').value=currentMonthYear();
+  const j=await call('get_monthly_strategy',{month_year:currentMonthYear()});
+  const el=document.getElementById('msCurrentStrategy');
+  if(!j.ok||!j.strategy){el.innerHTML='';currentMonthlyStrategy=null;return;}
+  currentMonthlyStrategy=j.strategy;
+  renderStrategySummary(j.strategy,el);
+  if(j.strategy.status==='approved') loadContentPlanBlocks(j.strategy.id);
+}
+function renderStrategySummary(strategy,el){
+  const s=strategy.approved_strategy||strategy.ai_proposed_strategy;
+  if(!s){el.innerHTML='';return;}
+  const pillars=(s.content_pillars||[]).map(function(p){
+    return '<div style="font-size:12px;margin-bottom:4px;"><b>'+p.name+'</b> ('+p.percent+'%) - <span class="muted">'+(p.reasoning_type==='data_based'?'DATA-BASED: ':'AI REASONING: ')+p.reasoning+'</span></div>';
+  }).join('');
+  el.innerHTML='<div class="item" style="background:'+(strategy.status==='approved'?'var(--pl)':'var(--bg)')+';">'+
+    '<div style="font-weight:700;margin-bottom:6px;">'+strategy.month_year+' - '+strategy.status+'</div>'+
+    '<div style="font-size:12.5px;margin-bottom:8px;"><b>Objective:</b> '+(s.primary_objective||'-')+'<br><b>Campaign:</b> '+(s.core_campaign||'-')+'</div>'+
+    '<div style="font-size:11px;margin-bottom:4px;font-weight:700;">Content pillars:</div>'+pillars+
+  '</div>';
+}
+async function proposeMonthlyStrategy(){
+  const monthYear=document.getElementById('msMonthYear').value;
+  const brandInput=document.getElementById('msBrandInput').value.trim();
+  const r=document.getElementById('msProposeResult');
+  if(!monthYear){r.textContent='Pick a month first.';r.style.color='var(--err)';return;}
+  r.innerHTML='<span class="mw-spinner"></span>Combining your input with real data and Brand DNA...';r.style.color='var(--muted)';
+  const j=await call('propose_monthly_strategy',{month_year:monthYear,brand_monthly_input:brandInput});
+  if(!j.ok){r.textContent='Error: '+j.error;r.style.color='var(--err)';return;}
+  r.textContent='';
+  currentMonthlyStrategy=j.strategy;
+  const reviewEl=document.getElementById('msReviewArea');
+  reviewEl.innerHTML='<h3 style="font-size:13px;">Proposed - review before approving</h3>'+
+    '<textarea class="fi" id="msProposedJson" rows="10" style="font-family:monospace;font-size:11px;">'+JSON.stringify(j.strategy.ai_proposed_strategy,null,2)+'</textarea>'+
+    '<button class="btn btn-p btn-sm" onclick="approveMonthlyStrategyNow()" style="margin-top:8px;">Approve and save</button>'+
+    '<div id="msApproveResult" style="font-size:12px;margin-top:8px;"></div>';
+}
+async function approveMonthlyStrategyNow(){
+  const r=document.getElementById('msApproveResult');
+  let parsed;
+  try{ parsed=JSON.parse(document.getElementById('msProposedJson').value); }
+  catch(e){ r.textContent='Invalid JSON - check your edits.';r.style.color='var(--err)';return; }
+  r.textContent='Saving...';r.style.color='var(--muted)';
+  const j=await call('approve_monthly_strategy',{strategy_id:currentMonthlyStrategy.id,approved_strategy:parsed});
+  if(j.ok){r.textContent='Approved.';r.style.color='var(--ok)';document.getElementById('msReviewArea').innerHTML='';loadMonthlyStrategy();}
+  else{r.textContent='Error: '+j.error;r.style.color='var(--err)';}
+}
+
+// ── Content plan ──
+let contentPlanState={};
+async function generateContentPlan(){
+  const r=document.getElementById('planGenerateResult');
+  if(!currentMonthlyStrategy||currentMonthlyStrategy.status!=='approved'){r.textContent='Approve this month\'s strategy first.';r.style.color='var(--err)';return;}
+  r.innerHTML='<span class="mw-spinner"></span>Planning 8 image posts + 4 video concepts as one campaign...';r.style.color='var(--muted)';
+  const j=await call('generate_content_plan',{strategy_id:currentMonthlyStrategy.id});
+  if(j.ok){r.textContent='Plan generated.';r.style.color='var(--ok)';renderContentPlanBlocks(j.items);}
+  else{r.textContent='Error: '+j.error;r.style.color='var(--err)';}
+}
+async function loadContentPlanBlocks(strategyId){
+  const j=await call('list_content_plan_items',{strategy_id:strategyId});
+  if(j.ok&&j.items.length) renderContentPlanBlocks(j.items);
+}
+function renderContentPlanBlocks(items){
+  const el=document.getElementById('contentPlanBlocks');
+  const statusBadge={planned:{label:'Planned',color:'var(--muted)'},creative_ready:{label:'Creative ready',color:'var(--warn)'},approved:{label:'Approved',color:'var(--ok)'},scheduled:{label:'Scheduled',color:'var(--ok)'},published:{label:'Published',color:'var(--ok)'}};
+  el.innerHTML=items.map(function(item){
+    const badge=statusBadge[item.status]||{label:item.status,color:'var(--muted)'};
+    const isVideo=item.item_type==='video';
+    let actionsHtml='';
+    if(item.item_type==='image'){
+      if(item.status==='planned'){
+        actionsHtml='<button class="btn btn-s btn-sm" onclick="generateBlockCreative(\''+item.id+'\')">Generate creative</button>';
+      } else {
+        actionsHtml='<div id="blockPromptArea-'+item.id+'"></div><button class="btn btn-p btn-sm" onclick="generateBlockImage(\''+item.id+'\')">Generate image</button>';
+      }
+    }
+    return '<div class="item" style="margin-bottom:10px;">'+
+      '<div style="display:flex;justify-content:space-between;"><span style="font-weight:700;font-size:12.5px;">'+(isVideo?'VIDEO ':'POST ')+item.item_number+' - '+item.title+'</span><span style="font-size:11px;color:'+badge.color+';font-weight:700;">'+badge.label+'</span></div>'+
+      '<div class="muted" style="font-size:11.5px;margin-top:4px;">'+item.content_pillar+' - '+item.objective+' - '+(item.audience||'')+(item.target_segment?' ('+item.target_segment+' segment)':'')+'</div>'+
+      (item.hook?('<div style="font-size:12px;margin-top:6px;font-style:italic;">"'+item.hook+'"</div>'):'')+
+      (isVideo?('<div class="muted" style="font-size:11px;margin-top:6px;">'+(item.video_plan?.scenes?.length||0)+' scenes planned - see full plan via API for now.</div>'):'')+
+      '<div id="blockImageArea-'+item.id+'" style="margin-top:8px;"></div>'+
+      '<div style="margin-top:8px;">'+actionsHtml+'</div>'+
+    '</div>';
+  }).join('');
+}
+async function generateBlockCreative(itemId){
+  const j=await call('generate_content_block_creative',{item_id:itemId});
+  if(!j.ok){alert('Error: '+j.error);return;}
+  contentPlanState[itemId]={compiled_prompt:j.compiled_prompt,reference_asset_urls:j.reference_asset_urls};
+  const promptArea=document.getElementById('blockPromptArea-'+itemId);
+  if(promptArea) promptArea.innerHTML='<textarea class="fi" rows="3" style="font-size:11.5px;" onchange="contentPlanState[\''+itemId+'\'].compiled_prompt=this.value">'+j.compiled_prompt+'</textarea>';
+  loadMonthlyStrategy(); // refresh block list to show updated status + new buttons
+}
+async function generateBlockImage(itemId){
+  const state=contentPlanState[itemId];
+  if(!state){alert('Generate the creative for this block first.');return;}
+  const imgArea=document.getElementById('blockImageArea-'+itemId);
+  imgArea.innerHTML='<span class="mw-spinner"></span>Generating...';
+  const j=await call('generate_content_block_image',{item_id:itemId,compiled_prompt:state.compiled_prompt,reference_asset_urls:state.reference_asset_urls});
+  if(j.ok){imgArea.innerHTML='<img src="'+j.output_url+'" style="max-width:200px;border-radius:8px;cursor:pointer;" onclick="openImageLightbox(\''+j.output_url+'\')">';}
+  else{imgArea.innerHTML='<span style="color:var(--err);font-size:12px;">Error: '+j.error+'</span>';}
+}
+
 // ── Business strategy ──
 const BS_FIELDS={bsObjectives:'marketing_objectives',bsPriorities:'business_priorities',bsAudiences:'target_audiences',bsFocusProducts:'focus_products_services',bsPositioning:'positioning',bsCampaignPriorities:'campaign_priorities',bsPromotions:'approved_promotions',bsContentPrefs:'content_preferences',bsUpcomingEvents:'upcoming_events',bsExclusions:'exclusions',bsCompetitor:'competitor_notes',bsAdditional:'additional_instructions'};
 async function loadBusinessStrategy(){
