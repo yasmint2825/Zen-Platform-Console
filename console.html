@@ -1906,6 +1906,7 @@ function renderContentPlanBlocks(items){
   el.innerHTML=items.map(function(item){
     const badge=statusBadge[item.status]||{label:item.status,color:'var(--muted)'};
     const isVideo=item.item_type==='video';
+    const editable=item.status==='planned';
     let actionsHtml='';
     if(item.item_type==='image'){
       if(item.status==='planned'){
@@ -1914,10 +1915,25 @@ function renderContentPlanBlocks(items){
         actionsHtml='<div id="blockPromptArea-'+item.id+'"></div><button class="btn btn-p btn-sm" onclick="generateBlockImage(\''+item.id+'\')">Generate image</button>';
       }
     }
-    return '<div class="item" style="margin-bottom:10px;">'+
-      '<div style="display:flex;justify-content:space-between;"><span style="font-weight:700;font-size:12.5px;">'+(isVideo?'VIDEO ':'POST ')+item.item_number+' - '+item.title+'</span><span style="font-size:11px;color:'+badge.color+';font-weight:700;">'+badge.label+'</span></div>'+
+    const headerLine='<div style="display:flex;justify-content:space-between;"><span style="font-weight:700;font-size:12.5px;">'+(isVideo?'VIDEO ':'POST ')+item.item_number+(editable?'':(' - '+item.title))+'</span><span style="font-size:11px;color:'+badge.color+';font-weight:700;">'+badge.label+'</span></div>';
+
+    // Planned, not-yet-generated blocks get real editable fields - the
+    // title/objective/audience/hook feed directly into the creative
+    // brief once generated, so editing here genuinely changes the
+    // output, not just a label.
+    const bodyHtml=editable?(
+      '<label class="fl" style="margin-top:6px;">Title</label><input class="fi" type="text" id="blockTitle-'+item.id+'" value="'+(item.title||'').replace(/"/g,'&quot;')+'" style="margin-bottom:6px;">'+
+      '<label class="fl">Objective</label><input class="fi" type="text" id="blockObjective-'+item.id+'" value="'+(item.objective||'').replace(/"/g,'&quot;')+'" style="margin-bottom:6px;">'+
+      '<label class="fl">Audience</label><input class="fi" type="text" id="blockAudience-'+item.id+'" value="'+(item.audience||'').replace(/"/g,'&quot;')+'" style="margin-bottom:6px;">'+
+      '<label class="fl">Hook</label><textarea class="fi" id="blockHook-'+item.id+'" rows="2" style="margin-bottom:0;">'+(item.hook||'')+'</textarea>'+
+      '<div class="muted" style="font-size:11px;margin-top:4px;">'+item.content_pillar+(item.target_segment?' - '+item.target_segment+' segment':'')+'</div>'
+    ):(
       '<div class="muted" style="font-size:11.5px;margin-top:4px;">'+item.content_pillar+' - '+item.objective+' - '+(item.audience||'')+(item.target_segment?' ('+item.target_segment+' segment)':'')+'</div>'+
-      (item.hook?('<div style="font-size:12px;margin-top:6px;font-style:italic;">"'+item.hook+'"</div>'):'')+
+      (item.hook?('<div style="font-size:12px;margin-top:6px;font-style:italic;">"'+item.hook+'"</div>'):'')
+    );
+
+    return '<div class="item" style="margin-bottom:10px;">'+
+      headerLine+bodyHtml+
       (isVideo?('<div class="muted" style="font-size:11px;margin-top:6px;">'+(item.video_plan?.scenes?.length||0)+' scenes planned - see full plan via API for now.</div>'):'')+
       '<div id="blockImageArea-'+item.id+'" style="margin-top:8px;"></div>'+
       '<div style="margin-top:8px;">'+actionsHtml+'</div>'+
@@ -1925,6 +1941,19 @@ function renderContentPlanBlocks(items){
   }).join('');
 }
 async function generateBlockCreative(itemId){
+  // If the block is still editable, save whatever's currently in the
+  // fields before building the brief from it - the edit only matters if
+  // it's actually persisted first.
+  const titleEl=document.getElementById('blockTitle-'+itemId);
+  if(titleEl){
+    const saveJ=await call('update_content_plan_item_fields',{
+      id:itemId, title:titleEl.value.trim(),
+      objective:document.getElementById('blockObjective-'+itemId).value.trim(),
+      audience:document.getElementById('blockAudience-'+itemId).value.trim(),
+      hook:document.getElementById('blockHook-'+itemId).value.trim(),
+    });
+    if(!saveJ.ok){alert('Could not save your edits: '+saveJ.error);return;}
+  }
   const j=await call('generate_content_block_creative',{item_id:itemId});
   if(!j.ok){alert('Error: '+j.error);return;}
   contentPlanState[itemId]={compiled_prompt:j.compiled_prompt,reference_asset_urls:j.reference_asset_urls};
