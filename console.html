@@ -146,6 +146,7 @@
       <button class="nav-item" data-page="intelligence" onclick="showPage('intelligence')"><span class="ic">&#128202;</span>Intelligence</button>
       <button class="nav-item" data-page="approvals" onclick="showPage('approvals')"><span class="ic">&#9989;</span>Approvals<span id="approvalsBadge" style="display:none;background:var(--amber);color:#fff;border-radius:999px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:auto;"></span></button>
       <button class="nav-item" data-page="content" onclick="showPage('content')"><span class="ic">&#128197;</span>Content</button>
+      <button class="nav-item" data-page="customers" onclick="showPage('customers')"><span class="ic">&#128100;</span>Customers</button>
       <button class="nav-item" data-page="connections" onclick="showPage('connections')"><span class="ic">&#8644;</span>Connections</button>
       <div class="nav-group-label">Organization</div>
       <button class="nav-item" data-page="team" onclick="showPage('team')"><span class="ic">&#9687;</span>Team</button>
@@ -710,6 +711,19 @@
             <h2>Schedule</h2>
             <div id="scheduledList" class="muted">Loading...</div>
           </div>
+        </div>
+
+        <!-- CUSTOMERS -->
+        <div class="page" id="page-customers">
+          <div class="page-header"><h1>Customers</h1><p class="muted">Search a customer to see their whole picture - visits, prediction, campaign history - in one place.</p></div>
+          <div class="card">
+            <div class="row" style="margin-bottom:10px;">
+              <input class="fi" type="text" id="customerSearchInput" placeholder="Search by name or phone..." style="flex:1;" onkeyup="if(event.key==='Enter')searchCustomers()">
+              <button class="btn btn-p btn-sm" onclick="searchCustomers()">Search</button>
+            </div>
+            <div id="customerSearchResults"></div>
+          </div>
+          <div id="customerProfileArea"></div>
         </div>
 
         <!-- CONNECTIONS -->
@@ -1472,6 +1486,42 @@ function currentMonthYear(){
 }
 // ── Unified Approvals inbox ──
 // ── Content calendar ──
+// ── Customer profile ──
+async function searchCustomers(){
+  const q=document.getElementById('customerSearchInput').value.trim();
+  const el=document.getElementById('customerSearchResults');
+  if(!q){el.innerHTML='';return;}
+  const j=await call('search_customers',{query:q});
+  if(!j.ok){el.textContent='Error: '+j.error;return;}
+  if(!j.results.length){el.innerHTML='<span class="muted" style="font-size:12px;">No matches.</span>';return;}
+  el.innerHTML=j.results.map(function(r){
+    return '<div class="item" style="cursor:pointer;" onclick="viewCustomerProfile(\''+r.customer_key.replace(/'/g,"\\'")+'\',\''+r.name.replace(/'/g,"\\'")+'\')"><b>'+r.name+'</b> <span class="muted">'+r.mobile+'</span></div>';
+  }).join('');
+}
+async function viewCustomerProfile(customerKey,displayName){
+  const el=document.getElementById('customerProfileArea');
+  el.innerHTML='<div class="card"><span class="mw-spinner"></span>Loading profile...</div>';
+  const j=await call('get_customer_profile',{customer_key:customerKey});
+  if(!j.ok){el.innerHTML='<div class="card" style="color:var(--err);">Error: '+j.error+'</div>';return;}
+
+  const tierBadge={at_risk:'b-err',likely:'b-ok',uncertain:'b-warn'};
+  const tierLabel=j.prediction?('<span class="badge '+(tierBadge[j.prediction.tier]||'b-warn')+'">'+j.prediction.tier.replace('_',' ')+'</span> <span class="muted mono-num">'+Math.round((j.prediction.probability||0)*100)+'% return likelihood</span>'):'<span class="muted">No prediction yet</span>';
+
+  const visitsHtml=j.visits.length?j.visits.map(function(v){
+    return '<div class="item" style="display:flex;justify-content:space-between;font-size:12.5px;"><span>'+v.transaction_date+' - '+(v.description||'Visit')+(v.stylist_name?(' with '+v.stylist_name):'')+'</span><span class="mono-num">AED '+v.amount+'</span></div>';
+  }).join(''):'<span class="muted" style="font-size:12px;">No visits recorded.</span>';
+
+  const campaignHtml=j.campaign_history.length?j.campaign_history.map(function(c){
+    return '<div class="item" style="font-size:12.5px;">'+c.campaign_key+' - <span class="badge b-ok">'+c.status+'</span> <span class="muted">'+new Date(c.created_at).toLocaleDateString()+'</span></div>';
+  }).join(''):'<span class="muted" style="font-size:12px;">No campaign history.</span>';
+
+  el.innerHTML='<div class="card">'+
+    '<h2>'+(displayName||'Customer')+'</h2>'+
+    '<div style="margin-bottom:14px;">'+(j.profile?.segment?('<span class="badge b-ok" style="margin-right:8px;">'+j.profile.segment+' segment</span>'):'')+tierLabel+'</div>'+
+    '<h3>Visit history</h3>'+visitsHtml+
+    '<h3 style="margin-top:14px;">Campaign history</h3>'+campaignHtml+
+  '</div>';
+}
 async function loadCalendar(){
   const j=await call('list_calendar_items',{});
   const unschedEl=document.getElementById('unscheduledList');
