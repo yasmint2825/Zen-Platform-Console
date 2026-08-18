@@ -19,7 +19,7 @@
     --err:#DC2626;--errl:#FEF2F2;
     --warn:#D97706;--warnl:#FFFBEB;
     --border:#E2E8F0;--muted:#64748B;--bg:#F8FAFC;--ink:#0F172A;
-    --sidebar-w:230px;--topbar-h:60px;
+    --sidebar-w:215px;--topbar-h:60px;
     /* New tokens for the provenance/signature system — additive only,
        nothing existing references these yet, so adding them changes
        nothing until they're deliberately used. */
@@ -35,7 +35,8 @@
   h2{font-size:15px;margin:0 0 4px;font-weight:700;}
   h3{font-size:13px;margin:0 0 8px;font-weight:700;}
   .muted{color:var(--muted);font-size:13px;}
-  .fi{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;margin-bottom:10px;background:#fff;}
+  .fi{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;margin-bottom:10px;background:#fff;box-sizing:border-box;}
+  textarea.fi{resize:vertical;min-height:60px;}
   .fl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;display:block;margin-bottom:4px;}
   .btn{padding:9px 16px;border-radius:8px;border:none;font-weight:700;font-size:13px;cursor:pointer;transition:all .12s;}
   .btn:hover{opacity:.88;}
@@ -81,7 +82,7 @@
   .nav-item.active{background:var(--pl);color:var(--p);}
   .nav-item .ic{font-size:15px;width:18px;text-align:center;}
 
-  .main{flex:1;padding:28px 32px;max-width:1180px;}
+  .main{flex:1;padding:28px 32px;max-width:1400px;}
   .page{display:none;}
   .page.active{display:block;}
   .page-header{margin-bottom:20px;}
