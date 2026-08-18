@@ -1533,9 +1533,29 @@ async function loadApprovals(){
   el.innerHTML=j.approvals.map(function(a){
     const cfg=typeConfig[a.type];
     const rejectBtn=cfg.reject?('<button class="btn btn-s btn-sm" onclick="'+cfg.reject+'(\''+a.id+'\')">Reject</button>'):'';
+    const actions='<button class="btn btn-p btn-sm" onclick="'+cfg.approve+'(\''+a.id+'\')">Approve</button>'+rejectBtn;
+
+    // Anything with an actual image gets a real, sizeable thumbnail plus
+    // its full caption/detail text - approving creative content without
+    // seeing it isn't a real review.
+    if(a.image_url){
+      return '<div class="item" style="display:flex;gap:14px;align-items:flex-start;">'+
+        '<img src="'+a.image_url+'" style="width:120px;height:120px;object-fit:cover;border-radius:8px;cursor:pointer;flex-shrink:0;" onclick="openImageLightbox(\''+a.image_url+'\')">'+
+        '<div style="flex:1;min-width:0;">'+
+          '<div style="margin-bottom:6px;"><span class="badge b-warn">'+cfg.label+'</span></div>'+
+          '<div style="font-weight:700;font-size:13px;margin-bottom:4px;">'+a.title+'</div>'+
+          (a.detail?('<div style="font-size:12.5px;white-space:pre-wrap;color:var(--muted);margin-bottom:10px;">'+a.detail+'</div>'):'')+
+          '<div style="display:flex;gap:8px;">'+actions+'</div>'+
+        '</div>'+
+      '</div>';
+    }
+
+    // Text-only approvals (WhatsApp decisions have no visual content to
+    // review) stay as a compact row - no reason to force an empty image
+    // slot where there's genuinely nothing to show.
     return '<div class="item" style="display:flex;justify-content:space-between;align-items:center;gap:10px;">'+
-      '<div><span class="badge b-warn" style="margin-right:8px;">'+cfg.label+'</span>'+cfg.icon+' '+a.title+'</div>'+
-      '<div style="display:flex;gap:8px;flex-shrink:0;"><button class="btn btn-p btn-sm" onclick="'+cfg.approve+'(\''+a.id+'\')">Approve</button>'+rejectBtn+'</div>'+
+      '<div><span class="badge b-warn" style="margin-right:8px;">'+cfg.label+'</span>'+cfg.icon+' '+a.title+(a.detail?('<div class="muted" style="font-size:11.5px;margin-top:2px;">'+a.detail+'</div>'):'')+'</div>'+
+      '<div style="display:flex;gap:8px;flex-shrink:0;">'+actions+'</div>'+
     '</div>';
   }).join('');
 }
