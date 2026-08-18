@@ -474,8 +474,9 @@
             <div id="marketingTab-setup" class="marketing-tab-content" style="display:none;">
               <details class="card" open>
                 <summary><h2 style="display:inline;">Brand DNA</h2></summary>
-                <p class="muted">Describe your business once - Claude proposes a structured Brand DNA, you review and approve before anything becomes real.</p>
+                <p class="muted">Describe your business - save it directly anytime. "Propose with AI" is optional, for turning this into structured, prioritized rules the image generator uses.</p>
                 <div id="brandDnaApproved" style="display:none;margin-bottom:14px;padding:10px 14px;background:var(--pl);border-radius:10px;font-size:12.5px;"></div>
+                <div id="brandDnaSummary" style="display:none;"></div>
                 <div id="brandDnaOnboardingForm">
                   <label class="fl">Business name</label><input class="fi" type="text" id="dnaBusinessName">
                   <label class="fl">Industry</label><input class="fi" type="text" id="dnaIndustry" placeholder="e.g. children's hair salon">
@@ -486,7 +487,8 @@
                   <label class="fl">Uniform notes</label><textarea class="fi" id="dnaUniformNotes" rows="3"></textarea>
                   <label class="fl">Mascot/character notes</label><textarea class="fi" id="dnaMascotNotes" rows="3"></textarea>
                   <label class="fl">Things that must NEVER appear</label><textarea class="fi" id="dnaNegativeNotes" rows="3"></textarea>
-                  <button class="btn btn-p btn-sm" onclick="proposeBrandDna()" style="margin-top:8px;">Propose Brand DNA with AI</button>
+                  <button class="btn btn-p btn-sm" onclick="saveBrandProfileDraft()" style="margin-top:8px;">Save</button>
+                  <button class="btn btn-s btn-sm" onclick="proposeBrandDna()" style="margin-top:8px;">Propose Brand DNA with AI (optional)</button>
                   <div id="brandDnaProposeResult" style="font-size:12px;margin-top:8px;"></div>
                 </div>
                 <div id="brandDnaProposedReview" style="display:none;margin-top:16px;padding:14px;border:1.5px solid var(--p);border-radius:10px;background:var(--pl);">
@@ -1907,20 +1909,31 @@ function renderContentPlanBlocks(items){
     const badge=statusBadge[item.status]||{label:item.status,color:'var(--muted)'};
     const isVideo=item.item_type==='video';
     const editable=item.status==='planned';
+    const hasImage=!!item.generated_image_url;
+
+    // Prompt area is now ALWAYS present once past "planned" - previously
+    // it only existed in the DOM after the status had already changed,
+    // so generateBlockCreative could never find it to populate. Also
+    // pre-fills from the persisted compiled_prompt, so it survives a
+    // page reload instead of only living in memory.
     let actionsHtml='';
     if(item.item_type==='image'){
-      if(item.status==='planned'){
+      if(editable){
         actionsHtml='<button class="btn btn-s btn-sm" onclick="generateBlockCreative(\''+item.id+'\')">Generate creative</button>';
       } else {
-        actionsHtml='<div id="blockPromptArea-'+item.id+'"></div><button class="btn btn-p btn-sm" onclick="generateBlockImage(\''+item.id+'\')">Generate image</button>';
+        const promptBox='<label class="fl" style="margin-top:8px;">Prompt sent to the image model - edit freely</label>'+
+          '<textarea class="fi" id="blockPromptArea-'+item.id+'" rows="4" style="font-size:11.5px;" onchange="if(contentPlanState[\''+item.id+'\'])contentPlanState[\''+item.id+'\'].compiled_prompt=this.value;">'+(item.compiled_prompt||'')+'</textarea>';
+        const genImageBtn=hasImage?'':'<button class="btn btn-p btn-sm" onclick="generateBlockImage(\''+item.id+'\')" style="margin-top:6px;">Generate image</button>';
+        const approveRejectBtns=hasImage&&item.status==='creative_ready'?(
+          '<div style="margin-top:8px;"><button class="btn btn-p btn-sm" onclick="approveContentPlanItem(\''+item.id+'\')">Approve</button> '+
+          '<button class="btn btn-s btn-sm" onclick="rejectContentPlanItem(\''+item.id+'\')">Reject &amp; retry</button></div>'
+        ):'';
+        actionsHtml=promptBox+genImageBtn+approveRejectBtns;
+        if(!contentPlanState[item.id]&&item.compiled_prompt) contentPlanState[item.id]={compiled_prompt:item.compiled_prompt,reference_asset_urls:[]};
       }
     }
     const headerLine='<div style="display:flex;justify-content:space-between;"><span style="font-weight:700;font-size:12.5px;">'+(isVideo?'VIDEO ':'POST ')+item.item_number+(editable?'':(' - '+item.title))+'</span><span style="font-size:11px;color:'+badge.color+';font-weight:700;">'+badge.label+'</span></div>';
 
-    // Planned, not-yet-generated blocks get real editable fields - the
-    // title/objective/audience/hook feed directly into the creative
-    // brief once generated, so editing here genuinely changes the
-    // output, not just a label.
     const bodyHtml=editable?(
       '<label class="fl" style="margin-top:6px;">Title</label><input class="fi" type="text" id="blockTitle-'+item.id+'" value="'+(item.title||'').replace(/"/g,'&quot;')+'" style="margin-bottom:6px;">'+
       '<label class="fl">Objective</label><input class="fi" type="text" id="blockObjective-'+item.id+'" value="'+(item.objective||'').replace(/"/g,'&quot;')+'" style="margin-bottom:6px;">'+
@@ -1932,13 +1945,27 @@ function renderContentPlanBlocks(items){
       (item.hook?('<div style="font-size:12px;margin-top:6px;font-style:italic;">"'+item.hook+'"</div>'):'')
     );
 
+    const imageHtml=hasImage?('<img src="'+item.generated_image_url+'" style="max-width:220px;border-radius:8px;margin-top:8px;cursor:pointer;display:block;" onclick="openImageLightbox(\''+item.generated_image_url+'\')">'):'';
+
     return '<div class="item" style="margin-bottom:10px;">'+
       headerLine+bodyHtml+
       (isVideo?('<div class="muted" style="font-size:11px;margin-top:6px;">'+(item.video_plan?.scenes?.length||0)+' scenes planned - see full plan via API for now.</div>'):'')+
+      imageHtml+
       '<div id="blockImageArea-'+item.id+'" style="margin-top:8px;"></div>'+
       '<div style="margin-top:8px;">'+actionsHtml+'</div>'+
     '</div>';
   }).join('');
+}
+async function approveContentPlanItem(itemId){
+  const j=await call('approve_content_plan_item',{id:itemId});
+  if(!j.ok){alert('Error: '+j.error);return;}
+  loadMonthlyStrategy();
+}
+async function rejectContentPlanItem(itemId){
+  const j=await call('reject_content_plan_item',{id:itemId});
+  if(!j.ok){alert('Error: '+j.error);return;}
+  delete contentPlanState[itemId];
+  loadMonthlyStrategy();
 }
 async function generateBlockCreative(itemId){
   // If the block is still editable, save whatever's currently in the
@@ -1957,17 +1984,17 @@ async function generateBlockCreative(itemId){
   const j=await call('generate_content_block_creative',{item_id:itemId});
   if(!j.ok){alert('Error: '+j.error);return;}
   contentPlanState[itemId]={compiled_prompt:j.compiled_prompt,reference_asset_urls:j.reference_asset_urls};
-  const promptArea=document.getElementById('blockPromptArea-'+itemId);
-  if(promptArea) promptArea.innerHTML='<textarea class="fi" rows="3" style="font-size:11.5px;" onchange="contentPlanState[\''+itemId+'\'].compiled_prompt=this.value">'+j.compiled_prompt+'</textarea>';
-  loadMonthlyStrategy(); // refresh block list to show updated status + new buttons
+  loadMonthlyStrategy(); // full re-render - the prompt is now persisted server-side, so this shows it correctly pre-filled
 }
 async function generateBlockImage(itemId){
   const state=contentPlanState[itemId];
-  if(!state){alert('Generate the creative for this block first.');return;}
+  const liveEditedPrompt=document.getElementById('blockPromptArea-'+itemId);
+  const promptToSend=liveEditedPrompt?liveEditedPrompt.value:(state?state.compiled_prompt:null);
+  if(!promptToSend){alert('Generate the creative for this block first.');return;}
   const imgArea=document.getElementById('blockImageArea-'+itemId);
   imgArea.innerHTML='<span class="mw-spinner"></span>Generating...';
-  const j=await call('generate_content_block_image',{item_id:itemId,compiled_prompt:state.compiled_prompt,reference_asset_urls:state.reference_asset_urls});
-  if(j.ok){imgArea.innerHTML='<img src="'+j.output_url+'" style="max-width:200px;border-radius:8px;cursor:pointer;" onclick="openImageLightbox(\''+j.output_url+'\')">';}
+  const j=await call('generate_content_block_image',{item_id:itemId,compiled_prompt:promptToSend,reference_asset_urls:state?state.reference_asset_urls:[]});
+  if(j.ok){imgArea.innerHTML='';loadMonthlyStrategy();}
   else{imgArea.innerHTML='<span style="color:var(--err);font-size:12px;">Error: '+j.error+'</span>';}
 }
 
@@ -2009,18 +2036,49 @@ async function saveBusinessStrategy(){
 
 // ── Brand DNA ──
 let proposedBrandDna=null;
+const DNA_FIELDS={dnaBusinessName:{key:'business_name',label:'Business name'},dnaIndustry:{key:'industry',label:'Industry'},dnaBusinessDescription:{key:'business_description',label:'Business description'},dnaTargetAudience:{key:'target_audience',label:'Target audience'},dnaVisualNotes:{key:'visual_notes',label:'Visual style notes'},dnaEnvironmentNotes:{key:'environment_notes',label:'Environment notes'},dnaUniformNotes:{key:'uniform_notes',label:'Uniform notes'},dnaMascotNotes:{key:'mascot_notes',label:'Mascot/character notes'},dnaNegativeNotes:{key:'negative_notes',label:'Things that must NEVER appear'}};
+function renderBrandDnaSummary(){
+  const summaryEl=document.getElementById('brandDnaSummary');
+  const filled=Object.keys(DNA_FIELDS).filter(elId=>document.getElementById(elId).value.trim());
+  if(!filled.length){summaryEl.style.display='none';document.getElementById('brandDnaOnboardingForm').style.display='block';return;}
+  summaryEl.innerHTML=filled.map(function(elId){
+    return '<div class="item" style="margin-bottom:6px;"><b style="font-size:12px;">'+DNA_FIELDS[elId].label+'</b><div style="font-size:12.5px;margin-top:2px;white-space:pre-wrap;">'+document.getElementById(elId).value.trim()+'</div></div>';
+  }).join('')+'<button class="btn btn-s btn-sm" onclick="editBrandDna()" style="margin-top:8px;">Edit</button> '+
+    '<button class="btn btn-s btn-sm" onclick="proposeBrandDna()" style="margin-top:8px;">Propose Brand DNA with AI (optional)</button>';
+  summaryEl.style.display='block';
+  document.getElementById('brandDnaOnboardingForm').style.display='none';
+}
+function editBrandDna(){
+  document.getElementById('brandDnaSummary').style.display='none';
+  document.getElementById('brandDnaOnboardingForm').style.display='block';
+}
+async function saveBrandProfileDraft(){
+  const r=document.getElementById('brandDnaProposeResult');
+  const payload={};
+  Object.keys(DNA_FIELDS).forEach(elId=>{payload[DNA_FIELDS[elId].key]=document.getElementById(elId).value.trim();});
+  if(!payload.business_name){r.textContent='Business name is required.';r.style.color='var(--err)';return;}
+  r.textContent='Saving...';r.style.color='var(--muted)';
+  const j=await call('save_brand_profile_draft',payload);
+  if(j.ok){r.textContent='Saved.';r.style.color='var(--ok)';renderBrandDnaSummary();}
+  else{r.textContent='Error: '+j.error;r.style.color='var(--err)';}
+}
 async function loadBrandDna(){
   const j=await call('get_brand_dna',{});
   if(!j.ok) return;
   const approvedEl=document.getElementById('brandDnaApproved');
   const rulesEl=document.getElementById('brandDnaCurrentRules');
-  if(j.profile && j.profile.approved){
-    approvedEl.style.display='block';
-    approvedEl.textContent='Approved Brand DNA for '+j.profile.business_name+' ('+j.rules.length+' rules saved).';
-    document.getElementById('dnaBusinessName').value=j.profile.business_name||'';
-    document.getElementById('dnaIndustry').value=j.profile.industry||'';
-    document.getElementById('dnaBusinessDescription').value=j.profile.business_description||'';
-    document.getElementById('dnaTargetAudience').value=j.profile.target_audience||'';
+  if(j.profile){
+    Object.keys(DNA_FIELDS).forEach(function(elId){
+      const val=j.profile[DNA_FIELDS[elId].key];
+      if(val) document.getElementById(elId).value=val;
+    });
+    if(j.profile.approved){
+      approvedEl.style.display='block';
+      approvedEl.textContent='AI-structured rules approved for '+j.profile.business_name+' ('+j.rules.length+' rules saved).';
+    } else {
+      approvedEl.style.display='none';
+    }
+    renderBrandDnaSummary();
   } else {
     approvedEl.style.display='none';
   }
