@@ -81,7 +81,7 @@
   .nav-item.active{background:var(--pl);color:var(--p);}
   .nav-item .ic{font-size:15px;width:18px;text-align:center;}
 
-  .main{flex:1;padding:28px 32px;max-width:920px;}
+  .main{flex:1;padding:28px 32px;max-width:1180px;}
   .page{display:none;}
   .page.active{display:block;}
   .page-header{margin-bottom:20px;}
@@ -102,6 +102,16 @@
   .agent-section summary::after{content:'\2304';font-size:14px;color:var(--muted);transition:transform .15s;}
   .agent-section[open] summary::after{transform:rotate(180deg);}
   .agent-section-body{padding:14px;border-top:1px solid var(--border);}
+  /* Same chevron treatment as .agent-section, applied to plain
+     <details class="card"> blocks used throughout Marketing/Engagement
+     agent detail - keeps the collapsible sections visually consistent
+     without needing to restructure their HTML to match .agent-section
+     exactly. */
+  details.card summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;}
+  details.card summary::-webkit-details-marker{display:none;}
+  details.card summary::after{content:'\2304';font-size:16px;color:var(--muted);transition:transform .15s;margin-left:12px;flex-shrink:0;}
+  details.card[open] summary::after{transform:rotate(180deg);}
+  details.card summary h2{margin:0;}
   .count-badge{background:var(--p);color:#fff;border-radius:20px;padding:1px 8px;font-size:11px;font-weight:700;margin-left:8px;}
 @keyframes mw-spin{to{transform:rotate(360deg);}}
 .mw-spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--p);border-radius:50%;animation:mw-spin 0.7s linear infinite;vertical-align:middle;margin-right:8px;}
@@ -195,7 +205,7 @@
           <div class="page-header"><h1>Agents</h1><p class="muted">Automated staff working this business - each one reads your rules, makes a decision, and either acts or waits for your review.</p></div>
 
           <div class="stat-grid" style="margin-bottom:20px;">
-            <div class="agent-tile" onclick="document.getElementById('engagementAgentDetail').scrollIntoView({behavior:'smooth'})" style="cursor:pointer;">
+            <div class="agent-tile" onclick="showAgentDetail('engagement')" style="cursor:pointer;">
               <div style="font-size:20px;">&#128172;</div>
               <div style="font-weight:700;font-size:13px;margin:6px 0 2px;">Engagement agent</div>
               <div class="muted" style="font-size:12px;">WhatsApp campaigns</div>
@@ -207,7 +217,7 @@
               <div class="muted" style="font-size:12px;">Missed calls, booking</div>
               <span class="badge" style="background:var(--border);color:var(--muted);margin-top:8px;display:inline-block;">Coming soon</span>
             </div>
-            <div class="agent-tile" onclick="document.getElementById('marketingAgentDetail').scrollIntoView({behavior:'smooth'})" style="cursor:pointer;">
+            <div class="agent-tile" onclick="showAgentDetail('marketing')" style="cursor:pointer;">
               <div style="font-size:20px;">&#128241;</div>
               <div style="font-weight:700;font-size:13px;margin:6px 0 2px;">Marketing agent</div>
               <div class="muted" style="font-size:12px;">Brand-driven content</div>
@@ -215,7 +225,11 @@
             </div>
           </div>
 
-          <div id="engagementAgentDetail">
+          <div id="agentDetailPlaceholder" class="card">
+            <p class="muted" style="text-align:center;">Click an agent above to see its details.</p>
+          </div>
+
+          <div id="engagementAgentDetail" style="display:none;">
             <div class="card">
               <h2>&#128172; Engagement agent - WhatsApp campaigns</h2>
               <div class="row" style="margin-bottom:14px;margin-top:14px;">
@@ -362,246 +376,253 @@
               <p class="muted">Generated automatically from your Brand DNA - nothing publishes until you approve it. Branded graphics only, never real customer photos.</p>
             </div>
 
-            <div class="card" id="businessStrategyCard">
-              <h2>Business strategy</h2>
-              <p class="muted">Your standing marketing direction - what you want marketing to achieve. Edit anytime; this never gets overwritten by AI.</p>
-              <label class="fl">Marketing objectives</label><textarea class="fi" id="bsObjectives" rows="2"></textarea>
-              <label class="fl">Business priorities</label><textarea class="fi" id="bsPriorities" rows="2"></textarea>
-              <label class="fl">Target audiences</label><textarea class="fi" id="bsAudiences" rows="2"></textarea>
-              <label class="fl">Products/services to focus on</label><textarea class="fi" id="bsFocusProducts" rows="2"></textarea>
-              <label class="fl">Positioning</label><textarea class="fi" id="bsPositioning" rows="2"></textarea>
-              <label class="fl">Campaign priorities</label><textarea class="fi" id="bsCampaignPriorities" rows="2"></textarea>
-              <label class="fl">Promotions already approved</label><textarea class="fi" id="bsPromotions" rows="2"></textarea>
-              <label class="fl">Content preferences</label><textarea class="fi" id="bsContentPrefs" rows="2"></textarea>
-              <label class="fl">Upcoming events</label><textarea class="fi" id="bsUpcomingEvents" rows="2"></textarea>
-              <label class="fl">Things you do NOT want promoted</label><textarea class="fi" id="bsExclusions" rows="2"></textarea>
-              <label class="fl">Competitor/market considerations</label><textarea class="fi" id="bsCompetitor" rows="2"></textarea>
-              <label class="fl">Additional instructions</label><textarea class="fi" id="bsAdditional" rows="2"></textarea>
-              <button class="btn btn-p btn-sm" onclick="saveBusinessStrategy()" style="margin-top:8px;">Save</button>
-              <div id="businessStrategyResult" style="font-size:12px;margin-top:8px;"></div>
+            <div class="row" style="margin-bottom:20px;">
+              <button class="btn btn-p btn-sm marketing-tab-btn" data-tab="strategy" onclick="showMarketingTab('strategy')">Strategy &amp; content</button>
+              <button class="btn btn-s btn-sm marketing-tab-btn" data-tab="setup" onclick="showMarketingTab('setup')">Brand setup</button>
             </div>
 
-            <div class="card" id="monthlyStrategyCard">
-              <h2>Monthly strategy</h2>
-              <p class="muted">Two-part input: your specific focus for this month, combined with ZEN's proposal from real data and your Brand DNA. Every recommendation is labeled data-based or reasoning-based - review before approving.</p>
-              <div class="row" style="margin-bottom:8px;flex-wrap:wrap;gap:8px;">
-                <input class="fi" type="month" id="msMonthYear" style="flex:1;min-width:140px;">
-                <input class="fi" type="text" id="msBrandInput" placeholder="This month's focus, e.g. Back to school offers" style="flex:2;">
-              </div>
-              <button class="btn btn-p btn-sm" onclick="proposeMonthlyStrategy()">Propose strategy with AI</button>
-              <div id="msProposeResult" style="font-size:12px;margin-top:8px;"></div>
-              <div id="msReviewArea" style="margin-top:14px;"></div>
-              <div id="msCurrentStrategy" style="margin-top:14px;"></div>
-            </div>
+            <div id="marketingTab-strategy" class="marketing-tab-content">
+              <details class="card" open>
+                <summary><h2 style="display:inline;">Business strategy</h2></summary>
+                <p class="muted">Your standing marketing direction - what you want marketing to achieve. Edit anytime; this never gets overwritten by AI.</p>
+                <label class="fl">Marketing objectives</label><textarea class="fi" id="bsObjectives" rows="3"></textarea>
+                <label class="fl">Business priorities</label><textarea class="fi" id="bsPriorities" rows="3"></textarea>
+                <label class="fl">Target audiences</label><textarea class="fi" id="bsAudiences" rows="3"></textarea>
+                <label class="fl">Products/services to focus on</label><textarea class="fi" id="bsFocusProducts" rows="3"></textarea>
+                <label class="fl">Positioning</label><textarea class="fi" id="bsPositioning" rows="3"></textarea>
+                <label class="fl">Campaign priorities</label><textarea class="fi" id="bsCampaignPriorities" rows="3"></textarea>
+                <label class="fl">Promotions already approved</label><textarea class="fi" id="bsPromotions" rows="3"></textarea>
+                <label class="fl">Content preferences</label><textarea class="fi" id="bsContentPrefs" rows="3"></textarea>
+                <label class="fl">Upcoming events</label><textarea class="fi" id="bsUpcomingEvents" rows="3"></textarea>
+                <label class="fl">Things you do NOT want promoted</label><textarea class="fi" id="bsExclusions" rows="3"></textarea>
+                <label class="fl">Competitor/market considerations</label><textarea class="fi" id="bsCompetitor" rows="3"></textarea>
+                <label class="fl">Additional instructions</label><textarea class="fi" id="bsAdditional" rows="3"></textarea>
+                <button class="btn btn-p btn-sm" onclick="saveBusinessStrategy()" style="margin-top:8px;">Save</button>
+                <div id="businessStrategyResult" style="font-size:12px;margin-top:8px;"></div>
+              </details>
 
-            <div class="card" id="contentPlanCard">
-              <h2>Content plan</h2>
-              <p class="muted">8 image posts + 4 video concepts, generated from your approved strategy as one coordinated campaign. Generating the actual creative for each block is optional and one at a time.</p>
-              <button class="btn btn-p btn-sm" onclick="generateContentPlan()">Generate content plan</button>
-              <div id="planGenerateResult" style="font-size:12px;margin-top:8px;"></div>
-              <div id="contentPlanBlocks" style="margin-top:14px;"></div>
-            </div>
-
-            <div class="card" id="brandDnaCard">
-              <h2>Brand DNA</h2>
-              <p class="muted">Describe your business once - Claude proposes a structured Brand DNA, you review and approve before anything becomes real.</p>
-              <div id="brandDnaApproved" style="display:none;margin-bottom:14px;padding:10px 14px;background:var(--pl);border-radius:10px;font-size:12.5px;"></div>
-              <div id="brandDnaOnboardingForm">
-                <label class="fl">Business name</label><input class="fi" type="text" id="dnaBusinessName">
-                <label class="fl">Industry</label><input class="fi" type="text" id="dnaIndustry" placeholder="e.g. children's hair salon">
-                <label class="fl">Business description</label><textarea class="fi" id="dnaBusinessDescription" rows="2"></textarea>
-                <label class="fl">Target audience</label><input class="fi" type="text" id="dnaTargetAudience">
-                <label class="fl">Visual style notes</label><textarea class="fi" id="dnaVisualNotes" rows="2" placeholder="Colors, style, mood"></textarea>
-                <label class="fl">Environment notes</label><textarea class="fi" id="dnaEnvironmentNotes" rows="2" placeholder="What your space looks like"></textarea>
-                <label class="fl">Uniform notes</label><textarea class="fi" id="dnaUniformNotes" rows="2"></textarea>
-                <label class="fl">Mascot/character notes</label><textarea class="fi" id="dnaMascotNotes" rows="2"></textarea>
-                <label class="fl">Things that must NEVER appear</label><textarea class="fi" id="dnaNegativeNotes" rows="2"></textarea>
-                <button class="btn btn-p btn-sm" onclick="proposeBrandDna()" style="margin-top:8px;">Propose Brand DNA with AI</button>
-                <div id="brandDnaProposeResult" style="font-size:12px;margin-top:8px;"></div>
-              </div>
-              <div id="brandDnaProposedReview" style="display:none;margin-top:16px;">
-                <h3>Proposed rules - review before approving</h3>
-                <div id="brandDnaRulesList"></div>
-                <button class="btn btn-p btn-sm" onclick="approveBrandDna()" style="margin-top:10px;">Approve and save</button>
-                <button class="btn btn-s btn-sm" onclick="document.getElementById('brandDnaProposedReview').style.display='none';" style="margin-top:10px;">Cancel</button>
-                <div id="brandDnaApproveResult" style="font-size:12px;margin-top:8px;"></div>
-              </div>
-              <div id="brandDnaCurrentRules" style="margin-top:16px;"></div>
-            </div>
-
-            <div class="card" id="assetLibraryCard">
-              <h2>Asset library</h2>
-              <p class="muted">Reference photos the Creative Lab can draw on for consistency - a recurring expert, your space, hero products. What each asset is FOR matters as much as the file itself.</p>
-              <div class="row" style="margin-bottom:8px;flex-wrap:wrap;gap:8px;">
-                <input type="file" id="assetFile" accept="image/png,image/jpeg,image/webp" style="flex:1;min-width:160px;">
-                <select class="fi" id="assetType" style="flex:1;min-width:130px;">
-                  <option value="person">Person</option>
-                  <option value="environment">Environment</option>
-                  <option value="product">Product</option>
-                  <option value="uniform">Uniform</option>
-                  <option value="mascot">Mascot</option>
-                  <option value="logo">Logo</option>
-                  <option value="reference_style">Style reference</option>
-                  <option value="previous_creative">Previous creative</option>
-                  <option value="other">Other</option>
-                </select>
-                <input class="fi" type="text" id="assetRole" placeholder="Role, e.g. recurring_expert" style="flex:1;min-width:150px;">
-              </div>
-              <div class="row" style="margin-bottom:8px;flex-wrap:wrap;gap:8px;">
-                <input class="fi" type="text" id="assetName" placeholder="Name" style="flex:1;">
-                <input class="fi" type="text" id="assetTags" placeholder="Tags, comma-separated" style="flex:1;">
-                <select class="fi" id="assetPriority" style="flex:1;min-width:120px;">
-                  <option value="mandatory">Mandatory</option>
-                  <option value="preferred" selected>Preferred</option>
-                  <option value="optional">Optional</option>
-                </select>
-              </div>
-              <textarea class="fi" id="assetDescription" rows="2" placeholder="Description - what this asset shows, when to use it" style="margin-bottom:8px;"></textarea>
-              <button class="btn btn-p btn-sm" onclick="uploadAsset()">Upload asset</button>
-              <div id="assetUploadResult" style="font-size:12px;margin-top:8px;"></div>
-              <div id="assetLibraryList" style="margin-top:14px;"></div>
-            </div>
-
-            <div class="card" id="creativeLabCard">
-              <h2>Creative Lab</h2>
-              <p class="muted">Describe what you want, built automatically from your approved Brand DNA - the compiled prompt is always shown before anything generates.</p>
-              <textarea class="fi" id="labIdea" rows="2" placeholder="e.g. Create a back-to-school image where our expert rates four hairstyles"></textarea>
-              <div class="row" style="margin:8px 0;flex-wrap:wrap;gap:8px;">
-                <select class="fi" id="labPlatform" style="flex:1;min-width:140px;">
-                  <option value="instagram_post">Instagram post</option>
-                  <option value="instagram_story">Instagram story</option>
-                  <option value="instagram_reel_cover">Reel cover</option>
-                </select>
-                <select class="fi" id="labAspectRatio" style="flex:1;min-width:100px;">
-                  <option value="1:1" selected>1:1</option>
-                  <option value="9:16">9:16</option>
-                  <option value="16:9">16:9</option>
-                </select>
-                <select class="fi" id="labTargetSegment" style="flex:1;min-width:160px;">
-                  <option value="">All customers (no segment targeting)</option>
-                  <option value="boy">Boy segment - data-driven</option>
-                  <option value="girl">Girl segment - data-driven</option>
-                </select>
-              </div>
-              <button class="btn btn-p btn-sm" onclick="buildCreativeBrief()">Build brief</button>
-              <div id="labBriefResult" style="margin-top:10px;"></div>
-
-              <div id="labPromptSection" style="display:none;margin-top:14px;">
-                <label class="fl">Compiled prompt - edit freely before generating</label>
-                <textarea class="fi" id="labCompiledPrompt" rows="4"></textarea>
-                <select class="fi" id="labModel" style="margin-top:8px;">
-                  <option value="black-forest-labs/flux-2-pro" selected>flux-2-pro</option>
-                  <option value="black-forest-labs/flux-1.1-pro">flux-1.1-pro</option>
-                  <option value="black-forest-labs/flux-kontext-pro">flux-kontext-pro</option>
-                </select>
-                <button class="btn btn-p btn-sm" onclick="runLabGeneration()" style="margin-top:8px;">Generate image</button>
-                <div id="labGenerateResult" style="margin-top:10px;"></div>
-              </div>
-            </div>
-
-            <div class="card" id="generationHistoryCard">
-              <h2>Generation history</h2>
-              <button class="btn btn-s btn-sm" onclick="loadGenerationHistory()">Refresh</button>
-              <div id="generationHistoryList" class="muted" style="margin-top:10px;">Click Refresh to load.</div>
-            </div>
-
-            <div class="card" id="brandCard">
-              <h2>Brand assets</h2>
-              <p class="muted">Used by the marketing agent to generate branded graphics - never real customer photos, just your logo and colors on promotional posts.</p>
-              <div id="brandLogoPreview" style="margin-bottom:10px;"></div>
-              <div class="row" style="margin-bottom:10px;align-items:center;">
-                <input type="file" id="brandLogoFile" accept="image/png,image/svg+xml,image/jpeg" style="flex:1;">
-                <button class="btn btn-s btn-sm" onclick="uploadBrandLogo()">Upload logo</button>
-              </div>
-              <div class="row" style="margin-bottom:10px;flex-wrap:wrap;gap:10px;">
-                <div>
-                  <label class="muted" style="font-size:11px;display:block;margin-bottom:3px;">Primary color</label>
-                  <input class="fi" type="color" id="brandPrimaryColor" style="width:60px;height:34px;padding:2px;">
+              <details class="card" open>
+                <summary><h2 style="display:inline;">Monthly strategy</h2></summary>
+                <p class="muted">Two-part input: your specific focus for this month, combined with ZEN's proposal from real data and your Brand DNA. Every recommendation is labeled data-based or reasoning-based - review before approving.</p>
+                <div class="row" style="margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+                  <input class="fi" type="month" id="msMonthYear" style="flex:1;min-width:140px;">
+                  <input class="fi" type="text" id="msBrandInput" placeholder="This month's focus, e.g. Back to school offers" style="flex:2;">
                 </div>
-                <div>
-                  <label class="muted" style="font-size:11px;display:block;margin-bottom:3px;">Secondary color</label>
-                  <input class="fi" type="color" id="brandSecondaryColor" style="width:60px;height:34px;padding:2px;">
+                <button class="btn btn-p btn-sm" onclick="proposeMonthlyStrategy()">Propose strategy with AI</button>
+                <div id="msProposeResult" style="font-size:12px;margin-top:8px;"></div>
+                <div id="msReviewArea" style="margin-top:14px;"></div>
+                <div id="msCurrentStrategy" style="margin-top:14px;"></div>
+              </details>
+
+              <details class="card" open>
+                <summary><h2 style="display:inline;">Content plan</h2></summary>
+                <p class="muted">8 image posts + 4 video concepts, generated from your approved strategy as one coordinated campaign. Generating the actual creative for each block is optional and one at a time.</p>
+                <button class="btn btn-p btn-sm" onclick="generateContentPlan()">Generate content plan</button>
+                <div id="planGenerateResult" style="font-size:12px;margin-top:8px;"></div>
+                <div id="contentPlanBlocks" style="margin-top:14px;"></div>
+              </details>
+
+              <details class="card">
+                <summary><h2 style="display:inline;">Creative Lab - one-off generation</h2></summary>
+                <p class="muted">Describe what you want, built automatically from your approved Brand DNA - the compiled prompt is always shown before anything generates.</p>
+                <textarea class="fi" id="labIdea" rows="2" placeholder="e.g. Create a back-to-school image where our expert rates four hairstyles"></textarea>
+                <div class="row" style="margin:8px 0;flex-wrap:wrap;gap:8px;">
+                  <select class="fi" id="labPlatform" style="flex:1;min-width:140px;">
+                    <option value="instagram_post">Instagram post</option>
+                    <option value="instagram_story">Instagram story</option>
+                    <option value="instagram_reel_cover">Reel cover</option>
+                  </select>
+                  <select class="fi" id="labAspectRatio" style="flex:1;min-width:100px;">
+                    <option value="1:1" selected>1:1</option>
+                    <option value="9:16">9:16</option>
+                    <option value="16:9">16:9</option>
+                  </select>
+                  <select class="fi" id="labTargetSegment" style="flex:1;min-width:160px;">
+                    <option value="">All customers (no segment targeting)</option>
+                    <option value="boy">Boy segment - data-driven</option>
+                    <option value="girl">Girl segment - data-driven</option>
+                  </select>
                 </div>
-                <div>
-                  <label class="muted" style="font-size:11px;display:block;margin-bottom:3px;">Accent color</label>
-                  <input class="fi" type="color" id="brandAccentColor" style="width:60px;height:34px;padding:2px;">
+                <button class="btn btn-p btn-sm" onclick="buildCreativeBrief()">Build brief</button>
+                <div id="labBriefResult" style="margin-top:10px;"></div>
+
+                <div id="labPromptSection" style="display:none;margin-top:14px;">
+                  <label class="fl">Compiled prompt - edit freely before generating</label>
+                  <textarea class="fi" id="labCompiledPrompt" rows="4"></textarea>
+                  <select class="fi" id="labModel" style="margin-top:8px;">
+                    <option value="black-forest-labs/flux-2-pro" selected>flux-2-pro</option>
+                    <option value="black-forest-labs/flux-1.1-pro">flux-1.1-pro</option>
+                    <option value="black-forest-labs/flux-kontext-pro">flux-kontext-pro</option>
+                  </select>
+                  <button class="btn btn-p btn-sm" onclick="runLabGeneration()" style="margin-top:8px;">Generate image</button>
+                  <div id="labGenerateResult" style="margin-top:10px;"></div>
                 </div>
-              </div>
-              <div style="margin-bottom:10px;">
-                <label class="muted" style="font-size:11px;display:block;margin-bottom:3px;">Visual brand description (used in AI-generated image prompts - shop look, stylist uniforms, aesthetic)</label>
-                <textarea class="fi" id="brandVisualDescription" rows="2" placeholder="e.g. Stylists wear teal polo uniforms, the shop has a jungle-safari theme with animal murals"></textarea>
-              </div>
-              <button class="btn btn-p btn-sm" onclick="saveBrandColors()">Save</button>
-              <div id="brandSaveResult" style="margin-top:8px;font-size:12px;"></div>
-            </div>
+              </details>
 
-            <div class="card" id="instagramConnectCard">
-              <h2>Instagram connection</h2>
-              <div id="instagramStatus" class="muted" style="margin-bottom:10px;">Checking...</div>
-              <div class="row" style="margin-bottom:8px;flex-wrap:wrap;">
-                <input class="fi" type="text" id="igAccountId" placeholder="Instagram Business Account ID" style="flex:1;min-width:220px;">
-                <input class="fi" type="password" id="igAccessToken" placeholder="Access token" style="flex:1;min-width:220px;">
-                <button class="btn btn-s btn-sm" onclick="saveInstagramCredentials()">Save</button>
-              </div>
-              <div id="instagramSaveResult" style="font-size:12px;"></div>
-            </div>
-
-            <div class="card" id="replicateTestCard">
-              <h2>Test Replicate generation</h2>
-              <p class="muted">Fire a prompt at any Replicate model directly - no result shown here, check your Replicate dashboard for the image.</p>
-              <textarea class="fi" id="testReplicatePrompt" rows="2" placeholder="Your prompt..." style="margin-bottom:8px;"></textarea>
-              <div class="row" style="margin-bottom:8px;flex-wrap:wrap;gap:8px;">
-                <select class="fi" id="testReplicateModel" style="flex:1;min-width:180px;">
-                  <option value="black-forest-labs/flux-schnell">flux-schnell (fastest, cheapest)</option>
-                  <option value="black-forest-labs/flux-1.1-pro">flux-1.1-pro</option>
-                  <option value="black-forest-labs/flux-2-pro" selected>flux-2-pro (current default)</option>
-                  <option value="black-forest-labs/flux-2-max">flux-2-max (highest fidelity)</option>
-                  <option value="black-forest-labs/flux-kontext-pro">flux-kontext-pro (reference-image editing)</option>
-                </select>
-                <select class="fi" id="testReplicateAspectRatio" style="flex:1;min-width:100px;">
-                  <option value="1:1" selected>1:1 (square)</option>
-                  <option value="16:9">16:9</option>
-                  <option value="9:16">9:16</option>
-                  <option value="4:3">4:3</option>
-                  <option value="3:4">3:4</option>
-                  <option value="3:2">3:2</option>
-                  <option value="2:3">2:3</option>
-                </select>
-                <select class="fi" id="testReplicateFormat" style="flex:1;min-width:100px;">
-                  <option value="png" selected>PNG (lossless)</option>
-                  <option value="webp">WebP</option>
-                  <option value="jpg">JPG</option>
-                </select>
-                <select class="fi" id="testReplicateQuality" style="flex:1;min-width:100px;">
-                  <option value="100">Quality: 100</option>
-                  <option value="90" selected>Quality: 90</option>
-                  <option value="80">Quality: 80</option>
-                  <option value="70">Quality: 70</option>
-                </select>
-              </div>
-              <button class="btn btn-p btn-sm" onclick="testReplicatePrompt()">Generate</button>
-              <div id="testReplicateResult" style="font-size:12px;margin-top:8px;"></div>
-            </div>
-
-            <div class="card" id="mascotCard">
-              <h2>Brand mascot</h2>
-              <p class="muted">A consistent reference character used in generated images - one approved image becomes the reference every future post's illustration points to.</p>
-              <div id="mascotCurrentPreview" style="margin-bottom:10px;"></div>
-              <div class="row" style="margin-bottom:10px;">
-                <input class="fi" type="text" id="mascotDescriptionOverride" placeholder="Optional: describe changes for a new candidate (leave blank to reuse saved description)" style="flex:1;">
-                <button class="btn btn-s btn-sm" onclick="generateMascotCandidate()">Generate candidate</button>
-              </div>
-              <div id="mascotGenerateResult" style="font-size:12px;margin-bottom:10px;"></div>
-              <div id="mascotCandidatesList"></div>
-            </div>
-
-            <div class="card">
-              <h2>Review queue</h2>
-              <div style="margin-bottom:14px;">
+              <details class="card">
+                <summary><h2 style="display:inline;">Quick post - generate right now</h2></summary>
+                <p class="muted">Skips the monthly plan entirely - generates one Instagram post immediately from your Brand DNA. Review it in Approvals once it's ready.</p>
                 <button class="btn btn-p btn-sm" onclick="generateNewSocialPost()">Generate a new post now</button>
                 <span id="generatePostResult" style="font-size:12px;margin-left:10px;"></span>
-              </div>
-              <div id="socialPostsList" class="muted">Loading...</div>
+              </details>
+            </div>
+
+            <div id="marketingTab-setup" class="marketing-tab-content" style="display:none;">
+              <details class="card" open>
+                <summary><h2 style="display:inline;">Brand DNA</h2></summary>
+                <p class="muted">Describe your business once - Claude proposes a structured Brand DNA, you review and approve before anything becomes real.</p>
+                <div id="brandDnaApproved" style="display:none;margin-bottom:14px;padding:10px 14px;background:var(--pl);border-radius:10px;font-size:12.5px;"></div>
+                <div id="brandDnaOnboardingForm">
+                  <label class="fl">Business name</label><input class="fi" type="text" id="dnaBusinessName">
+                  <label class="fl">Industry</label><input class="fi" type="text" id="dnaIndustry" placeholder="e.g. children's hair salon">
+                  <label class="fl">Business description</label><textarea class="fi" id="dnaBusinessDescription" rows="3"></textarea>
+                  <label class="fl">Target audience</label><input class="fi" type="text" id="dnaTargetAudience">
+                  <label class="fl">Visual style notes</label><textarea class="fi" id="dnaVisualNotes" rows="3" placeholder="Colors, style, mood"></textarea>
+                  <label class="fl">Environment notes</label><textarea class="fi" id="dnaEnvironmentNotes" rows="3" placeholder="What your space looks like"></textarea>
+                  <label class="fl">Uniform notes</label><textarea class="fi" id="dnaUniformNotes" rows="3"></textarea>
+                  <label class="fl">Mascot/character notes</label><textarea class="fi" id="dnaMascotNotes" rows="3"></textarea>
+                  <label class="fl">Things that must NEVER appear</label><textarea class="fi" id="dnaNegativeNotes" rows="3"></textarea>
+                  <button class="btn btn-p btn-sm" onclick="proposeBrandDna()" style="margin-top:8px;">Propose Brand DNA with AI</button>
+                  <div id="brandDnaProposeResult" style="font-size:12px;margin-top:8px;"></div>
+                </div>
+                <div id="brandDnaProposedReview" style="display:none;margin-top:16px;padding:14px;border:1.5px solid var(--p);border-radius:10px;background:var(--pl);">
+                  <h3>Proposed rules - review before approving</h3>
+                  <div id="brandDnaRulesList"></div>
+                  <button class="btn btn-p btn-sm" onclick="approveBrandDna()" style="margin-top:10px;">Approve and save</button>
+                  <button class="btn btn-s btn-sm" onclick="document.getElementById('brandDnaProposedReview').style.display='none';" style="margin-top:10px;">Cancel</button>
+                  <div id="brandDnaApproveResult" style="font-size:12px;margin-top:8px;"></div>
+                </div>
+                <div id="brandDnaCurrentRules" style="margin-top:16px;"></div>
+              </details>
+
+              <details class="card">
+                <summary><h2 style="display:inline;">Brand assets</h2></summary>
+                <p class="muted">Used by the marketing agent to generate branded graphics - never real customer photos, just your logo and colors on promotional posts.</p>
+                <div id="brandLogoPreview" style="margin-bottom:10px;"></div>
+                <div class="row" style="margin-bottom:10px;align-items:center;">
+                  <input type="file" id="brandLogoFile" accept="image/png,image/svg+xml,image/jpeg" style="flex:1;">
+                  <button class="btn btn-s btn-sm" onclick="uploadBrandLogo()">Upload logo</button>
+                </div>
+                <div class="row" style="margin-bottom:10px;flex-wrap:wrap;gap:10px;">
+                  <div>
+                    <label class="muted" style="font-size:11px;display:block;margin-bottom:3px;">Primary color</label>
+                    <input class="fi" type="color" id="brandPrimaryColor" style="width:60px;height:34px;padding:2px;">
+                  </div>
+                  <div>
+                    <label class="muted" style="font-size:11px;display:block;margin-bottom:3px;">Secondary color</label>
+                    <input class="fi" type="color" id="brandSecondaryColor" style="width:60px;height:34px;padding:2px;">
+                  </div>
+                  <div>
+                    <label class="muted" style="font-size:11px;display:block;margin-bottom:3px;">Accent color</label>
+                    <input class="fi" type="color" id="brandAccentColor" style="width:60px;height:34px;padding:2px;">
+                  </div>
+                </div>
+                <div style="margin-bottom:10px;">
+                  <label class="muted" style="font-size:11px;display:block;margin-bottom:3px;">Visual brand description (used in AI-generated image prompts - shop look, stylist uniforms, aesthetic)</label>
+                  <textarea class="fi" id="brandVisualDescription" rows="3" placeholder="e.g. Stylists wear teal polo uniforms, the shop has a jungle-safari theme with animal murals"></textarea>
+                </div>
+                <button class="btn btn-p btn-sm" onclick="saveBrandColors()">Save</button>
+                <div id="brandSaveResult" style="margin-top:8px;font-size:12px;"></div>
+              </details>
+
+              <details class="card">
+                <summary><h2 style="display:inline;">Brand mascot</h2></summary>
+                <p class="muted">A consistent reference character used in generated images - one approved image becomes the reference every future post's illustration points to.</p>
+                <div id="mascotCurrentPreview" style="margin-bottom:10px;"></div>
+                <div class="row" style="margin-bottom:10px;">
+                  <input class="fi" type="text" id="mascotDescriptionOverride" placeholder="Optional: describe changes for a new candidate (leave blank to reuse saved description)" style="flex:1;">
+                  <button class="btn btn-s btn-sm" onclick="generateMascotCandidate()">Generate candidate</button>
+                </div>
+                <div id="mascotGenerateResult" style="font-size:12px;margin-bottom:10px;"></div>
+                <div id="mascotCandidatesList"></div>
+              </details>
+
+              <details class="card">
+                <summary><h2 style="display:inline;">Asset library</h2></summary>
+                <p class="muted">Reference photos the Creative Lab can draw on for consistency - a recurring expert, your space, hero products. What each asset is FOR matters as much as the file itself.</p>
+                <div class="row" style="margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+                  <input type="file" id="assetFile" accept="image/png,image/jpeg,image/webp" style="flex:1;min-width:160px;">
+                  <select class="fi" id="assetType" style="flex:1;min-width:130px;">
+                    <option value="person">Person</option>
+                    <option value="environment">Environment</option>
+                    <option value="product">Product</option>
+                    <option value="uniform">Uniform</option>
+                    <option value="mascot">Mascot</option>
+                    <option value="logo">Logo</option>
+                    <option value="reference_style">Style reference</option>
+                    <option value="previous_creative">Previous creative</option>
+                    <option value="other">Other</option>
+                  </select>
+                  <input class="fi" type="text" id="assetRole" placeholder="Role, e.g. recurring_expert" style="flex:1;min-width:150px;">
+                </div>
+                <div class="row" style="margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+                  <input class="fi" type="text" id="assetName" placeholder="Name" style="flex:1;">
+                  <input class="fi" type="text" id="assetTags" placeholder="Tags, comma-separated" style="flex:1;">
+                  <select class="fi" id="assetPriority" style="flex:1;min-width:120px;">
+                    <option value="mandatory">Mandatory</option>
+                    <option value="preferred" selected>Preferred</option>
+                    <option value="optional">Optional</option>
+                  </select>
+                </div>
+                <textarea class="fi" id="assetDescription" rows="2" placeholder="Description - what this asset shows, when to use it" style="margin-bottom:8px;"></textarea>
+                <button class="btn btn-p btn-sm" onclick="uploadAsset()">Upload asset</button>
+                <div id="assetUploadResult" style="font-size:12px;margin-top:8px;"></div>
+                <div id="assetLibraryList" style="margin-top:14px;"></div>
+              </details>
+
+              <details class="card">
+                <summary><h2 style="display:inline;">Instagram connection</h2></summary>
+                <div id="instagramStatus" class="muted" style="margin-bottom:10px;margin-top:10px;">Checking...</div>
+                <div class="row" style="margin-bottom:8px;flex-wrap:wrap;">
+                  <input class="fi" type="text" id="igAccountId" placeholder="Instagram Business Account ID" style="flex:1;min-width:220px;">
+                  <input class="fi" type="password" id="igAccessToken" placeholder="Access token" style="flex:1;min-width:220px;">
+                  <button class="btn btn-s btn-sm" onclick="saveInstagramCredentials()">Save</button>
+                </div>
+                <div id="instagramSaveResult" style="font-size:12px;"></div>
+              </details>
+
+              <details class="card">
+                <summary><h2 style="display:inline;">Test Replicate generation</h2></summary>
+                <p class="muted">Fire a prompt at any Replicate model directly - no result shown here, check your Replicate dashboard for the image.</p>
+                <textarea class="fi" id="testReplicatePrompt" rows="2" placeholder="Your prompt..." style="margin-bottom:8px;"></textarea>
+                <div class="row" style="margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+                  <select class="fi" id="testReplicateModel" style="flex:1;min-width:180px;">
+                    <option value="black-forest-labs/flux-schnell">flux-schnell (fastest, cheapest)</option>
+                    <option value="black-forest-labs/flux-1.1-pro">flux-1.1-pro</option>
+                    <option value="black-forest-labs/flux-2-pro" selected>flux-2-pro (current default)</option>
+                    <option value="black-forest-labs/flux-2-max">flux-2-max (highest fidelity)</option>
+                    <option value="black-forest-labs/flux-kontext-pro">flux-kontext-pro (reference-image editing)</option>
+                  </select>
+                  <select class="fi" id="testReplicateAspectRatio" style="flex:1;min-width:100px;">
+                    <option value="1:1" selected>1:1 (square)</option>
+                    <option value="16:9">16:9</option>
+                    <option value="9:16">9:16</option>
+                    <option value="4:3">4:3</option>
+                    <option value="3:4">3:4</option>
+                    <option value="3:2">3:2</option>
+                    <option value="2:3">2:3</option>
+                  </select>
+                  <select class="fi" id="testReplicateFormat" style="flex:1;min-width:100px;">
+                    <option value="png" selected>PNG (lossless)</option>
+                    <option value="webp">WebP</option>
+                    <option value="jpg">JPG</option>
+                  </select>
+                  <select class="fi" id="testReplicateQuality" style="flex:1;min-width:100px;">
+                    <option value="100">Quality: 100</option>
+                    <option value="90" selected>Quality: 90</option>
+                    <option value="80">Quality: 80</option>
+                    <option value="70">Quality: 70</option>
+                  </select>
+                </div>
+                <button class="btn btn-p btn-sm" onclick="testReplicatePrompt()">Generate</button>
+                <div id="testReplicateResult" style="font-size:12px;margin-top:8px;"></div>
+              </details>
+
+              <details class="card">
+                <summary><h2 style="display:inline;">Generation history</h2></summary>
+                <button class="btn btn-s btn-sm" onclick="loadGenerationHistory()" style="margin-top:10px;">Refresh</button>
+                <div id="generationHistoryList" class="muted" style="margin-top:10px;">Click Refresh to load.</div>
+              </details>
             </div>
           </div>
         </div>
@@ -893,6 +914,21 @@ async function onAuthed(sess){
   await loadMyTenants();
 }
 
+function showAgentDetail(agent){
+  document.getElementById('agentDetailPlaceholder').style.display='none';
+  document.getElementById('engagementAgentDetail').style.display=agent==='engagement'?'block':'none';
+  document.getElementById('marketingAgentDetail').style.display=agent==='marketing'?'block':'none';
+  window.scrollTo({top:0,behavior:'smooth'});
+  if(agent==='marketing') loadSocialContent();
+}
+function showMarketingTab(tab){
+  document.querySelectorAll('.marketing-tab-content').forEach(el=>el.style.display='none');
+  document.getElementById('marketingTab-'+tab).style.display='block';
+  document.querySelectorAll('.marketing-tab-btn').forEach(function(btn){
+    const active=btn.getAttribute('data-tab')===tab;
+    btn.className='btn btn-sm marketing-tab-btn '+(active?'btn-p':'btn-s');
+  });
+}
 function showSettingsTab(tab){
   document.querySelectorAll('.settings-tab-content').forEach(el=>el.style.display='none');
   document.getElementById('settingsTab-'+tab).style.display='block';
@@ -1973,37 +2009,6 @@ async function loadSocialContent(){
     statusEl.style.color=j.connected?'var(--ok)':'var(--muted)';
   }
   loadMascotSection();
-
-  const postsEl=document.getElementById('socialPostsList');
-  const pj=await call('list_social_posts',{});
-  if(!pj.ok){postsEl.textContent='Error: '+pj.error;return;}
-  if(!pj.posts.length){postsEl.innerHTML='No posts generated yet - the first run happens automatically Mon/Wed/Fri, or trigger the GitHub Action manually to test.';return;}
-
-  const statusBadge={pending_review:{label:'Awaiting review',color:'var(--warn)'},approved:{label:'Approved',color:'var(--ok)'},published:{label:'Published',color:'var(--ok)'},rejected:{label:'Rejected',color:'var(--muted)'},failed:{label:'Failed',color:'var(--err)'}};
-
-  postsEl.innerHTML=pj.posts.map(function(p){
-    const badge=statusBadge[p.status]||{label:p.status,color:'var(--muted)'};
-    const actions=p.status==='pending_review'?(
-      '<div style="margin-top:10px;display:flex;gap:8px;">'+
-        '<button class="btn btn-p btn-sm" onclick="approveSocialPost(\''+p.id+'\')">Approve &amp; publish</button>'+
-        '<button class="btn btn-s btn-sm" onclick="requestSocialPostChanges(\''+p.id+'\')">Request changes</button>'+
-        '<button class="btn btn-s btn-sm" onclick="rejectSocialPost(\''+p.id+'\')">Reject</button>'+
-      '</div>'
-    ):'';
-    const errorLine=p.error?('<div style="font-size:11px;color:var(--err);margin-top:4px;">'+p.error+'</div>'):'';
-    return '<div class="item" style="display:flex;gap:14px;align-items:flex-start;">'+
-      '<div style="flex-shrink:0;">'+
-        '<img src="'+p.image_url+'" style="width:110px;height:110px;object-fit:cover;border-radius:8px;cursor:pointer;display:block;" onclick="openImageLightbox(\''+p.image_url+'\')" title="Click to view full-size">'+
-        '<a href="'+p.image_url+'" download style="font-size:11px;display:block;text-align:center;margin-top:4px;">Download</a>'+
-      '</div>'+
-      '<div style="flex:1;">'+
-        '<div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:11px;font-weight:700;color:'+badge.color+';">'+badge.label+'</span><span class="muted" style="font-size:11px;">'+new Date(p.created_at).toLocaleString()+'</span></div>'+
-        '<div style="font-size:13px;margin-top:4px;white-space:pre-wrap;">'+p.caption+'</div>'+
-        (p.reasoning?('<div class="muted" style="font-size:11px;margin-top:4px;">'+p.reasoning+'</div>'):'')+
-        errorLine+actions+
-      '</div>'+
-    '</div>';
-  }).join('');
 }
 async function saveInstagramCredentials(){
   const accountId=document.getElementById('igAccountId').value.trim();
