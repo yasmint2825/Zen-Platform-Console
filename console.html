@@ -1929,15 +1929,22 @@ function renderContentPlanBlocks(items){
     const hasImage=!!item.generated_image_url;
 
     // Compact, always-visible summary - same "readable by default, Edit
-    // to see the working view" pattern as Business Strategy. Nothing
-    // here is interactive except the Edit toggle itself.
+    // to see the working view" pattern as Business Strategy. For
+    // planned blocks, Edit / Generate creative / Create new plan all
+    // sit together here - no need to click Edit just to generate.
+    const plannedActions=editable?(
+      '<button class="btn btn-s btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')">Edit</button> '+
+      '<button class="btn btn-p btn-sm" onclick="generateBlockCreative(\''+item.id+'\',this)">Generate creative</button> '+
+      '<button class="btn btn-s btn-sm" onclick="regenerateBlockConcept(\''+item.id+'\',this)">Create new plan for this post</button>'
+    ):'<button class="btn btn-s btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')" style="margin-top:8px;">View details</button>';
+
     const summaryHtml=
       '<div style="display:flex;justify-content:space-between;"><span style="font-weight:700;font-size:12.5px;">'+(isVideo?'VIDEO ':'POST ')+item.item_number+' - '+item.title+'</span><span style="font-size:11px;color:'+badge.color+';font-weight:700;">'+badge.label+'</span></div>'+
       '<div class="muted" style="font-size:11.5px;margin-top:4px;">'+item.content_pillar+' - '+item.objective+' - '+(item.audience||'')+(item.target_segment?' ('+item.target_segment+' segment)':'')+(item.item_type==='image'?(' - '+(item.aspect_ratio||'1:1')):'')+'</div>'+
       (item.hook?('<div style="font-size:12px;margin-top:6px;font-style:italic;">"'+item.hook+'"</div>'):'')+
       (isVideo?('<div class="muted" style="font-size:11px;margin-top:6px;">'+(item.video_plan?.scenes?.length||0)+' scenes planned - see full plan via API for now.</div>'):'')+
       (hasImage?generatedImageHtml(item.generated_image_url,70,item.generation_created_at,item.generation_expired_at):'')+
-      (item.item_type==='image'?('<button class="btn btn-s btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')" style="margin-top:8px;">'+(editable?'Edit':'View details')+'</button>'):'');
+      (item.item_type==='image'?('<div style="margin-top:8px;">'+plannedActions+'</div>'):'');
 
     // Full working view - hidden until Edit/View details is clicked.
     let detailHtml='';
@@ -1951,7 +1958,7 @@ function renderContentPlanBlocks(items){
           '<label class="fl">Aspect ratio</label><select class="fi" id="blockAspectRatio-'+item.id+'" style="margin-bottom:8px;">'+
             ['1:1','9:16','16:9','4:3','3:4'].map(r=>'<option value="'+r+'"'+(item.aspect_ratio===r?' selected':'')+'>'+r+'</option>').join('')+
           '</select>'+
-          '<button class="btn btn-p btn-sm" onclick="generateBlockCreative(\''+item.id+'\',this)">Generate creative</button> '+
+          '<button class="btn btn-p btn-sm" onclick="generateBlockCreative(\''+item.id+'\',this)">Save &amp; generate creative</button> '+
           '<button class="btn btn-s btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')">Cancel</button>';
       } else {
         const promptBox='<label class="fl" style="margin-top:6px;">Prompt sent to the image model - edit freely</label>'+
@@ -1987,6 +1994,17 @@ async function rejectContentPlanItem(itemId){
   const j=await call('reject_content_plan_item',{id:itemId});
   if(!j.ok){alert('Error: '+j.error);return;}
   delete contentPlanState[itemId];
+  loadMonthlyStrategy();
+}
+async function regenerateBlockConcept(itemId,btnEl){
+  const originalLabel=btnEl?btnEl.innerHTML:null;
+  if(btnEl){btnEl.disabled=true;btnEl.innerHTML='<span class="mw-spinner"></span>Thinking of a new angle...';}
+  const j=await call('regenerate_content_plan_item_concept',{item_id:itemId});
+  if(!j.ok){
+    alert('Error: '+j.error+(j.raw_preview?('\n\nRaw response preview:\n'+j.raw_preview):''));
+    if(btnEl){btnEl.disabled=false;btnEl.innerHTML=originalLabel;}
+    return;
+  }
   loadMonthlyStrategy();
 }
 async function generateBlockCreative(itemId,btnEl){
