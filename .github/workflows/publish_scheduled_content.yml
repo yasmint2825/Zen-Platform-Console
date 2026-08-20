@@ -1,0 +1,23 @@
+name: Publish scheduled content
+
+on:
+  schedule:
+    - cron: '0 4 * * *'   # daily at 04:00 UTC (~8am UAE time)
+  workflow_dispatch: {}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call mw-scheduled-publish
+        run: |
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${{ secrets.SUPABASE_URL }}/functions/v1/mw-scheduled-publish" \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json")
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          echo "$BODY"
+          if [ "$HTTP_CODE" -ge 400 ]; then
+            echo "Request failed with status $HTTP_CODE"
+            exit 1
+          fi
