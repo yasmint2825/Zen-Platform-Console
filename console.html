@@ -485,6 +485,7 @@
                   <label class="fl">Visual style notes</label><textarea class="fi" id="dnaVisualNotes" rows="3" placeholder="Colors, style, mood"></textarea>
                   <label class="fl">Environment notes</label><textarea class="fi" id="dnaEnvironmentNotes" rows="3" placeholder="What your space looks like"></textarea>
                   <label class="fl">Uniform notes</label><textarea class="fi" id="dnaUniformNotes" rows="3"></textarea>
+                  <label class="fl">Recurring people/staff (kept separate from uniforms - who works here, e.g. nationality, gender, age range)</label><textarea class="fi" id="dnaPeopleNotes" rows="3"></textarea>
                   <label class="fl">Mascot/character notes</label><textarea class="fi" id="dnaMascotNotes" rows="3"></textarea>
                   <label class="fl">Things that must NEVER appear</label><textarea class="fi" id="dnaNegativeNotes" rows="3"></textarea>
                   <button class="btn btn-p btn-sm" onclick="saveBrandProfileDraft()" style="margin-top:8px;">Save</button>
@@ -2060,7 +2061,7 @@ async function saveBusinessStrategy(){
 
 // ── Brand DNA ──
 let proposedBrandDna=null;
-const DNA_FIELDS={dnaBusinessName:{key:'business_name',label:'Business name'},dnaIndustry:{key:'industry',label:'Industry'},dnaBusinessDescription:{key:'business_description',label:'Business description'},dnaTargetAudience:{key:'target_audience',label:'Target audience'},dnaVisualNotes:{key:'visual_notes',label:'Visual style notes'},dnaEnvironmentNotes:{key:'environment_notes',label:'Environment notes'},dnaUniformNotes:{key:'uniform_notes',label:'Uniform notes'},dnaMascotNotes:{key:'mascot_notes',label:'Mascot/character notes'},dnaNegativeNotes:{key:'negative_notes',label:'Things that must NEVER appear'}};
+const DNA_FIELDS={dnaBusinessName:{key:'business_name',label:'Business name'},dnaIndustry:{key:'industry',label:'Industry'},dnaBusinessDescription:{key:'business_description',label:'Business description'},dnaTargetAudience:{key:'target_audience',label:'Target audience'},dnaVisualNotes:{key:'visual_notes',label:'Visual style notes'},dnaEnvironmentNotes:{key:'environment_notes',label:'Environment notes'},dnaUniformNotes:{key:'uniform_notes',label:'Uniform notes'},dnaPeopleNotes:{key:'people_notes',label:'Recurring people/staff'},dnaMascotNotes:{key:'mascot_notes',label:'Mascot/character notes'},dnaNegativeNotes:{key:'negative_notes',label:'Things that must NEVER appear'}};
 function renderBrandDnaSummary(){
   const summaryEl=document.getElementById('brandDnaSummary');
   const filled=Object.keys(DNA_FIELDS).filter(elId=>document.getElementById(elId).value.trim());
@@ -2124,7 +2125,7 @@ async function proposeBrandDna(){
     business_name:businessName, industry:document.getElementById('dnaIndustry').value.trim(),
     business_description:businessDescription, target_audience:document.getElementById('dnaTargetAudience').value.trim(),
     visual_notes:document.getElementById('dnaVisualNotes').value.trim(), environment_notes:document.getElementById('dnaEnvironmentNotes').value.trim(),
-    uniform_notes:document.getElementById('dnaUniformNotes').value.trim(), mascot_notes:document.getElementById('dnaMascotNotes').value.trim(),
+    uniform_notes:document.getElementById('dnaUniformNotes').value.trim(), people_notes:document.getElementById('dnaPeopleNotes').value.trim(), mascot_notes:document.getElementById('dnaMascotNotes').value.trim(),
     negative_notes:document.getElementById('dnaNegativeNotes').value.trim(),
   });
   if(!j.ok){r.innerHTML='Error: '+j.error+(j.raw_preview?('<div class="muted" style="font-size:11px;margin-top:4px;">Raw response preview: '+j.raw_preview+'</div>'):'');r.style.color='var(--err)';return;}
