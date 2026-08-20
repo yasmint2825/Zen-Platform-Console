@@ -1911,55 +1911,57 @@ function renderContentPlanBlocks(items){
     const editable=item.status==='planned';
     const hasImage=!!item.generated_image_url;
 
-    // Prompt area is now ALWAYS present once past "planned" - previously
-    // it only existed in the DOM after the status had already changed,
-    // so generateBlockCreative could never find it to populate. Also
-    // pre-fills from the persisted compiled_prompt, so it survives a
-    // page reload instead of only living in memory.
-    let actionsHtml='';
+    // Compact, always-visible summary - same "readable by default, Edit
+    // to see the working view" pattern as Business Strategy. Nothing
+    // here is interactive except the Edit toggle itself.
+    const summaryHtml=
+      '<div style="display:flex;justify-content:space-between;"><span style="font-weight:700;font-size:12.5px;">'+(isVideo?'VIDEO ':'POST ')+item.item_number+' - '+item.title+'</span><span style="font-size:11px;color:'+badge.color+';font-weight:700;">'+badge.label+'</span></div>'+
+      '<div class="muted" style="font-size:11.5px;margin-top:4px;">'+item.content_pillar+' - '+item.objective+' - '+(item.audience||'')+(item.target_segment?' ('+item.target_segment+' segment)':'')+(item.item_type==='image'?(' - '+(item.aspect_ratio||'1:1')):'')+'</div>'+
+      (item.hook?('<div style="font-size:12px;margin-top:6px;font-style:italic;">"'+item.hook+'"</div>'):'')+
+      (isVideo?('<div class="muted" style="font-size:11px;margin-top:6px;">'+(item.video_plan?.scenes?.length||0)+' scenes planned - see full plan via API for now.</div>'):'')+
+      (hasImage?('<img src="'+item.generated_image_url+'" style="width:70px;height:70px;object-fit:cover;border-radius:6px;margin-top:8px;cursor:pointer;display:block;" onclick="openImageLightbox(\''+item.generated_image_url+'\')">'):'')+
+      (item.item_type==='image'?('<button class="btn btn-s btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')" style="margin-top:8px;">'+(editable?'Edit':'View details')+'</button>'):'');
+
+    // Full working view - hidden until Edit/View details is clicked.
+    let detailHtml='';
     if(item.item_type==='image'){
       if(editable){
-        actionsHtml='<button class="btn btn-s btn-sm" onclick="generateBlockCreative(\''+item.id+'\',this)">Generate creative</button>';
+        detailHtml=
+          '<label class="fl" style="margin-top:6px;">Title</label><input class="fi" type="text" id="blockTitle-'+item.id+'" value="'+(item.title||'').replace(/"/g,'&quot;')+'" style="margin-bottom:6px;">'+
+          '<label class="fl">Objective</label><input class="fi" type="text" id="blockObjective-'+item.id+'" value="'+(item.objective||'').replace(/"/g,'&quot;')+'" style="margin-bottom:6px;">'+
+          '<label class="fl">Audience</label><input class="fi" type="text" id="blockAudience-'+item.id+'" value="'+(item.audience||'').replace(/"/g,'&quot;')+'" style="margin-bottom:6px;">'+
+          '<label class="fl">Hook</label><textarea class="fi" id="blockHook-'+item.id+'" rows="2" style="margin-bottom:6px;">'+(item.hook||'')+'</textarea>'+
+          '<label class="fl">Aspect ratio</label><select class="fi" id="blockAspectRatio-'+item.id+'" style="margin-bottom:8px;">'+
+            ['1:1','9:16','16:9','4:3','3:4'].map(r=>'<option value="'+r+'"'+(item.aspect_ratio===r?' selected':'')+'>'+r+'</option>').join('')+
+          '</select>'+
+          '<button class="btn btn-p btn-sm" onclick="generateBlockCreative(\''+item.id+'\',this)">Generate creative</button> '+
+          '<button class="btn btn-s btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')">Cancel</button>';
       } else {
-        const promptBox='<label class="fl" style="margin-top:8px;">Prompt sent to the image model - edit freely</label>'+
+        const promptBox='<label class="fl" style="margin-top:6px;">Prompt sent to the image model - edit freely</label>'+
           '<textarea class="fi" id="blockPromptArea-'+item.id+'" rows="4" style="font-size:11.5px;" onchange="if(contentPlanState[\''+item.id+'\'])contentPlanState[\''+item.id+'\'].compiled_prompt=this.value;">'+(item.compiled_prompt||'')+'</textarea>';
-        const genImageBtn=hasImage?'':'<button class="btn btn-p btn-sm" onclick="generateBlockImage(\''+item.id+'\')" style="margin-top:6px;">Generate image</button>';
+        const genImageBtn=hasImage?'':'<button class="btn btn-p btn-sm" onclick="generateBlockImage(\''+item.id+'\')" style="margin-top:6px;">Generate image</button> ';
         const approveRejectBtns=hasImage&&item.status==='creative_ready'?(
-          '<div style="margin-top:8px;"><button class="btn btn-p btn-sm" onclick="approveContentPlanItem(\''+item.id+'\')">Approve</button> '+
-          '<button class="btn btn-s btn-sm" onclick="rejectContentPlanItem(\''+item.id+'\')">Reject &amp; retry</button></div>'
+          '<button class="btn btn-p btn-sm" onclick="approveContentPlanItemBlock(\''+item.id+'\')" style="margin-top:6px;">Approve</button> '+
+          '<button class="btn btn-s btn-sm" onclick="rejectContentPlanItem(\''+item.id+'\')" style="margin-top:6px;">Reject &amp; retry</button> '
         ):'';
-        actionsHtml=promptBox+genImageBtn+approveRejectBtns;
+        detailHtml=promptBox+genImageBtn+approveRejectBtns+'<button class="btn btn-s btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')" style="margin-top:6px;">Close</button>';
         if(!contentPlanState[item.id]&&item.compiled_prompt) contentPlanState[item.id]={compiled_prompt:item.compiled_prompt,reference_asset_urls:[]};
       }
     }
-    const headerLine='<div style="display:flex;justify-content:space-between;"><span style="font-weight:700;font-size:12.5px;">'+(isVideo?'VIDEO ':'POST ')+item.item_number+(editable?'':(' - '+item.title))+'</span><span style="font-size:11px;color:'+badge.color+';font-weight:700;">'+badge.label+'</span></div>';
-
-    const bodyHtml=editable?(
-      '<label class="fl" style="margin-top:6px;">Title</label><input class="fi" type="text" id="blockTitle-'+item.id+'" value="'+(item.title||'').replace(/"/g,'&quot;')+'" style="margin-bottom:6px;">'+
-      '<label class="fl">Objective</label><input class="fi" type="text" id="blockObjective-'+item.id+'" value="'+(item.objective||'').replace(/"/g,'&quot;')+'" style="margin-bottom:6px;">'+
-      '<label class="fl">Audience</label><input class="fi" type="text" id="blockAudience-'+item.id+'" value="'+(item.audience||'').replace(/"/g,'&quot;')+'" style="margin-bottom:6px;">'+
-      '<label class="fl">Hook</label><textarea class="fi" id="blockHook-'+item.id+'" rows="2" style="margin-bottom:6px;">'+(item.hook||'')+'</textarea>'+
-      '<label class="fl">Aspect ratio</label><select class="fi" id="blockAspectRatio-'+item.id+'" style="margin-bottom:0;">'+
-        ['1:1','9:16','16:9','4:3','3:4'].map(r=>'<option value="'+r+'"'+(item.aspect_ratio===r?' selected':'')+'>'+r+'</option>').join('')+
-      '</select>'+
-      '<div class="muted" style="font-size:11px;margin-top:4px;">'+item.content_pillar+(item.target_segment?' - '+item.target_segment+' segment':'')+'</div>'
-    ):(
-      '<div class="muted" style="font-size:11.5px;margin-top:4px;">'+item.content_pillar+' - '+item.objective+' - '+(item.audience||'')+(item.target_segment?' ('+item.target_segment+' segment)':'')+' - '+(item.aspect_ratio||'1:1')+'</div>'+
-      (item.hook?('<div style="font-size:12px;margin-top:6px;font-style:italic;">"'+item.hook+'"</div>'):'')
-    );
-
-    const imageHtml=hasImage?('<img src="'+item.generated_image_url+'" style="max-width:220px;border-radius:8px;margin-top:8px;cursor:pointer;display:block;" onclick="openImageLightbox(\''+item.generated_image_url+'\')">'):'';
 
     return '<div class="item" style="margin-bottom:10px;">'+
-      headerLine+bodyHtml+
-      (isVideo?('<div class="muted" style="font-size:11px;margin-top:6px;">'+(item.video_plan?.scenes?.length||0)+' scenes planned - see full plan via API for now.</div>'):'')+
-      imageHtml+
+      '<div id="blockSummary-'+item.id+'">'+summaryHtml+'</div>'+
+      '<div id="blockDetail-'+item.id+'" style="display:none;margin-top:8px;">'+detailHtml+'</div>'+
       '<div id="blockImageArea-'+item.id+'" style="margin-top:8px;"></div>'+
-      '<div style="margin-top:8px;">'+actionsHtml+'</div>'+
     '</div>';
   }).join('');
 }
-async function approveContentPlanItem(itemId){
+function toggleBlockDetail(itemId){
+  const detail=document.getElementById('blockDetail-'+itemId);
+  if(!detail) return;
+  detail.style.display=detail.style.display==='none'?'block':'none';
+}
+async function approveContentPlanItemBlock(itemId){
   const j=await call('approve_content_plan_item',{id:itemId});
   if(!j.ok){alert('Error: '+j.error);return;}
   loadMonthlyStrategy();
