@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Replicate Image Lab</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel:#121a2f;
+      --panel2:#18223b;
+      --line:#293653;
+      --text:#eef3ff;
+      --muted:#9da9c3;
+      --accent:#ffd84d;
+      --accent2:#4da3ff;
+      --danger:#ff6b6b;
+      --good:#5bd89a;
+      --shadow:0 18px 50px rgba(0,0,0,.25);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:
+        radial-gradient(circle at 15% 10%, rgba(77,163,255,.14), transparent 28%),
+        radial-gradient(circle at 85% 0%, rgba(255,216,77,.10), transparent 26%),
+        var(--bg);
+      color:var(--text);
+      min-height:100vh;
+    }
+    .wrap{max-width:1280px;margin:0 auto;padding:28px}
+    .topbar{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:22px}
+    .title h1{margin:0;font-size:clamp(28px,4vw,46px);letter-spacing:-1.4px}
+    .title p{margin:8px 0 0;color:var(--muted)}
+    .badge{
+      border:1px solid var(--line);
+      background:rgba(18,26,47,.8);
+      padding:10px 14px;border-radius:999px;color:var(--muted);font-size:13px;
+    }
+    .grid{display:grid;grid-template-columns:minmax(330px,430px) 1fr;gap:20px}
+    .card{
+      background:linear-gradient(180deg,rgba(24,34,59,.94),rgba(18,26,47,.96));
+      border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);
+    }
+    .controls{padding:22px}
+    .viewer{padding:18px;min-height:700px;display:flex;flex-direction:column}
+    label{font-size:13px;font-weight:700;color:#dfe7fb;display:block;margin:0 0 8px}
+    .field{margin-bottom:16px}
+    select,input,textarea,button{
+      width:100%;border-radius:12px;border:1px solid var(--line);
+      background:#0e1528;color:var(--text);font:inherit;outline:none;
+    }
+    select,input{height:44px;padding:0 12px}
+    textarea{min-height:220px;padding:13px;resize:vertical;line-height:1.45}
+    select:focus,input:focus,textarea:focus{border-color:var(--accent2);box-shadow:0 0 0 3px rgba(77,163,255,.12)}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .toggleRow{display:flex;gap:10px;align-items:center;margin:6px 0 16px}
+    .toggleRow input{width:18px;height:18px}
+    .toggleRow label{margin:0;font-weight:600;color:var(--muted)}
+    .buttonRow{display:grid;grid-template-columns:1fr auto;gap:10px}
+    button{
+      cursor:pointer;height:48px;padding:0 18px;font-weight:800;
+      transition:.18s ease;border-color:transparent;
+    }
+    .primary{background:linear-gradient(90deg,var(--accent2),#756dff);color:white}
+    .primary:hover{transform:translateY(-1px);filter:brightness(1.06)}
+    .secondary{width:auto;background:#0e1528;border-color:var(--line);color:var(--muted)}
+    .secondary:hover{color:white}
+    button:disabled{opacity:.55;cursor:not-allowed;transform:none}
+    .small{font-size:12px;color:var(--muted);line-height:1.45}
+    .warning{
+      background:rgba(255,216,77,.08);border:1px solid rgba(255,216,77,.25);
+      color:#f9e9a8;padding:12px 13px;border-radius:12px;font-size:12px;line-height:1.5;margin-bottom:16px;
+    }
+    .status{
+      min-height:48px;border:1px solid var(--line);border-radius:12px;
+      padding:12px 13px;color:var(--muted);font-size:13px;margin-bottom:14px;
+      display:flex;align-items:center;gap:10px
+    }
+    .dot{width:9px;height:9px;border-radius:50%;background:#65708a;flex:none}
+    .dot.busy{background:var(--accent);box-shadow:0 0 0 5px rgba(255,216,77,.08)}
+    .dot.ok{background:var(--good)}
+    .dot.err{background:var(--danger)}
+    .stage{
+      flex:1;display:flex;align-items:center;justify-content:center;position:relative;
+      border:1px dashed #34425f;border-radius:16px;overflow:hidden;
+      min-height:560px;background:
+        linear-gradient(45deg,#10182b 25%,transparent 25%),
+        linear-gradient(-45deg,#10182b 25%,transparent 25%),
+        linear-gradient(45deg,transparent 75%,#10182b 75%),
+        linear-gradient(-45deg,transparent 75%,#10182b 75%);
+      background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0px;
+    }
+    .stage img{max-width:100%;max-height:760px;object-fit:contain;display:none}
+    .empty{color:var(--muted);text-align:center;max-width:360px;padding:28px}
+    .empty .icon{font-size:52px;margin-bottom:12px}
+    .meta{display:none;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+    .meta div{background:#0e1528;border:1px solid var(--line);border-radius:10px;padding:10px}
+    .meta b{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+    .meta span{font-size:12px;word-break:break-word}
+    details{margin-top:18px;border-top:1px solid var(--line);padding-top:16px}
+    summary{cursor:pointer;color:#dce5fb;font-weight:700}
+    pre{
+      white-space:pre-wrap;word-break:break-word;background:#0a1122;border:1px solid var(--line);
+      border-radius:12px;padding:12px;color:#afc6ff;font-size:11px;max-height:300px;overflow:auto
+    }
+    .hidden{display:none!important}
+    @media(max-width:900px){
+      .grid{grid-template-columns:1fr}
+      .viewer{min-height:560px}
+      .stage{min-height:430px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="title">
+        <h1>Replicate Image Lab</h1>
+        <p>Compare Ideogram and FLUX using the same prompt.</p>
+      </div>
+      <div class="badge">Single-file test UI</div>
+    </div>
+
+    <div class="grid">
+      <section class="card controls">
+        <div class="warning">
+          <b>Recommended:</b> use <b>Secure Backend</b> when this page is deployed publicly.
+          A Replicate token placed in browser JavaScript can be exposed. Direct Browser mode is intended only for local/private testing.
+        </div>
+
+        <div class="field">
+          <label for="mode">API mode</label>
+          <select id="mode">
+            <option value="backend">Secure Backend (/api/generate-image)</option>
+            <option value="direct">Direct Browser Test (paste token)</option>
+          </select>
+        </div>
+
+        <div id="tokenField" class="field hidden">
+          <label for="token">Replicate API token</label>
+          <input id="token" type="password" autocomplete="off" placeholder="r8_..." />
+          <div class="small" style="margin-top:6px">Stored only in this browser session; never hard-code it into GitHub.</div>
+        </div>
+
+        <div id="backendField" class="field">
+          <label for="backendUrl">Backend endpoint</label>
+          <input id="backendUrl" value="/api/generate-image" />
+        </div>
+
+        <div class="field">
+          <label for="model">Model</label>
+          <select id="model">
+            <option value="ideogram-ai/ideogram-v3-quality">Ideogram V3 Quality — ~ $0.09/image</option>
+            <option value="ideogram-ai/ideogram-v3-balanced">Ideogram V3 Balanced — ~ $0.06/image</option>
+            <option value="black-forest-labs/flux-1.1-pro-ultra">FLUX 1.1 Pro Ultra — ~ $0.06/image</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="prompt">Prompt</label>
+          <textarea id="prompt">Premium vertical 9:16 social media image for a modern kids salon. A cheerful 6–8 year old girl sits in a stylish salon chair while a friendly female hairstylist gently completes an elegant braided princess hairstyle with soft curls and a subtle sparkling accessory. The hair is the visual hero. Premium dark navy blue and warm golden-yellow salon interior, playful but elegant kids-salon details, clean composition, realistic commercial photography, natural expression, soft cinematic lighting, shallow depth of field, Instagram-ready. Leave clean negative space near the top for headline placement. Avoid clutter, distorted hands, extra fingers, duplicate people, excessive crowns, or cartoon styling.</textarea>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label for="aspect">Aspect ratio</label>
+            <select id="aspect">
+              <option value="9:16" selected>9:16</option>
+              <option value="4:5">4:5</option>
+              <option value="1:1">1:1</option>
+              <option value="3:4">3:4</option>
+              <option value="4:3">4:3</option>
+              <option value="16:9">16:9</option>
+              <option value="3:2">3:2</option>
+              <option value="2:3">2:3</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="seed">Seed (optional)</label>
+            <input id="seed" type="number" min="0" placeholder="Random" />
+          </div>
+        </div>
+
+        <div id="ideogramOptions">
+          <div class="row">
+            <div class="field">
+              <label for="magic">Magic Prompt</label>
+              <select id="magic">
+                <option value="Auto" selected>Auto</option>
+                <option value="On">On</option>
+                <option value="Off">Off</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="styleType">Style type</label>
+              <select id="styleType">
+                <option value="None" selected>None</option>
+                <option value="Auto">Auto</option>
+                <option value="General">General</option>
+                <option value="Realistic">Realistic</option>
+                <option value="Design">Design</option>
+                <option value="Render 3D">Render 3D</option>
+                <option value="Anime">Anime</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div id="fluxOptions" class="hidden">
+          <div class="toggleRow">
+            <input id="raw" type="checkbox" checked />
+            <label for="raw">RAW mode — more natural / photographic</label>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="format">Output format</label>
+              <select id="format">
+                <option value="jpg" selected>JPG</option>
+                <option value="png">PNG</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="safety">Safety tolerance</label>
+              <select id="safety">
+                <option value="1">1 — strictest</option>
+                <option value="2" selected>2 — default</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6 — most permissive</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="buttonRow">
+          <button id="generate" class="primary">Generate image</button>
+          <button id="clear" class="secondary">Clear</button>
+        </div>
+
+        <details>
+          <summary>Request payload / debug</summary>
+          <pre id="debug">Nothing sent yet.</pre>
+        </details>
+      </section>
+
+      <section class="card viewer">
+        <div class="status">
+          <span id="statusDot" class="dot"></span>
+          <span id="statusText">Ready.</span>
+        </div>
+
+        <div class="stage">
+          <div id="empty" class="empty">
+            <div class="icon">✦</div>
+            <b>Your generated image will appear here.</b>
+            <p class="small">Choose a model, enter a prompt and click Generate image.</p>
+          </div>
+          <img id="result" alt="Generated output" />
+        </div>
+
+        <div id="meta" class="meta">
+          <div><b>Model</b><span id="metaModel"></span></div>
+          <div><b>Prediction</b><span id="metaId"></span></div>
+          <div><b>Time</b><span id="metaTime"></span></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  const mode = $("mode");
+  const tokenField = $("tokenField");
+  const backendField = $("backendField");
+  const token = $("token");
+  const backendUrl = $("backendUrl");
+  const model = $("model");
+  const promptEl = $("prompt");
+  const aspect = $("aspect");
+  const seed = $("seed");
+  const magic = $("magic");
+  const styleType = $("styleType");
+  const raw = $("raw");
+  const format = $("format");
+  const safety = $("safety");
+  const ideogramOptions = $("ideogramOptions");
+  const fluxOptions = $("fluxOptions");
+  const generate = $("generate");
+  const clear = $("clear");
+  const result = $("result");
+  const empty = $("empty");
+  const statusText = $("statusText");
+  const statusDot = $("statusDot");
+  const debug = $("debug");
+  const meta = $("meta");
+  const metaModel = $("metaModel");
+  const metaId = $("metaId");
+  const metaTime = $("metaTime");
+
+  token.value = sessionStorage.getItem("replicate_test_token") || "";
+
+  mode.addEventListener("change", syncMode);
+  model.addEventListener("change", syncModel);
+  token.addEventListener("input", () => {
+    if (token.value) sessionStorage.setItem("replicate_test_token", token.value);
+    else sessionStorage.removeItem("replicate_test_token");
+  });
+
+  function syncMode() {
+    const direct = mode.value === "direct";
+    tokenField.classList.toggle("hidden", !direct);
+    backendField.classList.toggle("hidden", direct);
+  }
+
+  function syncModel() {
+    const isFlux = model.value.includes("flux");
+    fluxOptions.classList.toggle("hidden", !isFlux);
+    ideogramOptions.classList.toggle("hidden", isFlux);
+  }
+
+  function setStatus(text, state="") {
+    statusText.textContent = text;
+    statusDot.className = "dot" + (state ? " " + state : "");
+  }
+
+  function buildInput() {
+    const selected = model.value;
+    const input = {
+      prompt: promptEl.value.trim(),
+      aspect_ratio: aspect.value
+    };
+
+    const seedValue = seed.value.trim();
+    if (seedValue !== "") input.seed = Number(seedValue);
+
+    if (selected.startsWith("ideogram-ai/")) {
+      input.magic_prompt_option = magic.value;
+      if (styleType.value !== "None") input.style_type = styleType.value;
+    }
+
+    if (selected === "black-forest-labs/flux-1.1-pro-ultra") {
+      input.raw = raw.checked;
+      input.output_format = format.value;
+      input.safety_tolerance = Number(safety.value);
+    }
+
+    return input;
+  }
+
+  function getOfficialModelEndpoint(modelId) {
+    const [owner, name] = modelId.split("/");
+    return `https://api.replicate.com/v1/models/${owner}/${name}/predictions`;
+  }
+
+  function normalizeOutput(output) {
+    if (!output) return null;
+    if (typeof output === "string") return output;
+    if (Array.isArray(output) && output.length) return output[0];
+    if (output.url) return output.url;
+    return null;
+  }
+
+  async function readJsonSafe(res) {
+    const text = await res.text();
+    try { return JSON.parse(text); }
+    catch { return { raw: text }; }
+  }
+
+  async function generateViaBackend(payload) {
+    const endpoint = backendUrl.value.trim() || "/api/generate-image";
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await readJsonSafe(res);
+    if (!res.ok) throw new Error(data?.error || data?.detail || data?.raw || `HTTP ${res.status}`);
+    return data;
+  }
+
+  async function pollPrediction(url, authHeader) {
+    const maxAttempts = 90;
+    for (let i = 0; i < maxAttempts; i++) {
+      await new Promise(r => setTimeout(r, 1500));
+      const res = await fetch(url, {
+        headers: { "Authorization": authHeader }
+      });
+      const data = await readJsonSafe(res);
+
+      setStatus(`Replicate status: ${data.status || "checking"}…`, "busy");
+
+      if (data.status === "succeeded") return data;
+      if (data.status === "failed" || data.status === "canceled") {
+        throw new Error(data.error || `Prediction ${data.status}`);
+      }
+    }
+    throw new Error("Timed out while waiting for the prediction.");
+  }
+
+  async function generateDirect(payload) {
+    if (!token.value.trim()) throw new Error("Paste your Replicate API token first.");
+
+    const authHeader = `Bearer ${token.value.trim()}`;
+    const endpoint = getOfficialModelEndpoint(payload.model);
+
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Authorization": authHeader,
+        "Content-Type": "application/json",
+        "Prefer": "wait=60"
+      },
+      body: JSON.stringify({ input: payload.input })
+    });
+
+    let data = await readJsonSafe(res);
+    if (!res.ok) throw new Error(data?.detail || data?.error || data?.raw || `HTTP ${res.status}`);
+
+    if (data.status !== "succeeded") {
+      const getUrl = data?.urls?.get || `https://api.replicate.com/v1/predictions/${data.id}`;
+      data = await pollPrediction(getUrl, authHeader);
+    }
+    return data;
+  }
+
+  generate.addEventListener("click", async () => {
+    const prompt = promptEl.value.trim();
+    if (!prompt) {
+      setStatus("Please enter a prompt.", "err");
+      return;
+    }
+
+    const payload = {
+      model: model.value,
+      input: buildInput()
+    };
+
+    debug.textContent = JSON.stringify(payload, null, 2);
+    generate.disabled = true;
+    result.style.display = "none";
+    empty.style.display = "block";
+    meta.style.display = "none";
+    setStatus("Sending request…", "busy");
+    const started = performance.now();
+
+    try {
+      const data = mode.value === "direct"
+        ? await generateDirect(payload)
+        : await generateViaBackend(payload);
+
+      // Backend may return either raw Replicate prediction or a simplified object.
+      const imageUrl =
+        data.imageUrl ||
+        data.output_url ||
+        normalizeOutput(data.output) ||
+        normalizeOutput(data.result);
+
+      if (!imageUrl) {
+        debug.textContent += "\n\nRESPONSE:\n" + JSON.stringify(data, null, 2);
+        throw new Error("The request succeeded but no image URL was found in the response.");
+      }
+
+      result.src = imageUrl;
+      result.onload = () => {
+        result.style.display = "block";
+        empty.style.display = "none";
+      };
+
+      const seconds = ((performance.now() - started) / 1000).toFixed(1);
+      metaModel.textContent = payload.model;
+      metaId.textContent = data.id || data.prediction_id || "—";
+      metaTime.textContent = `${seconds}s`;
+      meta.style.display = "grid";
+
+      debug.textContent += "\n\nRESPONSE:\n" + JSON.stringify(data, null, 2);
+      setStatus("Image generated successfully.", "ok");
+    } catch (err) {
+      console.error(err);
+      setStatus(err.message || "Generation failed.", "err");
+      debug.textContent += "\n\nERROR:\n" + (err.stack || err.message || String(err));
+    } finally {
+      generate.disabled = false;
+    }
+  });
+
+  clear.addEventListener("click", () => {
+    result.removeAttribute("src");
+    result.style.display = "none";
+    empty.style.display = "block";
+    meta.style.display = "none";
+    debug.textContent = "Nothing sent yet.";
+    setStatus("Ready.");
+  });
+
+  syncMode();
+  syncModel();
+})();
+</script>
+
+<!--
+==============================================================================
+SECURE BACKEND CONTRACT
+==============================================================================
+
+For a PUBLIC GitHub/Vercel/Cloudflare deployment, the HTML should call your own
+backend endpoint and your Replicate token must be stored as a server-side secret.
+
+Expected request from this page:
+
+POST /api/generate-image
+Content-Type: application/json
+
+{
+  "model": "ideogram-ai/ideogram-v3-quality",
+  "input": {
+    "prompt": "...",
+    "aspect_ratio": "9:16",
+    "magic_prompt_option": "Auto"
+  }
+}
+
+Your backend should call:
+
+POST https://api.replicate.com/v1/models/{owner}/{model}/predictions
+
+Headers:
+Authorization: Bearer YOUR_REPLICATE_API_TOKEN
+Content-Type: application/json
+Prefer: wait=60
+
+Body:
+{ "input": <input from browser> }
+
+Then return the Replicate prediction JSON directly to this page.
+
+------------------------------------------------------------------------------
+EXAMPLE VERCEL /api/generate-image.js
+------------------------------------------------------------------------------
+
+export default async function handler(req, res) {
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  const { model, input } = req.body || {};
+  if (!model || !input?.prompt) {
+    return res.status(400).json({ error: "model and input.prompt are required" });
+  }
+
+  const allowedModels = new Set([
+    "ideogram-ai/ideogram-v3-quality",
+    "ideogram-ai/ideogram-v3-balanced",
+    "black-forest-labs/flux-1.1-pro-ultra"
+  ]);
+
+  if (!allowedModels.has(model)) {
+    return res.status(400).json({ error: "Model not allowed" });
+  }
+
+  const [owner, name] = model.split("/");
+  const endpoint = `https://api.replicate.com/v1/models/${owner}/${name}/predictions`;
+
+  const create = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${process.env.REPLICATE_API_TOKEN}`,
+      "Content-Type": "application/json",
+      "Prefer": "wait=60"
+    },
+    body: JSON.stringify({ input })
+  });
+
+  let prediction = await create.json();
+
+  if (!create.ok) {
+    return res.status(create.status).json(prediction);
+  }
+
+  // If still processing, poll from the server.
+  while (["starting", "processing"].includes(prediction.status)) {
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    const check = await fetch(prediction.urls.get, {
+      headers: {
+        "Authorization": `Bearer ${process.env.REPLICATE_API_TOKEN}`
+      }
+    });
+
+    prediction = await check.json();
+
+    if (!check.ok) {
+      return res.status(check.status).json(prediction);
+    }
+  }
+
+  return res.status(200).json(prediction);
+}
+
+Add this environment variable in Vercel:
+REPLICATE_API_TOKEN=r8_xxxxxxxxxxxxxxxxxxxxxxxx
+
+Never commit the token to GitHub.
+==============================================================================
+-->
+</body>
+</html>
