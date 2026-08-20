@@ -242,7 +242,7 @@
               </div>
               <div id="runResult" style="font-size:12.5px;margin-bottom:14px;"></div>
 
-              <details open class="agent-section">
+              <details class="agent-section">
                 <summary><span>Pending review <span id="pendingCountBadge"></span></span></summary>
                 <div class="agent-section-body">
                   <div style="text-align:right;margin-bottom:8px;"><button class="btn btn-s btn-sm" onclick="rejectAllPending()">Reject all pending</button></div>
@@ -250,7 +250,7 @@
                 </div>
               </details>
 
-              <details open class="agent-section">
+              <details class="agent-section">
                 <summary>Rule book - what the agent currently does</summary>
                 <div class="agent-section-body">
                   <div id="ruleBook" style="border:1px solid var(--border);border-radius:10px;padding:10px 14px;">Loading...</div>
@@ -383,7 +383,7 @@
             </div>
 
             <div id="marketingTab-strategy" class="marketing-tab-content">
-              <details class="card" open>
+              <details class="card">
                 <summary><h2 style="display:inline;">Business strategy</h2></summary>
                 <p class="muted">Your standing marketing direction - what you want marketing to achieve. Edit anytime; this never gets overwritten by AI.</p>
                 <div id="businessStrategySummary" style="display:none;"></div>
@@ -405,7 +405,7 @@
                 </div>
               </details>
 
-              <details class="card" open>
+              <details class="card">
                 <summary><h2 style="display:inline;">Monthly strategy</h2></summary>
                 <p class="muted">Two-part input: your specific focus for this month, combined with ZEN's proposal from real data and your Brand DNA. Every recommendation is labeled data-based or reasoning-based - review before approving.</p>
                 <div class="row" style="margin-bottom:8px;flex-wrap:wrap;gap:8px;">
@@ -418,7 +418,7 @@
                 <div id="msCurrentStrategy" style="margin-top:14px;"></div>
               </details>
 
-              <details class="card" open>
+              <details class="card">
                 <summary><h2 style="display:inline;">Content plan</h2></summary>
                 <p class="muted">8 image posts + 4 video concepts, generated from your approved strategy as one coordinated campaign. Generating the actual creative for each block is optional and one at a time.</p>
                 <button class="btn btn-p btn-sm" onclick="generateContentPlan()">Generate content plan</button>
@@ -472,7 +472,7 @@
             </div>
 
             <div id="marketingTab-setup" class="marketing-tab-content" style="display:none;">
-              <details class="card" open>
+              <details class="card">
                 <summary><h2 style="display:inline;">Brand DNA</h2></summary>
                 <p class="muted">Describe your business - save it directly anytime. "Propose with AI" is optional, for turning this into structured, prioritized rules the image generator uses.</p>
                 <div id="brandDnaApproved" style="display:none;margin-bottom:14px;padding:10px 14px;background:var(--pl);border-radius:10px;font-size:12.5px;"></div>
