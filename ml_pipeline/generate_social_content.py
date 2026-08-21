@@ -208,7 +208,7 @@ def generate_ai_background(cur, headline: str, brand: dict) -> Image.Image:
     res = requests.post(
         "https://api.replicate.com/v1/models/black-forest-labs/flux-1.1-pro/predictions",
         headers=headers,
-        json={"input": {"prompt": prompt, "aspect_ratio": "1:1"}},
+        json={"input": {"prompt": prompt, "aspect_ratio": "1:1", "output_format": "jpg"}},
         timeout=65,
     )
     res.raise_for_status()
