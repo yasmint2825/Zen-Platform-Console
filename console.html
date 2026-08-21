@@ -1954,24 +1954,61 @@ function renderContentPlanBlocks(items){
     const isVideo=item.item_type==='video';
     const editable=item.status==='planned';
     const hasImage=!!item.generated_image_url;
+    // Only offer the JPEG cleanup on approved/scheduled blocks whose
+    // current image genuinely isn't JPEG - never shown for images that
+    // are already fine, and never for planned/creative_ready/published
+    // (those have their own separate flows, or are already live).
+    const needsJpegCleanup=['approved','scheduled'].includes(item.status)&&hasImage&&!/\.(jpe?g)($|\?)/i.test(item.generated_image_url);
 
-    // Compact, always-visible summary - same "readable by default, Edit
-    // to see the working view" pattern as Business Strategy. For
-    // planned blocks, Edit / Generate creative / Create new plan all
-    // sit together here - no need to click Edit just to generate.
-    const plannedActions=editable?(
-      '<button class="btn btn-s btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')">Edit</button> '+
-      '<button class="btn btn-p btn-sm" onclick="generateBlockCreative(\''+item.id+'\',this)">Generate creative</button> '+
-      '<button class="btn btn-s btn-sm" onclick="regenerateBlockConcept(\''+item.id+'\',this)">Create new plan for this post</button>'
-    ):'<button class="btn btn-s btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')" style="margin-top:8px;">View details</button>';
+    // Status-aware action set, shown directly in the summary - same
+    // "everything visible, no click-through needed" pattern for every
+    // status, not just planned blocks.
+    let mainActions='';
+    if(item.item_type==='image'){
+      if(editable){
+        mainActions=
+          '<button class="btn btn-s btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')">Edit</button> '+
+          '<button class="btn btn-p btn-sm" onclick="generateBlockCreative(\''+item.id+'\',this)">Generate creative</button> '+
+          '<button class="btn btn-s btn-sm" onclick="regenerateBlockConcept(\''+item.id+'\',this)">Create new plan for this post</button> '+
+          '<button class="btn btn-s btn-sm" onclick="deleteContentPlanItem(\''+item.id+'\')">Delete</button>';
+      } else if(item.status==='creative_ready'&&hasImage){
+        mainActions=
+          '<button class="btn btn-s btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')">Edit</button> '+
+          '<button class="btn btn-p btn-sm" onclick="approveContentPlanItemBlock(\''+item.id+'\')">Approve</button> '+
+          '<button class="btn btn-s btn-sm" onclick="rejectContentPlanItem(\''+item.id+'\')">Reject &amp; retry</button> '+
+          '<button class="btn btn-s btn-sm" onclick="deleteContentPlanItem(\''+item.id+'\')">Delete</button>';
+      } else if(item.status==='approved'){
+        mainActions=
+          '<button class="btn btn-s btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')">Edit</button> '+
+          (needsJpegCleanup?'<button class="btn btn-p btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')">Clean up to JPEG</button> ':'')+
+          '<button class="btn btn-s btn-sm" onclick="rejectContentPlanItem(\''+item.id+'\')">Reject</button> '+
+          '<button class="btn btn-s btn-sm" onclick="deleteContentPlanItem(\''+item.id+'\')">Delete</button>';
+      } else if(item.status==='scheduled'){
+        mainActions=
+          '<button class="btn btn-s btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')">Edit</button> '+
+          (needsJpegCleanup?'<button class="btn btn-p btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')">Clean up to JPEG</button> ':'')+
+          '<button class="btn btn-s btn-sm" onclick="unscheduleContentPlanItem(\''+item.id+'\')">Cancel schedule</button> '+
+          '<button class="btn btn-s btn-sm" onclick="rejectContentPlanItem(\''+item.id+'\')">Reject</button> '+
+          '<button class="btn btn-s btn-sm" onclick="deleteContentPlanItem(\''+item.id+'\')">Delete</button>';
+      } else {
+        mainActions=item.status==='published'?
+          '<button class="btn btn-s btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')">View details</button> '+
+          '<button class="btn btn-s btn-sm" onclick="deleteContentPlanItem(\''+item.id+'\')">Delete record (does NOT remove the live Instagram post)</button>'
+          :'<button class="btn btn-s btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')">View details</button> '+
+          '<button class="btn btn-s btn-sm" onclick="deleteContentPlanItem(\''+item.id+'\')">Delete</button>';
+      }
+    }
 
     const summaryHtml=
       '<div style="display:flex;justify-content:space-between;"><span style="font-weight:700;font-size:12.5px;">'+(isVideo?'VIDEO ':'POST ')+item.item_number+' - '+item.title+'</span><span style="font-size:11px;color:'+badge.color+';font-weight:700;">'+badge.label+'</span></div>'+
-      '<div class="muted" style="font-size:11.5px;margin-top:4px;">'+item.content_pillar+' - '+item.objective+' - '+(item.audience||'')+(item.target_segment?' ('+item.target_segment+' segment)':'')+(item.item_type==='image'?(' - '+(item.aspect_ratio||'1:1')):'')+'</div>'+
+      '<div class="muted" style="font-size:11.5px;margin-top:4px;">'+item.content_pillar+' - '+item.objective+' - '+(item.audience||'')+(item.target_segment?' ('+item.target_segment+' segment)':'')+(item.item_type==='image'?(' - '+(item.aspect_ratio||'9:16')):'')+'</div>'+
       (item.hook?('<div style="font-size:12px;margin-top:6px;font-style:italic;">"'+item.hook+'"</div>'):'')+
+      (item.caption?('<div style="font-size:12px;margin-top:6px;">'+item.caption+'</div>'):'')+
+      (item.cta?('<div style="font-size:11.5px;margin-top:4px;font-weight:600;">'+item.cta+'</div>'):'')+
+      (item.hashtags&&item.hashtags.length?('<div class="muted" style="font-size:11px;margin-top:4px;">'+item.hashtags.join(' ')+'</div>'):'')+
       (isVideo?('<div class="muted" style="font-size:11px;margin-top:6px;">'+(item.video_plan?.scenes?.length||0)+' scenes planned - see full plan via API for now.</div>'):'')+
       (hasImage?generatedImageHtml(item.generated_image_url,70,item.generation_created_at,item.generation_expired_at):'')+
-      (item.item_type==='image'?('<div style="margin-top:8px;">'+plannedActions+'</div>'):'');
+      (item.item_type==='image'?('<div style="margin-top:8px;">'+mainActions+'</div>'):'');
 
     // Full working view - hidden until Edit/View details is clicked.
     let detailHtml='';
@@ -1983,20 +2020,36 @@ function renderContentPlanBlocks(items){
           '<label class="fl">Audience</label><input class="fi" type="text" id="blockAudience-'+item.id+'" value="'+(item.audience||'').replace(/"/g,'&quot;')+'" style="margin-bottom:6px;">'+
           '<label class="fl">Hook</label><textarea class="fi" id="blockHook-'+item.id+'" rows="2" style="margin-bottom:6px;">'+(item.hook||'')+'</textarea>'+
           '<label class="fl">Aspect ratio</label><select class="fi" id="blockAspectRatio-'+item.id+'" style="margin-bottom:8px;">'+
-            ['1:1','9:16','16:9','4:3','3:4'].map(r=>'<option value="'+r+'"'+(item.aspect_ratio===r?' selected':'')+'>'+r+'</option>').join('')+
+            ['1:1','9:16','16:9','4:3','3:4'].map(r=>'<option value="'+r+'"'+((item.aspect_ratio||'9:16')===r?' selected':'')+'>'+r+'</option>').join('')+
           '</select>'+
           '<button class="btn btn-p btn-sm" onclick="generateBlockCreative(\''+item.id+'\',this)">Save &amp; generate creative</button> '+
           '<button class="btn btn-s btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')">Cancel</button>';
-      } else {
+      } else if(item.status==='creative_ready'&&!hasImage){
+        // No image yet - prompt editable, Generate image is the primary action here.
         const promptBox='<label class="fl" style="margin-top:6px;">Prompt sent to the image model - edit freely</label>'+
           '<textarea class="fi" id="blockPromptArea-'+item.id+'" rows="4" style="font-size:11.5px;" onchange="if(contentPlanState[\''+item.id+'\'])contentPlanState[\''+item.id+'\'].compiled_prompt=this.value;">'+(item.compiled_prompt||'')+'</textarea>';
-        const genImageBtn=hasImage?'':'<button class="btn btn-p btn-sm" onclick="generateBlockImage(\''+item.id+'\')" style="margin-top:6px;">Generate image</button> ';
-        const approveRejectBtns=hasImage&&item.status==='creative_ready'?(
-          '<button class="btn btn-p btn-sm" onclick="approveContentPlanItemBlock(\''+item.id+'\')" style="margin-top:6px;">Approve</button> '+
-          '<button class="btn btn-s btn-sm" onclick="rejectContentPlanItem(\''+item.id+'\')" style="margin-top:6px;">Reject &amp; retry</button> '
-        ):'';
-        detailHtml=promptBox+genImageBtn+approveRejectBtns+'<button class="btn btn-s btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')" style="margin-top:6px;">Close</button>';
+        detailHtml=promptBox+'<button class="btn btn-p btn-sm" onclick="generateBlockImage(\''+item.id+'\')" style="margin-top:6px;">Generate image</button> '+
+          '<button class="btn btn-s btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')" style="margin-top:6px;">Close</button>';
         if(!contentPlanState[item.id]&&item.compiled_prompt) contentPlanState[item.id]={compiled_prompt:item.compiled_prompt,reference_asset_urls:[]};
+      } else if(item.status==='creative_ready'&&hasImage){
+        // Already has an image, not yet approved - editable prompt with
+        // the option to regenerate a different version. Approve/Reject
+        // themselves live directly in the summary now, not duplicated here.
+        const promptBox='<label class="fl" style="margin-top:6px;">Prompt sent to the image model - edit freely, then regenerate for a different result</label>'+
+          '<textarea class="fi" id="blockPromptArea-'+item.id+'" rows="4" style="font-size:11.5px;" onchange="if(contentPlanState[\''+item.id+'\'])contentPlanState[\''+item.id+'\'].compiled_prompt=this.value;">'+(item.compiled_prompt||'')+'</textarea>';
+        detailHtml=promptBox+'<button class="btn btn-p btn-sm" onclick="generateBlockImage(\''+item.id+'\')" style="margin-top:6px;">Regenerate image</button> '+
+          '<button class="btn btn-s btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')" style="margin-top:6px;">Close</button>';
+        if(!contentPlanState[item.id]&&item.compiled_prompt) contentPlanState[item.id]={compiled_prompt:item.compiled_prompt,reference_asset_urls:[]};
+      } else if(needsJpegCleanup){
+        // Approved/scheduled but not publishable - prompt editable, dedicated cleanup action.
+        detailHtml='<label class="fl" style="margin-top:6px;">Prompt - edit before regenerating if you want a different result</label>'+
+          '<textarea class="fi" id="blockJpegPromptArea-'+item.id+'" rows="4" style="font-size:11.5px;">'+(item.compiled_prompt||'')+'</textarea>'+
+          '<div class="muted" style="font-size:10.5px;margin-top:4px;">This produces a genuinely new image (not a format conversion) and sends the block back for re-approval.</div>'+
+          '<button class="btn btn-p btn-sm" onclick="regenerateAsJpeg(\''+item.id+'\',this)" style="margin-top:6px;">Clean up to JPEG</button> '+
+          '<button class="btn btn-s btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')" style="margin-top:6px;">Close</button>';
+      } else {
+        detailHtml='<div class="muted" style="font-size:11.5px;">'+(item.compiled_prompt?('<label class="fl">Prompt used</label><div style="font-size:11px;margin-bottom:8px;">'+item.compiled_prompt+'</div>'):'No prompt stored for this item.')+'</div>'+
+          '<button class="btn btn-s btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')">Close</button>';
       }
     }
 
@@ -2024,6 +2077,30 @@ async function rejectContentPlanItem(itemId){
   const j=await call('reject_content_plan_item',{id:itemId});
   if(!j.ok){alert('Error: '+j.error);return;}
   delete contentPlanState[itemId];
+  loadMonthlyStrategy();
+}
+async function regenerateAsJpeg(itemId,btnEl){
+  if(!confirm('This generates a genuinely new image from the current prompt (not a format conversion of the old one), and sends this block back for re-approval before it can be published again. Continue?')) return;
+  const promptEl=document.getElementById('blockJpegPromptArea-'+itemId);
+  const originalLabel=btnEl?btnEl.innerHTML:null;
+  if(btnEl){btnEl.disabled=true;btnEl.innerHTML='<span class="mw-spinner"></span>Regenerating as JPEG...';}
+  const j=await call('regenerate_approved_image_as_jpeg',{id:itemId,compiled_prompt:promptEl?promptEl.value:undefined});
+  if(!j.ok){
+    alert('Error: '+j.error);
+    if(btnEl){btnEl.disabled=false;btnEl.innerHTML=originalLabel;}
+    return;
+  }
+  loadMonthlyStrategy();
+}
+async function unscheduleContentPlanItem(itemId){
+  const j=await call('unschedule_content_plan_item',{id:itemId});
+  if(!j.ok){alert('Error: '+j.error);return;}
+  loadMonthlyStrategy();
+}
+async function deleteContentPlanItem(itemId){
+  if(!confirm('Delete this block entirely? This cannot be undone.')) return;
+  const j=await call('delete_content_plan_item',{id:itemId});
+  if(!j.ok){alert('Error: '+j.error);return;}
   loadMonthlyStrategy();
 }
 async function regenerateBlockConcept(itemId,btnEl){
