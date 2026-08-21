@@ -457,6 +457,7 @@
                     <option value="black-forest-labs/flux-2-pro" selected>flux-2-pro</option>
                     <option value="black-forest-labs/flux-1.1-pro">flux-1.1-pro</option>
                     <option value="black-forest-labs/flux-kontext-pro">flux-kontext-pro</option>
+                    <option value="krea/krea-2-large">krea-2-large (photorealistic)</option>
                   </select>
                   <button class="btn btn-p btn-sm" onclick="runLabGeneration()" style="margin-top:8px;">Generate image</button>
                   <div id="labGenerateResult" style="margin-top:10px;"></div>
@@ -528,6 +529,16 @@
                   <label class="muted" style="font-size:11px;display:block;margin-bottom:3px;">Visual brand description (used in AI-generated image prompts - shop look, stylist uniforms, aesthetic)</label>
                   <textarea class="fi" id="brandVisualDescription" rows="3" placeholder="e.g. Stylists wear teal polo uniforms, the shop has a jungle-safari theme with animal murals"></textarea>
                 </div>
+                <div style="margin-bottom:10px;">
+                  <label class="muted" style="font-size:11px;display:block;margin-bottom:3px;">Default image model (used for content plan generation - Creative Lab has its own separate choice per generation)</label>
+                  <select class="fi" id="brandDefaultImageModel">
+                    <option value="black-forest-labs/flux-2-pro">flux-2-pro (default)</option>
+                    <option value="black-forest-labs/flux-1.1-pro">flux-1.1-pro</option>
+                    <option value="black-forest-labs/flux-2-max">flux-2-max (highest fidelity)</option>
+                    <option value="black-forest-labs/flux-kontext-pro">flux-kontext-pro (reference-image editing)</option>
+                    <option value="krea/krea-2-large">krea-2-large (photorealistic)</option>
+                  </select>
+                </div>
                 <button class="btn btn-p btn-sm" onclick="saveBrandColors()">Save</button>
                 <div id="brandSaveResult" style="margin-top:8px;font-size:12px;"></div>
               </details>
@@ -598,6 +609,7 @@
                     <option value="black-forest-labs/flux-1.1-pro">flux-1.1-pro</option>
                     <option value="black-forest-labs/flux-2-pro" selected>flux-2-pro (current default)</option>
                     <option value="black-forest-labs/flux-2-max">flux-2-max (highest fidelity)</option>
+                    <option value="krea/krea-2-large">krea-2-large (photorealistic)</option>
                     <option value="black-forest-labs/flux-kontext-pro">flux-kontext-pro (reference-image editing)</option>
                   </select>
                   <select class="fi" id="testReplicateAspectRatio" style="flex:1;min-width:100px;">
@@ -2341,6 +2353,7 @@ async function loadBrandSettings(){
   if(brandSettingsCache.secondary_color) document.getElementById('brandSecondaryColor').value=brandSettingsCache.secondary_color;
   if(brandSettingsCache.accent_color) document.getElementById('brandAccentColor').value=brandSettingsCache.accent_color;
   if(brandSettingsCache.visual_brand_description) document.getElementById('brandVisualDescription').value=brandSettingsCache.visual_brand_description;
+  if(brandSettingsCache.default_image_model) document.getElementById('brandDefaultImageModel').value=brandSettingsCache.default_image_model;
 }
 async function uploadBrandLogo(){
   const fileInput=document.getElementById('brandLogoFile');
@@ -2364,6 +2377,7 @@ async function saveBrandColors(){
     secondary_color:document.getElementById('brandSecondaryColor').value,
     accent_color:document.getElementById('brandAccentColor').value,
     visual_brand_description:document.getElementById('brandVisualDescription').value,
+    default_image_model:document.getElementById('brandDefaultImageModel').value,
   });
   const j=await call('save_brand_settings',merged);
   const r=document.getElementById('brandSaveResult');
