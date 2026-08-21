@@ -2766,18 +2766,21 @@ function renderContentPlanBlocks(items){
           '<button class="btn btn-s btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')">Edit</button> '+
           '<button class="btn btn-p btn-sm" onclick="generateBlockCreative(\''+item.id+'\',this)">Generate creative</button> '+
           '<button class="btn btn-s btn-sm" onclick="regenerateBlockConcept(\''+item.id+'\',this)">Create new plan for this post</button> '+
+          '<button class="btn btn-s btn-sm" onclick="toggleCaptionDetail(\''+item.id+'\')">Edit caption</button> '+
           '<button class="btn btn-s btn-sm" onclick="deleteContentPlanItem(\''+item.id+'\')">Delete</button>';
       } else if(item.status==='creative_ready'&&hasImage){
         mainActions=
           '<button class="btn btn-s btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')">Edit</button> '+
           '<button class="btn btn-p btn-sm" onclick="approveContentPlanItemBlock(\''+item.id+'\')">Approve</button> '+
           '<button class="btn btn-s btn-sm" onclick="rejectContentPlanItem(\''+item.id+'\')">Reject &amp; retry</button> '+
+          '<button class="btn btn-s btn-sm" onclick="toggleCaptionDetail(\''+item.id+'\')">Edit caption</button> '+
           '<button class="btn btn-s btn-sm" onclick="deleteContentPlanItem(\''+item.id+'\')">Delete</button>';
       } else if(item.status==='approved'){
         mainActions=
           '<button class="btn btn-s btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')">Edit</button> '+
           (needsJpegCleanup?'<button class="btn btn-p btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')">Clean up to JPEG</button> ':'')+
           '<button class="btn btn-s btn-sm" onclick="rejectContentPlanItem(\''+item.id+'\')">Reject</button> '+
+          '<button class="btn btn-s btn-sm" onclick="toggleCaptionDetail(\''+item.id+'\')">Edit caption</button> '+
           '<button class="btn btn-s btn-sm" onclick="deleteContentPlanItem(\''+item.id+'\')">Delete</button>';
       } else if(item.status==='scheduled'){
         mainActions=
@@ -2785,12 +2788,14 @@ function renderContentPlanBlocks(items){
           (needsJpegCleanup?'<button class="btn btn-p btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')">Clean up to JPEG</button> ':'')+
           '<button class="btn btn-s btn-sm" onclick="unscheduleContentPlanItem(\''+item.id+'\')">Cancel schedule</button> '+
           '<button class="btn btn-s btn-sm" onclick="rejectContentPlanItem(\''+item.id+'\')">Reject</button> '+
+          '<button class="btn btn-s btn-sm" onclick="toggleCaptionDetail(\''+item.id+'\')">Edit caption</button> '+
           '<button class="btn btn-s btn-sm" onclick="deleteContentPlanItem(\''+item.id+'\')">Delete</button>';
       } else {
         mainActions=item.status==='published'?
           '<button class="btn btn-s btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')">View details</button> '+
           '<button class="btn btn-s btn-sm" onclick="deleteContentPlanItem(\''+item.id+'\')">Delete record (does NOT remove the live Instagram post)</button>'
           :'<button class="btn btn-s btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')">View details</button> '+
+          '<button class="btn btn-s btn-sm" onclick="toggleCaptionDetail(\''+item.id+'\')">Edit caption</button> '+
           '<button class="btn btn-s btn-sm" onclick="deleteContentPlanItem(\''+item.id+'\')">Delete</button>';
       }
     }
@@ -2849,12 +2854,52 @@ function renderContentPlanBlocks(items){
       }
     }
 
+    // Caption/CTA/hashtags/location - a separate, independent toggle
+    // from the image-generation detail view above, since editing these
+    // never requires regenerating anything and stays available at any
+    // status short of already-published.
+    const captionDetailHtml=item.item_type==='image'?(
+      '<label class="fl" style="margin-top:6px;">Caption (the hook is prepended automatically when published)</label>'+
+      '<textarea class="fi" id="blockCaption-'+item.id+'" rows="3" style="margin-bottom:6px;">'+(item.caption||'')+'</textarea>'+
+      '<label class="fl">Call to action</label>'+
+      '<input class="fi" type="text" id="blockCta-'+item.id+'" value="'+(item.cta||'').replace(/"/g,'&quot;')+'" style="margin-bottom:6px;">'+
+      '<label class="fl">Hashtags (space or newline separated)</label>'+
+      '<textarea class="fi" id="blockHashtags-'+item.id+'" rows="2" style="margin-bottom:6px;">'+((item.hashtags||[]).join(' '))+'</textarea>'+
+      '<label class="fl">Location override (numeric Facebook Place ID - leave blank to use your Brand assets default)</label>'+
+      '<input class="fi" type="text" id="blockLocationOverride-'+item.id+'" value="'+(item.location_id_override||'').replace(/"/g,'&quot;')+'" placeholder="e.g. 123456789" style="margin-bottom:8px;">'+
+      '<button class="btn btn-p btn-sm" onclick="saveCaptionDetails(\''+item.id+'\',this)">Save</button> '+
+      '<button class="btn btn-s btn-sm" onclick="toggleCaptionDetail(\''+item.id+'\')">Close</button>'
+    ):'';
+
     return '<div class="item" style="margin-bottom:10px;">'+
       '<div id="blockSummary-'+item.id+'">'+summaryHtml+'</div>'+
       '<div id="blockDetail-'+item.id+'" style="display:none;margin-top:8px;">'+detailHtml+'</div>'+
+      '<div id="blockCaptionDetail-'+item.id+'" style="display:none;margin-top:8px;">'+captionDetailHtml+'</div>'+
       '<div id="blockImageArea-'+item.id+'" style="margin-top:8px;"></div>'+
     '</div>';
   }).join('');
+}
+function toggleCaptionDetail(itemId){
+  const el=document.getElementById('blockCaptionDetail-'+itemId);
+  if(el) el.style.display=el.style.display==='none'?'block':'none';
+}
+async function saveCaptionDetails(itemId,btnEl){
+  const originalLabel=btnEl?btnEl.innerHTML:null;
+  if(btnEl){btnEl.disabled=true;btnEl.innerHTML='<span class="mw-spinner"></span>Saving...';}
+  const hashtagsRaw=document.getElementById('blockHashtags-'+itemId).value.trim();
+  const j=await call('update_content_plan_item_publish_details',{
+    id:itemId,
+    caption:document.getElementById('blockCaption-'+itemId).value.trim(),
+    cta:document.getElementById('blockCta-'+itemId).value.trim(),
+    hashtags:hashtagsRaw?hashtagsRaw.split(/\s+/):[],
+    location_id_override:document.getElementById('blockLocationOverride-'+itemId).value.trim(),
+  });
+  if(!j.ok){
+    alert('Error: '+j.error);
+    if(btnEl){btnEl.disabled=false;btnEl.innerHTML=originalLabel;}
+    return;
+  }
+  loadMonthlyStrategy();
 }
 function toggleBlockDetail(itemId){
   const detail=document.getElementById('blockDetail-'+itemId);
