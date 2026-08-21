@@ -2804,7 +2804,10 @@ function renderContentPlanBlocks(items){
           '<button class="btn btn-s btn-sm" onclick="deleteContentPlanItem(\''+item.id+'\')">Delete</button>';
       }
     } else if(isVideo){
+      const sceneCount=(item.video_plan?.scenes||[]).length;
+      const alreadyStitched=!!item.generated_image_url;
       mainActions='<button class="btn btn-s btn-sm" onclick="toggleVideoScenes(\''+item.id+'\')">View &amp; generate scenes</button> '+
+        '<button class="btn btn-p btn-sm" onclick="runFullVideoGeneration(\''+item.id+'\','+sceneCount+',this)">'+(alreadyStitched?'Regenerate everything':'Generate everything automatically')+'</button> '+
         '<button class="btn btn-s btn-sm" onclick="deleteContentPlanItem(\''+item.id+'\')">Delete</button>';
     }
 
@@ -3005,6 +3008,94 @@ async function pollVideoStitchStatus(itemId,attempt){
     pollVideoStitchStatus(itemId,attempt+1); // still processing
   },15000);
 }
+
+// Waits (via genuine repeated await, not fire-and-forget) for a scene's
+// clip to finish, for the automated end-to-end flow below. Returns
+// true/false rather than just refreshing the page, since the caller
+// needs to know whether to proceed to the next scene.
+async function awaitSceneClipCompletion(itemId,sceneNumber,maxAttempts){
+  for(let attempt=0;attempt<(maxAttempts||40);attempt++){
+    await new Promise(function(r){setTimeout(r,15000);});
+    const j=await call('check_video_scene_status',{item_id:itemId,scene_number:sceneNumber});
+    if(j.ok&&j.status==='succeeded') return true;
+    if(!j.ok) return false;
+  }
+  return false; // timed out
+}
+async function awaitStitchCompletion(itemId,maxAttempts){
+  for(let attempt=0;attempt<(maxAttempts||40);attempt++){
+    await new Promise(function(r){setTimeout(r,15000);});
+    const j=await call('check_video_stitch_status',{item_id:itemId});
+    if(j.ok&&j.status==='succeeded') return true;
+    if(!j.ok) return false;
+  }
+  return false;
+}
+
+// Full, one-click pipeline: every scene's image, then its clip, in
+// sequence, then the stitch - all with genuine waiting between steps
+// rather than firing everything at once. This has to run in the
+// browser tab, so it needs the tab to stay open for the whole process -
+// there's no server-side background job behind this button.
+async function runFullVideoGeneration(itemId,sceneCount,btnEl){
+  const perImage=0.045, perClipLow=0.10, perClipHigh=0.15, stitchCost=0.0036;
+  const lowEstimate=(sceneCount*perImage+sceneCount*perClipLow+stitchCost).toFixed(2);
+  const highEstimate=(sceneCount*perImage+sceneCount*perClipHigh+stitchCost).toFixed(2);
+  const confirmed=confirm(
+    'This generates all '+sceneCount+' scene images, all '+sceneCount+' video clips, then stitches them together automatically.\n\n'+
+    'Approximate cost: $'+lowEstimate+'-$'+highEstimate+' (Replicate usage-based pricing, not a guaranteed exact figure).\n\n'+
+    'This takes roughly 10-15 minutes total and needs this browser tab to stay open the whole time. Continue?'
+  );
+  if(!confirmed) return;
+
+  const originalLabel=btnEl?btnEl.innerHTML:null;
+  function setProgress(text){ if(btnEl){btnEl.innerHTML='<span class="mw-spinner"></span>'+text;} }
+  if(btnEl) btnEl.disabled=true;
+
+  for(let n=1;n<=sceneCount;n++){
+    setProgress('Scene '+n+'/'+sceneCount+': generating image...');
+    const imgResult=await call('generate_video_scene_image',{item_id:itemId,scene_number:n});
+    if(!imgResult.ok){
+      alert('Stopped at scene '+n+' (image generation): '+imgResult.error);
+      if(btnEl){btnEl.disabled=false;btnEl.innerHTML=originalLabel;}
+      loadMonthlyStrategy();
+      return;
+    }
+    setProgress('Scene '+n+'/'+sceneCount+': generating video clip...');
+    const clipResult=await call('generate_video_scene_clip',{item_id:itemId,scene_number:n});
+    if(!clipResult.ok){
+      alert('Stopped at scene '+n+' (video generation): '+clipResult.error);
+      if(btnEl){btnEl.disabled=false;btnEl.innerHTML=originalLabel;}
+      loadMonthlyStrategy();
+      return;
+    }
+    setProgress('Scene '+n+'/'+sceneCount+': waiting for video to finish...');
+    const clipDone=await awaitSceneClipCompletion(itemId,n);
+    if(!clipDone){
+      alert('Scene '+n+'\'s video clip failed or timed out. Stopping here - you can retry that scene individually below.');
+      if(btnEl){btnEl.disabled=false;btnEl.innerHTML=originalLabel;}
+      loadMonthlyStrategy();
+      return;
+    }
+  }
+
+  setProgress('Stitching all '+sceneCount+' scenes together...');
+  const stitchResult=await call('stitch_video_scenes',{item_id:itemId});
+  if(!stitchResult.ok){
+    alert('All scenes generated, but stitching failed to start: '+stitchResult.error);
+    if(btnEl){btnEl.disabled=false;btnEl.innerHTML=originalLabel;}
+    loadMonthlyStrategy();
+    return;
+  }
+  setProgress('Waiting for final video...');
+  const stitchDone=await awaitStitchCompletion(itemId);
+  if(btnEl){btnEl.disabled=false;btnEl.innerHTML=originalLabel;}
+  if(!stitchDone){
+    alert('All clips generated, but the final stitch failed or timed out. You can retry stitching from the scenes panel.');
+  }
+  loadMonthlyStrategy();
+}
+
 async function saveCaptionDetails(itemId,btnEl){
   const originalLabel=btnEl?btnEl.innerHTML:null;
   if(btnEl){btnEl.disabled=true;btnEl.innerHTML='<span class="mw-spinner"></span>Saving...';}
