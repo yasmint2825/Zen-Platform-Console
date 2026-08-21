@@ -2768,6 +2768,11 @@ function renderContentPlanBlocks(items){
           '<button class="btn btn-s btn-sm" onclick="regenerateBlockConcept(\''+item.id+'\',this)">Create new plan for this post</button> '+
           '<button class="btn btn-s btn-sm" onclick="toggleCaptionDetail(\''+item.id+'\')">Edit caption</button> '+
           '<button class="btn btn-s btn-sm" onclick="deleteContentPlanItem(\''+item.id+'\')">Delete</button>';
+      } else if(item.status==='creative_ready'&&!hasImage){
+        mainActions=
+          '<button class="btn btn-s btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')">Edit</button> '+
+          '<button class="btn btn-p btn-sm" onclick="generateBlockImage(\''+item.id+'\')">Generate image</button> '+
+          '<button class="btn btn-s btn-sm" onclick="deleteContentPlanItem(\''+item.id+'\')">Delete</button>';
       } else if(item.status==='creative_ready'&&hasImage){
         mainActions=
           '<button class="btn btn-s btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')">Edit</button> '+
