@@ -1713,6 +1713,12 @@ async function loadCommandCenter(){
   const ao=document.getElementById('agentOverview'), os=document.getElementById('overviewStats');
   if(ao) ao.style.display='none';
   if(os) os.style.display='none';
+  // Also hide the legacy "By agent" / "Platform" headings sitting
+  // directly above those now-empty divs - otherwise they're left
+  // orphaned, floating below the new Command Center content.
+  [...page.querySelectorAll('h3')].forEach(function(x){
+    if(['By agent','Platform'].includes(x.textContent.trim())) x.style.display='none';
+  });
 }
 function zenGoAgent(agent){
   showPage('agents');
