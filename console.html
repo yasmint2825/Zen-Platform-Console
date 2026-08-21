@@ -1658,6 +1658,7 @@ async function loadCalendar(){
           '<input class="fi" type="date" id="dateFor-'+item.id+'" style="width:auto;margin:0;">'+
           '<button class="btn btn-p btn-sm" onclick="scheduleContentItem(\''+item.id+'\')">Schedule</button>'+
           (item.item_type==='image'?('<button class="btn btn-s btn-sm" onclick="publishContentItemNow(\''+item.id+'\',this)">Publish now</button>'):'')+
+          '<button class="btn btn-s btn-sm" onclick="deleteScheduledContentItem(\''+item.id+'\')">Delete</button>'+
         '</div>'+
       '</div>';
     }).join('');
@@ -1671,12 +1672,20 @@ async function loadCalendar(){
     schedEl.innerHTML=Object.keys(byDate).sort().map(function(date){
       const items=byDate[date].map(function(item){
         const publishBtn=(item.item_type==='image'&&item.status==='scheduled')?('<button class="btn btn-s btn-sm" onclick="publishContentItemNow(\''+item.id+'\',this)" style="margin-left:8px;">Publish now</button>'):'';
+        const cancelBtn=item.status==='scheduled'?('<button class="btn btn-s btn-sm" onclick="unscheduleContentPlanItem(\''+item.id+'\')" style="margin-left:8px;">Cancel schedule</button>'):'';
+        const deleteBtn='<button class="btn btn-s btn-sm" onclick="deleteScheduledContentItem(\''+item.id+'\')" style="margin-left:8px;">Delete</button>';
         const errorLine=item.publish_error?('<div style="color:var(--err);font-size:11px;margin-top:2px;margin-left:14px;">Publish failed: '+item.publish_error+'</div>'):'';
-        return '<div class="item" style="margin-left:14px;">'+(item.item_type==='video'?'&#127909;':'&#128247;')+' '+item.title+' <span class="badge b-ok" style="margin-left:6px;">'+item.status+'</span>'+publishBtn+errorLine+'</div>';
+        return '<div class="item" style="margin-left:14px;">'+(item.item_type==='video'?'&#127909;':'&#128247;')+' '+item.title+' <span class="badge b-ok" style="margin-left:6px;">'+item.status+'</span>'+publishBtn+cancelBtn+deleteBtn+errorLine+'</div>';
       }).join('');
       return '<div style="margin-bottom:12px;"><div style="font-weight:700;font-size:13px;margin-bottom:4px;">'+new Date(date+'T00:00:00').toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'})+'</div>'+items+'</div>';
     }).join('');
   }
+}
+async function deleteScheduledContentItem(itemId){
+  if(!confirm('Delete this block entirely? This cannot be undone.')) return;
+  const j=await call('delete_content_plan_item',{id:itemId});
+  if(!j.ok){alert('Error: '+j.error);return;}
+  loadCalendar();
 }
 async function publishContentItemNow(itemId,btnEl){
   if(!confirm('This will publish this post to Instagram right now. Continue?')) return;
@@ -2095,7 +2104,12 @@ async function regenerateAsJpeg(itemId,btnEl){
 async function unscheduleContentPlanItem(itemId){
   const j=await call('unschedule_content_plan_item',{id:itemId});
   if(!j.ok){alert('Error: '+j.error);return;}
-  loadMonthlyStrategy();
+  // Called from both the Content Plan view and the Calendar view -
+  // refresh whichever one is actually on screen, since calling
+  // loadMonthlyStrategy() from the Calendar page (where its DOM
+  // elements don't exist) would throw.
+  if(document.getElementById('scheduledList')) loadCalendar();
+  else loadMonthlyStrategy();
 }
 async function deleteContentPlanItem(itemId){
   if(!confirm('Delete this block entirely? This cannot be undone.')) return;
