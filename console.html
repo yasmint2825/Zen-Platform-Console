@@ -580,6 +580,180 @@ body{background:var(--bg)!important;color:var(--ink)!important}
 }
 </style>
 
+
+<style id="zenTypographyStandard">
+/* ═══════════════════════════════════════════════════════════════
+   Typography standardization — applies globally, including to
+   dynamically-generated JS content. CSS only: no IDs, JS functions,
+   API calls, or functional behaviour are touched anywhere here.
+
+   Uses broad element/class selectors with !important, since much of
+   the app's content is generated via JS innerHTML with inline
+   font-size/font-weight styles, which otherwise out-rank ordinary
+   class-based CSS rules regardless of source order.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Base font stacks for the three defined roles */
+body, input, select, textarea, button {
+  font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+}
+
+/* ─── Page title (h1) ─── */
+h1, .page-header h1, .zen-hero h1, #authScreen h1 {
+  font-family: 'Sora', sans-serif !important;
+  font-size: 30px !important;
+  font-weight: 600 !important;
+  line-height: 1.15 !important;
+  letter-spacing: -0.035em !important;
+}
+
+/* ─── Page description ─── */
+.page-header p, .page-header .muted {
+  font-family: 'IBM Plex Sans', sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  line-height: 1.55 !important;
+  color: var(--muted) !important;
+}
+
+/* ─── Section heading (h2) ─── */
+h2, .zen-section-head h2, .zen-workforce-header h2, .zen-orchestrator h2,
+.zen-attention-head h2, .zen-orchestrator-title h2, .zen-agent-banner h2, details.card summary h2 {
+  font-family: 'Sora', sans-serif !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  letter-spacing: normal !important;
+}
+
+/* ─── Small subsection heading (h3) ─── */
+h3, .zen-agent h3, .zen-opportunity h3, .zen-worker h3 {
+  font-family: 'Sora', sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+
+/* ─── Standard body text ─── */
+body, p, .item, .muted, td, .badge, label:not(.fl) {
+  font-family: 'IBM Plex Sans', sans-serif !important;
+}
+p, .item, td {
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  line-height: 1.5 !important;
+}
+.muted {
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  line-height: 1.5 !important;
+  color: var(--muted) !important;
+}
+
+/* ─── Navigation ─── */
+.nav-item {
+  font-family: 'IBM Plex Sans', sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+}
+.nav-item.active {
+  font-weight: 600 !important;
+}
+.nav-group-label {
+  font-family: 'IBM Plex Sans', sans-serif !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.10em !important;
+  color: var(--muted) !important;
+}
+
+/* ─── Buttons ─── */
+.btn, button:not(.zen-chip):not(.nav-item) {
+  font-family: 'IBM Plex Sans', sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+.btn-sm {
+  font-size: 11px !important;
+}
+
+/* ─── Forms / inputs ─── */
+.fi, input, select, textarea {
+  font-family: 'IBM Plex Sans', sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+}
+.fl {
+  font-family: 'IBM Plex Sans', sans-serif !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em !important;
+}
+
+/* ─── Agent identity (worker cards, agent banners) ─── */
+.zen-worker h3, .zen-agent-banner h2 {
+  font-family: 'Sora', sans-serif !important;
+  font-weight: 600 !important;
+}
+.zen-worker h3 { font-size: 13px !important; }
+.zen-worker small, .zen-agent-banner .mission {
+  font-family: 'IBM Plex Sans', sans-serif !important;
+  font-size: 10.5px !important;
+  font-weight: 400 !important;
+  color: var(--muted) !important;
+}
+
+/* ─── Agent / status badges — subtle, not large colourful pills ─── */
+.zen-agent-state, .badge {
+  font-family: 'IBM Plex Sans', sans-serif !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+}
+
+/* ─── KPI numbers — Sora, never monospace ─── */
+.stat-tile .num, .zen-money, .zen-today-summary .big {
+  font-family: 'Sora', sans-serif !important;
+  font-size: 26px !important;
+  font-weight: 600 !important;
+  font-variant-numeric: normal !important;
+}
+.stat-tile .lbl {
+  font-family: 'IBM Plex Sans', sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 400 !important;
+  color: var(--muted) !important;
+}
+/* mono-num is applied throughout Reports/Intelligence/Customers for
+   inline metric numbers (return rates, at-risk %, transaction amounts)
+   — redefined here to the standard body font per the "no monospace for
+   business metrics" rule. Only the class definition changes; every
+   place that applies this class in JS is untouched. Tabular-nums kept
+   since consistent digit width is still genuinely useful for numbers,
+   independent of which font family renders them. */
+.mono-num {
+  font-family: 'IBM Plex Sans', sans-serif !important;
+  font-weight: 600 !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* ─── Tables ─── */
+th {
+  font-family: 'IBM Plex Sans', sans-serif !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+}
+td {
+  font-size: 12px !important;
+}
+
+/* ─── Technical content only — IDs, tokens, raw JSON, logs ─── */
+code, .mw-spinner + code, pre {
+  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace !important;
+  font-size: 12px !important;
+}
+</style>
 </head>
 <body>
 
