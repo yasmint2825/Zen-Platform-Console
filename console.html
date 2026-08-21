@@ -2803,6 +2803,9 @@ function renderContentPlanBlocks(items){
           '<button class="btn btn-s btn-sm" onclick="toggleCaptionDetail(\''+item.id+'\')">Edit caption</button> '+
           '<button class="btn btn-s btn-sm" onclick="deleteContentPlanItem(\''+item.id+'\')">Delete</button>';
       }
+    } else if(isVideo){
+      mainActions='<button class="btn btn-s btn-sm" onclick="toggleVideoScenes(\''+item.id+'\')">View &amp; generate scenes</button> '+
+        '<button class="btn btn-s btn-sm" onclick="deleteContentPlanItem(\''+item.id+'\')">Delete</button>';
     }
 
     const summaryHtml=
@@ -2812,9 +2815,9 @@ function renderContentPlanBlocks(items){
       (item.caption?('<div style="font-size:12px;margin-top:6px;">'+item.caption+'</div>'):'')+
       (item.cta?('<div style="font-size:11.5px;margin-top:4px;font-weight:600;">'+item.cta+'</div>'):'')+
       (item.hashtags&&item.hashtags.length?('<div class="muted" style="font-size:11px;margin-top:4px;">'+item.hashtags.join(' ')+'</div>'):'')+
-      (isVideo?('<div class="muted" style="font-size:11px;margin-top:6px;">'+(item.video_plan?.scenes?.length||0)+' scenes planned - see full plan via API for now.</div>'):'')+
+      (isVideo?('<div class="muted" style="font-size:11px;margin-top:6px;">'+(item.video_plan?.scenes?.length||0)+' scenes planned</div>'):'')+
       (hasImage?generatedImageHtml(item.generated_image_url,70,item.generation_created_at,item.generation_expired_at):'')+
-      (item.item_type==='image'?('<div style="margin-top:8px;">'+mainActions+'</div>'):'');
+      '<div style="margin-top:8px;">'+mainActions+'</div>';
 
     // Full working view - hidden until Edit/View details is clicked.
     let detailHtml='';
@@ -2876,17 +2879,94 @@ function renderContentPlanBlocks(items){
       '<button class="btn btn-s btn-sm" onclick="toggleCaptionDetail(\''+item.id+'\')">Close</button>'
     ):'';
 
+    // Full scene-by-scene plan, with per-scene generation - each scene
+    // is genuinely independent (its own image, its own clip, its own
+    // status), so failures or in-progress scenes don't block the others.
+    const videoScenesHtml=isVideo?(
+      (item.video_plan?.scenes||[]).map(function(scene){
+        const sid=item.id+'-'+scene.scene_number;
+        const hasSceneImage=!!scene.scene_image_url;
+        const videoStatus=scene.video_status;
+        let sceneMedia='';
+        if(videoStatus==='succeeded'&&scene.scene_video_url){
+          sceneMedia='<video src="'+scene.scene_video_url+'" style="width:120px;border-radius:8px;margin-top:6px;display:block;" controls></video>';
+        } else if(hasSceneImage){
+          sceneMedia='<img src="'+scene.scene_image_url+'" style="width:90px;border-radius:8px;margin-top:6px;display:block;">';
+        }
+        let sceneActions='';
+        if(!hasSceneImage){
+          sceneActions='<button class="btn btn-p btn-sm" onclick="generateSceneImage(\''+item.id+'\','+scene.scene_number+',this)">Generate scene image</button>';
+        } else if(videoStatus==='processing'){
+          sceneActions='<span class="muted" style="font-size:11px;"><span class="mw-spinner"></span>Generating video - this can take 1-2 minutes...</span>';
+        } else if(videoStatus==='succeeded'){
+          sceneActions='<button class="btn btn-s btn-sm" onclick="generateSceneClip(\''+item.id+'\','+scene.scene_number+',this)">Regenerate clip</button>';
+        } else {
+          sceneActions='<button class="btn btn-p btn-sm" onclick="generateSceneClip(\''+item.id+'\','+scene.scene_number+',this)">Generate video clip</button>'+
+            (videoStatus==='failed'?' <span style="color:var(--err);font-size:11px;">Last attempt failed - try again</span>':'');
+        }
+        return '<div class="item" style="margin-bottom:8px;" id="scene-'+sid+'">'+
+          '<div style="font-weight:700;font-size:12px;">Scene '+scene.scene_number+'</div>'+
+          '<div class="muted" style="font-size:11.5px;margin-top:3px;">'+(scene.description||'')+'</div>'+
+          (scene.voiceover?('<div style="font-size:11.5px;margin-top:4px;font-style:italic;">Voiceover: "'+scene.voiceover+'"</div>'):'')+
+          (scene.overlay_text?('<div style="font-size:11px;margin-top:2px;">Overlay text: '+scene.overlay_text+'</div>'):'')+
+          '<div class="muted" style="font-size:10.5px;margin-top:4px;">Image prompt: '+(scene.text_to_image_prompt||'')+'</div>'+
+          '<div class="muted" style="font-size:10.5px;margin-top:2px;">Motion prompt: '+(scene.image_to_video_prompt||'')+'</div>'+
+          sceneMedia+
+          '<div style="margin-top:6px;">'+sceneActions+'</div>'+
+        '</div>';
+      }).join('')+
+      '<button class="btn btn-s btn-sm" onclick="toggleVideoScenes(\''+item.id+'\')" style="margin-top:4px;">Close</button>'
+    ):'';
+
     return '<div class="item" style="margin-bottom:10px;">'+
       '<div id="blockSummary-'+item.id+'">'+summaryHtml+'</div>'+
       '<div id="blockDetail-'+item.id+'" style="display:none;margin-top:8px;">'+detailHtml+'</div>'+
       '<div id="blockCaptionDetail-'+item.id+'" style="display:none;margin-top:8px;">'+captionDetailHtml+'</div>'+
+      '<div id="blockVideoScenes-'+item.id+'" style="display:none;margin-top:8px;">'+videoScenesHtml+'</div>'+
       '<div id="blockImageArea-'+item.id+'" style="margin-top:8px;"></div>'+
     '</div>';
   }).join('');
 }
+function toggleVideoScenes(itemId){
+  const el=document.getElementById('blockVideoScenes-'+itemId);
+  if(el) el.style.display=el.style.display==='none'?'block':'none';
+}
 function toggleCaptionDetail(itemId){
   const el=document.getElementById('blockCaptionDetail-'+itemId);
   if(el) el.style.display=el.style.display==='none'?'block':'none';
+}
+async function generateSceneImage(itemId,sceneNumber,btnEl){
+  const originalLabel=btnEl?btnEl.innerHTML:null;
+  if(btnEl){btnEl.disabled=true;btnEl.innerHTML='<span class="mw-spinner"></span>Generating image...';}
+  const j=await call('generate_video_scene_image',{item_id:itemId,scene_number:sceneNumber});
+  if(!j.ok){
+    alert('Error: '+j.error);
+    if(btnEl){btnEl.disabled=false;btnEl.innerHTML=originalLabel;}
+    return;
+  }
+  loadMonthlyStrategy();
+}
+async function generateSceneClip(itemId,sceneNumber,btnEl){
+  const originalLabel=btnEl?btnEl.innerHTML:null;
+  if(btnEl){btnEl.disabled=true;btnEl.innerHTML='<span class="mw-spinner"></span>Starting...';}
+  const j=await call('generate_video_scene_clip',{item_id:itemId,scene_number:sceneNumber});
+  if(!j.ok){
+    alert('Error: '+j.error);
+    if(btnEl){btnEl.disabled=false;btnEl.innerHTML=originalLabel;}
+    return;
+  }
+  loadMonthlyStrategy();
+  pollSceneVideoStatus(itemId,sceneNumber);
+}
+async function pollSceneVideoStatus(itemId,sceneNumber,attempt){
+  attempt=attempt||0;
+  if(attempt>40) return; // ~10 minutes at 15s intervals - stop polling, status stays visible as "processing" for the user to check back on
+  setTimeout(async function(){
+    const j=await call('check_video_scene_status',{item_id:itemId,scene_number:sceneNumber});
+    if(j.ok&&j.status==='succeeded'){loadMonthlyStrategy();return;}
+    if(!j.ok){loadMonthlyStrategy();return;} // failed - refresh to show the failed state and retry option
+    pollSceneVideoStatus(itemId,sceneNumber,attempt+1); // still processing
+  },15000);
 }
 async function saveCaptionDetails(itemId,btnEl){
   const originalLabel=btnEl?btnEl.innerHTML:null;
