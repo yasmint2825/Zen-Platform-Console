@@ -2882,6 +2882,20 @@ function renderContentPlanBlocks(items){
     // Full scene-by-scene plan, with per-scene generation - each scene
     // is genuinely independent (its own image, its own clip, its own
     // status), so failures or in-progress scenes don't block the others.
+    const allScenesReady=isVideo&&(item.video_plan?.scenes||[]).length>0&&(item.video_plan?.scenes||[]).every(function(s){return s.video_status==='succeeded'&&s.scene_video_url;});
+    const stitchStatus=item.video_plan?.stitch_prediction_id?(item.generated_image_url?'succeeded':'processing'):null;
+    const stitchSectionHtml=isVideo?(
+      allScenesReady?(
+        stitchStatus==='succeeded'?
+          '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);"><div style="font-weight:700;font-size:12px;margin-bottom:6px;">Final stitched video</div>'+
+          '<video src="'+item.generated_image_url+'" style="width:160px;border-radius:8px;display:block;" controls></video>'+
+          '<button class="btn btn-s btn-sm" onclick="stitchVideoScenes(\''+item.id+'\',this)" style="margin-top:6px;">Re-stitch</button></div>'
+          :stitchStatus==='processing'?
+          '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);"><span class="muted" style="font-size:11px;"><span class="mw-spinner"></span>Stitching scenes together...</span></div>'
+          :'<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);"><button class="btn btn-p btn-sm" onclick="stitchVideoScenes(\''+item.id+'\',this)">Stitch all scenes together</button></div>'
+      ):'<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);"><span class="muted" style="font-size:11px;">Generate every scene\'s clip before stitching.</span></div>'
+    ):'';
+
     const videoScenesHtml=isVideo?(
       (item.video_plan?.scenes||[]).map(function(scene){
         const sid=item.id+'-'+scene.scene_number;
@@ -2915,7 +2929,8 @@ function renderContentPlanBlocks(items){
           '<div style="margin-top:6px;">'+sceneActions+'</div>'+
         '</div>';
       }).join('')+
-      '<button class="btn btn-s btn-sm" onclick="toggleVideoScenes(\''+item.id+'\')" style="margin-top:4px;">Close</button>'
+      stitchSectionHtml+
+      '<button class="btn btn-s btn-sm" onclick="toggleVideoScenes(\''+item.id+'\')" style="margin-top:10px;">Close</button>'
     ):'';
 
     return '<div class="item" style="margin-bottom:10px;">'+
@@ -2966,6 +2981,28 @@ async function pollSceneVideoStatus(itemId,sceneNumber,attempt){
     if(j.ok&&j.status==='succeeded'){loadMonthlyStrategy();return;}
     if(!j.ok){loadMonthlyStrategy();return;} // failed - refresh to show the failed state and retry option
     pollSceneVideoStatus(itemId,sceneNumber,attempt+1); // still processing
+  },15000);
+}
+async function stitchVideoScenes(itemId,btnEl){
+  const originalLabel=btnEl?btnEl.innerHTML:null;
+  if(btnEl){btnEl.disabled=true;btnEl.innerHTML='<span class="mw-spinner"></span>Starting...';}
+  const j=await call('stitch_video_scenes',{item_id:itemId});
+  if(!j.ok){
+    alert('Error: '+j.error);
+    if(btnEl){btnEl.disabled=false;btnEl.innerHTML=originalLabel;}
+    return;
+  }
+  loadMonthlyStrategy();
+  pollVideoStitchStatus(itemId);
+}
+async function pollVideoStitchStatus(itemId,attempt){
+  attempt=attempt||0;
+  if(attempt>40) return; // ~10 minutes at 15s intervals - status stays visible as "processing" for the user to check back on
+  setTimeout(async function(){
+    const j=await call('check_video_stitch_status',{item_id:itemId});
+    if(j.ok&&j.status==='succeeded'){loadMonthlyStrategy();return;}
+    if(!j.ok){loadMonthlyStrategy();return;} // failed - refresh to show the retry option
+    pollVideoStitchStatus(itemId,attempt+1); // still processing
   },15000);
 }
 async function saveCaptionDetails(itemId,btnEl){
