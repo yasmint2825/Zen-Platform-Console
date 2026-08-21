@@ -1176,6 +1176,11 @@ code, .mw-spinner + code, pre {
                   </select>
                   <div class="muted" style="font-size:10.5px;margin-top:4px;">krea-2-large isn't offered here - it doesn't support JPEG output on Replicate, so it can't reliably feed Instagram publishing yet. Still available in Creative Lab for one-off, non-publishing use.</div>
                 </div>
+                <div style="margin-bottom:10px;">
+                  <label class="muted" style="font-size:11px;display:block;margin-bottom:3px;">Instagram location ID (tags this location on every published post)</label>
+                  <input class="fi" type="text" id="brandInstagramLocationId" placeholder="e.g. 123456789">
+                  <div class="muted" style="font-size:10.5px;margin-top:4px;">This is a specific, numeric Facebook Place ID, not an address - Instagram's own API requires this exact format. Leave blank to publish without a tagged location.</div>
+                </div>
                 <button class="btn btn-p btn-sm" onclick="saveBrandColors()">Save</button>
                 <div id="brandSaveResult" style="margin-top:8px;font-size:12px;"></div>
               </details>
@@ -2478,6 +2483,7 @@ async function publishContentItemNow(itemId,btnEl){
     if(btnEl){btnEl.disabled=false;btnEl.innerHTML=originalLabel;}
     return;
   }
+  if(j.story_error){alert('Published to your feed successfully, but sharing to Story failed: '+j.story_error);}
   loadCalendar();
 }
 async function scheduleContentItem(id){
@@ -3226,6 +3232,7 @@ async function loadBrandSettings(){
   if(brandSettingsCache.accent_color) document.getElementById('brandAccentColor').value=brandSettingsCache.accent_color;
   if(brandSettingsCache.visual_brand_description) document.getElementById('brandVisualDescription').value=brandSettingsCache.visual_brand_description;
   if(brandSettingsCache.default_image_model) document.getElementById('brandDefaultImageModel').value=brandSettingsCache.default_image_model;
+  if(brandSettingsCache.instagram_location_id) document.getElementById('brandInstagramLocationId').value=brandSettingsCache.instagram_location_id;
 }
 async function uploadBrandLogo(){
   const fileInput=document.getElementById('brandLogoFile');
@@ -3250,6 +3257,7 @@ async function saveBrandColors(){
     accent_color:document.getElementById('brandAccentColor').value,
     visual_brand_description:document.getElementById('brandVisualDescription').value,
     default_image_model:document.getElementById('brandDefaultImageModel').value,
+    instagram_location_id:document.getElementById('brandInstagramLocationId').value.trim(),
   });
   const j=await call('save_brand_settings',merged);
   const r=document.getElementById('brandSaveResult');
