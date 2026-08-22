@@ -2961,6 +2961,8 @@ function renderContentPlanBlocks(items,containerId){
       const alreadyStitched=!!item.generated_image_url;
       mainActions='<button class="btn btn-s btn-sm" onclick="toggleVideoScenes(\''+item.id+'\')">View &amp; generate scenes</button> '+
         '<button class="btn btn-p btn-sm" onclick="runFullVideoGeneration(\''+item.id+'\','+sceneCount+',this)">'+(alreadyStitched?'Regenerate everything':'Generate everything automatically')+'</button> '+
+        '<button class="btn btn-s btn-sm" onclick="regenerateVideoConcept(\''+item.id+'\',this)">Clear &amp; suggest new video</button> '+
+        '<button class="btn btn-s btn-sm" onclick="toggleCaptionDetail(\''+item.id+'\')">Edit caption</button> '+
         '<button class="btn btn-s btn-sm" onclick="deleteContentPlanItem(\''+item.id+'\')">Delete</button>';
     }
 
@@ -3401,6 +3403,24 @@ async function regenerateBlockConcept(itemId,btnEl){
   if(!confirm('This clears any existing image/schedule for this post and proposes a genuinely new concept for the same slot. Continue?')) return;
   const originalLabel=btnEl?btnEl.innerHTML:null;
   if(btnEl){btnEl.disabled=true;btnEl.innerHTML='<span class="mw-spinner"></span>Thinking of a new angle...';}
+  const j=await call('regenerate_content_plan_item_concept',{item_id:itemId});
+  if(!j.ok){
+    alert('Error: '+j.error+(j.raw_preview?('\n\nRaw response preview:\n'+j.raw_preview):''));
+    if(btnEl){btnEl.disabled=false;btnEl.innerHTML=originalLabel;}
+    return;
+  }
+  loadMonthlyStrategy();
+}
+// Video equivalent of regenerateBlockConcept - same backend action,
+// which branches on item_type to also rewrite the whole scene plan
+// (descriptions, image/motion prompts, voiceover lines), not just the
+// title and caption. Separate function purely so the confirmation text
+// can be honest about what actually gets discarded for a video, since
+// that's a materially bigger loss than for an image post.
+async function regenerateVideoConcept(itemId,btnEl){
+  if(!confirm('This proposes a genuinely new video concept for this slot - new title, hook, caption, and a completely new scene plan (descriptions, prompts, and voiceover lines).\n\nAny scene images and clips already generated will be cleared, since they would no longer match the new scenes. Continue?')) return;
+  const originalLabel=btnEl?btnEl.innerHTML:null;
+  if(btnEl){btnEl.disabled=true;btnEl.innerHTML='<span class="mw-spinner"></span>Planning a new video (~20s)...';}
   const j=await call('regenerate_content_plan_item_concept',{item_id:itemId});
   if(!j.ok){
     alert('Error: '+j.error+(j.raw_preview?('\n\nRaw response preview:\n'+j.raw_preview):''));
