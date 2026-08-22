@@ -205,6 +205,7 @@ h3{font-size:13px}
 }
 .agent-tile:not(.coming-soon):hover{transform:translateY(-3px);box-shadow:var(--shadow);border-color:#D7DBEA}
 .agent-section{border-radius:14px;border-color:#E5E8F0}
+details[open] > summary .details-arrow{transform:rotate(90deg);}
 .agent-section summary{padding:13px 15px;background:#FAFBFD}
 details.card summary{padding:1px 0}
 .badge{padding:4px 9px;font-size:10px}
@@ -885,7 +886,7 @@ code, .mw-spinner + code, pre {
               <details class="agent-section">
                 <summary><span>Pending review <span id="pendingCountBadge"></span></span></summary>
                 <div class="agent-section-body">
-                  <div style="text-align:right;margin-bottom:8px;"><button class="btn btn-s btn-sm" onclick="rejectAllPending()">Reject all pending</button></div>
+                  <div style="text-align:right;margin-bottom:8px;"><button class="btn btn-p btn-sm" onclick="resolveDuplicatePending()">Resolve duplicates automatically</button> <button class="btn btn-s btn-sm" onclick="rejectAllPending()">Reject all pending</button></div>
                   <div id="pendingList" class="muted">Loading...</div>
                 </div>
               </details>
@@ -3951,7 +3952,7 @@ async function loadPending(){
     const info=campaignInfo[key]||{label:key,desc:''};
     const ids=items.map(function(d){return d.id;});
     return '<details style="margin-bottom:10px;">'+
-      '<summary style="cursor:pointer;padding:8px 0;"><span style="font-weight:700;font-size:12.5px;">'+info.label+'</span> <span class="muted" style="font-weight:400;">('+items.length+')</span></summary>'+
+      '<summary style="cursor:pointer;padding:8px 0;list-style:none;display:flex;align-items:center;gap:6px;"><span class="details-arrow" style="display:inline-block;transition:transform .15s;">&#9656;</span><span style="font-weight:700;font-size:12.5px;">'+info.label+'</span> <span class="muted" style="font-weight:400;">('+items.length+')</span></summary>'+
       '<div style="padding:4px 0 8px;">'+
         (info.desc?('<p class="muted" style="font-size:11.5px;margin-bottom:8px;">'+info.desc+'</p>'):'')+
         '<div style="text-align:right;margin-bottom:8px;"><button class="btn btn-p btn-sm" onclick="approveAllInGroup(\''+key+'\','+JSON.stringify(ids).replace(/"/g,'&quot;')+')">Approve &amp; send all '+items.length+'</button></div>'+
@@ -3982,6 +3983,14 @@ async function rejectAllPending(){
   if(!confirm('Reject every pending decision? This just clears the queue - nothing gets sent, and the agent will re-evaluate fresh candidates on the next run.')) return;
   const j=await call('reject_all_pending',{});
   if(!j.ok) alert('Error: '+j.error);
+  loadPending();loadOverview();
+}
+async function resolveDuplicatePending(){
+  if(!confirm("Where the same customer has more than one pending message right now, keep only the most relevant one and reject the rest? Priority: birthday/after-service/expiry/ready > new customer offer > nudge > lapsed.")) return;
+  const j=await call('resolve_duplicate_pending',{});
+  if(!j.ok){alert('Error: '+j.error);return;}
+  if(!j.resolved){alert('No duplicates found - everyone currently pending only has one message queued.');}
+  else{alert('Resolved '+j.resolved+' duplicate(s) across '+j.kept.length+' customer(s). Each kept their most relevant campaign.');}
   loadPending();loadOverview();
 }
 async function loadRuns(){
