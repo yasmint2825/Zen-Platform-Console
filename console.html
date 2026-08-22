@@ -541,6 +541,7 @@ body{background:var(--bg)!important;color:var(--ink)!important}
 .zen-worker{background:transparent!important;border:0!important;border-bottom:1px solid #EAEAE5!important;border-radius:0!important;padding:17px 18px 17px 0!important;min-height:125px!important}
 .zen-worker:nth-child(3n+2),.zen-worker:nth-child(3n+3){padding-left:18px!important;border-left:1px solid #EAEAE5!important}
 .zen-worker.prototype{background:transparent!important;border-style:solid!important}
+.zen-worker.needs-attention{border-top:2px solid #B86C20!important}
 .zen-worker-title .avatar{width:29px!important;height:29px!important;border-radius:9px!important;font-size:13px!important}
 .zen-worker h3{font-size:12px!important;font-weight:600!important}.zen-worker small{font-size:9px!important}
 .zen-worker p{margin:9px 0!important;font-size:10.5px!important;line-height:1.55!important;color:#797E89!important}
@@ -1729,13 +1730,13 @@ async function loadCommandCenter(){
     '<section class="zen-workforce-section">'+
       '<div class="zen-workforce-header"><div><h2>Your AI Team</h2><p>Specialist agents working across your business.</p></div></div>'+
       '<div class="zen-workforce-grid">'+
-        '<article class="zen-worker" onclick="zenGoAgent(\'engagement\')">'+
+        '<article class="zen-worker'+(j.agents.engagement.status==='waiting'?' needs-attention':'')+'" onclick="zenGoAgent(\'engagement\')">'+
           '<div class="zen-worker-top"><div class="zen-worker-title"><div class="avatar">&#128172;</div><div><h3>Engagement Agent</h3><small>Retention &amp; WhatsApp</small></div></div>'+
           '<span class="zen-agent-state '+j.agents.engagement.status+'"><i class="pulse"></i>'+statusLabel[j.agents.engagement.status]+'</span></div>'+
           '<p>'+j.agents.engagement.message+'</p>'+
           '<div class="worker-footer">Open workspace &rarr;</div>'+
         '</article>'+
-        '<article class="zen-worker" onclick="zenGoAgent(\'marketing\')">'+
+        '<article class="zen-worker'+(j.agents.marketing.status==='waiting'?' needs-attention':'')+'" onclick="zenGoAgent(\'marketing\')">'+
           '<div class="zen-worker-top"><div class="zen-worker-title"><div class="avatar">&#10022;</div><div><h3>Marketing Agent</h3><small>Strategy &amp; content</small></div></div>'+
           '<span class="zen-agent-state '+j.agents.marketing.status+'"><i class="pulse"></i>'+statusLabel[j.agents.marketing.status]+'</span></div>'+
           '<p>'+j.agents.marketing.message+'</p>'+
@@ -1743,7 +1744,7 @@ async function loadCommandCenter(){
         '</article>'+
         '<article class="zen-worker" onclick="showPage(\'intelligence\')">'+
           '<div class="zen-worker-top"><div class="zen-worker-title"><div class="avatar">&#9670;</div><div><h3>Intelligence</h3><small>Prediction &amp; analysis</small></div></div>'+
-          '<span class="zen-agent-state monitoring"><i class="pulse"></i>Monitoring</span></div>'+
+          '<span class="zen-agent-state '+j.agents.intelligence.status+'"><i class="pulse"></i>'+statusLabel[j.agents.intelligence.status]+'</span></div>'+
           '<p>'+j.agents.intelligence.message+'</p>'+
           '<div class="worker-footer">Ask your business &rarr;</div>'+
         '</article>'+
@@ -3952,7 +3953,7 @@ async function loadPending(){
     const info=campaignInfo[key]||{label:key,desc:''};
     const ids=items.map(function(d){return d.id;});
     return '<details style="margin-bottom:10px;">'+
-      '<summary style="cursor:pointer;padding:8px 0;list-style:none;display:flex;align-items:center;gap:6px;"><span class="details-arrow" style="display:inline-block;transition:transform .15s;">&#9656;</span><span style="font-weight:700;font-size:12.5px;">'+info.label+'</span> <span class="muted" style="font-weight:400;">('+items.length+')</span></summary>'+
+      '<summary style="cursor:pointer;padding:8px 0;"><span style="display:flex;align-items:center;gap:6px;"><span class="details-arrow" style="display:inline-block;transition:transform .15s;">&#9656;</span><span style="font-weight:700;font-size:12.5px;">'+info.label+'</span> <span class="muted" style="font-weight:400;">('+items.length+')</span></span></summary>'+
       '<div style="padding:4px 0 8px;">'+
         (info.desc?('<p class="muted" style="font-size:11.5px;margin-bottom:8px;">'+info.desc+'</p>'):'')+
         '<div style="text-align:right;margin-bottom:8px;"><button class="btn btn-p btn-sm" onclick="approveAllInGroup(\''+key+'\','+JSON.stringify(ids).replace(/"/g,'&quot;')+')">Approve &amp; send all '+items.length+'</button></div>'+
