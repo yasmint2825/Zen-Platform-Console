@@ -1940,11 +1940,12 @@ async function loadCompetitors(){
       '<textarea class="fi" id="competitorNotes-'+c.id+'" rows="2" placeholder="e.g. Posts 3x/week, mostly before/after photos. Running 20% off for new customers this month.">'+(c.notes||'')+'</textarea>'+
       '<button class="btn btn-s btn-sm" onclick="saveCompetitorNotes(\''+c.id+'\',this)" style="margin-top:4px;">Save notes</button>'+
       (research?(
-        '<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">'+
-          '<div style="font-weight:700;font-size:12px;">AI research <span class="muted" style="font-weight:400;">('+new Date(research.researched_at).toLocaleDateString()+')</span></div>'+
+        '<details style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">'+
+          '<summary style="cursor:pointer;"><span style="display:inline-flex;align-items:center;gap:6px;"><span class="details-arrow" style="display:inline-block;transition:transform .15s;">&#9656;</span><span style="font-weight:700;font-size:12px;">AI research <span class="muted" style="font-weight:400;">('+new Date(research.researched_at).toLocaleDateString()+')</span></span></span></summary>'+
           '<div class="muted" style="font-size:12px;margin-top:4px;white-space:pre-wrap;">'+research.findings+'</div>'+
           ((research.sources||[]).length?('<div style="margin-top:6px;font-size:11px;">Sources: '+research.sources.map(function(s){return '<a href="'+s.url+'" target="_blank" rel="noopener">'+s.title+'</a>';}).join(', ')+'</div>'):'')+
-        '</div>'
+          '<button class="btn btn-s btn-sm" onclick="researchCompetitor(\''+c.id+'\',this,true)" style="margin-top:8px;">Research again</button>'+
+        '</details>'
       ):'')+
       '<div id="competitorCompareResult-'+c.id+'" style="margin-top:10px;"></div>'+
     '</div>';
@@ -1970,15 +1971,20 @@ async function saveCompetitorNotes(competitorId,btnEl){
   if(btnEl){btnEl.disabled=false;btnEl.innerHTML=originalLabel;}
   if(!j.ok){alert('Error: '+j.error);return;}
 }
-async function researchCompetitor(competitorId,btnEl){
+async function researchCompetitor(competitorId,btnEl,forceRefresh){
   const originalLabel=btnEl?btnEl.innerHTML:null;
-  if(btnEl){btnEl.disabled=true;btnEl.innerHTML='<span class="mw-spinner"></span>Searching (~15s)...';}
-  const j=await call('research_competitor',{competitor_id:competitorId});
+  if(btnEl){btnEl.disabled=true;btnEl.innerHTML='<span class="mw-spinner"></span>'+(forceRefresh?'Searching again (~15s)...':'Checking (~15s)...');}
+  const j=await call('research_competitor',{competitor_id:competitorId,force_refresh:!!forceRefresh});
   if(!j.ok){
     alert('Error: '+j.error);
     if(btnEl){btnEl.disabled=false;btnEl.innerHTML=originalLabel;}
     return;
   }
+  // A real, billed web-search call each time would be wasteful if
+  // nothing's actually changed - reused research within the last 7
+  // days instead. Told plainly here so it's never ambiguous whether
+  // what's showing is fresh or reused.
+  if(j.from_cache){alert('Reused research from '+j.cache_age_days+' day(s) ago - nothing recent enough to justify a fresh search. Use "Research again" on the result below if you want to force a new one.');}
   loadCompetitors();
 }
 async function compareCompetitorStrategy(competitorId,btnEl){
