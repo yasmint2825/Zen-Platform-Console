@@ -1924,29 +1924,30 @@ async function loadCompetitors(){
   if(!j.competitors.length){el.innerHTML='No competitors added yet - add one above to start researching.';return;}
   el.innerHTML=j.competitors.map(function(c){
     const research=c.latest_research;
-    return '<details class="agent-section" style="margin-bottom:10px;">'+
-      '<summary style="cursor:pointer;padding:10px 12px;"><b>'+c.name+'</b>'+
-        (c.instagram_handle?(' <span class="muted">'+c.instagram_handle+'</span>'):'')+
-      '</summary>'+
-      '<div style="padding:10px 12px;">'+
-        '<div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">'+
-          '<button class="btn btn-p btn-sm" onclick="researchCompetitor(\''+c.id+'\',this)">Research with AI</button>'+
-          '<button class="btn btn-s btn-sm" onclick="compareCompetitorStrategy(\''+c.id+'\',this)">Compare vs our strategy</button>'+
-          '<button class="btn btn-s btn-sm" onclick="deleteCompetitor(\''+c.id+'\')">Delete</button>'+
-        '</div>'+
-        '<label class="fl">Your own observations (from browsing their Instagram, etc.)</label>'+
-        '<textarea class="fi" id="competitorNotes-'+c.id+'" rows="2" placeholder="e.g. Posts 3x/week, mostly before/after photos. Running 20% off for new customers this month.">'+(c.notes||'')+'</textarea>'+
-        '<button class="btn btn-s btn-sm" onclick="saveCompetitorNotes(\''+c.id+'\',this)" style="margin-top:4px;">Save notes</button>'+
-        (research?(
-          '<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">'+
-            '<div style="font-weight:700;font-size:12px;">AI research <span class="muted" style="font-weight:400;">('+new Date(research.researched_at).toLocaleDateString()+')</span></div>'+
-            '<div class="muted" style="font-size:12px;margin-top:4px;white-space:pre-wrap;">'+research.findings+'</div>'+
-            ((research.sources||[]).length?('<div style="margin-top:6px;font-size:11px;">Sources: '+research.sources.map(function(s){return '<a href="'+s.url+'" target="_blank" rel="noopener">'+s.title+'</a>';}).join(', ')+'</div>'):'')+
-          '</div>'
-        ):'')+
-        '<div id="competitorCompareResult-'+c.id+'" style="margin-top:10px;"></div>'+
+    // Actions kept immediately visible, not tucked behind a collapsed
+    // summary - these are the primary way this feature gets used, not
+    // secondary detail someone should have to know to click open.
+    return '<div class="item" style="margin-bottom:10px;padding:12px;">'+
+      '<div style="font-weight:700;font-size:13px;">'+c.name+
+        (c.instagram_handle?(' <span class="muted" style="font-weight:400;">'+c.instagram_handle+'</span>'):'')+
       '</div>'+
-    '</details>';
+      '<div style="display:flex;gap:6px;margin:8px 0;flex-wrap:wrap;">'+
+        '<button class="btn btn-p btn-sm" onclick="researchCompetitor(\''+c.id+'\',this)">Research with AI</button>'+
+        '<button class="btn btn-s btn-sm" onclick="compareCompetitorStrategy(\''+c.id+'\',this)">Compare vs our strategy</button>'+
+        '<button class="btn btn-s btn-sm" onclick="deleteCompetitor(\''+c.id+'\')">Delete</button>'+
+      '</div>'+
+      '<label class="fl">Your own observations (from browsing their Instagram, etc.)</label>'+
+      '<textarea class="fi" id="competitorNotes-'+c.id+'" rows="2" placeholder="e.g. Posts 3x/week, mostly before/after photos. Running 20% off for new customers this month.">'+(c.notes||'')+'</textarea>'+
+      '<button class="btn btn-s btn-sm" onclick="saveCompetitorNotes(\''+c.id+'\',this)" style="margin-top:4px;">Save notes</button>'+
+      (research?(
+        '<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">'+
+          '<div style="font-weight:700;font-size:12px;">AI research <span class="muted" style="font-weight:400;">('+new Date(research.researched_at).toLocaleDateString()+')</span></div>'+
+          '<div class="muted" style="font-size:12px;margin-top:4px;white-space:pre-wrap;">'+research.findings+'</div>'+
+          ((research.sources||[]).length?('<div style="margin-top:6px;font-size:11px;">Sources: '+research.sources.map(function(s){return '<a href="'+s.url+'" target="_blank" rel="noopener">'+s.title+'</a>';}).join(', ')+'</div>'):'')+
+        '</div>'
+      ):'')+
+      '<div id="competitorCompareResult-'+c.id+'" style="margin-top:10px;"></div>'+
+    '</div>';
   }).join('');
 }
 async function addCompetitor(){
