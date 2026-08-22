@@ -1,0 +1,28 @@
+name: Daily intelligence findings
+
+on:
+  schedule:
+    # Daily, 06:00 UTC — after the 04:45 sync and 05:00 engagement agent
+    # runs, so this reads the day's freshest transaction data rather
+    # than racing ahead of it.
+    - cron: '0 6 * * *'
+  workflow_dispatch: {}  # lets you trigger a run manually from the Actions tab, useful while testing
+
+jobs:
+  daily-intelligence:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r ml_pipeline/requirements.txt
+
+      - name: Compute daily intelligence findings
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
+          TENANT_ID: minicuts
+        run: python3 ml_pipeline/daily_intelligence.py
