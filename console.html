@@ -1324,6 +1324,18 @@ code, .mw-spinner + code, pre {
                 <div id="generationHistoryList" class="muted" style="margin-top:10px;">Click Refresh to load.</div>
               </details>
             </div>
+
+          <div class="card">
+            <h2>Competitors</h2>
+            <p class="muted">AI research finds what's genuinely publicly indexed - reviews, ratings, reputation, promotions that surfaced somewhere. It can't see a competitor's actual Instagram feed directly, so your own observations from browsing their page matter just as much as the AI research, not a lesser fallback.</p>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
+              <input class="fi" type="text" id="newCompetitorName" placeholder="Competitor name" style="flex:1;min-width:120px;">
+              <input class="fi" type="text" id="newCompetitorInstagram" placeholder="Instagram handle (optional)" style="flex:1;min-width:120px;">
+              <input class="fi" type="text" id="newCompetitorGoogle" placeholder="Google listing name (optional)" style="flex:1;min-width:120px;">
+              <button class="btn btn-p btn-sm" onclick="addCompetitor()">Add</button>
+            </div>
+            <div id="competitorsList" class="muted">Loading...</div>
+          </div>
           </div>
 
           <div id="intelligenceAgentDetail" style="display:none;">
@@ -1628,7 +1640,7 @@ function showAgentDetail(agent){
   document.getElementById('marketingAgentDetail').style.display=agent==='marketing'?'block':'none';
   document.getElementById('intelligenceAgentDetail').style.display=agent==='intelligence'?'block':'none';
   window.scrollTo({top:0,behavior:'smooth'});
-  if(agent==='marketing') loadSocialContent();
+  if(agent==='marketing'){loadSocialContent();loadCompetitors();}
   if(agent==='engagement') loadAtRiskActions();
   if(agent==='intelligence'){loadDailyIntelligence();loadPredictive();renderQuickQuestions();}
 }
@@ -1903,6 +1915,85 @@ async function loadAtRiskActions(){
   } else {
     el.innerHTML='Error: '+atRisk.error;
   }
+}
+// ── Competitors ──
+async function loadCompetitors(){
+  const el=document.getElementById('competitorsList');
+  const j=await call('list_competitors',{});
+  if(!j.ok){el.innerHTML='Error: '+j.error;return;}
+  if(!j.competitors.length){el.innerHTML='No competitors added yet - add one above to start researching.';return;}
+  el.innerHTML=j.competitors.map(function(c){
+    const research=c.latest_research;
+    return '<details class="agent-section" style="margin-bottom:10px;">'+
+      '<summary style="cursor:pointer;padding:10px 12px;"><b>'+c.name+'</b>'+
+        (c.instagram_handle?(' <span class="muted">'+c.instagram_handle+'</span>'):'')+
+      '</summary>'+
+      '<div style="padding:10px 12px;">'+
+        '<div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">'+
+          '<button class="btn btn-p btn-sm" onclick="researchCompetitor(\''+c.id+'\',this)">Research with AI</button>'+
+          '<button class="btn btn-s btn-sm" onclick="compareCompetitorStrategy(\''+c.id+'\',this)">Compare vs our strategy</button>'+
+          '<button class="btn btn-s btn-sm" onclick="deleteCompetitor(\''+c.id+'\')">Delete</button>'+
+        '</div>'+
+        '<label class="fl">Your own observations (from browsing their Instagram, etc.)</label>'+
+        '<textarea class="fi" id="competitorNotes-'+c.id+'" rows="2" placeholder="e.g. Posts 3x/week, mostly before/after photos. Running 20% off for new customers this month.">'+(c.notes||'')+'</textarea>'+
+        '<button class="btn btn-s btn-sm" onclick="saveCompetitorNotes(\''+c.id+'\',this)" style="margin-top:4px;">Save notes</button>'+
+        (research?(
+          '<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">'+
+            '<div style="font-weight:700;font-size:12px;">AI research <span class="muted" style="font-weight:400;">('+new Date(research.researched_at).toLocaleDateString()+')</span></div>'+
+            '<div class="muted" style="font-size:12px;margin-top:4px;white-space:pre-wrap;">'+research.findings+'</div>'+
+            ((research.sources||[]).length?('<div style="margin-top:6px;font-size:11px;">Sources: '+research.sources.map(function(s){return '<a href="'+s.url+'" target="_blank" rel="noopener">'+s.title+'</a>';}).join(', ')+'</div>'):'')+
+          '</div>'
+        ):'')+
+        '<div id="competitorCompareResult-'+c.id+'" style="margin-top:10px;"></div>'+
+      '</div>'+
+    '</details>';
+  }).join('');
+}
+async function addCompetitor(){
+  const name=document.getElementById('newCompetitorName').value.trim();
+  if(!name){alert('Competitor name is required.');return;}
+  const instagram_handle=document.getElementById('newCompetitorInstagram').value.trim();
+  const google_place_name=document.getElementById('newCompetitorGoogle').value.trim();
+  const j=await call('add_competitor',{name,instagram_handle,google_place_name});
+  if(!j.ok){alert('Error: '+j.error);return;}
+  document.getElementById('newCompetitorName').value='';
+  document.getElementById('newCompetitorInstagram').value='';
+  document.getElementById('newCompetitorGoogle').value='';
+  loadCompetitors();
+}
+async function saveCompetitorNotes(competitorId,btnEl){
+  const notes=document.getElementById('competitorNotes-'+competitorId).value;
+  const originalLabel=btnEl?btnEl.innerHTML:null;
+  if(btnEl){btnEl.disabled=true;btnEl.innerHTML='Saving...';}
+  const j=await call('update_competitor_notes',{competitor_id:competitorId,notes});
+  if(btnEl){btnEl.disabled=false;btnEl.innerHTML=originalLabel;}
+  if(!j.ok){alert('Error: '+j.error);return;}
+}
+async function researchCompetitor(competitorId,btnEl){
+  const originalLabel=btnEl?btnEl.innerHTML:null;
+  if(btnEl){btnEl.disabled=true;btnEl.innerHTML='<span class="mw-spinner"></span>Searching (~15s)...';}
+  const j=await call('research_competitor',{competitor_id:competitorId});
+  if(!j.ok){
+    alert('Error: '+j.error);
+    if(btnEl){btnEl.disabled=false;btnEl.innerHTML=originalLabel;}
+    return;
+  }
+  loadCompetitors();
+}
+async function compareCompetitorStrategy(competitorId,btnEl){
+  const resultEl=document.getElementById('competitorCompareResult-'+competitorId);
+  const originalLabel=btnEl?btnEl.innerHTML:null;
+  if(btnEl){btnEl.disabled=true;btnEl.innerHTML='<span class="mw-spinner"></span>Comparing...';}
+  const j=await call('compare_competitor_strategy',{competitor_id:competitorId});
+  if(btnEl){btnEl.disabled=false;btnEl.innerHTML=originalLabel;}
+  if(!j.ok){resultEl.innerHTML='<span style="color:var(--err);font-size:12px;">'+j.error+'</span>';return;}
+  resultEl.innerHTML='<div class="item" style="white-space:pre-wrap;font-size:12.5px;">'+j.comparison+'</div>';
+}
+async function deleteCompetitor(competitorId){
+  if(!confirm('Delete this competitor and all its research? This cannot be undone.')) return;
+  const j=await call('delete_competitor',{competitor_id:competitorId});
+  if(!j.ok){alert('Error: '+j.error);return;}
+  loadCompetitors();
 }
 
 async function call(action,extra){
