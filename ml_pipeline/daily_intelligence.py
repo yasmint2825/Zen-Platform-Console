@@ -46,6 +46,7 @@ if not DATABASE_URL:
 
 MIN_WEEKS_FOR_ANOMALY = 6       # need real history before flagging a deviation as genuine, not noise
 MIN_TX_PER_COHORT = 15          # each segment needs enough transactions for a comparison to mean anything
+DATA_RELIABLE_FROM = pd.Timestamp("2026-06-09")  # data before this was bulk-uploaded via Excel and isn't reliable for pattern comparisons - anything looking back further than this gets clipped to it
 ANOMALY_STDDEV_THRESHOLD = 1.5  # how far from the mean counts as "worth flagging", not every minor wobble
 COHORT_DELTA_THRESHOLD_PCT = 15 # minimum % swing to call a cohort shift real rather than everyday noise
 
@@ -87,6 +88,42 @@ def load_profiles(engine) -> pd.DataFrame:
     return pd.read_sql(query, engine, params={"tenant_id": TENANT_ID})
 
 
+def diagnose_queue_revenue(engine, as_of: pd.Timestamp) -> None:
+    """Purely informational - finds and prints whatever the real
+    'queue' table actually is, using Postgres's own metadata rather
+    than guessing at a table/column name. Not wired into any actual
+    finding yet - this log output is what determines the real fix,
+    rather than another guess."""
+    print("\n  --- Queue table diagnostic ---")
+    tables_df = pd.read_sql(
+        "select table_name from information_schema.tables where table_name ilike %(pattern)s",
+        engine, params={"pattern": "%queue%"},
+    )
+    if tables_df.empty:
+        print("  No table matching '%queue%' found in this database.")
+        return
+    for table_name in tables_df["table_name"]:
+        print(f"  Found table: {table_name}")
+        cols_df = pd.read_sql(
+            "select column_name, data_type from information_schema.columns where table_name = %(t)s order by ordinal_position",
+            engine, params={"t": table_name},
+        )
+        print(f"    Columns: {list(zip(cols_df['column_name'], cols_df['data_type']))}")
+        if "service_value" not in cols_df["column_name"].values:
+            print(f"    (no service_value column on this table - may not be the right one)")
+            continue
+        date_cols = [c for c in cols_df["column_name"] if "date" in c.lower() or "created" in c.lower() or "time" in c.lower()]
+        tenant_cols = [c for c in cols_df["column_name"] if "tenant" in c.lower()]
+        print(f"    Candidate date columns: {date_cols}")
+        print(f"    Candidate tenant columns: {tenant_cols}")
+        try:
+            total_row = pd.read_sql(f'select count(*) as n, sum(service_value) as total from "{table_name}"', engine)
+            print(f"    Total rows: {int(total_row['n'][0])}, sum(service_value) across ALL rows/tenants: {total_row['total'][0]}")
+        except Exception as e:
+            print(f"    Could not sum service_value: {e}")
+    print("  --- End diagnostic ---\n")
+
+
 # ─────────────────────────────────────────────────────────────────
 # 1. Anomaly detection — is this week genuinely unusual?
 # ─────────────────────────────────────────────────────────────────
@@ -103,6 +140,8 @@ def detect_anomaly(tx: pd.DataFrame, as_of: pd.Timestamp) -> dict | None:
     days_elapsed = (yesterday - this_monday).days + 1  # e.g. Monday=1, Tuesday=2, ... Sunday=7
     if days_elapsed < 2:
         return None  # too early in the week for a same-day-range comparison to mean anything
+    if this_monday - pd.Timedelta(weeks=MIN_WEEKS_FOR_ANOMALY) < DATA_RELIABLE_FROM:
+        return None  # the baseline would reach back into the unreliable, Excel-uploaded period - not an honest comparison yet
 
     daily = tx.set_index("transaction_date").resample("D").size()
 
@@ -153,6 +192,8 @@ def detect_cohort_shift(tx: pd.DataFrame, profiles: pd.DataFrame, as_of: pd.Time
     merged = merged.dropna(subset=["segment"])
     if merged.empty:
         return None
+    if as_of - pd.Timedelta(days=120) < DATA_RELIABLE_FROM:
+        return None  # the "60 days before that" window would reach back into the unreliable, Excel-uploaded period - not an honest comparison yet
 
     recent_start, recent_end = as_of - pd.Timedelta(days=60), as_of
     prior_start, prior_end = as_of - pd.Timedelta(days=120), as_of - pd.Timedelta(days=60)
@@ -275,6 +316,8 @@ def main():
     revenue = load_all_revenue(engine)
     profiles = load_profiles(engine)
     print(f"  Loaded {len(tx)} customer-matched transactions, {len(revenue)} total transactions (all revenue), {len(profiles)} customer profiles")
+
+    diagnose_queue_revenue(engine, as_of)
 
     findings = []
     for fn, args in [
