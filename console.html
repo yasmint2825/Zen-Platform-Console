@@ -1044,7 +1044,7 @@ code, .mw-spinner + code, pre {
 
               <details class="card">
                 <summary><h2 style="display:inline;">Monthly strategy</h2></summary>
-                <p class="muted">Two-part input: your specific focus for this month, combined with ZEN's proposal from real data and your Brand DNA. Every recommendation is labeled data-based or reasoning-based - review before approving. Proposing a new strategy no longer replaces the old one - it's kept in history below, named so you can tell campaigns apart.</p>
+                <p class="muted">Two-part input: your specific focus for this month, combined with ZEN's proposal from real data and your Brand DNA. Every recommendation is labeled data-based or reasoning-based - review before approving. Proposing a new strategy no longer replaces the old one - it's kept in history, named so you can tell campaigns apart.</p>
                 <div class="row" style="margin-bottom:8px;flex-wrap:wrap;gap:8px;">
                   <input class="fi" type="month" id="msMonthYear" style="flex:1;min-width:140px;">
                   <input class="fi" type="text" id="msBrandInput" placeholder="This month's focus, e.g. Back to school offers" style="flex:2;">
@@ -1053,10 +1053,11 @@ code, .mw-spinner + code, pre {
                 <div id="msProposeResult" style="font-size:12px;margin-top:8px;"></div>
                 <div id="msReviewArea" style="margin-top:14px;"></div>
                 <div id="msCurrentStrategy" style="margin-top:14px;"></div>
-                <details style="margin-top:14px;">
-                  <summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--muted);">Strategy history</summary>
-                  <div id="msStrategyHistory" style="margin-top:8px;"></div>
-                </details>
+                <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
+                  <div style="font-weight:700;font-size:13px;margin-bottom:6px;">All strategies <span id="msStrategyCount" class="muted" style="font-weight:400;font-size:11.5px;"></span></div>
+                  <div class="muted" style="font-size:11px;margin-bottom:8px;">Only the 2 most recent stay active automatically - older ones are archived, not deleted. Your content, videos, and campaign details are still here if a strategy you want is archived - just click View.</div>
+                  <div id="msStrategyHistory"></div>
+                </div>
               </details>
 
               <details class="card">
@@ -2577,15 +2578,33 @@ async function loadMonthlyStrategy(strategyId){
 async function loadStrategyHistory(){
   const j=await call('list_monthly_strategies',{});
   const el=document.getElementById('msStrategyHistory');
-  if(!j.ok||!j.strategies.length){el.innerHTML='<span class="muted" style="font-size:11.5px;">No past strategies yet.</span>';return;}
+  const countEl=document.getElementById('msStrategyCount');
+  if(!j.ok||!j.strategies.length){
+    el.innerHTML='<span class="muted" style="font-size:11.5px;">No past strategies yet.</span>';
+    if(countEl) countEl.textContent='';
+    return;
+  }
+  const activeCount=j.strategies.filter(function(s){return !s.is_archived;}).length;
+  const archivedCount=j.strategies.length-activeCount;
+  if(countEl) countEl.textContent='('+activeCount+' active, '+archivedCount+' archived)';
   el.innerHTML=j.strategies.map(function(s){
     const isCurrent=currentMonthlyStrategy&&s.id===currentMonthlyStrategy.id;
-    const label=(s.campaign_name||s.month_year)+' - '+s.month_year+' - '+s.status+(s.is_archived?' - archived':'');
+    const statusBadge=s.is_archived
+      ?'<span class="badge" style="background:var(--bg);color:var(--muted);margin-left:6px;">Archived</span>'
+      :'<span class="badge b-ok" style="margin-left:6px;">Active</span>';
     return '<div class="item" style="margin-bottom:6px;padding:8px 10px;'+(isCurrent?'background:var(--pl);':'')+'display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">'+
-      '<span style="font-size:12px;">'+label+'</span>'+
-      '<button class="btn btn-s btn-sm" onclick="loadMonthlyStrategy(\''+s.id+'\')">'+(isCurrent?'Currently viewing':'View')+'</button>'+
+      '<span style="font-size:12px;">'+(s.campaign_name||s.month_year)+' <span class="muted">'+s.month_year+' - '+s.status+'</span>'+statusBadge+'</span>'+
+      '<span>'+
+        '<button class="btn btn-s btn-sm" onclick="loadMonthlyStrategy(\''+s.id+'\')">'+(isCurrent?'Currently viewing':'View')+'</button> '+
+        (s.is_archived?'<button class="btn btn-s btn-sm" onclick="unarchiveStrategy(\''+s.id+'\')">Make active</button>':'')+
+      '</span>'+
     '</div>';
   }).join('');
+}
+async function unarchiveStrategy(strategyId){
+  const j=await call('unarchive_monthly_strategy',{strategy_id:strategyId});
+  if(!j.ok){alert('Error: '+j.error);return;}
+  loadMonthlyStrategy(strategyId);
 }
 async function renameStrategy(strategyId){
   const newName=prompt('Rename this strategy:',currentMonthlyStrategy?.campaign_name||'');
