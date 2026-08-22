@@ -792,7 +792,6 @@ code, .mw-spinner + code, pre {
       <button class="nav-item active" data-page="overview" onclick="showPage('overview')"><span class="ic">&#9635;</span>Overview</button>
       <button class="nav-item" data-page="agents" onclick="showPage('agents')"><span class="ic">&#9673;</span>Agents</button>
       <button class="nav-item" data-page="intelligence" onclick="showPage('intelligence')"><span class="ic">&#128202;</span>Intelligence</button>
-      <button class="nav-item" data-page="approvals" onclick="showPage('approvals')"><span class="ic">&#9989;</span>Approvals<span id="approvalsBadge" style="display:none;background:var(--amber);color:#fff;border-radius:999px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:auto;"></span></button>
       <button class="nav-item" data-page="content" onclick="showPage('content')"><span class="ic">&#128197;</span>Content</button>
       <button class="nav-item" data-page="customers" onclick="showPage('customers')"><span class="ic">&#128100;</span>Customers</button>
       <button class="nav-item" data-page="reports" onclick="showPage('reports')"><span class="ic">&#128200;</span>Reports</button>
@@ -2840,7 +2839,12 @@ function renderContentPlanBlocks(items){
           '<button class="btn btn-s btn-sm" onclick="rejectContentPlanItem(\''+item.id+'\')">Reject</button> '+
           '<button class="btn btn-s btn-sm" onclick="toggleCaptionDetail(\''+item.id+'\')">Edit caption</button> '+
           '<button class="btn btn-s btn-sm" onclick="regenerateBlockConcept(\''+item.id+'\',this)">Clear &amp; suggest new post</button> '+
-          '<button class="btn btn-s btn-sm" onclick="deleteContentPlanItem(\''+item.id+'\')">Delete</button>';
+          '<button class="btn btn-s btn-sm" onclick="deleteContentPlanItem(\''+item.id+'\')">Delete</button>'+
+          '<div style="margin-top:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">'+
+            '<input class="fi" type="date" id="scheduleDateInline-'+item.id+'" style="width:auto;margin:0;">'+
+            '<button class="btn btn-p btn-sm" onclick="scheduleContentItemInline(\''+item.id+'\')">Schedule</button>'+
+            (item.item_type==='image'?(' <button class="btn btn-s btn-sm" onclick="publishContentItemNow(\''+item.id+'\',this)">Publish now</button>'):'')+
+          '</div>';
       } else if(item.status==='scheduled'){
         mainActions=
           '<button class="btn btn-s btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')">Edit</button> '+
@@ -3273,6 +3277,13 @@ async function unscheduleContentPlanItem(itemId){
   // elements don't exist) would throw.
   if(document.getElementById('scheduledList')) loadCalendar();
   else loadMonthlyStrategy();
+}
+async function scheduleContentItemInline(itemId){
+  const dateInput=document.getElementById('scheduleDateInline-'+itemId);
+  if(!dateInput||!dateInput.value){alert('Pick a date first.');return;}
+  const j=await call('schedule_content_plan_item',{id:itemId,scheduled_date:dateInput.value});
+  if(!j.ok){alert('Error: '+j.error);return;}
+  loadMonthlyStrategy();
 }
 async function deleteContentPlanItem(itemId){
   if(!confirm('Delete this block entirely? This cannot be undone.')) return;
@@ -3832,11 +3843,36 @@ async function loadPending(){
   if(!j.ok){el.textContent='Error: '+j.error;return;}
   if(badge) badge.innerHTML=j.decisions.length?('<span class="count-badge">'+j.decisions.length+'</span>'):'';
   if(!j.decisions.length){el.innerHTML='Nothing pending.';return;}
-  el.innerHTML=j.decisions.map(function(d){
-    return '<div class="item"><div style="display:flex;justify-content:space-between;"><b>'+(d.customer_name||d.mobile)+'</b><span class="muted">('+d.campaign_key+')</span></div>'+
-    '<div class="muted">'+(d.reasoning||'')+'</div>'+
-    '<div class="row" style="margin-top:6px;"><button class="btn btn-s btn-sm" onclick="approveDecision(\''+d.id+'\')">Approve and send</button><button class="btn btn-s btn-sm" onclick="rejectDecision(\''+d.id+'\')">Reject</button></div></div>';
+  // Grouped by campaign type (nudge/birthday/lapsed/etc.) rather than
+  // one flat list - each group gets its own "Approve & send all" so a
+  // batch of the same campaign type can be cleared together, while
+  // still reviewing/rejecting individually within a group.
+  const groups={};
+  j.decisions.forEach(function(d){(groups[d.campaign_key]=groups[d.campaign_key]||[]).push(d);});
+  const campaignLabels={nudge:'Nudge',birthday:'Birthday',lapsed:'Lapsed / win-back',after_service:'After service'};
+  el.innerHTML=Object.keys(groups).sort().map(function(key){
+    const items=groups[key];
+    const label=campaignLabels[key]||key;
+    const ids=items.map(function(d){return d.id;});
+    return '<div style="margin-bottom:14px;">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'+
+        '<div style="font-weight:700;font-size:12.5px;">'+label+' <span class="muted" style="font-weight:400;">('+items.length+')</span></div>'+
+        '<button class="btn btn-p btn-sm" onclick="approveAllInGroup(\''+key+'\','+JSON.stringify(ids).replace(/"/g,'&quot;')+')">Approve &amp; send all '+items.length+'</button>'+
+      '</div>'+
+      items.map(function(d){
+        return '<div class="item"><div style="display:flex;justify-content:space-between;"><b>'+(d.customer_name||d.mobile)+'</b></div>'+
+        '<div class="muted">'+(d.reasoning||'')+'</div>'+
+        '<div class="row" style="margin-top:6px;"><button class="btn btn-s btn-sm" onclick="approveDecision(\''+d.id+'\')">Approve and send</button><button class="btn btn-s btn-sm" onclick="rejectDecision(\''+d.id+'\')">Reject</button></div></div>';
+      }).join('')+
+    '</div>';
   }).join('');
+}
+async function approveAllInGroup(campaignKey,ids){
+  if(!confirm('Approve and send all '+ids.length+' '+campaignKey+' messages now?')) return;
+  const j=await call('bulk_approve_decisions',{ids:ids});
+  if(!j.ok){alert('Error: '+j.error);return;}
+  if(j.failed&&j.failed.length){alert(j.sent+' sent successfully. '+j.failed.length+' failed - they remain in the pending list for you to retry or reject individually.');}
+  loadPending();loadOverview();loadApprovals();
 }
 async function approveDecision(id){const j=await call('approve_decision',{id:id});if(!j.ok)alert('Error: '+j.error);loadPending();loadOverview();loadApprovals();}
 async function rejectDecision(id){await call('reject_decision',{id:id});loadPending();loadOverview();loadApprovals();}
