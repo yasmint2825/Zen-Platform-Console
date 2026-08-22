@@ -1044,15 +1044,19 @@ code, .mw-spinner + code, pre {
 
               <details class="card">
                 <summary><h2 style="display:inline;">Monthly strategy</h2></summary>
-                <p class="muted">Two-part input: your specific focus for this month, combined with ZEN's proposal from real data and your Brand DNA. Every recommendation is labeled data-based or reasoning-based - review before approving.</p>
+                <p class="muted">Two-part input: your specific focus for this month, combined with ZEN's proposal from real data and your Brand DNA. Every recommendation is labeled data-based or reasoning-based - review before approving. Proposing a new strategy no longer replaces the old one - it's kept in history below, named so you can tell campaigns apart.</p>
                 <div class="row" style="margin-bottom:8px;flex-wrap:wrap;gap:8px;">
                   <input class="fi" type="month" id="msMonthYear" style="flex:1;min-width:140px;">
                   <input class="fi" type="text" id="msBrandInput" placeholder="This month's focus, e.g. Back to school offers" style="flex:2;">
                 </div>
-                <button class="btn btn-p btn-sm" onclick="proposeMonthlyStrategy()">Propose strategy with AI</button>
+                <button class="btn btn-p btn-sm" onclick="proposeMonthlyStrategy()">Propose new strategy with AI</button>
                 <div id="msProposeResult" style="font-size:12px;margin-top:8px;"></div>
                 <div id="msReviewArea" style="margin-top:14px;"></div>
                 <div id="msCurrentStrategy" style="margin-top:14px;"></div>
+                <details style="margin-top:14px;">
+                  <summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--muted);">Strategy history</summary>
+                  <div id="msStrategyHistory" style="margin-top:8px;"></div>
+                </details>
               </details>
 
               <details class="card">
@@ -2545,11 +2549,11 @@ async function approveContentPlanItem(id){
   if(!j.ok) alert('Error: '+j.error);
   loadApprovals();
 }
-async function loadMonthlyStrategy(){
+async function loadMonthlyStrategy(strategyId){
   document.getElementById('msMonthYear').value=currentMonthYear();
-  const j=await call('get_monthly_strategy',{month_year:currentMonthYear()});
+  const j=await call('get_monthly_strategy',strategyId?{strategy_id:strategyId}:{});
   const el=document.getElementById('msCurrentStrategy');
-  if(!j.ok||!j.strategy){el.innerHTML='';currentMonthlyStrategy=null;return;}
+  if(!j.ok||!j.strategy){el.innerHTML='';currentMonthlyStrategy=null;await loadStrategyHistory();return;}
   currentMonthlyStrategy=j.strategy;
   if(j.strategy.status==='proposed'){
     // Already proposed but not yet approved - show the same editable
@@ -2563,6 +2567,27 @@ async function loadMonthlyStrategy(){
     document.getElementById('msReviewArea').innerHTML='';
   }
   if(j.strategy.status==='approved') loadContentPlanBlocks(j.strategy.id);
+  await loadStrategyHistory();
+}
+async function loadStrategyHistory(){
+  const j=await call('list_monthly_strategies',{});
+  const el=document.getElementById('msStrategyHistory');
+  if(!j.ok||!j.strategies.length){el.innerHTML='<span class="muted" style="font-size:11.5px;">No past strategies yet.</span>';return;}
+  el.innerHTML=j.strategies.map(function(s){
+    const isCurrent=currentMonthlyStrategy&&s.id===currentMonthlyStrategy.id;
+    const label=(s.campaign_name||s.month_year)+' - '+s.month_year+' - '+s.status+(s.is_archived?' - archived':'');
+    return '<div class="item" style="margin-bottom:6px;padding:8px 10px;'+(isCurrent?'background:var(--pl);':'')+'display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">'+
+      '<span style="font-size:12px;">'+label+'</span>'+
+      '<button class="btn btn-s btn-sm" onclick="loadMonthlyStrategy(\''+s.id+'\')">'+(isCurrent?'Currently viewing':'View')+'</button>'+
+    '</div>';
+  }).join('');
+}
+async function renameStrategy(strategyId){
+  const newName=prompt('Rename this strategy:',currentMonthlyStrategy?.campaign_name||'');
+  if(newName===null) return;
+  const j=await call('rename_monthly_strategy',{strategy_id:strategyId,campaign_name:newName.trim()});
+  if(!j.ok){alert('Error: '+j.error);return;}
+  loadMonthlyStrategy(strategyId);
 }
 // Generated images are auto-deleted 30 days after creation (storage
 // management). This renders a thumbnail that degrades gracefully if
@@ -2591,7 +2616,10 @@ function renderStrategySummary(strategy,el){
     return '<div style="font-size:12px;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><b>'+p.name+'</b> ('+p.percent+'%) '+provenanceTag(p.reasoning_type)+' <span class="muted">'+p.reasoning+'</span></div>';
   }).join('');
   el.innerHTML='<div class="item" style="background:'+(strategy.status==='approved'?'var(--pl)':'var(--bg)')+';">'+
-    '<div style="font-weight:700;margin-bottom:6px;">'+strategy.month_year+' - '+strategy.status+'</div>'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">'+
+      '<div style="font-weight:700;">'+(strategy.campaign_name||strategy.month_year)+' <span class="muted" style="font-weight:400;font-size:11.5px;">'+strategy.month_year+' - '+strategy.status+(strategy.is_archived?' - archived':'')+'</span></div>'+
+      '<button class="btn btn-s btn-sm" onclick="renameStrategy(\''+strategy.id+'\')">Rename</button>'+
+    '</div>'+
     '<div style="font-size:12.5px;margin-bottom:8px;"><b>Objective:</b> '+(s.primary_objective||'-')+'<br><b>Campaign:</b> '+(s.core_campaign||'-')+'</div>'+
     '<div style="font-size:11px;margin-bottom:4px;font-weight:700;">Content pillars:</div>'+pillars+
   '</div>';
@@ -2899,6 +2927,28 @@ function renderContentPlanBlocks(items){
       ):'<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);"><span class="muted" style="font-size:11px;">Generate every scene\'s clip before stitching.</span></div>'
     ):'';
 
+    // Manual/test panel - available regardless of whether every scene
+    // is "ready", since this is for testing or deliberately picking a
+    // subset/order rather than the normal all-scenes flow. Only lists
+    // scenes that actually have a clip URL at all.
+    const clipsAvailable=isVideo?(item.video_plan?.scenes||[]).filter(function(s){return !!s.scene_video_url;}):[];
+    const manualStitchHtml=(isVideo&&clipsAvailable.length)?(
+      '<details style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">'+
+        '<summary style="cursor:pointer;font-size:11.5px;font-weight:700;color:var(--muted);">Manual stitch (test / pick clips and order)</summary>'+
+        '<div style="margin-top:8px;">'+
+          clipsAvailable.map(function(s){
+            return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'+
+              '<input type="checkbox" id="manualStitchPick-'+item.id+'-'+s.scene_number+'" data-url="'+s.scene_video_url+'" checked style="width:auto;margin:0;">'+
+              '<label for="manualStitchPick-'+item.id+'-'+s.scene_number+'" style="font-size:11.5px;flex:1;">Scene '+s.scene_number+'</label>'+
+              '<label class="muted" style="font-size:10.5px;">Position</label>'+
+              '<input class="fi" type="number" id="manualStitchOrder-'+item.id+'-'+s.scene_number+'" value="'+s.scene_number+'" style="width:56px;margin:0;">'+
+            '</div>';
+          }).join('')+
+          '<button class="btn btn-p btn-sm" onclick="manualStitchVideo(\''+item.id+'\',this)" style="margin-top:4px;">Stitch selected clips</button>'+
+        '</div>'+
+      '</details>'
+    ):'';
+
     const videoScenesHtml=isVideo?(
       (item.video_plan?.scenes||[]).map(function(scene){
         const sid=item.id+'-'+scene.scene_number;
@@ -2933,6 +2983,7 @@ function renderContentPlanBlocks(items){
         '</div>';
       }).join('')+
       stitchSectionHtml+
+      manualStitchHtml+
       '<button class="btn btn-s btn-sm" onclick="toggleVideoScenes(\''+item.id+'\')" style="margin-top:10px;">Close</button>'
     ):'';
 
@@ -2990,6 +3041,28 @@ async function stitchVideoScenes(itemId,btnEl){
   const originalLabel=btnEl?btnEl.innerHTML:null;
   if(btnEl){btnEl.disabled=true;btnEl.innerHTML='<span class="mw-spinner"></span>Starting...';}
   const j=await call('stitch_video_scenes',{item_id:itemId});
+  if(!j.ok){
+    alert('Error: '+j.error);
+    if(btnEl){btnEl.disabled=false;btnEl.innerHTML=originalLabel;}
+    return;
+  }
+  loadMonthlyStrategy();
+  pollVideoStitchStatus(itemId);
+}
+async function manualStitchVideo(itemId,btnEl){
+  const checkboxes=[...document.querySelectorAll('input[id^="manualStitchPick-'+itemId+'-"]')];
+  const picked=checkboxes.filter(function(cb){return cb.checked;}).map(function(cb){
+    const sceneNum=cb.id.split('-').pop();
+    const orderInput=document.getElementById('manualStitchOrder-'+itemId+'-'+sceneNum);
+    return {url:cb.dataset.url,order:orderInput?Number(orderInput.value):0};
+  });
+  if(picked.length<2){alert('Select at least 2 clips to stitch together.');return;}
+  picked.sort(function(a,b){return a.order-b.order;});
+  const orderedUrls=picked.map(function(p){return p.url;});
+
+  const originalLabel=btnEl?btnEl.innerHTML:null;
+  if(btnEl){btnEl.disabled=true;btnEl.innerHTML='<span class="mw-spinner"></span>Starting...';}
+  const j=await call('stitch_video_scenes',{item_id:itemId,video_urls:orderedUrls});
   if(!j.ok){
     alert('Error: '+j.error);
     if(btnEl){btnEl.disabled=false;btnEl.innerHTML=originalLabel;}
