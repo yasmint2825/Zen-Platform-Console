@@ -792,7 +792,6 @@ code, .mw-spinner + code, pre {
       <button class="nav-item active" data-page="overview" onclick="showPage('overview')"><span class="ic">&#9635;</span>Overview</button>
       <button class="nav-item" data-page="agents" onclick="showPage('agents')"><span class="ic">&#9673;</span>Agents</button>
       <button class="nav-item" data-page="intelligence" onclick="showPage('intelligence')"><span class="ic">&#128202;</span>Intelligence</button>
-      <button class="nav-item" data-page="content" onclick="showPage('content')"><span class="ic">&#128197;</span>Content</button>
       <button class="nav-item" data-page="customers" onclick="showPage('customers')"><span class="ic">&#128100;</span>Customers</button>
       <button class="nav-item" data-page="reports" onclick="showPage('reports')"><span class="ic">&#128200;</span>Reports</button>
       <button class="nav-item" data-page="settings" onclick="showPage('settings')"><span class="ic">&#9881;</span>Settings</button>
@@ -1014,7 +1013,8 @@ code, .mw-spinner + code, pre {
             </div>
 
             <div class="row" style="margin-bottom:20px;">
-              <button class="btn btn-p btn-sm marketing-tab-btn" data-tab="strategy" onclick="showMarketingTab('strategy')">Strategy &amp; content</button>
+              <button class="btn btn-p btn-sm marketing-tab-btn" data-tab="strategy" onclick="showMarketingTab('strategy')">Strategy &amp; content plan</button>
+              <button class="btn btn-s btn-sm marketing-tab-btn" data-tab="scheduling" onclick="showMarketingTab('scheduling')">Scheduling &amp; posting <span id="schedulingCount" class="muted"></span></button>
               <button class="btn btn-s btn-sm marketing-tab-btn" data-tab="setup" onclick="showMarketingTab('setup')">Brand setup</button>
             </div>
 
@@ -1060,8 +1060,8 @@ code, .mw-spinner + code, pre {
               </details>
 
               <details class="card">
-                <summary><h2 style="display:inline;">Content plan</h2></summary>
-                <p class="muted">8 image posts + 4 video concepts, generated from your approved strategy as one coordinated campaign. Generating the actual creative for each block is optional and one at a time.</p>
+                <summary><h2 style="display:inline;">Content plan <span id="planningCount" class="muted" style="font-weight:400;"></span></h2></summary>
+                <p class="muted">8 image posts + 4 video concepts, generated from your approved strategy as one coordinated campaign. Review, edit, and approve each one here - once approved, it moves to Scheduling &amp; posting and disappears from this list.</p>
                 <button class="btn btn-p btn-sm" onclick="generateContentPlan()">Generate content plan</button>
                 <div id="planGenerateResult" style="font-size:12px;margin-top:8px;"></div>
                 <div id="contentPlanBlocks" style="margin-top:14px;"></div>
@@ -1111,6 +1111,15 @@ code, .mw-spinner + code, pre {
                 <button class="btn btn-p btn-sm" onclick="generateNewSocialPost()">Generate a new post now</button>
                 <span id="generatePostResult" style="font-size:12px;margin-left:10px;"></span>
               </details>
+            </div>
+
+            <div id="marketingTab-scheduling" class="marketing-tab-content" style="display:none;">
+              <div class="card">
+                <h2>Scheduling &amp; posting</h2>
+                <p class="muted">Everything approved and on its way out - pick a date, publish now, or review the image and caption one more time before it goes live.</p>
+                <div id="schedulingEmpty" class="muted" style="padding:12px 0;">Nothing here yet - approve something in Content plan and it'll show up here.</div>
+                <div id="schedulingBlocks"></div>
+              </div>
             </div>
 
             <div id="marketingTab-setup" class="marketing-tab-content" style="display:none;">
@@ -2787,15 +2796,31 @@ async function generateContentPlan(){
   if(!currentMonthlyStrategy||currentMonthlyStrategy.status!=='approved'){r.textContent='Approve this month\'s strategy first.';r.style.color='var(--err)';return;}
   r.innerHTML='<span class="mw-spinner"></span>Planning 8 image posts + 4 video concepts as one campaign...';r.style.color='var(--muted)';
   const j=await call('generate_content_plan',{strategy_id:currentMonthlyStrategy.id});
-  if(j.ok){r.textContent='Plan generated.';r.style.color='var(--ok)';renderContentPlanBlocks(j.items);}
+  if(j.ok){r.textContent='Plan generated.';r.style.color='var(--ok)';renderContentPlanSplit(j.items);}
   else{r.innerHTML='Error: '+j.error+(j.raw_preview?('<div class="muted" style="font-size:11px;margin-top:4px;">Raw response preview: '+j.raw_preview+'</div>'):'');r.style.color='var(--err)';}
 }
 async function loadContentPlanBlocks(strategyId){
   const j=await call('list_content_plan_items',{strategy_id:strategyId});
-  if(j.ok&&j.items.length) renderContentPlanBlocks(j.items);
+  if(j.ok) renderContentPlanSplit(j.items);
 }
-function renderContentPlanBlocks(items){
-  const el=document.getElementById('contentPlanBlocks');
+// Splits the same item set into two genuinely separate views: items
+// still being planned/reviewed (Content plan tab) versus items already
+// approved and on their way to publishing (Scheduling & posting tab).
+// Once something is approved, it disappears from the planning view
+// entirely - it doesn't stay visible in two places at once.
+function renderContentPlanSplit(items){
+  const planningItems=items.filter(function(i){return i.status==='planned'||i.status==='creative_ready';});
+  const schedulingItems=items.filter(function(i){return i.status==='approved'||i.status==='scheduled'||i.status==='published';});
+  renderContentPlanBlocks(planningItems,'contentPlanBlocks');
+  renderContentPlanBlocks(schedulingItems,'schedulingBlocks');
+  const planCount=document.getElementById('planningCount'); if(planCount) planCount.textContent=planningItems.length?('('+planningItems.length+')'):'';
+  const schedCount=document.getElementById('schedulingCount'); if(schedCount) schedCount.textContent=schedulingItems.length?('('+schedulingItems.length+')'):'';
+  const schedEmpty=document.getElementById('schedulingEmpty');
+  if(schedEmpty) schedEmpty.style.display=schedulingItems.length?'none':'block';
+}
+function renderContentPlanBlocks(items,containerId){
+  const el=document.getElementById(containerId);
+  if(!el) return;
   const statusBadge={planned:{label:'Planned',color:'var(--muted)'},creative_ready:{label:'Creative ready',color:'var(--warn)'},approved:{label:'Approved',color:'var(--ok)'},scheduled:{label:'Scheduled',color:'var(--ok)'},published:{label:'Published',color:'var(--ok)'}};
   el.innerHTML=items.map(function(item){
     const badge=statusBadge[item.status]||{label:item.status,color:'var(--muted)'};
