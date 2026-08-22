@@ -1639,7 +1639,8 @@ async function loadCommandCenter(){
 
   const attentionCount=j.attention_items.length;
   const attentionRows=attentionCount?j.attention_items.map(function(a){
-    return '<div class="zen-attention-row"><div class="zen-attention-icon">&#8226;</div><div><b>'+a.title+'</b><p>'+a.detail+'</p></div><button onclick="showPage(\''+a.page+'\')">Review</button></div>';
+    const clickHandler=a.agent?('zenGoAgent(\''+a.agent+'\')'):('showPage(\''+a.page+'\')');
+    return '<div class="zen-attention-row"><div class="zen-attention-icon">&#8226;</div><div><b>'+a.title+'</b><p>'+a.detail+'</p></div><button onclick="'+clickHandler+'">Review</button></div>';
   }).join(''):'<div class="muted" style="font-size:12px;padding:8px 0;">Nothing needs your attention right now.</div>';
 
   const statusLabel={monitoring:'Monitoring',waiting:'Waiting for you',working:'Working'};
