@@ -63,6 +63,25 @@ def load_transactions(engine) -> pd.DataFrame:
     return df
 
 
+def load_all_revenue(engine) -> pd.DataFrame:
+    """Same table, deliberately WITHOUT the customer_key filter
+    load_transactions() uses - that filter is correct for the ML model
+    (which needs a resolved customer identity to build features), but
+    wrong for a plain revenue total, where a transaction that hasn't
+    been matched to a customer yet is still real money that came in.
+    Excluding it was silently undercounting actual revenue."""
+    query = """
+        select transaction_date, amount
+        from mw_transactions
+        where tenant_id = %(tenant_id)s
+        order by transaction_date asc
+    """
+    df = pd.read_sql(query, engine, params={"tenant_id": TENANT_ID})
+    df["transaction_date"] = pd.to_datetime(df["transaction_date"])
+    df["amount"] = pd.to_numeric(df["amount"], errors="coerce").fillna(0)
+    return df
+
+
 def load_profiles(engine) -> pd.DataFrame:
     query = "select customer_key, segment from mw_customer_profile where tenant_id = %(tenant_id)s"
     return pd.read_sql(query, engine, params={"tenant_id": TENANT_ID})
@@ -72,35 +91,53 @@ def load_profiles(engine) -> pd.DataFrame:
 # 1. Anomaly detection — is this week genuinely unusual?
 # ─────────────────────────────────────────────────────────────────
 def detect_anomaly(tx: pd.DataFrame, as_of: pd.Timestamp) -> dict | None:
-    """Compares this week's visit count against the mean and standard
-    deviation of the business's own prior full weeks. Returns None
-    (rather than a fabricated finding) if there isn't enough history
-    to establish a genuine baseline, or if this week isn't actually
-    unusual - a quiet week is not itself a finding."""
-    daily = tx.set_index("transaction_date").resample("D").size()
-    weekly = daily.resample("W-SAT").sum()  # week ending Saturday, matches the salon's own week
-    if len(weekly) < MIN_WEEKS_FOR_ANOMALY + 1:
-        return None  # not enough history yet to know what "normal" looks like
+    """Compares this week's visit count SO FAR against the same
+    Monday-through-same-relative-day window in the business's own prior
+    weeks - genuinely like-to-like, not a partial in-progress week
+    against full completed weeks (which would always look artificially
+    low simply because fewer days have elapsed). Uses through yesterday,
+    not today, since today's data may still be incomplete. Returns None
+    if there isn't enough history, or if nothing's actually unusual."""
+    yesterday = as_of - pd.Timedelta(days=1)
+    this_monday = yesterday - pd.Timedelta(days=yesterday.weekday())  # weekday(): Monday=0
+    days_elapsed = (yesterday - this_monday).days + 1  # e.g. Monday=1, Tuesday=2, ... Sunday=7
+    if days_elapsed < 2:
+        return None  # too early in the week for a same-day-range comparison to mean anything
 
-    this_week = weekly.iloc[-1]
-    baseline = weekly.iloc[-(MIN_WEEKS_FOR_ANOMALY + 1):-1]
+    daily = tx.set_index("transaction_date").resample("D").size()
+
+    def visits_in_range(start: pd.Timestamp, end: pd.Timestamp) -> int:
+        return int(daily[(daily.index >= start) & (daily.index <= end)].sum())
+
+    this_week_count = visits_in_range(this_monday, yesterday)
+
+    baseline_counts = []
+    for weeks_back in range(1, MIN_WEEKS_FOR_ANOMALY + 1):
+        prior_monday = this_monday - pd.Timedelta(weeks=weeks_back)
+        prior_end = prior_monday + pd.Timedelta(days=days_elapsed - 1)  # same elapsed-day count, not the full week
+        baseline_counts.append(visits_in_range(prior_monday, prior_end))
+
+    if daily.index.min() > this_monday - pd.Timedelta(weeks=MIN_WEEKS_FOR_ANOMALY):
+        return None  # not enough real history yet to know what "normal" looks like
+
+    baseline = pd.Series(baseline_counts)
     mean, std = baseline.mean(), baseline.std()
     if std == 0 or pd.isna(std):
         return None  # no variance to compare against - can't call anything an outlier
 
-    z = (this_week - mean) / std
+    z = (this_week_count - mean) / std
     if abs(z) < ANOMALY_STDDEV_THRESHOLD:
         return None  # within normal range - not a finding
 
     direction = "positive" if z > 0 else "negative"
-    pct_diff = round(((this_week - mean) / mean) * 100) if mean > 0 else 0
+    pct_diff = round(((this_week_count - mean) / mean) * 100) if mean > 0 else 0
     verb = "above" if z > 0 else "below"
     return {
         "insight_type": "anomaly",
         "title": f"This week's visits are {abs(pct_diff)}% {verb} the usual pattern",
-        "detail": f"{int(this_week)} visits this week vs a typical {round(mean)} (based on the last {MIN_WEEKS_FOR_ANOMALY} weeks) - a genuine deviation, not normal week-to-week noise.",
+        "detail": f"{this_week_count} visits Monday through yesterday vs a typical {round(mean)} over the same {days_elapsed} days in the last {MIN_WEEKS_FOR_ANOMALY} weeks - a genuine deviation, not normal week-to-week noise.",
         "direction": direction,
-        "metric_value": float(this_week),
+        "metric_value": float(this_week_count),
     }
 
 
@@ -141,10 +178,11 @@ def detect_cohort_shift(tx: pd.DataFrame, profiles: pd.DataFrame, as_of: pd.Time
 
     direction = "positive" if biggest_shift > 0 else "negative"
     verb = "grown" if biggest_shift > 0 else "shrunk"
+    segment_label = "Boys'" if biggest_segment == "boy" else "Girls'" if biggest_segment == "girl" else f"{biggest_segment.capitalize()}'s"
     return {
         "insight_type": "cohort",
-        "title": f"{biggest_segment.capitalize()} segment has {verb} {abs(round(biggest_shift))} points as a share of visits",
-        "detail": f"{biggest_segment.capitalize()} made up {round(recent_share[biggest_segment]*100)}% of visits in the last 60 days, vs {round(prior_share[biggest_segment]*100)}% in the 60 days before that.",
+        "title": f"{segment_label} share of visits has {verb} {abs(round(biggest_shift))} points",
+        "detail": f"{biggest_segment.capitalize()} customers made up {round(recent_share[biggest_segment]*100)}% of visits in the last 60 days, vs {round(prior_share[biggest_segment]*100)}% in the 60 days before that.",
         "direction": direction,
         "metric_value": float(biggest_shift),
     }
@@ -181,33 +219,36 @@ def surface_stylist_pattern(engine) -> dict | None:
 # ─────────────────────────────────────────────────────────────────
 # 4. Revenue pacing — where is this month actually heading?
 # ─────────────────────────────────────────────────────────────────
-def compute_pacing(tx: pd.DataFrame, as_of: pd.Timestamp) -> dict | None:
+def compute_pacing(revenue: pd.DataFrame, as_of: pd.Timestamp) -> dict | None:
+    """Compares month-to-date revenue through YESTERDAY against the
+    same day-of-month range last month - genuinely like-to-like, not a
+    full-month projection versus a full prior-month total (which
+    compares different kinds of numbers). Today is excluded since it
+    may still be incomplete."""
+    yesterday = as_of - pd.Timedelta(days=1)
     month_start = as_of.replace(day=1)
-    days_elapsed = (as_of - month_start).days + 1
-    days_in_month = (month_start + pd.offsets.MonthEnd(1)).day
-    if days_elapsed < 3:
-        return None  # too early in the month for a pace projection to mean anything
+    days_elapsed = (yesterday - month_start).days + 1
+    if days_elapsed < 2:
+        return None  # too early in the month for a comparison to mean anything
 
-    mtd = tx[(tx["transaction_date"] >= month_start) & (tx["transaction_date"] <= as_of)]["amount"].sum()
+    mtd = revenue[(revenue["transaction_date"] >= month_start) & (revenue["transaction_date"] <= yesterday)]["amount"].sum()
     if mtd <= 0:
         return None
 
-    daily_pace = mtd / days_elapsed
-    projected = daily_pace * days_in_month
-
     prior_month_end = month_start - pd.Timedelta(days=1)
     prior_month_start = prior_month_end.replace(day=1)
-    prior_month_total = tx[(tx["transaction_date"] >= prior_month_start) & (tx["transaction_date"] <= prior_month_end)]["amount"].sum()
-    if prior_month_total <= 0:
-        return None  # no honest comparison possible without a real prior-month total
+    prior_month_same_range_end = prior_month_start + pd.Timedelta(days=days_elapsed - 1)
+    prior_mtd = revenue[(revenue["transaction_date"] >= prior_month_start) & (revenue["transaction_date"] <= prior_month_same_range_end)]["amount"].sum()
+    if prior_mtd <= 0:
+        return None  # no honest comparison possible without a real same-period prior total
 
-    pct_vs_prior = round(((projected - prior_month_total) / prior_month_total) * 100)
+    pct_vs_prior = round(((mtd - prior_mtd) / prior_mtd) * 100)
     direction = "positive" if pct_vs_prior >= 0 else "negative"
     verb = "ahead of" if pct_vs_prior >= 0 else "behind"
     return {
         "insight_type": "pacing",
-        "title": f"On pace to finish {abs(pct_vs_prior)}% {verb} last month",
-        "detail": f"At the current daily pace ({round(daily_pace)}/day, {days_elapsed} of {days_in_month} days elapsed), this month projects to ~{round(projected)}, vs {round(prior_month_total)} last month.",
+        "title": f"This month is running {abs(pct_vs_prior)}% {verb} last month, same point",
+        "detail": f"{round(mtd)} so far this month (day 1 through yesterday, {days_elapsed} days) vs {round(prior_mtd)} over the same {days_elapsed} days last month.",
         "direction": direction,
         "metric_value": float(pct_vs_prior),
     }
@@ -219,14 +260,15 @@ def main():
     as_of = pd.Timestamp(datetime.now(timezone.utc).date())
 
     tx = load_transactions(engine)
+    revenue = load_all_revenue(engine)
     profiles = load_profiles(engine)
-    print(f"  Loaded {len(tx)} transactions, {len(profiles)} customer profiles")
+    print(f"  Loaded {len(tx)} customer-matched transactions, {len(revenue)} total transactions (all revenue), {len(profiles)} customer profiles")
 
     findings = []
     for fn, args in [
         (detect_anomaly, (tx, as_of)),
         (detect_cohort_shift, (tx, profiles, as_of)),
-        (compute_pacing, (tx, as_of)),
+        (compute_pacing, (revenue, as_of)),
     ]:
         result = fn(*args)
         if result:
