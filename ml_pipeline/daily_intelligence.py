@@ -177,12 +177,24 @@ def detect_cohort_shift(tx: pd.DataFrame, profiles: pd.DataFrame, as_of: pd.Time
         return None
 
     direction = "positive" if biggest_shift > 0 else "negative"
-    verb = "grown" if biggest_shift > 0 else "shrunk"
-    segment_label = "Boys'" if biggest_segment == "boy" else "Girls'" if biggest_segment == "girl" else f"{biggest_segment.capitalize()}'s"
+    other_segment = "girl" if biggest_segment == "boy" else "boy"
+    recent_count = int(recent["segment"].eq(biggest_segment).sum())
+    prior_count = int(prior["segment"].eq(biggest_segment).sum())
+    # Plain language, not statistics jargon - "share" and "points" mean
+    # nothing to a shop owner scanning this quickly. Says directly
+    # whether one group is visiting more or less than they used to, in
+    # real visit counts, plus why this is actually worth their
+    # attention rather than just a number.
+    if direction == "negative":
+        title = f"Fewer {biggest_segment} customers coming in lately, more {other_segment}"
+        why = f"Two months ago, {biggest_segment} and {other_segment} customers were closer to even. Now {other_segment} customers make up more of your visits. Worth checking if a recent promotion, stylist change, or seasonal reason (school terms, holidays) explains it - or if it's a real gap forming with {biggest_segment} families that's worth addressing directly."
+    else:
+        title = f"More {biggest_segment} customers coming in lately, compared to {other_segment}"
+        why = f"{biggest_segment.capitalize()} customers have become a bigger part of your business over the last 2 months. Good to know if you're planning promotions or stock - and worth understanding what's driving it, so you can keep it going."
     return {
         "insight_type": "cohort",
-        "title": f"{segment_label} share of visits has {verb} {abs(round(biggest_shift))} points",
-        "detail": f"{biggest_segment.capitalize()} customers made up {round(recent_share[biggest_segment]*100)}% of visits in the last 60 days, vs {round(prior_share[biggest_segment]*100)}% in the 60 days before that.",
+        "title": title,
+        "detail": f"{recent_count} {biggest_segment} visits in the last 60 days ({round(recent_share[biggest_segment]*100)}% of all visits), vs {prior_count} in the 60 days before that ({round(prior_share[biggest_segment]*100)}%). {why}",
         "direction": direction,
         "metric_value": float(biggest_shift),
     }
