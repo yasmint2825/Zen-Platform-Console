@@ -887,7 +887,16 @@ code, .mw-spinner + code, pre {
               <details class="agent-section">
                 <summary><span>Pending review <span id="pendingCountBadge"></span></span></summary>
                 <div class="agent-section-body">
-                  <div style="text-align:right;margin-bottom:8px;"><button class="btn btn-p btn-sm" onclick="resolveDuplicatePending()">Resolve duplicates automatically</button> <button class="btn btn-s btn-sm" onclick="rejectAllPending()">Reject all pending</button></div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+                    <label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer;">
+                      <input type="checkbox" id="autoResolveDuplicates" onchange="setAutoResolveDuplicates()" style="width:auto;margin:0;">
+                      Resolve duplicates automatically every day (no button needed)
+                    </label>
+                    <span>
+                      <button class="btn btn-p btn-sm" onclick="resolveDuplicatePending()">Resolve duplicates now</button>
+                      <button class="btn btn-s btn-sm" onclick="rejectAllPending()">Reject all pending</button>
+                    </span>
+                  </div>
                   <div id="pendingList" class="muted">Loading...</div>
                 </div>
               </details>
@@ -1693,7 +1702,7 @@ async function loadCommandCenter(){
       '<h3>'+atRisk.count+' customer'+(atRisk.count===1?'':'s')+' at risk of not returning</h3>'+
       '<p class="muted" style="font-size:12px;">Based on real visit patterns and prediction data.</p>'+
       (atRisk.revenue_estimate?('<div class="zen-money">~AED '+atRisk.revenue_estimate.toLocaleString()+' <small>estimated, based on this business\'s average transaction value</small></div>'):'')+
-      '<button class="zen-action" onclick="showPage(\'intelligence\')">Explore in Intelligence</button>'+
+      '<button class="zen-action" onclick="zenGoAgent(\'intelligence\')">Explore in Intelligence</button>'+
     '</aside>'
   ):'';
 
@@ -1778,7 +1787,7 @@ function zenCommand(text){
   if(!q) return;
   const low=q.toLowerCase();
   if(low.includes('customer')||low.includes('revenue')||low.includes('retention')||low.includes('why')){
-    showPage('intelligence');
+    zenGoAgent('intelligence');
     setTimeout(function(){
       const ask=document.getElementById('askInput');
       if(ask){ask.value=q;}
@@ -1789,7 +1798,7 @@ function zenCommand(text){
   } else if(low.includes('whatsapp')||low.includes('lapsed')||low.includes('nudge')||low.includes('birthday')){
     zenGoAgent('engagement');
   } else {
-    showPage('intelligence');
+    zenGoAgent('intelligence');
     setTimeout(function(){
       const ask=document.getElementById('askInput');
       if(ask){ask.value=q;}
@@ -2083,6 +2092,7 @@ async function loadSettings(){
   if(!j.ok) return;
   myRole=j.my_role;
   document.getElementById('reviewMode').value=j.tenant.review_mode;
+  document.getElementById('autoResolveDuplicates').checked=!!j.tenant.auto_resolve_duplicates;
   renderRuleBook(j.strategy||[]);
   document.getElementById('strategyList').innerHTML=(j.strategy||[]).map(function(s){
     return '<div class="item">'+
@@ -3935,6 +3945,7 @@ async function addBlackout(){
 }
 async function delBlackout(id){if(!confirm('Remove?'))return;await call('delete_blackout',{id:id});loadSettings();}
 async function setReviewMode(){const j=await call('set_review_mode',{review_mode:document.getElementById('reviewMode').value});if(!j.ok)alert('Error: '+j.error);}
+async function setAutoResolveDuplicates(){const j=await call('set_auto_resolve_duplicates',{auto_resolve_duplicates:document.getElementById('autoResolveDuplicates').checked});if(!j.ok)alert('Error: '+j.error);}
 async function runNow(){
   const r=document.getElementById('runResult');r.textContent='Submitting...';r.style.color='var(--muted)';
   const j=await call('run_now',{});
