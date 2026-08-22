@@ -2918,6 +2918,7 @@ function renderContentPlanBlocks(items,containerId){
         mainActions=
           '<button class="btn btn-s btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')">Edit</button> '+
           (needsJpegCleanup?'<button class="btn btn-p btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')">Clean up to JPEG</button> ':'')+
+          '<button class="btn btn-s btn-sm" onclick="regenerateApprovedImage(\''+item.id+'\',this)">Regenerate creative</button> '+
           '<button class="btn btn-s btn-sm" onclick="rejectContentPlanItem(\''+item.id+'\')">Reject</button> '+
           '<button class="btn btn-s btn-sm" onclick="toggleCaptionDetail(\''+item.id+'\')">Edit caption</button> '+
           '<button class="btn btn-s btn-sm" onclick="regenerateBlockConcept(\''+item.id+'\',this)">Clear &amp; suggest new post</button> '+
@@ -2931,6 +2932,7 @@ function renderContentPlanBlocks(items,containerId){
         mainActions=
           '<button class="btn btn-s btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')">Edit</button> '+
           (needsJpegCleanup?'<button class="btn btn-p btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')">Clean up to JPEG</button> ':'')+
+          '<button class="btn btn-s btn-sm" onclick="regenerateApprovedImage(\''+item.id+'\',this)">Regenerate creative</button> '+
           '<button class="btn btn-s btn-sm" onclick="unscheduleContentPlanItem(\''+item.id+'\')">Cancel schedule</button> '+
           '<button class="btn btn-s btn-sm" onclick="rejectContentPlanItem(\''+item.id+'\')">Reject</button> '+
           '<button class="btn btn-s btn-sm" onclick="toggleCaptionDetail(\''+item.id+'\')">Edit caption</button> '+
@@ -3082,7 +3084,7 @@ function renderContentPlanBlocks(items,containerId){
           sceneActions='<span class="muted" style="font-size:11px;"><span class="mw-spinner"></span>Generating video - this can take 1-2 minutes...</span>';
         } else if(videoStatus==='succeeded'){
           sceneActions='<button class="btn btn-s btn-sm" onclick="generateSceneClip(\''+item.id+'\','+scene.scene_number+',this)">Regenerate clip</button>'+
-            (scene.voiceover?(' <button class="btn btn-s btn-sm" onclick="generateSceneVoiceover(\''+item.id+'\','+scene.scene_number+',this)">'+(scene.has_voiceover_audio?'Regenerate voiceover':'Add voiceover')+'</button>'):'');
+            ' <button class="btn btn-s btn-sm" onclick="generateSceneVoiceover(\''+item.id+'\','+scene.scene_number+',this)">'+(scene.has_voiceover_audio?'Regenerate voiceover':'Add voiceover')+'</button>';
         } else {
           sceneActions='<button class="btn btn-p btn-sm" onclick="generateSceneClip(\''+item.id+'\','+scene.scene_number+',this)">Generate video clip</button>'+
             (videoStatus==='failed'?' <span style="color:var(--err);font-size:11px;">Last attempt failed - try again</span>':'');
@@ -3090,10 +3092,9 @@ function renderContentPlanBlocks(items,containerId){
         return '<div class="item" style="margin-bottom:8px;" id="scene-'+sid+'">'+
           '<div style="font-weight:700;font-size:12px;">Scene '+scene.scene_number+'</div>'+
           '<div class="muted" style="font-size:11.5px;margin-top:3px;">'+(scene.description||'')+'</div>'+
-          (scene.voiceover?(
-            '<label class="fl" style="margin-top:4px;">Voiceover line (edit before generating - this is exactly what gets spoken)</label>'+
-            '<textarea class="fi" id="sceneVoiceoverText-'+sid+'" rows="2" style="font-size:11.5px;">'+scene.voiceover+'</textarea>'
-          ):'')+
+          '<label class="fl" style="margin-top:4px;">Voiceover line (edit before generating - this is exactly what gets spoken)</label>'+
+          '<textarea class="fi" id="sceneVoiceoverText-'+sid+'" rows="2" style="font-size:11.5px;">'+(scene.voiceover||'')+'</textarea>'+
+          '<button class="btn btn-s btn-sm" onclick="autofillSceneVoiceover(\''+item.id+'\','+scene.scene_number+',this)" style="margin-top:4px;">Autofill intelligently</button>'+
           (scene.overlay_text?('<div style="font-size:11px;margin-top:2px;">Overlay text: '+scene.overlay_text+'</div>'):'')+
           '<div class="muted" style="font-size:10.5px;margin-top:4px;">Image prompt: '+(scene.text_to_image_prompt||'')+'</div>'+
           '<div class="muted" style="font-size:10.5px;margin-top:2px;">Motion prompt: '+(scene.image_to_video_prompt||'')+'</div>'+
@@ -3157,6 +3158,19 @@ async function generateSceneVoiceover(itemId,sceneNumber,btnEl){
     return;
   }
   loadMonthlyStrategy();
+}
+// Writes into the textarea only - the person still reviews/edits
+// before committing to actual TTS generation via the separate
+// Add/Regenerate voiceover button, same "review before spending"
+// pattern as everywhere else in this pipeline.
+async function autofillSceneVoiceover(itemId,sceneNumber,btnEl){
+  const originalLabel=btnEl?btnEl.innerHTML:null;
+  if(btnEl){btnEl.disabled=true;btnEl.innerHTML='<span class="mw-spinner"></span>Thinking...';}
+  const j=await call('suggest_scene_voiceover',{item_id:itemId,scene_number:sceneNumber});
+  if(btnEl){btnEl.disabled=false;btnEl.innerHTML=originalLabel;}
+  if(!j.ok){alert('Error: '+j.error);return;}
+  const textEl=document.getElementById('sceneVoiceoverText-'+itemId+'-'+sceneNumber);
+  if(textEl) textEl.value=j.voiceover;
 }
 async function pollSceneVideoStatus(itemId,sceneNumber,attempt){
   attempt=attempt||0;
@@ -3417,6 +3431,25 @@ async function generateBlockImage(itemId){
   const j=await call('generate_content_block_image',{item_id:itemId,compiled_prompt:promptToSend,reference_asset_urls:state?state.reference_asset_urls:[]});
   if(j.ok){imgArea.innerHTML='';loadMonthlyStrategy();}
   else{imgArea.innerHTML='<span style="color:var(--err);font-size:12px;">Error: '+j.error+'</span>';}
+}
+// For approved/scheduled items - regenerates using the item's own
+// already-stored prompt directly (no edit step), since the point here
+// is a fresh take on the same concept, not changing what it says. The
+// backend sends the item back to creative_ready automatically, since a
+// brand-new, never-reviewed image shouldn't silently go out under an
+// already-approved status - surfaced clearly here so it's not a
+// surprise where the item went.
+async function regenerateApprovedImage(itemId,btnEl){
+  if(!confirm('This generates a genuinely new image from the same prompt, and sends the block back for re-approval before it can be scheduled or published again. Continue?')) return;
+  const originalLabel=btnEl?btnEl.innerHTML:null;
+  if(btnEl){btnEl.disabled=true;btnEl.innerHTML='<span class="mw-spinner"></span>Regenerating...';}
+  const j=await call('generate_content_block_image',{item_id:itemId});
+  if(!j.ok){
+    alert('Error: '+j.error);
+    if(btnEl){btnEl.disabled=false;btnEl.innerHTML=originalLabel;}
+    return;
+  }
+  loadMonthlyStrategy();
 }
 
 // ── Business strategy ──
