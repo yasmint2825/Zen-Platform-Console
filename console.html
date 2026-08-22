@@ -891,6 +891,24 @@ code, .mw-spinner + code, pre {
               </details>
 
               <details class="agent-section">
+                <summary>At-risk customers - what's actually happening</summary>
+                <div class="agent-section-body">
+                  <p class="muted" style="font-size:12.5px;margin-bottom:8px;">Cross-checked against your live campaigns - not just a score from Intelligence agent, but whether anything is actually being done about it.</p>
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+                    <span class="muted" style="font-size:12.5px;">Reach uncovered at-risk customers using</span>
+                    <select class="fi" id="outreachCampaign" style="width:auto;margin:0;">
+                      <option value="lapsed">lapsed (win-back)</option>
+                      <option value="nudge">nudge</option>
+                      <option value="new_customer_offer">new_customer_offer</option>
+                    </select>
+                    <button class="btn btn-p btn-sm" onclick="triggerOutreach()">Trigger outreach</button>
+                  </div>
+                  <div id="outreachResult" style="font-size:12.5px;margin-bottom:10px;"></div>
+                  <div id="atRiskList" class="muted">Loading...</div>
+                </div>
+              </details>
+
+              <details class="agent-section">
                 <summary>Rule book - what the agent currently does</summary>
                 <div class="agent-section-body">
                   <div id="ruleBook" style="border:1px solid var(--border);border-radius:10px;padding:10px 14px;">Loading...</div>
@@ -1313,6 +1331,12 @@ code, .mw-spinner + code, pre {
           <div id="intelligenceAgentDetail" style="display:none;">
           <div class="page-header"><h1>Intelligence</h1><p class="muted">Shared analysis every agent draws from - predictions, patterns, and answers to whatever you ask.</p></div>
 
+          <div class="card">
+            <h2>Daily findings <span id="dailyIntelDate" class="muted" style="font-weight:400;font-size:11.5px;"></span></h2>
+            <p class="muted" style="margin-bottom:12px;">Computed fresh every day from your real transaction data - genuine deviations and shifts, not a generic checklist. Deliberately quiet when nothing's actually unusual, rather than manufacturing a finding to fill space.</p>
+            <div id="dailyIntelList" class="muted">Loading...</div>
+          </div>
+
           <div class="stat-grid" style="margin-bottom:20px;">
             <div class="agent-tile" onclick="document.getElementById('predictiveInsightsDetail').scrollIntoView({behavior:'smooth'})" style="cursor:pointer;">
               <div style="font-size:20px;">&#128202;</div>
@@ -1343,19 +1367,7 @@ code, .mw-spinner + code, pre {
             <h2>Return likelihood</h2>
             <p class="muted" id="modelMeta" style="margin-bottom:14px;"></p>
             <div class="stat-grid" id="predictiveTiers" style="margin-bottom:18px;"></div>
-            <h3>At-risk customers — what's actually happening</h3>
-            <p class="muted" style="font-size:12.5px;margin-bottom:8px;">Cross-checked against your live campaigns — not just a score, but whether anything is actually being done about it.</p>
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
-              <span class="muted" style="font-size:12.5px;">Reach uncovered at-risk customers using</span>
-              <select class="fi" id="outreachCampaign" style="width:auto;margin:0;">
-                <option value="lapsed">lapsed (win-back)</option>
-                <option value="nudge">nudge</option>
-                <option value="new_customer_offer">new_customer_offer</option>
-              </select>
-              <button class="btn btn-p btn-sm" onclick="triggerOutreach()">Trigger outreach</button>
-            </div>
-            <div id="outreachResult" style="font-size:12.5px;margin-bottom:10px;"></div>
-            <div id="atRiskList" class="muted">Loading...</div>
+            <p class="muted" style="font-size:12px;">Want to act on the at-risk customers below? That lives in <a href="#" onclick="zenGoAgent('engagement');return false;">Engagement agent</a> now, alongside everything else it's already doing for them.</p>
           </div>
 
           <div class="card" id="loadForecastCard" style="display:none;">
@@ -1606,7 +1618,8 @@ function showAgentDetail(agent){
   document.getElementById('intelligenceAgentDetail').style.display=agent==='intelligence'?'block':'none';
   window.scrollTo({top:0,behavior:'smooth'});
   if(agent==='marketing') loadSocialContent();
-  if(agent==='intelligence'){loadPredictive();renderQuickQuestions();}
+  if(agent==='engagement') loadAtRiskActions();
+  if(agent==='intelligence'){loadDailyIntelligence();loadPredictive();renderQuickQuestions();}
 }
 function showMarketingTab(tab){
   document.querySelectorAll('.marketing-tab-content').forEach(el=>el.style.display='none');
@@ -1788,6 +1801,27 @@ async function callML(action,extra){
     body:JSON.stringify(Object.assign({action,tenant_id:currentTenant},extra||{}))});
   return await r.json();
 }
+// Reads what daily_intelligence.py already computed (see get_daily_intelligence)
+// - this function does no computation itself, just renders real,
+// already-stored findings. A genuinely empty list here means the
+// script found nothing worth flagging today, not that it hasn't run.
+async function loadDailyIntelligence(){
+  const el=document.getElementById('dailyIntelList');
+  const dateEl=document.getElementById('dailyIntelDate');
+  const j=await call('get_daily_intelligence',{});
+  if(!j.ok){el.textContent='Error: '+j.error;return;}
+  if(!j.computed_for_date){el.innerHTML='No findings yet - this runs automatically once a day.';if(dateEl)dateEl.textContent='';return;}
+  if(dateEl) dateEl.textContent='('+j.computed_for_date+')';
+  if(!j.findings.length){el.innerHTML='Nothing unusual today - no genuine deviations or shifts to report.';return;}
+  const typeLabels={anomaly:'Anomaly',cohort:'Cohort shift',stylist:'Stylist pattern',pacing:'Revenue pacing'};
+  const directionColor={positive:'var(--ok)',negative:'var(--err)',neutral:'var(--muted)'};
+  el.innerHTML=j.findings.map(function(f){
+    return '<div class="item" style="border-left:3px solid '+(directionColor[f.direction]||'var(--muted)')+';">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;"><b style="font-size:13px;">'+f.title+'</b><span class="badge" style="background:var(--bg);color:var(--muted);">'+(typeLabels[f.insight_type]||f.insight_type)+'</span></div>'+
+      '<div class="muted" style="font-size:12px;margin-top:4px;">'+f.detail+'</div>'+
+    '</div>';
+  }).join('');
+}
 async function loadPredictive(){
   const [statusRes,summaryRes]=await Promise.all([callML('model_status',{}),callML('predictions_summary',{})]);
   document.getElementById('insightsCard').style.display=(statusRes.ok&&statusRes.model)?'block':'none';
@@ -1804,26 +1838,6 @@ async function loadPredictive(){
         '<div class="stat-tile"><div class="num">'+(t.likely||0)+'</div><div class="lbl">Likely to return</div></div>'+
         '<div class="stat-tile"><div class="num">'+(t.uncertain||0)+'</div><div class="lbl">Uncertain</div></div>'+
         '<div class="stat-tile"><div class="num">'+(t.at_risk||0)+'</div><div class="lbl">At risk</div></div>';
-    }
-    const atRisk=await callML('at_risk_actions',{});
-    const el=document.getElementById('atRiskList');
-    const statusStyle={
-      already_covered:{icon:'✅',color:'var(--ok)'},
-      eligible_now:{icon:'⚠️',color:'var(--warn)'},
-      not_yet_eligible:{icon:'⏳',color:'var(--muted)'},
-      no_active_campaign:{icon:'🔕',color:'var(--err)'},
-      no_recent_visit_data:{icon:'❓',color:'var(--muted)'},
-    };
-    if(atRisk.ok&&atRisk.actions&&atRisk.actions.length){
-      el.innerHTML=atRisk.actions.map(function(c){
-        const s=statusStyle[c.status]||{icon:'',color:'var(--muted)'};
-        return '<div class="item">'+
-          '<div style="display:flex;justify-content:space-between;font-size:13px;"><b>'+(c.customer_name||'(unnamed)')+'</b><span class="muted">'+Math.round(c.probability*100)+'% likely to return</span></div>'+
-          '<div style="font-size:12px;color:'+s.color+';margin-top:3px;">'+s.icon+' '+c.detail+'</div>'+
-        '</div>';
-      }).join('');
-    } else {
-      el.innerHTML='None currently.';
     }
   }
 
@@ -1844,6 +1858,36 @@ async function loadPredictive(){
         '<span style="width:70px;font-size:12px;text-align:right;color:var(--muted);">'+Math.round(d.avg_visits)+' avg</span>'+
       '</div>';
     }).join('');
+  }
+}
+
+// Extracted from loadPredictive() since atRiskList now lives on
+// Engagement's own page, not Intelligence's - fires when Engagement
+// opens instead. Same logic as before, just relocated with the UI it
+// belongs to.
+async function loadAtRiskActions(){
+  const el=document.getElementById('atRiskList');
+  if(!el) return;
+  const atRisk=await callML('at_risk_actions',{});
+  const statusStyle={
+    already_covered:{icon:'✅',color:'var(--ok)'},
+    eligible_now:{icon:'⚠️',color:'var(--warn)'},
+    not_yet_eligible:{icon:'⏳',color:'var(--muted)'},
+    no_active_campaign:{icon:'🔕',color:'var(--err)'},
+    no_recent_visit_data:{icon:'❓',color:'var(--muted)'},
+  };
+  if(atRisk.ok&&atRisk.actions&&atRisk.actions.length){
+    el.innerHTML=atRisk.actions.map(function(c){
+      const s=statusStyle[c.status]||{icon:'',color:'var(--muted)'};
+      return '<div class="item">'+
+        '<div style="display:flex;justify-content:space-between;font-size:13px;"><b>'+(c.customer_name||'(unnamed)')+'</b><span class="muted">'+Math.round(c.probability*100)+'% likely to return</span></div>'+
+        '<div style="font-size:12px;color:'+s.color+';margin-top:3px;">'+s.icon+' '+c.detail+'</div>'+
+      '</div>';
+    }).join('');
+  } else if(atRisk.ok){
+    el.innerHTML='None currently.';
+  } else {
+    el.innerHTML='Error: '+atRisk.error;
   }
 }
 
