@@ -1185,6 +1185,11 @@ code, .mw-spinner + code, pre {
                   <input class="fi" type="text" id="brandInstagramLocationId" placeholder="e.g. 123456789">
                   <div class="muted" style="font-size:10.5px;margin-top:4px;">This is a specific, numeric Facebook Place ID, not an address - Instagram's own API requires this exact format. Leave blank to publish without a tagged location.</div>
                 </div>
+                <div style="margin-bottom:10px;">
+                  <label class="muted" style="font-size:11px;display:block;margin-bottom:3px;">Kokoro voice (used for scene voiceovers)</label>
+                  <input class="fi" type="text" id="brandKokoroVoiceId" placeholder="Defaults to af_heart">
+                  <div class="muted" style="font-size:10.5px;margin-top:4px;">Options include af_heart, af_bella, af_sarah (American female), am_adam, am_michael (American male), bf_emma, bf_isabella (British female), bm_george, bm_lewis (British male). Leave blank to use af_heart.</div>
+                </div>
                 <button class="btn btn-p btn-sm" onclick="saveBrandColors()">Save</button>
                 <div id="brandSaveResult" style="margin-top:8px;font-size:12px;"></div>
               </details>
@@ -2807,6 +2812,7 @@ function renderContentPlanBlocks(items){
           '<button class="btn btn-p btn-sm" onclick="approveContentPlanItemBlock(\''+item.id+'\')">Approve</button> '+
           '<button class="btn btn-s btn-sm" onclick="rejectContentPlanItem(\''+item.id+'\')">Reject &amp; retry</button> '+
           '<button class="btn btn-s btn-sm" onclick="toggleCaptionDetail(\''+item.id+'\')">Edit caption</button> '+
+          '<button class="btn btn-s btn-sm" onclick="regenerateBlockConcept(\''+item.id+'\',this)">Clear &amp; suggest new post</button> '+
           '<button class="btn btn-s btn-sm" onclick="deleteContentPlanItem(\''+item.id+'\')">Delete</button>';
       } else if(item.status==='approved'){
         mainActions=
@@ -2814,6 +2820,7 @@ function renderContentPlanBlocks(items){
           (needsJpegCleanup?'<button class="btn btn-p btn-sm" onclick="toggleBlockDetail(\''+item.id+'\')">Clean up to JPEG</button> ':'')+
           '<button class="btn btn-s btn-sm" onclick="rejectContentPlanItem(\''+item.id+'\')">Reject</button> '+
           '<button class="btn btn-s btn-sm" onclick="toggleCaptionDetail(\''+item.id+'\')">Edit caption</button> '+
+          '<button class="btn btn-s btn-sm" onclick="regenerateBlockConcept(\''+item.id+'\',this)">Clear &amp; suggest new post</button> '+
           '<button class="btn btn-s btn-sm" onclick="deleteContentPlanItem(\''+item.id+'\')">Delete</button>';
       } else if(item.status==='scheduled'){
         mainActions=
@@ -2822,6 +2829,7 @@ function renderContentPlanBlocks(items){
           '<button class="btn btn-s btn-sm" onclick="unscheduleContentPlanItem(\''+item.id+'\')">Cancel schedule</button> '+
           '<button class="btn btn-s btn-sm" onclick="rejectContentPlanItem(\''+item.id+'\')">Reject</button> '+
           '<button class="btn btn-s btn-sm" onclick="toggleCaptionDetail(\''+item.id+'\')">Edit caption</button> '+
+          '<button class="btn btn-s btn-sm" onclick="regenerateBlockConcept(\''+item.id+'\',this)">Clear &amp; suggest new post</button> '+
           '<button class="btn btn-s btn-sm" onclick="deleteContentPlanItem(\''+item.id+'\')">Delete</button>';
       } else {
         mainActions=item.status==='published'?
@@ -2920,7 +2928,9 @@ function renderContentPlanBlocks(items){
         stitchStatus==='succeeded'?
           '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);"><div style="font-weight:700;font-size:12px;margin-bottom:6px;">Final stitched video</div>'+
           '<video src="'+item.generated_image_url+'" style="width:160px;border-radius:8px;display:block;" controls></video>'+
-          '<button class="btn btn-s btn-sm" onclick="stitchVideoScenes(\''+item.id+'\',this)" style="margin-top:6px;">Re-stitch</button></div>'
+          '<button class="btn btn-s btn-sm" onclick="stitchVideoScenes(\''+item.id+'\',this)" style="margin-top:6px;">Re-stitch</button> '+
+          '<a class="btn btn-s btn-sm" href="'+item.generated_image_url+'" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none;margin-top:6px;">Open / save video</a>'+
+          '<div class="muted" style="font-size:10.5px;margin-top:4px;">Opens in a new tab - right-click or long-press to save, then edit further in CapCut or any mobile editor if you want polish beyond a hard-cut stitch.</div></div>'
           :stitchStatus==='processing'?
           '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);"><span class="muted" style="font-size:11px;"><span class="mw-spinner"></span>Stitching scenes together...</span></div>'
           :'<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);"><button class="btn btn-p btn-sm" onclick="stitchVideoScenes(\''+item.id+'\',this)">Stitch all scenes together</button></div>'
@@ -2966,7 +2976,8 @@ function renderContentPlanBlocks(items){
         } else if(videoStatus==='processing'){
           sceneActions='<span class="muted" style="font-size:11px;"><span class="mw-spinner"></span>Generating video - this can take 1-2 minutes...</span>';
         } else if(videoStatus==='succeeded'){
-          sceneActions='<button class="btn btn-s btn-sm" onclick="generateSceneClip(\''+item.id+'\','+scene.scene_number+',this)">Regenerate clip</button>';
+          sceneActions='<button class="btn btn-s btn-sm" onclick="generateSceneClip(\''+item.id+'\','+scene.scene_number+',this)">Regenerate clip</button>'+
+            (scene.voiceover?(' <button class="btn btn-s btn-sm" onclick="generateSceneVoiceover(\''+item.id+'\','+scene.scene_number+',this)">'+(scene.has_voiceover_audio?'Regenerate voiceover':'Add voiceover')+'</button>'):'');
         } else {
           sceneActions='<button class="btn btn-p btn-sm" onclick="generateSceneClip(\''+item.id+'\','+scene.scene_number+',this)">Generate video clip</button>'+
             (videoStatus==='failed'?' <span style="color:var(--err);font-size:11px;">Last attempt failed - try again</span>':'');
@@ -2974,7 +2985,10 @@ function renderContentPlanBlocks(items){
         return '<div class="item" style="margin-bottom:8px;" id="scene-'+sid+'">'+
           '<div style="font-weight:700;font-size:12px;">Scene '+scene.scene_number+'</div>'+
           '<div class="muted" style="font-size:11.5px;margin-top:3px;">'+(scene.description||'')+'</div>'+
-          (scene.voiceover?('<div style="font-size:11.5px;margin-top:4px;font-style:italic;">Voiceover: "'+scene.voiceover+'"</div>'):'')+
+          (scene.voiceover?(
+            '<label class="fl" style="margin-top:4px;">Voiceover line (edit before generating - this is exactly what gets spoken)</label>'+
+            '<textarea class="fi" id="sceneVoiceoverText-'+sid+'" rows="2" style="font-size:11.5px;">'+scene.voiceover+'</textarea>'
+          ):'')+
           (scene.overlay_text?('<div style="font-size:11px;margin-top:2px;">Overlay text: '+scene.overlay_text+'</div>'):'')+
           '<div class="muted" style="font-size:10.5px;margin-top:4px;">Image prompt: '+(scene.text_to_image_prompt||'')+'</div>'+
           '<div class="muted" style="font-size:10.5px;margin-top:2px;">Motion prompt: '+(scene.image_to_video_prompt||'')+'</div>'+
@@ -3026,6 +3040,18 @@ async function generateSceneClip(itemId,sceneNumber,btnEl){
   }
   loadMonthlyStrategy();
   pollSceneVideoStatus(itemId,sceneNumber);
+}
+async function generateSceneVoiceover(itemId,sceneNumber,btnEl){
+  const textEl=document.getElementById('sceneVoiceoverText-'+itemId+'-'+sceneNumber);
+  const originalLabel=btnEl?btnEl.innerHTML:null;
+  if(btnEl){btnEl.disabled=true;btnEl.innerHTML='<span class="mw-spinner"></span>Generating voiceover (~20s)...';}
+  const j=await call('generate_scene_voiceover',{item_id:itemId,scene_number:sceneNumber,voiceover_text:textEl?textEl.value:undefined});
+  if(!j.ok){
+    alert('Error: '+j.error);
+    if(btnEl){btnEl.disabled=false;btnEl.innerHTML=originalLabel;}
+    return;
+  }
+  loadMonthlyStrategy();
 }
 async function pollSceneVideoStatus(itemId,sceneNumber,attempt){
   attempt=attempt||0;
@@ -3236,6 +3262,7 @@ async function deleteContentPlanItem(itemId){
   loadMonthlyStrategy();
 }
 async function regenerateBlockConcept(itemId,btnEl){
+  if(!confirm('This clears any existing image/schedule for this post and proposes a genuinely new concept for the same slot. Continue?')) return;
   const originalLabel=btnEl?btnEl.innerHTML:null;
   if(btnEl){btnEl.disabled=true;btnEl.innerHTML='<span class="mw-spinner"></span>Thinking of a new angle...';}
   const j=await call('regenerate_content_plan_item_concept',{item_id:itemId});
@@ -3564,6 +3591,7 @@ async function loadBrandSettings(){
   if(brandSettingsCache.visual_brand_description) document.getElementById('brandVisualDescription').value=brandSettingsCache.visual_brand_description;
   if(brandSettingsCache.default_image_model) document.getElementById('brandDefaultImageModel').value=brandSettingsCache.default_image_model;
   if(brandSettingsCache.instagram_location_id) document.getElementById('brandInstagramLocationId').value=brandSettingsCache.instagram_location_id;
+  if(brandSettingsCache.kokoro_voice_id) document.getElementById('brandKokoroVoiceId').value=brandSettingsCache.kokoro_voice_id;
 }
 async function uploadBrandLogo(){
   const fileInput=document.getElementById('brandLogoFile');
@@ -3589,6 +3617,7 @@ async function saveBrandColors(){
     visual_brand_description:document.getElementById('brandVisualDescription').value,
     default_image_model:document.getElementById('brandDefaultImageModel').value,
     instagram_location_id:document.getElementById('brandInstagramLocationId').value.trim(),
+    kokoro_voice_id:document.getElementById('brandKokoroVoiceId').value.trim(),
   });
   const j=await call('save_brand_settings',merged);
   const r=document.getElementById('brandSaveResult');
