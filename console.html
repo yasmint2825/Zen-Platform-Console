@@ -3108,7 +3108,8 @@ function renderContentPlanBlocks(items,containerId){
           '<textarea class="fi" id="sceneVoiceoverText-'+sid+'" rows="2" style="font-size:11.5px;">'+(scene.voiceover||'')+'</textarea>'+
           '<button class="btn btn-s btn-sm" onclick="autofillSceneVoiceover(\''+item.id+'\','+scene.scene_number+',this)" style="margin-top:4px;">Autofill intelligently</button>'+
           (scene.overlay_text?('<div style="font-size:11px;margin-top:2px;">Overlay text: '+scene.overlay_text+'</div>'):'')+
-          '<div class="muted" style="font-size:10.5px;margin-top:4px;">Image prompt: '+(scene.text_to_image_prompt||'')+'</div>'+
+          '<div class="muted" style="font-size:10.5px;margin-top:4px;">Draft image prompt (before Brand DNA is applied): '+(scene.text_to_image_prompt||'')+'</div>'+
+          (scene.compiled_image_prompt?('<div class="muted" style="font-size:10.5px;margin-top:2px;">Actual prompt used, with Brand DNA and campaign context applied: '+scene.compiled_image_prompt+'</div>'):'<div class="muted" style="font-size:10.5px;margin-top:2px;font-style:italic;">Actual prompt appears here once you generate this scene\'s image</div>')+
           '<div class="muted" style="font-size:10.5px;margin-top:2px;">Motion prompt: '+(scene.image_to_video_prompt||'')+'</div>'+
           sceneMedia+
           '<div style="margin-top:6px;">'+sceneActions+'</div>'+
