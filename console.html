@@ -982,6 +982,18 @@ code, .mw-spinner + code, pre {
             <div class="card">
               <h2>WhatsApp connection</h2>
               <div id="waStatus" style="font-size:13px;padding:10px 14px;border-radius:10px;margin-bottom:12px;"></div>
+
+              <details style="margin-bottom:14px;border:1px solid var(--border);border-radius:10px;padding:10px 14px;">
+                <summary style="cursor:pointer;font-weight:700;font-size:13px;">First time with a brand-new number? Register it here</summary>
+                <div style="margin-top:10px;">
+                  <p class="muted" style="font-size:12px;margin-bottom:10px;">A genuinely new WhatsApp number shows "Pending" in Meta until it's registered for Cloud API use - this is a separate, one-time step from just connecting it below. Uses the access token and phone number ID entered below, so fill those in first.</p>
+                  <label class="fl">Choose a 6-digit PIN (this becomes the number's permanent two-step verification PIN - pick something you'll remember)</label>
+                  <input class="fi" type="text" id="waRegisterPin" placeholder="e.g. 482913" maxlength="6" inputmode="numeric">
+                  <button class="btn btn-s btn-sm" onclick="registerWhatsappNumber()" style="margin-top:6px;">Register number</button>
+                  <div id="waRegisterResult" style="font-size:12.5px;margin-top:8px;"></div>
+                </div>
+              </details>
+
               <label class="fl">Access token</label>
               <input class="fi" type="password" id="waToken" placeholder="Paste permanent access token">
               <label class="fl">Phone number ID</label>
@@ -2116,6 +2128,28 @@ async function saveWA(){
   if(!access_token||!phone_number_id){r.textContent='Token and phone number ID required.';r.style.color='var(--err)';return;}
   const j=await callWA(WA_CONFIG_URL,'save',{access_token:access_token,phone_number_id:phone_number_id,waba_id:waba_id});
   if(j.ok){r.textContent='Saved';r.style.color='var(--ok)';document.getElementById('waToken').value='';loadWAStatus();}
+  else{r.textContent='Error: '+j.error;r.style.color='var(--err)';}
+}
+
+// Completes Meta's separate, one-time /register step that moves a
+// brand-new number from "Pending" to "Connected" - genuinely needed
+// once per new number, not an ongoing action, and NOT the same as
+// saveWA() above (which stores credentials for actual day-to-day
+// sending, via the separate whatsapp-config function). Reads the same
+// token/phone number ID fields rather than duplicating them, since
+// whatever's being registered is also what's about to be connected.
+// Uses call() (mw-admin), not callWA() - this action genuinely lives in
+// mw-admin, not whatsapp-config.
+async function registerWhatsappNumber(){
+  const access_token=document.getElementById('waToken').value.trim();
+  const phone_number_id=document.getElementById('waPhoneId').value.trim();
+  const pin=document.getElementById('waRegisterPin').value.trim();
+  const r=document.getElementById('waRegisterResult');
+  if(!access_token||!phone_number_id){r.textContent='Fill in access token and phone number ID below first.';r.style.color='var(--err)';return;}
+  if(!/^\d{6}$/.test(pin)){r.textContent='PIN must be exactly 6 digits.';r.style.color='var(--err)';return;}
+  r.innerHTML='<span class="mw-spinner"></span>Registering...';
+  const j=await call('register_whatsapp_number',{access_token:access_token,phone_number_id:phone_number_id,pin:pin});
+  if(j.ok){r.textContent='Registered successfully - check WhatsApp Manager to confirm it now shows Connected, then use Save and connect below.';r.style.color='var(--ok)';}
   else{r.textContent='Error: '+j.error;r.style.color='var(--err)';}
 }
 
