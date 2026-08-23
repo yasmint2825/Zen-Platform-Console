@@ -1228,6 +1228,11 @@ code, .mw-spinner + code, pre {
                   <div class="muted" style="font-size:10.5px;margin-top:4px;">This is a specific, numeric Facebook Place ID, not an address - Instagram's own API requires this exact format. Leave blank to publish without a tagged location.</div>
                 </div>
                 <div style="margin-bottom:10px;">
+                  <label class="muted" style="font-size:11px;display:block;margin-bottom:3px;">Meta Ad Account ID (for ad spend monitoring)</label>
+                  <input class="fi" type="text" id="brandMetaAdAccountId" placeholder="e.g. 123456789012345 (without the act_ prefix)">
+                  <div class="muted" style="font-size:10.5px;margin-top:4px;">Found in Meta Ads Manager's account settings or URL - just the number, the act_ prefix gets added automatically.</div>
+                </div>
+                <div style="margin-bottom:10px;">
                   <label class="muted" style="font-size:11px;display:block;margin-bottom:3px;">Kokoro voice (used for scene voiceovers)</label>
                   <input class="fi" type="text" id="brandKokoroVoiceId" placeholder="Defaults to af_heart">
                   <div class="muted" style="font-size:10.5px;margin-top:4px;">Options include af_heart, af_bella, af_sarah (American female), am_adam, am_michael (American male), bf_emma, bf_isabella (British female), bm_george, bm_lewis (British male). Leave blank to use af_heart.</div>
@@ -1347,6 +1352,20 @@ code, .mw-spinner + code, pre {
               <button class="btn btn-p btn-sm" onclick="addCompetitor()">Add</button>
             </div>
             <div id="competitorsList" class="muted">Loading...</div>
+          </div>
+
+          <div class="card">
+            <h2>Ad spend monitoring</h2>
+            <p class="muted">Pulls real campaign and placement data directly from Meta's own Marketing API - no third-party service, no ongoing subscription. Requires the Ad Account ID set in Brand setup above.</p>
+            <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;">
+              <select class="fi" id="metaAdsLookback" style="width:auto;margin:0;">
+                <option value="7">Last 7 days</option>
+                <option value="30" selected>Last 30 days</option>
+                <option value="90">Last 90 days</option>
+              </select>
+              <button class="btn btn-p btn-sm" onclick="loadMetaAdsSummary()">Check spend</button>
+            </div>
+            <div id="metaAdsResult"></div>
           </div>
           </div>
 
@@ -1781,6 +1800,11 @@ async function loadCommandCenter(){
           '<p>'+j.agents.intelligence.message+'</p>'+
           '<div class="worker-footer">Ask your business &rarr;</div>'+
         '</article>'+
+        '<article class="zen-worker" style="opacity:0.65;cursor:default;">'+
+          '<div class="zen-worker-top"><div class="zen-worker-title"><div class="avatar">&#9742;</div><div><h3>Call Agent</h3><small>Missed calls &amp; booking</small></div></div>'+
+          '<span class="badge" style="background:var(--border);color:var(--muted);">Coming soon</span></div>'+
+          '<p>Designed to recover missed calls and turn them into bookings automatically.</p>'+
+        '</article>'+
       '</div>'+
     '</section>'+
     '<section class="zen-two-col">'+
@@ -2013,6 +2037,31 @@ async function deleteCompetitor(competitorId){
   const j=await call('delete_competitor',{competitor_id:competitorId});
   if(!j.ok){alert('Error: '+j.error);return;}
   loadCompetitors();
+}
+
+async function loadMetaAdsSummary(){
+  const el=document.getElementById('metaAdsResult');
+  const lookback=document.getElementById('metaAdsLookback').value;
+  el.innerHTML='<span class="mw-spinner"></span>Pulling from Meta...';
+  const j=await call('get_meta_ads_summary',{lookback_days:parseInt(lookback,10)});
+  if(!j.ok){
+    el.innerHTML='<span style="color:var(--err);">Error: '+j.error+'</span>';
+    return;
+  }
+  const campaignRows=j.campaigns.map(function(c){
+    return '<div class="item"><div style="display:flex;justify-content:space-between;"><b>'+c.name+'</b><span>AED'+c.spend.toFixed(2)+'</span></div>'+
+      '<div class="muted" style="font-size:11.5px;margin-top:2px;">'+c.impressions+' impressions · '+c.clicks+' clicks · '+c.link_clicks+' link clicks'+(c.leads?(' · '+c.leads+' leads'):'')+' · CPC AED'+c.cpc.toFixed(2)+'</div>'+
+    '</div>';
+  }).join('') || '<div class="muted">No campaigns found for this period.</div>';
+
+  const placementRows=j.placements.filter(function(p){return p.clicks===0&&p.spend>0;}).map(function(p){
+    return '<div class="item" style="border-left:3px solid var(--err);"><b>'+(p.platform||'')+' - '+(p.position||'')+'</b><div class="muted" style="font-size:11.5px;">AED'+p.spend.toFixed(2)+' spent, zero clicks</div></div>';
+  }).join('');
+
+  el.innerHTML='<div style="font-weight:700;font-size:14px;margin-bottom:10px;">AED'+j.total_spend.toFixed(2)+' total spend, last '+j.lookback_days+' days</div>'+
+    '<div style="font-weight:700;font-size:12.5px;margin-bottom:6px;">Campaigns</div>'+campaignRows+
+    (placementRows?('<div style="font-weight:700;font-size:12.5px;margin:14px 0 6px;">Placements with spend and zero clicks</div>'+placementRows):'')+
+    (j.zero_click_placement_spend>0?('<div class="muted" style="font-size:11.5px;margin-top:8px;">AED'+j.zero_click_placement_spend.toFixed(2)+' spent on placements with no clicks at all this period.</div>'):'');
 }
 
 async function call(action,extra){
@@ -3899,6 +3948,7 @@ async function loadBrandSettings(){
   if(brandSettingsCache.visual_brand_description) document.getElementById('brandVisualDescription').value=brandSettingsCache.visual_brand_description;
   if(brandSettingsCache.default_image_model) document.getElementById('brandDefaultImageModel').value=brandSettingsCache.default_image_model;
   if(brandSettingsCache.instagram_location_id) document.getElementById('brandInstagramLocationId').value=brandSettingsCache.instagram_location_id;
+  if(brandSettingsCache.meta_ad_account_id) document.getElementById('brandMetaAdAccountId').value=brandSettingsCache.meta_ad_account_id;
   if(brandSettingsCache.kokoro_voice_id) document.getElementById('brandKokoroVoiceId').value=brandSettingsCache.kokoro_voice_id;
 }
 async function uploadBrandLogo(){
@@ -3925,6 +3975,7 @@ async function saveBrandColors(){
     visual_brand_description:document.getElementById('brandVisualDescription').value,
     default_image_model:document.getElementById('brandDefaultImageModel').value,
     instagram_location_id:document.getElementById('brandInstagramLocationId').value.trim(),
+    meta_ad_account_id:document.getElementById('brandMetaAdAccountId').value.trim(),
     kokoro_voice_id:document.getElementById('brandKokoroVoiceId').value.trim(),
   });
   const j=await call('save_brand_settings',merged);
