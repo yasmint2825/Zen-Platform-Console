@@ -983,41 +983,48 @@ code, .mw-spinner + code, pre {
               <h2>WhatsApp connection</h2>
               <div id="waStatus" style="font-size:13px;padding:10px 14px;border-radius:10px;margin-bottom:12px;"></div>
 
-              <details style="margin-bottom:14px;border:1px solid var(--border);border-radius:10px;padding:10px 14px;">
-                <summary style="cursor:pointer;font-weight:700;font-size:13px;">First time with a brand-new number? Register it here</summary>
+              <details id="waSetupDetails">
+                <summary style="cursor:pointer;font-weight:700;font-size:13px;padding:8px 0;">Connection setup, registration & testing</summary>
                 <div style="margin-top:10px;">
-                  <p class="muted" style="font-size:12px;margin-bottom:10px;">A genuinely new WhatsApp number shows "Pending" in Meta until it's registered for Cloud API use - this is a separate, one-time step from just connecting it below. Uses the access token and phone number ID entered below, so fill those in first.</p>
-                  <label class="fl">Choose a 6-digit PIN (this becomes the number's permanent two-step verification PIN - pick something you'll remember)</label>
-                  <input class="fi" type="text" id="waRegisterPin" placeholder="e.g. 482913" maxlength="6" inputmode="numeric">
-                  <button class="btn btn-s btn-sm" onclick="registerWhatsappNumber()" style="margin-top:6px;">Register number</button>
-                  <div id="waRegisterResult" style="font-size:12.5px;margin-top:8px;"></div>
+
+                <details style="margin-bottom:14px;border:1px solid var(--border);border-radius:10px;padding:10px 14px;">
+                  <summary style="cursor:pointer;font-weight:700;font-size:13px;">First time with a brand-new number? Register it here</summary>
+                  <div style="margin-top:10px;">
+                    <p class="muted" style="font-size:12px;margin-bottom:10px;">A genuinely new WhatsApp number shows "Pending" in Meta until it's registered for Cloud API use - this is a separate, one-time step from just connecting it below. Uses the access token and phone number ID entered below, so fill those in first.</p>
+                    <label class="fl">Choose a 6-digit PIN (this becomes the number's permanent two-step verification PIN - pick something you'll remember)</label>
+                    <input class="fi" type="text" id="waRegisterPin" placeholder="e.g. 482913" maxlength="6" inputmode="numeric">
+                    <button class="btn btn-s btn-sm" onclick="registerWhatsappNumber()" style="margin-top:6px;">Register number</button>
+                    <div id="waRegisterResult" style="font-size:12.5px;margin-top:8px;"></div>
+                  </div>
+                </details>
+
+                <label class="fl">Access token</label>
+                <input class="fi" type="password" id="waToken" placeholder="Paste permanent access token">
+                <label class="fl">Phone number ID</label>
+                <input class="fi" type="text" id="waPhoneId" placeholder="e.g. 109876543210987">
+                <label class="fl">WABA ID</label>
+                <input class="fi" type="text" id="waWabaId" placeholder="For template management">
+                <button class="btn btn-p btn-sm" onclick="saveWA()">Save and connect</button>
+                <div id="waSaveResult" style="font-size:12.5px;margin-top:8px;"></div>
+
+                <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
+                  <label class="fl">Send a test message</label>
+                  <div style="display:flex;gap:6px;margin-bottom:6px;">
+                    <input class="fi" type="text" id="waTestNumber" placeholder="Recipient number, e.g. 971501234567" style="margin:0;">
+                    <button class="btn btn-s btn-sm" onclick="sendWATestMessage()" style="white-space:nowrap;">Send test</button>
+                  </div>
+                  <input class="fi" type="text" id="waTestTemplateName" placeholder="Template name (default: hello_world - not every account has this, see note below)" style="margin:0;font-size:11.5px;margin-bottom:6px;">
+                  <input class="fi" type="text" id="waTestLanguageCode" value="en" placeholder="Language code (must match exactly what the template was approved under)" style="margin:0;font-size:11.5px;margin-bottom:6px;">
+                  <input class="fi" type="text" id="waTestHeaderParams" placeholder="Header parameters, comma-separated (leave blank if the header has no variable, or no header)" style="margin:0;font-size:11.5px;margin-bottom:6px;">
+                  <input class="fi" type="text" id="waTestBodyParams" placeholder="Body parameters, comma-separated in order (e.g. 10%, Keyaan, 31 August, COMEBACK10) - leave blank if none" style="margin:0;font-size:11.5px;">
+                  <div class="muted" style="font-size:10.5px;margin-top:4px;">Language code must match exactly what the template shows in Meta's dashboard - "en" and "en_US" are genuinely different and won't match each other, even though they look similar. Header and body have their own, separate {{1}}, {{2}} numbering in WhatsApp's template structure - they're not the same slots, even when both use {{1}}. hello_world only exists for accounts that went through Meta's free test-number flow - if this account connected a real number directly instead, use one of your own real template names here.</div>
+                  <div id="waTestResult" style="font-size:12.5px;margin-top:8px;"></div>
+                  <button class="btn btn-s btn-sm" onclick="listWATemplates()" style="margin-top:10px;">Diagnose: show templates Meta actually sees for this account</button>
+                  <div id="waTemplatesResult" style="font-size:12px;margin-top:8px;"></div>
+                </div>
+
                 </div>
               </details>
-
-              <label class="fl">Access token</label>
-              <input class="fi" type="password" id="waToken" placeholder="Paste permanent access token">
-              <label class="fl">Phone number ID</label>
-              <input class="fi" type="text" id="waPhoneId" placeholder="e.g. 109876543210987">
-              <label class="fl">WABA ID</label>
-              <input class="fi" type="text" id="waWabaId" placeholder="For template management">
-              <button class="btn btn-p btn-sm" onclick="saveWA()">Save and connect</button>
-              <div id="waSaveResult" style="font-size:12.5px;margin-top:8px;"></div>
-
-              <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
-                <label class="fl">Send a test message</label>
-                <div style="display:flex;gap:6px;margin-bottom:6px;">
-                  <input class="fi" type="text" id="waTestNumber" placeholder="Recipient number, e.g. 971501234567" style="margin:0;">
-                  <button class="btn btn-s btn-sm" onclick="sendWATestMessage()" style="white-space:nowrap;">Send test</button>
-                </div>
-                <input class="fi" type="text" id="waTestTemplateName" placeholder="Template name (default: hello_world - not every account has this, see note below)" style="margin:0;font-size:11.5px;margin-bottom:6px;">
-                <input class="fi" type="text" id="waTestLanguageCode" value="en" placeholder="Language code (must match exactly what the template was approved under)" style="margin:0;font-size:11.5px;margin-bottom:6px;">
-                <input class="fi" type="text" id="waTestHeaderParams" placeholder="Header parameters, comma-separated (leave blank if the header has no variable, or no header)" style="margin:0;font-size:11.5px;margin-bottom:6px;">
-                <input class="fi" type="text" id="waTestBodyParams" placeholder="Body parameters, comma-separated in order (e.g. 10%, Keyaan, 31 August, COMEBACK10) - leave blank if none" style="margin:0;font-size:11.5px;">
-                <div class="muted" style="font-size:10.5px;margin-top:4px;">Language code must match exactly what the template shows in Meta's dashboard - "en" and "en_US" are genuinely different and won't match each other, even though they look similar. Header and body have their own, separate {{1}}, {{2}} numbering in WhatsApp's template structure - they're not the same slots, even when both use {{1}}. hello_world only exists for accounts that went through Meta's free test-number flow - if this account connected a real number directly instead, use one of your own real template names here.</div>
-                <div id="waTestResult" style="font-size:12.5px;margin-top:8px;"></div>
-                <button class="btn btn-s btn-sm" onclick="listWATemplates()" style="margin-top:10px;">Diagnose: show templates Meta actually sees for this account</button>
-                <div id="waTemplatesResult" style="font-size:12px;margin-top:8px;"></div>
-              </div>
             </div>
 
             <div class="card">
@@ -4271,6 +4278,11 @@ async function loadPending(){
       '<summary style="cursor:pointer;padding:8px 0;"><span style="display:flex;align-items:center;gap:6px;"><span class="details-arrow" style="display:inline-block;transition:transform .15s;">&#9656;</span><span style="font-weight:700;font-size:12.5px;">'+info.label+'</span> <span class="muted" style="font-weight:400;">('+items.length+')</span></span></summary>'+
       '<div style="padding:4px 0 8px;">'+
         (info.desc?('<p class="muted" style="font-size:11.5px;margin-bottom:8px;">'+info.desc+'</p>'):'')+
+        '<div style="display:flex;gap:6px;margin-bottom:8px;align-items:center;">'+
+          '<input class="fi" type="text" id="campaignTestNum_'+key+'" placeholder="Test this template - phone number" style="margin:0;flex:1;font-size:12px;">'+
+          '<button class="btn btn-s btn-sm" onclick="sendCampaignTest(\''+key+'\')" style="white-space:nowrap;">Send test</button>'+
+        '</div>'+
+        '<div id="campaignTestResult_'+key+'" style="font-size:11.5px;margin-bottom:8px;"></div>'+
         '<div style="text-align:right;margin-bottom:8px;"><button class="btn btn-p btn-sm" onclick="approveAllInGroup(\''+key+'\','+JSON.stringify(ids).replace(/"/g,'&quot;')+')">Approve &amp; send all '+items.length+'</button></div>'+
         items.map(function(d){
           const dupKey=d.customer_id||d.mobile;
@@ -4292,6 +4304,21 @@ async function approveAllInGroup(campaignKey,ids){
   if(!j.ok){alert('Error: '+j.error);return;}
   if(j.failed&&j.failed.length){alert(j.sent+' sent successfully. '+j.failed.length+' failed - they remain in the pending list for you to retry or reject individually.');}
   loadPending();loadOverview();loadApprovals();
+}
+// Sends a real test message for this specific campaign type's actual,
+// currently-mapped template - lets an owner verify a whole group (e.g.
+// "lapsed") genuinely works before approving it for real customers,
+// with just a phone number, no need to know the template name, its
+// language, or which variables it expects.
+async function sendCampaignTest(campaignKey){
+  const numEl=document.getElementById('campaignTestNum_'+campaignKey);
+  const resEl=document.getElementById('campaignTestResult_'+campaignKey);
+  const to_number=numEl.value.trim();
+  if(!to_number){resEl.textContent='Enter a recipient number.';resEl.style.color='var(--err)';return;}
+  resEl.innerHTML='<span class="mw-spinner"></span>Sending...';
+  const j=await call('send_campaign_test_message',{campaign_key:campaignKey,to_number:to_number});
+  if(j.ok){resEl.textContent='Sent - check WhatsApp on that number.';resEl.style.color='var(--ok)';}
+  else{resEl.textContent='Error: '+j.error;resEl.style.color='var(--err)';}
 }
 async function approveDecision(id){const j=await call('approve_decision',{id:id});if(!j.ok)alert('Error: '+j.error);loadPending();loadOverview();loadApprovals();}
 async function rejectDecision(id){await call('reject_decision',{id:id});loadPending();loadOverview();loadApprovals();}
