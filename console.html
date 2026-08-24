@@ -4275,9 +4275,10 @@ async function loadPending(){
     const info=campaignInfo[key]||{label:key,desc:''};
     const ids=items.map(function(d){return d.id;});
     const approvedCount=items.filter(function(d){return d.status==='approved';}).length;
-    const pendingCount=items.length-approvedCount;
+    const scheduledCount=items.filter(function(d){return d.status==='scheduled';}).length;
+    const pendingCount=items.filter(function(d){return d.status==='pending_review';}).length;
     return '<details style="margin-bottom:10px;">'+
-      '<summary style="cursor:pointer;padding:8px 0;"><span style="display:flex;align-items:center;gap:6px;"><span class="details-arrow" style="display:inline-block;transition:transform .15s;">&#9656;</span><span style="font-weight:700;font-size:12.5px;">'+info.label+'</span> <span class="muted" style="font-weight:400;">('+items.length+(approvedCount?', '+approvedCount+' approved':'')+')</span></span></summary>'+
+      '<summary style="cursor:pointer;padding:8px 0;"><span style="display:flex;align-items:center;gap:6px;"><span class="details-arrow" style="display:inline-block;transition:transform .15s;">&#9656;</span><span style="font-weight:700;font-size:12.5px;">'+info.label+'</span> <span class="muted" style="font-weight:400;">('+items.length+(approvedCount?', '+approvedCount+' approved':'')+(scheduledCount?', '+scheduledCount+' scheduled':'')+')</span></span></summary>'+
       '<div style="padding:4px 0 8px;">'+
         (info.desc?('<p class="muted" style="font-size:11.5px;margin-bottom:8px;">'+info.desc+'</p>'):'')+
         // Approving and sending are deliberately separate now - approve
@@ -4287,6 +4288,14 @@ async function loadPending(){
           '<button class="btn btn-s btn-sm" onclick="approveAllInGroup(\''+key+'\')"'+(pendingCount?'':' disabled')+'>Approve all'+(pendingCount?' '+pendingCount:'')+'</button>'+
           '<button class="btn btn-p btn-sm" onclick="sendApprovedInGroup(\''+key+'\')"'+(approvedCount?'':' disabled')+'>Send approved'+(approvedCount?' ('+approvedCount+')':'')+'</button>'+
         '</div>'+
+        // Scheduling is the alternative to sending now - same approved
+        // messages, just handed to the dispatcher with a time instead.
+        '<div class="row" style="margin-bottom:8px;gap:6px;align-items:center;">'+
+          '<input class="fi" type="datetime-local" id="schedAt_'+key+'" style="margin:0;font-size:11.5px;flex:1;"'+(approvedCount?'':' disabled')+'>'+
+          '<button class="btn btn-s btn-sm" onclick="scheduleApprovedInGroup(\''+key+'\')"'+(approvedCount?'':' disabled')+' style="white-space:nowrap;">Schedule instead</button>'+
+        '</div>'+
+        '<div class="muted" style="font-size:10.5px;margin-bottom:8px;">Times are Dubai time. Scheduled messages go out within about 5 minutes of the slot you pick.</div>'+
+        '<div id="schedResult_'+key+'" style="font-size:11.5px;margin-bottom:8px;"></div>'+
         '<details style="margin-bottom:8px;border:1px solid var(--border);border-radius:10px;padding:8px 12px;" ontoggle="if(this.open)loadCampaignTemplatePreview(\''+key+'\')">'+
           '<summary style="cursor:pointer;font-size:11.5px;font-weight:700;">Test this message first</summary>'+
           '<div id="campaignTestPanel_'+key+'" style="margin-top:8px;"></div>'+
@@ -4295,12 +4304,18 @@ async function loadPending(){
           const dupKey=d.customer_id||d.mobile;
           const isDup=duplicateKeys.has(dupKey);
           const isApproved=d.status==='approved';
-          return '<div class="item"'+(isApproved?' style="border-left:3px solid var(--ok);"':'')+'>'+
+          const isScheduled=d.status==='scheduled';
+          let stateLabel='';
+          if(isApproved) stateLabel='<span style="color:var(--ok);font-size:11px;font-weight:700;">Approved - not sent yet</span>';
+          else if(isScheduled) stateLabel='<span style="color:var(--ok);font-size:11px;font-weight:700;">Scheduled '+formatDubai(d.scheduled_send_at)+'</span>';
+          return '<div class="item"'+((isApproved||isScheduled)?' style="border-left:3px solid var(--ok);"':'')+'>'+
             (isDup?'<div style="color:var(--err);font-size:11px;font-weight:700;margin-bottom:4px;">&#9888; Also pending in another campaign - check before approving both</div>':'')+
-            '<div style="display:flex;justify-content:space-between;align-items:center;"><b>'+(d.customer_name||d.mobile)+'</b>'+(isApproved?'<span style="color:var(--ok);font-size:11px;font-weight:700;">Approved - not sent yet</span>':'')+'</div>'+
+            '<div style="display:flex;justify-content:space-between;align-items:center;"><b>'+(d.customer_name||d.mobile)+'</b>'+stateLabel+'</div>'+
             '<div class="muted">'+(d.reasoning||'')+'</div>'+
             '<div class="row" style="margin-top:6px;">'+
-              (isApproved
+              (isScheduled
+                ? '<button class="btn btn-s btn-sm" onclick="unscheduleDecision(\''+d.id+'\')">Cancel schedule</button>'
+                : isApproved
                 ? '<button class="btn btn-s btn-sm" onclick="unapproveDecision(\''+d.id+'\')">Undo approval</button>'
                 : '<button class="btn btn-s btn-sm" onclick="approveDecision(\''+d.id+'\')">Approve</button>')+
               '<button class="btn btn-s btn-sm" onclick="rejectDecision(\''+d.id+'\')">Reject</button>'+
@@ -4329,6 +4344,40 @@ async function sendApprovedInGroup(campaignKey){
 }
 async function unapproveDecision(id){
   const j=await call('unapprove_decision',{id:id});
+  if(!j.ok){alert('Error: '+j.error);return;}
+  loadPending();loadOverview();loadApprovals();
+}
+// Dubai is UTC+4 with no daylight saving, so the offset is a genuine
+// constant - the datetime-local input has no timezone of its own, and
+// interpreting it with new Date() would silently use whatever timezone
+// the browser happens to be in. Appending +04:00 explicitly means the
+// time the owner picked is Dubai time even if they're travelling.
+function dubaiLocalToIso(localValue){
+  if(!localValue) return null;
+  const d=new Date(localValue+':00+04:00');
+  return isNaN(d.getTime())?null:d.toISOString();
+}
+function formatDubai(iso){
+  if(!iso) return '';
+  try{
+    return new Date(iso).toLocaleString('en-GB',{timeZone:'Asia/Dubai',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+  }catch(e){ return iso; }
+}
+async function scheduleApprovedInGroup(campaignKey){
+  const resEl=document.getElementById('schedResult_'+campaignKey);
+  const raw=document.getElementById('schedAt_'+campaignKey).value;
+  const iso=dubaiLocalToIso(raw);
+  if(!iso){resEl.textContent='Pick a date and time first.';resEl.style.color='var(--err)';return;}
+  if(new Date(iso).getTime()<Date.now()){resEl.textContent='That time has already passed - pick a future time.';resEl.style.color='var(--err)';return;}
+  resEl.innerHTML='<span class="mw-spinner"></span>Scheduling...';
+  const j=await call('schedule_approved_decisions',{campaign_key:campaignKey,send_at:iso});
+  if(!j.ok){resEl.textContent='Error: '+j.error;resEl.style.color='var(--err)';return;}
+  resEl.textContent=j.scheduled+' message'+(j.scheduled===1?'':'s')+' scheduled for '+formatDubai(j.send_at)+' Dubai time.';
+  resEl.style.color='var(--ok)';
+  loadPending();loadOverview();loadApprovals();
+}
+async function unscheduleDecision(id){
+  const j=await call('unschedule_decision',{id:id});
   if(!j.ok){alert('Error: '+j.error);return;}
   loadPending();loadOverview();loadApprovals();
 }
