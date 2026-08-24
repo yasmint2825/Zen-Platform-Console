@@ -2483,15 +2483,21 @@ async function loadChangeLog(){
 async function triggerOutreach(){
   const campaign=document.getElementById('outreachCampaign').value;
   const r=document.getElementById('outreachResult');
-  if(!confirm('This will send real WhatsApp messages (or queue them for review, depending on your review mode) to every currently-uncovered at-risk customer, using the "'+campaign+'" campaign. Continue?')) return;
+  // Deliberately vague about sending, because what actually happens
+  // depends on review mode: in review mode nothing is sent, these just
+  // land in Pending Review to be approved, scheduled or sent from there.
+  if(!confirm('This will create "'+campaign+'" messages for every currently-uncovered at-risk customer.\n\nIn review mode they go to Pending Review for you to approve, schedule or send. In autonomous mode they send (or are scheduled for your daily send time) automatically.\n\nContinue?')) return;
   r.textContent='Working...';r.style.color='var(--muted)';
   const j=await call('trigger_at_risk_outreach',{campaign_key:campaign});
   if(!j.ok){r.textContent='Error: '+j.error;r.style.color='var(--err)';return;}
   let msg=j.created+' decision(s) created, '+j.mode+'.';
-  if(j.skipped_already_covered) msg+=' '+j.skipped_already_covered+' were already covered, skipped.';
+  if(j.scheduled) msg+=' '+j.scheduled+' scheduled.';
+  if(j.skipped_already_covered) msg+=' '+j.skipped_already_covered+' were already covered by another campaign, skipped.';
   if(j.skipped_no_mobile) msg+=' '+j.skipped_no_mobile+' had no phone on file, skipped.';
+  if(j.skipped_unreachable) msg+=' '+j.skipped_unreachable+' were walk-in guests with no real number, skipped.';
+  if(j.created&&!j.scheduled&&j.mode&&j.mode.indexOf('review')>=0) msg+=' Review them under Pending review.';
   r.textContent=msg;r.style.color='var(--ok)';
-  loadPredictive();
+  loadPredictive();loadPending();
 }
 let insightsHistoryCache=[];
 function renderInsightsContent(summary,recommendations,generatedAt){
