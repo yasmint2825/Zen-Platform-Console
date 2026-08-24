@@ -1010,9 +1010,10 @@ code, .mw-spinner + code, pre {
                   <button class="btn btn-s btn-sm" onclick="sendWATestMessage()" style="white-space:nowrap;">Send test</button>
                 </div>
                 <input class="fi" type="text" id="waTestTemplateName" placeholder="Template name (default: hello_world - not every account has this, see note below)" style="margin:0;font-size:11.5px;margin-bottom:6px;">
+                <input class="fi" type="text" id="waTestLanguageCode" value="en" placeholder="Language code (must match exactly what the template was approved under)" style="margin:0;font-size:11.5px;margin-bottom:6px;">
                 <input class="fi" type="text" id="waTestHeaderParams" placeholder="Header parameters, comma-separated (leave blank if the header has no variable, or no header)" style="margin:0;font-size:11.5px;margin-bottom:6px;">
                 <input class="fi" type="text" id="waTestBodyParams" placeholder="Body parameters, comma-separated in order (e.g. 10%, Keyaan, 31 August, COMEBACK10) - leave blank if none" style="margin:0;font-size:11.5px;">
-                <div class="muted" style="font-size:10.5px;margin-top:4px;">Header and body have their own, separate {{1}}, {{2}} numbering in WhatsApp's template structure - they're not the same slots, even when both templates use {{1}}. hello_world only exists for accounts that went through Meta's free test-number flow - if this account connected a real number directly instead, use one of your own real template names here.</div>
+                <div class="muted" style="font-size:10.5px;margin-top:4px;">Language code must match exactly what the template shows in Meta's dashboard - "en" and "en_US" are genuinely different and won't match each other, even though they look similar. Header and body have their own, separate {{1}}, {{2}} numbering in WhatsApp's template structure - they're not the same slots, even when both use {{1}}. hello_world only exists for accounts that went through Meta's free test-number flow - if this account connected a real number directly instead, use one of your own real template names here.</div>
                 <div id="waTestResult" style="font-size:12.5px;margin-top:8px;"></div>
                 <button class="btn btn-s btn-sm" onclick="listWATemplates()" style="margin-top:10px;">Diagnose: show templates Meta actually sees for this account</button>
                 <div id="waTemplatesResult" style="font-size:12px;margin-top:8px;"></div>
@@ -2227,6 +2228,7 @@ async function registerWhatsappNumber(){
 async function sendWATestMessage(){
   const to_number=document.getElementById('waTestNumber').value.trim();
   const template_name=document.getElementById('waTestTemplateName').value.trim();
+  const language_code=document.getElementById('waTestLanguageCode').value.trim();
   const paramsRaw=document.getElementById('waTestBodyParams').value.trim();
   const body_params=paramsRaw?paramsRaw.split(',').map(function(p){return p.trim();}):[];
   const headerRaw=document.getElementById('waTestHeaderParams').value.trim();
@@ -2234,7 +2236,7 @@ async function sendWATestMessage(){
   const r=document.getElementById('waTestResult');
   if(!to_number){r.textContent='Enter a recipient number.';r.style.color='var(--err)';return;}
   r.innerHTML='<span class="mw-spinner"></span>Sending...';
-  const j=await call('send_whatsapp_test_message',{to_number:to_number,template_name:template_name||undefined,body_params:body_params,header_params:header_params});
+  const j=await call('send_whatsapp_test_message',{to_number:to_number,template_name:template_name||undefined,language_code:language_code||undefined,body_params:body_params,header_params:header_params});
   if(j.ok){r.textContent='Sent - check WhatsApp on that number.';r.style.color='var(--ok)';}
   else{r.textContent='Error: '+j.error;r.style.color='var(--err)';}
 }
