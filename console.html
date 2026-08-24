@@ -2219,14 +2219,11 @@ async function registerWhatsappNumber(){
 // this card, so it tests whatever's currently in the form, not
 // necessarily what's already saved.
 async function sendWATestMessage(){
-  const access_token=document.getElementById('waToken').value.trim();
-  const phone_number_id=document.getElementById('waPhoneId').value.trim();
   const to_number=document.getElementById('waTestNumber').value.trim();
   const r=document.getElementById('waTestResult');
-  if(!access_token||!phone_number_id){r.textContent='Fill in access token and phone number ID above first.';r.style.color='var(--err)';return;}
   if(!to_number){r.textContent='Enter a recipient number.';r.style.color='var(--err)';return;}
   r.innerHTML='<span class="mw-spinner"></span>Sending...';
-  const j=await call('send_whatsapp_test_message',{access_token:access_token,phone_number_id:phone_number_id,to_number:to_number});
+  const j=await call('send_whatsapp_test_message',{to_number:to_number});
   if(j.ok){r.textContent='Sent - check WhatsApp on that number.';r.style.color='var(--ok)';}
   else{r.textContent='Error: '+j.error;r.style.color='var(--err)';}
 }
