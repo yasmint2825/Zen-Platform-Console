@@ -922,6 +922,11 @@ code, .mw-spinner + code, pre {
                     <button class="btn btn-p btn-sm" onclick="triggerOutreach()">Trigger outreach</button>
                   </div>
                   <div id="outreachResult" style="font-size:12.5px;margin-bottom:10px;"></div>
+                  <div style="margin:14px 0 10px;padding-top:12px;border-top:1px solid var(--border);">
+                    <div style="font-weight:700;font-size:12.5px;margin-bottom:6px;">At-risk messages raised here <span id="atRiskQueueBadge"></span></div>
+                    <div class="muted" style="font-size:10.5px;margin-bottom:8px;">Test, approve, schedule or send these without leaving this card. They're kept separate from the daily agent's own queue.</div>
+                    <div id="atRiskQueue" class="muted">Loading...</div>
+                  </div>
                   <div id="atRiskList" class="muted">Loading...</div>
                 </div>
               </details>
@@ -1705,7 +1710,7 @@ function showAgentDetail(agent){
   window.scrollTo({top:0,behavior:'smooth'});
   if(agent==='marketing'){loadSocialContent();loadCompetitors();}
   if(agent==='engagement') loadAtRiskActions();
-  if(agent==='intelligence'){loadDailyIntelligence();loadPredictive();renderQuickQuestions();}
+  if(agent==='intelligence'){loadDailyIntelligence();loadPredictive();loadAtRiskQueue();renderQuickQuestions();}
 }
 function showMarketingTab(tab){
   document.querySelectorAll('.marketing-tab-content').forEach(el=>el.style.display='none');
@@ -1733,7 +1738,7 @@ function showPage(id){
   if(pg) pg.classList.add('active');
   const nav=document.querySelector('.nav-item[data-page="'+id+'"]');
   if(nav) nav.classList.add('active');
-  if(id==='intelligence'){loadPredictive();renderQuickQuestions();}
+  if(id==='intelligence'){loadPredictive();loadAtRiskQueue();renderQuickQuestions();}
   if(id==='agents'){showAgentDetail('engagement');loadSocialContent();loadBrandDna();loadGenerationHistory();loadAssetLibrary();loadBusinessStrategy();loadMonthlyStrategy();}
   if(id==='approvals') loadApprovals();
   if(id==='content') loadCalendar();
@@ -2497,7 +2502,7 @@ async function triggerOutreach(){
   if(j.skipped_unreachable) msg+=' '+j.skipped_unreachable+' were walk-in guests with no real number, skipped.';
   if(j.created&&!j.scheduled&&j.mode&&j.mode.indexOf('review')>=0) msg+=' Review them under Pending review.';
   r.textContent=msg;r.style.color='var(--ok)';
-  loadPredictive();loadPending();
+  loadPredictive();loadPending();loadAtRiskQueue();
 }
 let insightsHistoryCache=[];
 function renderInsightsContent(summary,recommendations,generatedAt){
@@ -4270,12 +4275,29 @@ async function runNow(){
   }
 }
 async function loadPending(){
-  const j=await call('pending_review',{});
-  const el=document.getElementById('pendingList');
-  const badge=document.getElementById('pendingCountBadge');
-  if(!j.ok){el.textContent='Error: '+j.error;return;}
+  // The main queue deliberately shows only the daily agent's own
+  // decisions. Anything raised from the at-risk card is managed there
+  // instead, so a batch you triggered yourself stays identifiable
+  // rather than dissolving into the agent's output.
+  return renderDecisionQueue({containerId:'pendingList',badgeId:'pendingCountBadge',source:'agent',emptyText:'Nothing pending.'});
+}
+// Everything the at-risk card needs is the same UI, so it calls the
+// same renderer with a different scope rather than a second copy that
+// could drift.
+async function loadAtRiskQueue(){
+  return renderDecisionQueue({containerId:'atRiskQueue',badgeId:'atRiskQueueBadge',source:'at_risk_outreach',emptyText:'No at-risk outreach raised yet. Use the button above to create some.'});
+}
+async function renderDecisionQueue(opts){
+  const res=await call('pending_review',{});
+  const el=document.getElementById(opts.containerId);
+  if(!el) return;
+  const badge=document.getElementById(opts.badgeId);
+  if(!res.ok){el.textContent='Error: '+res.error;return;}
+  const j={ok:true,decisions:(res.decisions||[]).filter(function(d){
+    return opts.source==='at_risk_outreach' ? d.source==='at_risk_outreach' : d.source!=='at_risk_outreach';
+  })};
   if(badge) badge.innerHTML=j.decisions.length?('<span class="count-badge">'+j.decisions.length+'</span>'):'';
-  if(!j.decisions.length){el.innerHTML='Nothing pending.';return;}
+  if(!j.decisions.length){el.innerHTML=opts.emptyText;return;}
   // Grouped by campaign type (nudge/birthday/lapsed/etc.) rather than
   // one flat list - each group is collapsible with a brief note on
   // what actually triggers it, plus its own "Approve & send all" so a
@@ -4314,20 +4336,20 @@ async function loadPending(){
         // marks messages without firing anything, and one explicit
         // "Send approved" is the only thing that actually sends.
         '<div class="row" style="margin-bottom:8px;gap:6px;">'+
-          '<button class="btn btn-s btn-sm" onclick="approveAllInGroup(\''+key+'\')"'+(pendingCount?'':' disabled')+'>Approve all'+(pendingCount?' '+pendingCount:'')+'</button>'+
-          '<button class="btn btn-p btn-sm" onclick="sendApprovedInGroup(\''+key+'\')"'+(approvedCount?'':' disabled')+'>Send approved'+(approvedCount?' ('+approvedCount+')':'')+'</button>'+
+          '<button class="btn btn-s btn-sm" onclick="approveAllInGroup(\''+key+'\',\''+opts.source+'\')"'+(pendingCount?'':' disabled')+'>Approve all'+(pendingCount?' '+pendingCount:'')+'</button>'+
+          '<button class="btn btn-p btn-sm" onclick="sendApprovedInGroup(\''+key+'\',\''+opts.source+'\')"'+(approvedCount?'':' disabled')+'>Send approved'+(approvedCount?' ('+approvedCount+')':'')+'</button>'+
         '</div>'+
         // Scheduling is the alternative to sending now - same approved
         // messages, just handed to the dispatcher with a time instead.
         '<div class="row" style="margin-bottom:8px;gap:6px;align-items:center;">'+
-          '<input class="fi" type="datetime-local" id="schedAt_'+key+'" style="margin:0;font-size:11.5px;flex:1;"'+(approvedCount?'':' disabled')+'>'+
-          '<button class="btn btn-s btn-sm" onclick="scheduleApprovedInGroup(\''+key+'\')"'+(approvedCount?'':' disabled')+' style="white-space:nowrap;">Schedule instead</button>'+
+          '<input class="fi" type="datetime-local" id="schedAt_'+opts.source+'_'+key+'" style="margin:0;font-size:11.5px;flex:1;"'+(approvedCount?'':' disabled')+'>'+
+          '<button class="btn btn-s btn-sm" onclick="scheduleApprovedInGroup(\''+key+'\',\''+opts.source+'\')"'+(approvedCount?'':' disabled')+' style="white-space:nowrap;">Schedule instead</button>'+
         '</div>'+
         '<div class="muted" style="font-size:10.5px;margin-bottom:8px;">Times are Dubai time. Scheduled messages go out within about 5 minutes of the slot you pick.</div>'+
-        '<div id="schedResult_'+key+'" style="font-size:11.5px;margin-bottom:8px;"></div>'+
-        '<details style="margin-bottom:8px;border:1px solid var(--border);border-radius:10px;padding:8px 12px;" ontoggle="if(this.open)loadCampaignTemplatePreview(\''+key+'\')">'+
+        '<div id="schedResult_'+opts.source+'_'+key+'" style="font-size:11.5px;margin-bottom:8px;"></div>'+
+        '<details style="margin-bottom:8px;border:1px solid var(--border);border-radius:10px;padding:8px 12px;" ontoggle="if(this.open)loadCampaignTemplatePreview(\''+key+'\',\''+opts.source+'\')">'+
           '<summary style="cursor:pointer;font-size:11.5px;font-weight:700;">Test this message first</summary>'+
-          '<div id="campaignTestPanel_'+key+'" style="margin-top:8px;"></div>'+
+          '<div id="campaignTestPanel_'+opts.source+'_'+key+'" style="margin-top:8px;"></div>'+
         '</details>'+
         items.map(function(d){
           const dupKey=d.customer_id||d.mobile;
@@ -4361,23 +4383,23 @@ async function loadPending(){
 // Marks every pending message in this group as approved - deliberately
 // sends nothing, so this is safe to click and still reversible per
 // message until "Send approved" is used.
-async function approveAllInGroup(campaignKey){
-  const j=await call('approve_all_in_group',{campaign_key:campaignKey});
+async function approveAllInGroup(campaignKey,source){
+  const j=await call('approve_all_in_group',{campaign_key:campaignKey,source:source});
   if(!j.ok){alert('Error: '+j.error);return;}
-  loadPending();loadOverview();loadApprovals();
+  loadPending();loadAtRiskQueue();loadOverview();loadApprovals();
 }
 // The only thing in the review queue that actually sends.
-async function sendApprovedInGroup(campaignKey){
+async function sendApprovedInGroup(campaignKey,source){
   if(!confirm('Send every approved '+campaignKey+' message now? This goes to real customers.')) return;
-  const j=await call('send_approved_decisions',{campaign_key:campaignKey});
+  const j=await call('send_approved_decisions',{campaign_key:campaignKey,source:source});
   if(!j.ok){alert('Error: '+j.error);return;}
   if(j.failed&&j.failed.length){alert(j.sent+' sent successfully. '+j.failed.length+' failed - they stay in the list for you to retry or reject individually.');}
-  loadPending();loadOverview();loadApprovals();
+  loadPending();loadAtRiskQueue();loadOverview();loadApprovals();
 }
 async function unapproveDecision(id){
   const j=await call('unapprove_decision',{id:id});
   if(!j.ok){alert('Error: '+j.error);return;}
-  loadPending();loadOverview();loadApprovals();
+  loadPending();loadAtRiskQueue();loadOverview();loadApprovals();
 }
 // Dubai is UTC+4 with no daylight saving, so the offset is a genuine
 // constant - the datetime-local input has no timezone of its own, and
@@ -4405,31 +4427,33 @@ function formatVisitDate(d){
   const mi=Number(parts[1])-1;
   return Number(parts[2])+' '+(months[mi]||parts[1])+' '+parts[0];
 }
-async function scheduleApprovedInGroup(campaignKey){
-  const resEl=document.getElementById('schedResult_'+campaignKey);
-  const raw=document.getElementById('schedAt_'+campaignKey).value;
+async function scheduleApprovedInGroup(campaignKey,source){
+  const uid=source+'_'+campaignKey;
+  const resEl=document.getElementById('schedResult_'+uid);
+  const raw=document.getElementById('schedAt_'+uid).value;
   const iso=dubaiLocalToIso(raw);
   if(!iso){resEl.textContent='Pick a date and time first.';resEl.style.color='var(--err)';return;}
   if(new Date(iso).getTime()<Date.now()){resEl.textContent='That time has already passed - pick a future time.';resEl.style.color='var(--err)';return;}
   resEl.innerHTML='<span class="mw-spinner"></span>Scheduling...';
-  const j=await call('schedule_approved_decisions',{campaign_key:campaignKey,send_at:iso});
+  const j=await call('schedule_approved_decisions',{campaign_key:campaignKey,send_at:iso,source:source});
   if(!j.ok){resEl.textContent='Error: '+j.error;resEl.style.color='var(--err)';return;}
   resEl.textContent=j.scheduled+' message'+(j.scheduled===1?'':'s')+' scheduled for '+formatDubai(j.send_at)+' Dubai time.';
   resEl.style.color='var(--ok)';
-  loadPending();loadOverview();loadApprovals();
+  loadPending();loadAtRiskQueue();loadOverview();loadApprovals();
 }
 async function unscheduleDecision(id){
   const j=await call('unschedule_decision',{id:id});
   if(!j.ok){alert('Error: '+j.error);return;}
-  loadPending();loadOverview();loadApprovals();
+  loadPending();loadAtRiskQueue();loadOverview();loadApprovals();
 }
 // Pulls the real, approved template text straight from Meta for
 // whatever template is currently mapped to this campaign, then builds
 // an input per actual variable slot. Nothing about the template is
 // typed by hand here - if the mapping or the approved text changes,
 // this panel genuinely follows it.
-async function loadCampaignTemplatePreview(campaignKey){
-  const el=document.getElementById('campaignTestPanel_'+campaignKey);
+async function loadCampaignTemplatePreview(campaignKey,source){
+  const uid=source+'_'+campaignKey;
+  const el=document.getElementById('campaignTestPanel_'+uid);
   if(!el||el.dataset.loaded==='1') return;
   el.innerHTML='<span class="mw-spinner"></span>Loading the mapped template...';
   const j=await call('get_campaign_template_preview',{campaign_key:campaignKey});
@@ -4440,7 +4464,7 @@ async function loadCampaignTemplatePreview(campaignKey){
     if(!count) return '';
     let out='<div class="muted" style="font-size:10.5px;margin:6px 0 2px;">'+label+'</div>';
     for(let i=1;i<=count;i++){
-      out+='<input class="fi" type="text" id="tv_'+prefix+'_'+campaignKey+'_'+i+'" placeholder="{{'+i+'}}" style="margin:0 0 4px;font-size:11.5px;">';
+      out+='<input class="fi" type="text" id="tv_'+prefix+'_'+uid+'_'+i+'" placeholder="{{'+i+'}}" style="margin:0 0 4px;font-size:11.5px;">';
     }
     return out;
   }
@@ -4451,19 +4475,20 @@ async function loadCampaignTemplatePreview(campaignKey){
     varInputs('h',j.header_var_count,'Header variable values')+
     varInputs('b',j.body_var_count,'Body variable values')+
     '<div style="display:flex;gap:6px;margin-top:6px;">'+
-      '<input class="fi" type="text" id="campaignTestNum_'+campaignKey+'" placeholder="Phone number, e.g. 971501234567" style="margin:0;flex:1;font-size:12px;">'+
-      '<button class="btn btn-s btn-sm" onclick="sendCampaignTest(\''+campaignKey+'\','+j.header_var_count+','+j.body_var_count+')" style="white-space:nowrap;">Send test</button>'+
+      '<input class="fi" type="text" id="campaignTestNum_'+uid+'" placeholder="Phone number, e.g. 971501234567" style="margin:0;flex:1;font-size:12px;">'+
+      '<button class="btn btn-s btn-sm" onclick="sendCampaignTest(\''+campaignKey+'\',\''+source+'\','+j.header_var_count+','+j.body_var_count+')" style="white-space:nowrap;">Send test</button>'+
     '</div>'+
-    '<div id="campaignTestResult_'+campaignKey+'" style="font-size:11.5px;margin-top:6px;"></div>';
+    '<div id="campaignTestResult_'+uid+'" style="font-size:11.5px;margin-top:6px;"></div>';
 }
-async function sendCampaignTest(campaignKey,headerCount,bodyCount){
-  const resEl=document.getElementById('campaignTestResult_'+campaignKey);
-  const to_number=document.getElementById('campaignTestNum_'+campaignKey).value.trim();
+async function sendCampaignTest(campaignKey,source,headerCount,bodyCount){
+  const uid=source+'_'+campaignKey;
+  const resEl=document.getElementById('campaignTestResult_'+uid);
+  const to_number=document.getElementById('campaignTestNum_'+uid).value.trim();
   if(!to_number){resEl.textContent='Enter a recipient number.';resEl.style.color='var(--err)';return;}
   function collect(prefix,count){
     const out=[];
     for(let i=1;i<=count;i++){
-      const v=document.getElementById('tv_'+prefix+'_'+campaignKey+'_'+i);
+      const v=document.getElementById('tv_'+prefix+'_'+uid+'_'+i);
       out.push(v?v.value.trim():'');
     }
     return out;
@@ -4478,8 +4503,8 @@ async function sendCampaignTest(campaignKey,headerCount,bodyCount){
   if(j.ok){resEl.textContent='Sent - check WhatsApp on that number.';resEl.style.color='var(--ok)';}
   else{resEl.textContent='Error: '+j.error;resEl.style.color='var(--err)';}
 }
-async function approveDecision(id){const j=await call('approve_decision',{id:id});if(!j.ok)alert('Error: '+j.error);loadPending();loadOverview();loadApprovals();}
-async function rejectDecision(id){await call('reject_decision',{id:id});loadPending();loadOverview();loadApprovals();}
+async function approveDecision(id){const j=await call('approve_decision',{id:id});if(!j.ok)alert('Error: '+j.error);loadPending();loadAtRiskQueue();loadOverview();loadApprovals();}
+async function rejectDecision(id){await call('reject_decision',{id:id});loadPending();loadAtRiskQueue();loadOverview();loadApprovals();}
 async function rejectAllPending(){
   if(!confirm('Reject every pending decision? This just clears the queue - nothing gets sent, and the agent will re-evaluate fresh candidates on the next run.')) return;
   const j=await call('reject_all_pending',{});
