@@ -1009,9 +1009,12 @@ code, .mw-spinner + code, pre {
                   <input class="fi" type="text" id="waTestNumber" placeholder="Recipient number, e.g. 971501234567" style="margin:0;">
                   <button class="btn btn-s btn-sm" onclick="sendWATestMessage()" style="white-space:nowrap;">Send test</button>
                 </div>
-                <input class="fi" type="text" id="waTestTemplateName" placeholder="Template name (default: hello_world - free, pre-approved, no wait)" style="margin:0;font-size:11.5px;">
-                <div class="muted" style="font-size:10.5px;margin-top:4px;">Leave blank for hello_world. Using a real, existing template here that expects parameters (a customer name, etc.) will fail without them - that's expected, not a bug.</div>
+                <input class="fi" type="text" id="waTestTemplateName" placeholder="Template name (default: hello_world - not every account has this, see note below)" style="margin:0;font-size:11.5px;margin-bottom:6px;">
+                <input class="fi" type="text" id="waTestBodyParams" placeholder="Body parameters, comma-separated in order (e.g. 10%, Keyaan, 31 August, COMEBACK10) - leave blank if none" style="margin:0;font-size:11.5px;">
+                <div class="muted" style="font-size:10.5px;margin-top:4px;">hello_world only exists for accounts that went through Meta's free test-number flow - if this account connected a real number directly instead, use one of your own real template names here. Real templates with variables need their parameters listed above, in the same order the template expects them.</div>
                 <div id="waTestResult" style="font-size:12.5px;margin-top:8px;"></div>
+                <button class="btn btn-s btn-sm" onclick="listWATemplates()" style="margin-top:10px;">Diagnose: show templates Meta actually sees for this account</button>
+                <div id="waTemplatesResult" style="font-size:12px;margin-top:8px;"></div>
               </div>
             </div>
 
@@ -2223,12 +2226,29 @@ async function registerWhatsappNumber(){
 async function sendWATestMessage(){
   const to_number=document.getElementById('waTestNumber').value.trim();
   const template_name=document.getElementById('waTestTemplateName').value.trim();
+  const paramsRaw=document.getElementById('waTestBodyParams').value.trim();
+  const body_params=paramsRaw?paramsRaw.split(',').map(function(p){return p.trim();}):[];
   const r=document.getElementById('waTestResult');
   if(!to_number){r.textContent='Enter a recipient number.';r.style.color='var(--err)';return;}
   r.innerHTML='<span class="mw-spinner"></span>Sending...';
-  const j=await call('send_whatsapp_test_message',{to_number:to_number,template_name:template_name||undefined});
+  const j=await call('send_whatsapp_test_message',{to_number:to_number,template_name:template_name||undefined,body_params:body_params});
   if(j.ok){r.textContent='Sent - check WhatsApp on that number.';r.style.color='var(--ok)';}
   else{r.textContent='Error: '+j.error;r.style.color='var(--err)';}
+}
+
+// Shows exactly what Meta's own API returns for this WABA - the direct
+// way to confirm whether a "template does not exist" error reflects a
+// genuine mismatch (e.g. the saved WABA ID doesn't actually own the
+// templates seen in the dashboard) rather than guessing at the cause.
+async function listWATemplates(){
+  const r=document.getElementById('waTemplatesResult');
+  r.innerHTML='<span class="mw-spinner"></span>Checking...';
+  const j=await call('list_whatsapp_templates',{});
+  if(!j.ok){r.innerHTML='<span style="color:var(--err);">Error: '+j.error+'</span>';return;}
+  const rows=(j.templates||[]).map(function(t){
+    return '<div class="item"><b>'+t.name+'</b> <span class="muted">('+(t.language||'')+')</span><div class="muted" style="font-size:11px;">Status: '+t.status+' · Category: '+(t.category||'')+'</div></div>';
+  }).join('') || '<div class="muted">No templates found at all for WABA '+j.waba_id+' - this genuinely confirms the mismatch: the dashboard may be showing a different WABA than the one saved in this console.</div>';
+  r.innerHTML='<div class="muted" style="font-size:11px;margin-bottom:6px;">Templates Meta\'s API sees for WABA '+j.waba_id+':</div>'+rows;
 }
 
 // Templates
@@ -2317,7 +2337,16 @@ async function loadSettings(){
           '<span class="muted" style="font-size:11px;">to</span> <input class="fi" type="number" style="width:60px;padding:5px;display:inline-block;margin:0 4px;" id="tvm_'+s.campaign_key+'" value="'+(s.threshold_value_max??'')+'">'+
           '<span class="muted" style="font-size:11px;">days after last visit</span>'+
         '</div>'+
-        '<div style="margin-bottom:8px;"><span class="muted" style="font-size:11px;">only at visit count(s)</span> <input class="fi" type="text" style="width:100px;padding:5px;display:inline-block;margin:0 4px;" id="vc_'+s.campaign_key+'" value="'+(s.applies_at_visit_counts?s.applies_at_visit_counts.join(','):'')+'" placeholder="e.g. 1,2"> <span class="muted" style="font-size:11px;">(blank = any)</span></div>'+
+        '<div style="margin-bottom:8px;"><span class="muted" style="font-size:11px;">only at visit count(s)</span> <input class="fi" type="text" style="width:100px;padding:5px;display:inline-block;margin:0 4px;" id="vc_'+s.campaign_key+'" value="'+(s.applies_at_visit_counts?s.applies_at_visit_counts.join(','):'')+'" placeholder="e.g. 1,2"> <span class="muted" style="font-size:11px;">(blank = any)</span></div>'
+      ):'')+
+      // Genuinely its own, separate condition from the window/visit-count
+      // inputs above - discount is used by new_customer_offer, lapsed,
+      // AND birthday in the actual sending code now, none of which
+      // otherwise share the visit-window logic those other fields are
+      // for. This was missing for lapsed/birthday until now - the
+      // backend genuinely needed this value, but there was no way to
+      // set it here at all.
+      (['new_customer_offer','lapsed','birthday'].includes(s.campaign_key)?(
         '<div style="margin-bottom:8px;"><span class="muted" style="font-size:11px;">discount</span> <input class="fi" type="number" style="width:60px;padding:5px;display:inline-block;margin:0 4px;" id="dp_'+s.campaign_key+'" value="'+(s.discount_percent??'')+'"> <span class="muted" style="font-size:11px;">%</span></div>'
       ):'')+
       '<input class="fi" type="text" placeholder="Offer text" id="of_'+s.campaign_key+'" value="'+(s.offer_text||'').replace(/"/g,'&quot;')+'">'+
