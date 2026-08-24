@@ -1032,6 +1032,8 @@ code, .mw-spinner + code, pre {
                   <div><label class="fl">Category</label><select class="fi" id="tplCat"><option value="MARKETING">Marketing</option><option value="UTILITY">Utility</option><option value="AUTHENTICATION">Authentication</option></select></div>
                   <div><label class="fl">Language</label><select class="fi" id="tplLang"><option value="en">English</option><option value="ar">Arabic</option></select></div>
                 </div>
+                <label class="fl">Header (optional - at most one variable, {{1}} only)</label><input class="fi" type="text" id="tplHeader" placeholder="e.g. Haircut time for {{1}}, or static text with no variable">
+                <label class="fl">Header sample value (only needed if header has {{1}})</label><input class="fi" type="text" id="tplHeaderExample">
                 <label class="fl">Body - use {{1}}, {{2}} for variables</label><textarea class="fi" id="tplBody" rows="3"></textarea>
                 <label class="fl">Sample values (comma separated)</label><input class="fi" type="text" id="tplExamples">
                 <label class="fl">Footer (optional)</label><input class="fi" type="text" id="tplFooter">
@@ -2280,6 +2282,8 @@ async function submitTemplate(){
   const name=document.getElementById('tplName').value.trim();
   const category=document.getElementById('tplCat').value;
   const language=document.getElementById('tplLang').value;
+  const header_text=document.getElementById('tplHeader').value.trim();
+  const header_example=document.getElementById('tplHeaderExample').value.trim();
   const body_text=document.getElementById('tplBody').value.trim();
   const examples=(document.getElementById('tplExamples').value.trim()||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
   const footer_text=document.getElementById('tplFooter').value.trim();
@@ -2290,7 +2294,7 @@ async function submitTemplate(){
   warnEl.textContent='';
   if(v.warnings.length&&!confirm('Meta may flag this:\n\n'+v.warnings.join('\n')+'\n\nSubmit anyway?')) return;
   resEl.textContent='Submitting...';resEl.style.color='var(--muted)';
-  const j=await callWA(WA_TEMPLATES_URL,'create',{name:name,category:category,language:language,body_text:body_text,examples:examples,footer_text:footer_text});
+  const j=await callWA(WA_TEMPLATES_URL,'create',{name:name,category:category,language:language,header_text:header_text||undefined,header_example:header_example||undefined,body_text:body_text,examples:examples,footer_text:footer_text});
   if(j.ok){resEl.textContent='Submitted - status '+j.status;resEl.style.color='var(--ok)';loadTemplates();}
   else{resEl.textContent='Error: '+j.error;resEl.style.color='var(--err)';}
 }
