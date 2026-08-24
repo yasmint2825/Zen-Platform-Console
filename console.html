@@ -878,10 +878,17 @@ code, .mw-spinner + code, pre {
               <div class="row" style="margin-bottom:14px;margin-top:14px;">
                 <select class="fi" id="reviewMode" style="width:auto;" onchange="setReviewMode()">
                   <option value="review">Review first - I approve each send</option>
-                  <option value="auto">Fully autonomous - send immediately</option>
+                  <option value="auto">Fully autonomous - send automatically</option>
                 </select>
                 <button class="btn btn-p btn-sm" onclick="runNow()">Run now</button>
               </div>
+              <div id="autoSendTimeRow" class="row" style="margin-bottom:14px;display:none;align-items:center;gap:6px;">
+                <span class="muted" style="font-size:12px;">Send autonomous messages at</span>
+                <input class="fi" type="time" id="autoSendTime" style="width:auto;margin:0;" onchange="setAutoSendTime()">
+                <span class="muted" style="font-size:12px;">Dubai time</span>
+                <span id="autoSendTimeResult" style="font-size:11.5px;"></span>
+              </div>
+              <div id="autoSendTimeNote" class="muted" style="font-size:10.5px;margin-bottom:14px;display:none;">Leave blank to send the moment the agent runs each morning.</div>
               <div id="runResult" style="font-size:12.5px;margin-bottom:14px;"></div>
 
               <details class="agent-section">
@@ -2338,6 +2345,8 @@ async function loadSettings(){
   if(!j.ok) return;
   myRole=j.my_role;
   document.getElementById('reviewMode').value=j.tenant.review_mode;
+  document.getElementById('autoSendTime').value=j.tenant.auto_send_time||'';
+  syncAutoSendTimeVisibility();
   document.getElementById('autoResolveDuplicates').checked=!!j.tenant.auto_resolve_duplicates;
   renderRuleBook(j.strategy||[]);
   document.getElementById('strategyList').innerHTML=(j.strategy||[]).map(function(s){
@@ -4222,7 +4231,21 @@ async function addBlackout(){
   if(j.ok){document.getElementById('boLabel').value='';loadSettings();} else alert('Error: '+j.error);
 }
 async function delBlackout(id){if(!confirm('Remove?'))return;await call('delete_blackout',{id:id});loadSettings();}
-async function setReviewMode(){const j=await call('set_review_mode',{review_mode:document.getElementById('reviewMode').value});if(!j.ok)alert('Error: '+j.error);}
+async function setReviewMode(){const j=await call('set_review_mode',{review_mode:document.getElementById('reviewMode').value});if(!j.ok)alert('Error: '+j.error);syncAutoSendTimeVisibility();}
+// The send-time control only makes sense in autonomous mode - in review
+// mode the owner chooses the moment themselves, so showing it there
+// would imply a setting that does nothing.
+function syncAutoSendTimeVisibility(){
+  const isAuto=document.getElementById('reviewMode').value==='auto';
+  document.getElementById('autoSendTimeRow').style.display=isAuto?'flex':'none';
+  document.getElementById('autoSendTimeNote').style.display=isAuto?'block':'none';
+}
+async function setAutoSendTime(){
+  const el=document.getElementById('autoSendTimeResult');
+  const j=await call('set_auto_send_time',{auto_send_time:document.getElementById('autoSendTime').value});
+  if(j.ok){el.textContent='Saved';el.style.color='var(--ok)';}
+  else{el.textContent='Error: '+j.error;el.style.color='var(--err)';}
+}
 async function setAutoResolveDuplicates(){const j=await call('set_auto_resolve_duplicates',{auto_resolve_duplicates:document.getElementById('autoResolveDuplicates').checked});if(!j.ok)alert('Error: '+j.error);}
 async function runNow(){
   const r=document.getElementById('runResult');r.textContent='Submitting...';r.style.color='var(--muted)';
@@ -4311,6 +4334,9 @@ async function loadPending(){
           return '<div class="item"'+((isApproved||isScheduled)?' style="border-left:3px solid var(--ok);"':'')+'>'+
             (isDup?'<div style="color:var(--err);font-size:11px;font-weight:700;margin-bottom:4px;">&#9888; Also pending in another campaign - check before approving both</div>':'')+
             '<div style="display:flex;justify-content:space-between;align-items:center;"><b>'+(d.customer_name||d.mobile)+'</b>'+stateLabel+'</div>'+
+            // Real context while approving - who this actually goes to,
+            // and when they were genuinely last in.
+            '<div class="muted" style="font-size:11px;">'+(d.mobile||'no number')+(d.last_visit_date?' &middot; last visit '+formatVisitDate(d.last_visit_date):'')+'</div>'+
             '<div class="muted">'+(d.reasoning||'')+'</div>'+
             '<div class="row" style="margin-top:6px;">'+
               (isScheduled
@@ -4362,6 +4388,16 @@ function formatDubai(iso){
   try{
     return new Date(iso).toLocaleString('en-GB',{timeZone:'Asia/Dubai',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
   }catch(e){ return iso; }
+}
+// A plain date (no time), so it's rendered as-is rather than run
+// through a timezone conversion that could shift it by a day.
+function formatVisitDate(d){
+  if(!d) return '';
+  const parts=String(d).slice(0,10).split('-');
+  if(parts.length!==3) return String(d);
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const mi=Number(parts[1])-1;
+  return Number(parts[2])+' '+(months[mi]||parts[1])+' '+parts[0];
 }
 async function scheduleApprovedInGroup(campaignKey){
   const resEl=document.getElementById('schedResult_'+campaignKey);
