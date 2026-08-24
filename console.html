@@ -4274,49 +4274,116 @@ async function loadPending(){
     const items=groups[key];
     const info=campaignInfo[key]||{label:key,desc:''};
     const ids=items.map(function(d){return d.id;});
+    const approvedCount=items.filter(function(d){return d.status==='approved';}).length;
+    const pendingCount=items.length-approvedCount;
     return '<details style="margin-bottom:10px;">'+
-      '<summary style="cursor:pointer;padding:8px 0;"><span style="display:flex;align-items:center;gap:6px;"><span class="details-arrow" style="display:inline-block;transition:transform .15s;">&#9656;</span><span style="font-weight:700;font-size:12.5px;">'+info.label+'</span> <span class="muted" style="font-weight:400;">('+items.length+')</span></span></summary>'+
+      '<summary style="cursor:pointer;padding:8px 0;"><span style="display:flex;align-items:center;gap:6px;"><span class="details-arrow" style="display:inline-block;transition:transform .15s;">&#9656;</span><span style="font-weight:700;font-size:12.5px;">'+info.label+'</span> <span class="muted" style="font-weight:400;">('+items.length+(approvedCount?', '+approvedCount+' approved':'')+')</span></span></summary>'+
       '<div style="padding:4px 0 8px;">'+
         (info.desc?('<p class="muted" style="font-size:11.5px;margin-bottom:8px;">'+info.desc+'</p>'):'')+
-        '<div style="display:flex;gap:6px;margin-bottom:8px;align-items:center;">'+
-          '<input class="fi" type="text" id="campaignTestNum_'+key+'" placeholder="Test this template - phone number" style="margin:0;flex:1;font-size:12px;">'+
-          '<button class="btn btn-s btn-sm" onclick="sendCampaignTest(\''+key+'\')" style="white-space:nowrap;">Send test</button>'+
+        // Approving and sending are deliberately separate now - approve
+        // marks messages without firing anything, and one explicit
+        // "Send approved" is the only thing that actually sends.
+        '<div class="row" style="margin-bottom:8px;gap:6px;">'+
+          '<button class="btn btn-s btn-sm" onclick="approveAllInGroup(\''+key+'\')"'+(pendingCount?'':' disabled')+'>Approve all'+(pendingCount?' '+pendingCount:'')+'</button>'+
+          '<button class="btn btn-p btn-sm" onclick="sendApprovedInGroup(\''+key+'\')"'+(approvedCount?'':' disabled')+'>Send approved'+(approvedCount?' ('+approvedCount+')':'')+'</button>'+
         '</div>'+
-        '<div id="campaignTestResult_'+key+'" style="font-size:11.5px;margin-bottom:8px;"></div>'+
-        '<div style="text-align:right;margin-bottom:8px;"><button class="btn btn-p btn-sm" onclick="approveAllInGroup(\''+key+'\','+JSON.stringify(ids).replace(/"/g,'&quot;')+')">Approve &amp; send all '+items.length+'</button></div>'+
+        '<details style="margin-bottom:8px;border:1px solid var(--border);border-radius:10px;padding:8px 12px;" ontoggle="if(this.open)loadCampaignTemplatePreview(\''+key+'\')">'+
+          '<summary style="cursor:pointer;font-size:11.5px;font-weight:700;">Test this message first</summary>'+
+          '<div id="campaignTestPanel_'+key+'" style="margin-top:8px;"></div>'+
+        '</details>'+
         items.map(function(d){
           const dupKey=d.customer_id||d.mobile;
           const isDup=duplicateKeys.has(dupKey);
-          return '<div class="item">'+
+          const isApproved=d.status==='approved';
+          return '<div class="item"'+(isApproved?' style="border-left:3px solid var(--ok);"':'')+'>'+
             (isDup?'<div style="color:var(--err);font-size:11px;font-weight:700;margin-bottom:4px;">&#9888; Also pending in another campaign - check before approving both</div>':'')+
-            '<div style="display:flex;justify-content:space-between;"><b>'+(d.customer_name||d.mobile)+'</b></div>'+
+            '<div style="display:flex;justify-content:space-between;align-items:center;"><b>'+(d.customer_name||d.mobile)+'</b>'+(isApproved?'<span style="color:var(--ok);font-size:11px;font-weight:700;">Approved - not sent yet</span>':'')+'</div>'+
             '<div class="muted">'+(d.reasoning||'')+'</div>'+
-            '<div class="row" style="margin-top:6px;"><button class="btn btn-s btn-sm" onclick="approveDecision(\''+d.id+'\')">Approve and send</button><button class="btn btn-s btn-sm" onclick="rejectDecision(\''+d.id+'\')">Reject</button></div>'+
+            '<div class="row" style="margin-top:6px;">'+
+              (isApproved
+                ? '<button class="btn btn-s btn-sm" onclick="unapproveDecision(\''+d.id+'\')">Undo approval</button>'
+                : '<button class="btn btn-s btn-sm" onclick="approveDecision(\''+d.id+'\')">Approve</button>')+
+              '<button class="btn btn-s btn-sm" onclick="rejectDecision(\''+d.id+'\')">Reject</button>'+
+            '</div>'+
           '</div>';
         }).join('')+
       '</div>'+
     '</details>';
   }).join('');
 }
-async function approveAllInGroup(campaignKey,ids){
-  if(!confirm('Approve and send all '+ids.length+' '+campaignKey+' messages now?')) return;
-  const j=await call('bulk_approve_decisions',{ids:ids});
+// Marks every pending message in this group as approved - deliberately
+// sends nothing, so this is safe to click and still reversible per
+// message until "Send approved" is used.
+async function approveAllInGroup(campaignKey){
+  const j=await call('approve_all_in_group',{campaign_key:campaignKey});
   if(!j.ok){alert('Error: '+j.error);return;}
-  if(j.failed&&j.failed.length){alert(j.sent+' sent successfully. '+j.failed.length+' failed - they remain in the pending list for you to retry or reject individually.');}
   loadPending();loadOverview();loadApprovals();
 }
-// Sends a real test message for this specific campaign type's actual,
-// currently-mapped template - lets an owner verify a whole group (e.g.
-// "lapsed") genuinely works before approving it for real customers,
-// with just a phone number, no need to know the template name, its
-// language, or which variables it expects.
-async function sendCampaignTest(campaignKey){
-  const numEl=document.getElementById('campaignTestNum_'+campaignKey);
+// The only thing in the review queue that actually sends.
+async function sendApprovedInGroup(campaignKey){
+  if(!confirm('Send every approved '+campaignKey+' message now? This goes to real customers.')) return;
+  const j=await call('send_approved_decisions',{campaign_key:campaignKey});
+  if(!j.ok){alert('Error: '+j.error);return;}
+  if(j.failed&&j.failed.length){alert(j.sent+' sent successfully. '+j.failed.length+' failed - they stay in the list for you to retry or reject individually.');}
+  loadPending();loadOverview();loadApprovals();
+}
+async function unapproveDecision(id){
+  const j=await call('unapprove_decision',{id:id});
+  if(!j.ok){alert('Error: '+j.error);return;}
+  loadPending();loadOverview();loadApprovals();
+}
+// Pulls the real, approved template text straight from Meta for
+// whatever template is currently mapped to this campaign, then builds
+// an input per actual variable slot. Nothing about the template is
+// typed by hand here - if the mapping or the approved text changes,
+// this panel genuinely follows it.
+async function loadCampaignTemplatePreview(campaignKey){
+  const el=document.getElementById('campaignTestPanel_'+campaignKey);
+  if(!el||el.dataset.loaded==='1') return;
+  el.innerHTML='<span class="mw-spinner"></span>Loading the mapped template...';
+  const j=await call('get_campaign_template_preview',{campaign_key:campaignKey});
+  if(!j.ok){el.innerHTML='<span style="color:var(--err);">'+j.error+'</span>';return;}
+  el.dataset.loaded='1';
+
+  function varInputs(prefix,count,label){
+    if(!count) return '';
+    let out='<div class="muted" style="font-size:10.5px;margin:6px 0 2px;">'+label+'</div>';
+    for(let i=1;i<=count;i++){
+      out+='<input class="fi" type="text" id="tv_'+prefix+'_'+campaignKey+'_'+i+'" placeholder="{{'+i+'}}" style="margin:0 0 4px;font-size:11.5px;">';
+    }
+    return out;
+  }
+  const msg=[j.header_text,j.body_text,j.footer_text].filter(Boolean).join('\n\n');
+  el.innerHTML=
+    '<div class="muted" style="font-size:10.5px;margin-bottom:4px;">'+j.template_name+' ('+j.language+') - '+j.status+'</div>'+
+    '<pre style="white-space:pre-wrap;font-size:11.5px;background:var(--bg2,rgba(0,0,0,.04));padding:8px;border-radius:8px;margin:0 0 6px;">'+msg.replace(/</g,'&lt;')+'</pre>'+
+    varInputs('h',j.header_var_count,'Header variable values')+
+    varInputs('b',j.body_var_count,'Body variable values')+
+    '<div style="display:flex;gap:6px;margin-top:6px;">'+
+      '<input class="fi" type="text" id="campaignTestNum_'+campaignKey+'" placeholder="Phone number, e.g. 971501234567" style="margin:0;flex:1;font-size:12px;">'+
+      '<button class="btn btn-s btn-sm" onclick="sendCampaignTest(\''+campaignKey+'\','+j.header_var_count+','+j.body_var_count+')" style="white-space:nowrap;">Send test</button>'+
+    '</div>'+
+    '<div id="campaignTestResult_'+campaignKey+'" style="font-size:11.5px;margin-top:6px;"></div>';
+}
+async function sendCampaignTest(campaignKey,headerCount,bodyCount){
   const resEl=document.getElementById('campaignTestResult_'+campaignKey);
-  const to_number=numEl.value.trim();
+  const to_number=document.getElementById('campaignTestNum_'+campaignKey).value.trim();
   if(!to_number){resEl.textContent='Enter a recipient number.';resEl.style.color='var(--err)';return;}
+  function collect(prefix,count){
+    const out=[];
+    for(let i=1;i<=count;i++){
+      const v=document.getElementById('tv_'+prefix+'_'+campaignKey+'_'+i);
+      out.push(v?v.value.trim():'');
+    }
+    return out;
+  }
+  const header_params=collect('h',headerCount||0);
+  const body_params=collect('b',bodyCount||0);
+  if(header_params.some(function(v){return !v;})||body_params.some(function(v){return !v;})){
+    resEl.textContent='Fill in every variable value first - WhatsApp rejects a template sent with a blank variable.';resEl.style.color='var(--err)';return;
+  }
   resEl.innerHTML='<span class="mw-spinner"></span>Sending...';
-  const j=await call('send_campaign_test_message',{campaign_key:campaignKey,to_number:to_number});
+  const j=await call('send_campaign_test_message',{campaign_key:campaignKey,to_number:to_number,header_params:header_params,body_params:body_params});
   if(j.ok){resEl.textContent='Sent - check WhatsApp on that number.';resEl.style.color='var(--ok)';}
   else{resEl.textContent='Error: '+j.error;resEl.style.color='var(--err)';}
 }
