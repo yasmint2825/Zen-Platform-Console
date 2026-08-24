@@ -1002,6 +1002,15 @@ code, .mw-spinner + code, pre {
               <input class="fi" type="text" id="waWabaId" placeholder="For template management">
               <button class="btn btn-p btn-sm" onclick="saveWA()">Save and connect</button>
               <div id="waSaveResult" style="font-size:12.5px;margin-top:8px;"></div>
+
+              <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
+                <label class="fl">Send a test message (uses Meta's free, pre-approved "hello_world" template - no approval wait)</label>
+                <div style="display:flex;gap:6px;">
+                  <input class="fi" type="text" id="waTestNumber" placeholder="Recipient number, e.g. 971501234567" style="margin:0;">
+                  <button class="btn btn-s btn-sm" onclick="sendWATestMessage()" style="white-space:nowrap;">Send test</button>
+                </div>
+                <div id="waTestResult" style="font-size:12.5px;margin-top:8px;"></div>
+              </div>
             </div>
 
             <div class="card">
@@ -2199,6 +2208,26 @@ async function registerWhatsappNumber(){
   r.innerHTML='<span class="mw-spinner"></span>Registering...';
   const j=await call('register_whatsapp_number',{access_token:access_token,phone_number_id:phone_number_id,pin:pin});
   if(j.ok){r.textContent='Registered successfully - check WhatsApp Manager to confirm it now shows Connected, then use Save and connect below.';r.style.color='var(--ok)';}
+  else{r.textContent='Error: '+j.error;r.style.color='var(--err)';}
+}
+
+// Sends Meta's free, pre-approved "hello_world" template - lets someone
+// confirm a newly connected number actually works end-to-end without
+// leaving the console. Deliberately separate from real campaign sending
+// (that stays in send-whatsapp) - this exists purely as a connection
+// check. Reads the same token/phone number ID fields as the rest of
+// this card, so it tests whatever's currently in the form, not
+// necessarily what's already saved.
+async function sendWATestMessage(){
+  const access_token=document.getElementById('waToken').value.trim();
+  const phone_number_id=document.getElementById('waPhoneId').value.trim();
+  const to_number=document.getElementById('waTestNumber').value.trim();
+  const r=document.getElementById('waTestResult');
+  if(!access_token||!phone_number_id){r.textContent='Fill in access token and phone number ID above first.';r.style.color='var(--err)';return;}
+  if(!to_number){r.textContent='Enter a recipient number.';r.style.color='var(--err)';return;}
+  r.innerHTML='<span class="mw-spinner"></span>Sending...';
+  const j=await call('send_whatsapp_test_message',{access_token:access_token,phone_number_id:phone_number_id,to_number:to_number});
+  if(j.ok){r.textContent='Sent - check WhatsApp on that number.';r.style.color='var(--ok)';}
   else{r.textContent='Error: '+j.error;r.style.color='var(--err)';}
 }
 
