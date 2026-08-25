@@ -103,6 +103,14 @@
   .agent-section summary::after{content:'\2304';font-size:14px;color:var(--muted);transition:transform .15s;}
   .agent-section[open] summary::after{transform:rotate(180deg);}
   .agent-section-body{padding:14px;border-top:1px solid var(--border);}
+  /* WhatsApp tabs. Underline rather than boxes - lighter, and the
+     active state reads without needing a filled background. */
+  .wa-tab{background:none;border:none;border-bottom:2px solid transparent;padding:8px 14px;
+    font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;margin-bottom:-1px;
+    font-family:inherit;transition:color .12s,border-color .12s;white-space:nowrap;}
+  .wa-tab:hover{color:var(--text,inherit);}
+  .wa-tab.active{color:var(--text,inherit);border-bottom-color:var(--accent,currentColor);}
+  .wa-tab .count-badge{margin-left:4px;}
   /* Same chevron treatment as .agent-section, applied to plain
      <details class="card"> blocks used throughout Marketing/Engagement
      agent detail - keeps the collapsible sections visually consistent
@@ -756,6 +764,223 @@ code, .mw-spinner + code, pre {
   font-size: 12px !important;
 }
 </style>
+<style id="zenPremiumEnterprise2026">
+/* ============================================================
+   ZEN PREMIUM ENTERPRISE 2026
+   Final visual system. Intentionally loaded last so legacy UI
+   layers remain functionally untouched while the product presents
+   as one coherent enterprise experience.
+   ============================================================ */
+:root{
+  --p:#5B5BD6; --p-hover:#4F4FC2; --pl:#F1F1FD;
+  --ink:#161A22; --muted:#6D7480; --bg:#F6F7F9; --surface:#FFFFFF;
+  --border:#E5E7EB; --border-strong:#D6DAE1;
+  --ok:#13875B; --okl:#EAF8F1; --warn:#B96B18; --warnl:#FFF5E8;
+  --err:#C94C4C; --errl:#FFF0F0; --info:#376FD4;
+  --sidebar-w:232px; --topbar-h:64px;
+  --radius-xs:8px; --radius-sm:10px; --radius-md:14px; --radius-lg:18px;
+  --shadow-xs:0 1px 2px rgba(18,24,35,.04);
+  --shadow-sm:0 5px 18px rgba(18,24,35,.055);
+  --shadow-md:0 14px 40px rgba(18,24,35,.08);
+  --focus:0 0 0 3px rgba(91,91,214,.14);
+}
+html{scroll-behavior:smooth;background:var(--bg)}
+body{background:var(--bg)!important;color:var(--ink)!important;min-height:100vh}
+::selection{background:#DFDEFF;color:#23234E}
+button,input,select,textarea{font:inherit}
+button{-webkit-tap-highlight-color:transparent}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid transparent!important;box-shadow:var(--focus)!important}
+a{text-underline-offset:2px}
+
+/* ---------- App chrome ---------- */
+.topbar{
+  height:var(--topbar-h)!important;padding:0 22px!important;
+  background:rgba(255,255,255,.88)!important;backdrop-filter:blur(22px) saturate(1.25)!important;
+  border-bottom:1px solid rgba(225,228,234,.95)!important;
+}
+.topbar-left{gap:14px!important;min-width:0}
+.logo{font-size:15px!important;font-weight:700!important;letter-spacing:-.02em!important;white-space:nowrap}
+.logo .dot{width:26px!important;height:26px!important;border-radius:9px!important;background:linear-gradient(145deg,#5154CF,#7872E8)!important;box-shadow:0 5px 13px rgba(81,84,207,.19)!important}
+.logo .dot:after{inset:8px!important;border-width:1.5px!important}
+.tenant-select{
+  max-width:240px!important;height:34px!important;background:#F7F8FA!important;border:1px solid #E6E8ED!important;
+  border-radius:9px!important;padding:0 30px 0 10px!important;color:#454B57!important;font-weight:500!important;
+}
+.topbar-right{gap:10px!important;min-width:0}
+#whoami{max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px;color:#7A808C}
+.zen-user-avatar{width:29px;height:29px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#EEEFFC;color:#4D50B5;font-size:11px;font-weight:700;flex:0 0 auto}
+.zen-mobile-toggle{display:none;width:36px;height:36px;border:1px solid var(--border);border-radius:10px;background:#fff;color:#3A404C;align-items:center;justify-content:center;font-size:18px;cursor:pointer}
+
+.shell{min-height:calc(100vh - var(--topbar-h))!important}
+.sidebar{
+  width:var(--sidebar-w)!important;padding:18px 12px 22px!important;background:#F8F9FB!important;border-right:1px solid #EAECF0!important;
+  position:sticky!important;top:var(--topbar-h)!important;height:calc(100vh - var(--topbar-h))!important;
+}
+.sidebar:after{content:'ZEN  •  AI WORKFORCE';display:block;margin:22px 10px 6px;padding-top:15px;border-top:1px solid #E8EAEF;color:#A0A5AE;font-size:8.5px;font-weight:700;letter-spacing:.13em}
+.nav-group-label{padding:15px 10px 6px!important;color:#9A9FA9!important;font-size:9px!important;font-weight:700!important;letter-spacing:.12em!important}
+.nav-item{
+  min-height:39px!important;padding:7px 9px!important;margin:2px 0!important;border-radius:10px!important;
+  color:#59606C!important;font-size:12.5px!important;font-weight:500!important;gap:9px!important;position:relative;
+}
+.nav-item .ic{width:24px!important;height:24px!important;border-radius:8px!important;background:transparent!important;color:#838996!important;font-size:13px!important}
+.nav-item:hover{background:#F0F1F4!important;color:#252A33!important}
+.nav-item.active{background:#ECECF8!important;color:#303276!important;font-weight:600!important}
+.nav-item.active:before{content:'';position:absolute;left:-12px;top:9px;bottom:9px;width:3px;border-radius:0 4px 4px 0;background:#5B5BD6}
+.nav-item.active .ic{color:#4F51BB!important;background:#F8F8FE!important}
+
+.main{width:100%;max-width:1420px!important;padding:34px 42px 124px!important;margin:0 auto 0 0}
+.page{animation:zenPageIn .18s ease both}
+@keyframes zenPageIn{from{opacity:.3;transform:translateY(3px)}to{opacity:1;transform:none}}
+.page-header{margin:2px 0 22px!important;padding-bottom:16px;border-bottom:1px solid #EBEDF1}
+.page-header h1{font-size:27px!important;font-weight:600!important;letter-spacing:-.035em!important;margin-bottom:5px!important}
+.page-header p,.page-header .muted{max-width:760px!important;color:#767D89!important;font-size:12.5px!important}
+.page-header:before{content:'WORKSPACE';display:block;margin-bottom:7px;font-size:8.5px;font-weight:700;letter-spacing:.13em;color:#A2A7B0}
+
+/* ---------- Core components ---------- */
+.card,.agent-tile,.stat-tile,.zen-feed,.zen-opportunity,.zen-attention-card,.zen-workforce-section,.zen-orchestrator{
+  background:var(--surface)!important;border:1px solid var(--border)!important;box-shadow:var(--shadow-xs)!important;
+}
+.card{border-radius:var(--radius-md)!important;padding:20px!important;margin-bottom:14px!important}
+.card:hover{border-color:#DDE0E6!important}
+.card h2{margin-bottom:5px!important}
+.item{background:#fff;border:1px solid #E7E9EE!important;border-radius:11px!important;padding:12px 13px!important;margin-bottom:8px!important}
+.item:hover{border-color:#D9DCE3!important;box-shadow:var(--shadow-xs)!important}
+.muted{color:var(--muted)!important}
+hr{border:0;border-top:1px solid var(--border)}
+
+.btn,button:not(.nav-item):not(.zen-chip){min-height:34px;border-radius:9px!important;font-weight:600!important;letter-spacing:0!important;transition:background .14s ease,border-color .14s ease,box-shadow .14s ease,transform .14s ease!important}
+.btn:hover,button:not(.nav-item):not(.zen-chip):hover{transform:none!important}
+.btn-p{background:#23262E!important;color:#fff!important;box-shadow:none!important}
+.btn-p:hover{background:#111318!important}
+.btn-s{background:#fff!important;color:#4D5360!important;border:1px solid #DDE0E6!important}
+.btn-s:hover{background:#F7F8FA!important;border-color:#D0D4DB!important}
+.btn-sm{min-height:30px!important;padding:6px 10px!important;font-size:11px!important}
+.zen-action{background:#23262E!important;color:#fff!important;border-radius:9px!important;padding:8px 11px!important}
+
+.fi,input[type="text"],input[type="email"],input[type="password"],input[type="number"],input[type="time"],input[type="datetime-local"],select,textarea{
+  border:1px solid #DDE1E7!important;border-radius:10px!important;background:#fff!important;color:#252A32!important;
+  box-shadow:inset 0 1px 0 rgba(17,24,39,.015);transition:border-color .14s ease,box-shadow .14s ease!important;
+}
+.fi:hover,input:hover,select:hover,textarea:hover{border-color:#CBD0D8!important}
+.fi:focus,input:focus,select:focus,textarea:focus{outline:0!important;border-color:#7778DD!important;box-shadow:var(--focus)!important}
+textarea{line-height:1.55!important}
+.fl{color:#777E89!important;font-weight:600!important;text-transform:none!important;letter-spacing:0!important;font-size:10.5px!important;margin-bottom:5px!important}
+
+.badge,.prov-tag,.count-badge{border-radius:999px!important;font-weight:600!important;letter-spacing:0!important;text-transform:none!important}
+.badge{padding:3px 8px!important}
+.b-ok{background:var(--okl)!important;color:#197A56!important}
+.b-warn{background:var(--warnl)!important;color:#A6621E!important}
+.b-err{background:var(--errl)!important;color:#B74747!important}
+.count-badge{background:#EDEDFC!important;color:#4F51B5!important;padding:2px 7px!important}
+
+/* ---------- Dashboard / command center ---------- */
+.zen-hero{padding:8px 0 24px!important;margin:0 0 6px!important}
+.zen-delegate-label{color:#8F95A0!important;font-size:9px!important;letter-spacing:.12em!important;margin-bottom:10px!important}
+.zen-command-mode{background:#ECECFB!important;color:#5558B7!important;border:0!important;padding:4px 7px!important}
+.zen-hero h1{max-width:780px!important;font-size:36px!important;font-weight:600!important;letter-spacing:-.047em!important;line-height:1.08!important;margin-bottom:10px!important}
+.zen-hero p{max-width:710px!important;font-size:13.5px!important;line-height:1.62!important;color:#737A86!important;margin-bottom:18px!important}
+.zen-command{max-width:860px!important;min-height:51px!important;border:1px solid #DDE0E7!important;border-radius:14px!important;padding:6px 6px 6px 13px!important;box-shadow:0 8px 26px rgba(25,30,40,.055)!important}
+.zen-command:focus-within{border-color:#B7B8EA!important;box-shadow:var(--focus),0 8px 26px rgba(25,30,40,.055)!important}
+.zen-command .spark{color:#5B5BD6!important}
+.zen-command input{border:0!important;box-shadow:none!important;background:transparent!important;font-size:13.5px!important}
+.zen-command button{background:#23262E!important;min-width:82px}
+.zen-suggestions{gap:6px!important;margin-top:9px!important}
+.zen-chip{background:transparent!important;border:1px solid #E1E4E9!important;color:#707783!important;border-radius:999px!important;padding:5px 9px!important;font-size:10.5px!important}
+.zen-chip:hover{background:#F2F3F6!important;color:#343942!important}
+.zen-v2-attention{margin-top:22px!important}
+.zen-attention-head{margin-bottom:5px!important}
+.zen-attention-row{grid-template-columns:28px 1fr auto!important;padding:10px 0!important}
+.zen-attention-icon{width:26px!important;height:26px!important;border-radius:8px!important;background:#F2F3F6!important;color:#7A808B!important}
+.zen-attention-row button{background:transparent!important;color:#4C4FB2!important;padding:5px 2px!important}
+.zen-workforce-section{margin-top:30px!important;padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important}
+.zen-workforce-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important;border:0!important}
+.zen-worker,.zen-worker:nth-child(3n+2),.zen-worker:nth-child(3n+3){background:#fff!important;border:1px solid #E6E8ED!important;border-radius:14px!important;padding:14px!important;min-height:139px!important}
+.zen-worker:hover{border-color:#D3D7DF!important;box-shadow:var(--shadow-sm)!important}
+.zen-worker.needs-attention{border-top:2px solid #D28B43!important}
+.zen-worker-title .avatar{width:31px!important;height:31px!important;background:#F1F2F6!important;border-radius:9px!important}
+.zen-worker p{font-size:10.8px!important;line-height:1.5!important;color:#737A86!important}
+.zen-worker .worker-footer{font-size:10px!important;color:#5154B9!important}
+.zen-agent-state{font-size:9px!important}
+.zen-two-col{gap:18px!important;margin-top:24px!important}
+.zen-feed,.zen-opportunity{padding:17px!important;border-radius:14px!important}
+.zen-opportunity{border-left:1px solid var(--border)!important;background:linear-gradient(145deg,#fff,#FBFBFE)!important}
+.zen-feed-row{grid-template-columns:52px 24px 1fr!important}
+.zen-mini-avatar{width:23px!important;height:23px!important;background:#F1F2F6!important}
+.zen-orchestrator{border-radius:14px!important;padding:16px!important;background:#FAFAFD!important}
+
+/* ---------- Agents / dense workspaces ---------- */
+#page-agents>.stat-grid{grid-template-columns:repeat(4,minmax(165px,1fr))!important;gap:10px!important}
+.agent-tile{border-radius:14px!important;padding:15px!important;min-height:126px;position:relative;overflow:hidden}
+.agent-tile:not(.coming-soon):hover{transform:none!important;box-shadow:var(--shadow-sm)!important;border-color:#D6D9E1!important}
+.agent-tile:after{content:'Open';position:absolute;right:13px;bottom:12px;font-size:9px;color:#989EAA;opacity:0;transition:opacity .14s ease}
+.agent-tile:not(.coming-soon):hover:after{opacity:1}
+.zen-agent-banner{padding:0 0 16px!important;margin-bottom:15px!important;border-bottom:1px solid #E8EAEF!important}
+.zen-agent-banner .zen-big-avatar{background:#F0F1F6!important;width:42px!important;height:42px!important}
+.zen-toolbar{gap:6px!important}
+.zen-soft-btn{min-height:30px!important;background:#fff!important;border:1px solid #E0E3E8!important}
+.agent-section{border:1px solid #E5E7EB!important;border-radius:12px!important;margin-bottom:9px!important;background:#fff}
+.agent-section summary{min-height:43px;padding:11px 13px!important;background:#FAFAFB!important;font-weight:600!important;color:#3D434D!important}
+.agent-section[open] summary{background:#F8F8FA!important}
+.agent-section-body{padding:14px!important;border-top:1px solid #EAECF0!important}
+details.card>summary{min-height:32px}
+.wa-tab{padding:8px 10px!important;font-size:11px!important;color:#777E89!important}
+.wa-tab.active{color:#3D3F8C!important;border-bottom-color:#6568D3!important}
+.marketing-tab-btn,.settings-tab-btn{border-radius:999px!important}
+
+/* ---------- Tables / report data ---------- */
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;background:#fff;border:1px solid #E7E9ED;border-radius:11px;overflow:hidden}
+th{background:#F8F9FA!important;color:#767C87!important;padding:9px 10px!important;border-bottom:1px solid #E5E7EB!important;text-align:left!important}
+td{padding:10px!important;border-bottom:1px solid #ECEEF1!important;color:#424852!important;vertical-align:top}
+tr:last-child td{border-bottom:0!important}tbody tr:hover td{background:#FBFBFC}
+pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
+
+/* ---------- Auth ---------- */
+#authScreen{max-width:430px!important;margin:8vh auto!important;padding:20px!important}
+#authScreen:before{content:'ZEN';display:block;text-align:center;margin-bottom:14px;font-family:'Sora',sans-serif;font-size:11px;font-weight:700;letter-spacing:.2em;color:#7779C8}
+#authScreen .card{padding:30px!important;border:1px solid #E3E5EA!important;border-radius:18px!important;box-shadow:0 18px 55px rgba(21,27,38,.10)!important}
+#authScreen .card:before{display:none!important}
+#authScreen h1{font-size:28px!important}
+#authScreen .row .btn{flex:1}
+
+/* ---------- Fixed Ask ZEN ---------- */
+.zen-global-bar{left:calc(var(--sidebar-w) + 42px)!important;right:42px!important;bottom:16px!important;max-width:1120px;margin-left:0!important;min-height:49px!important;border:1px solid #DDE0E6!important;border-radius:14px!important;background:rgba(255,255,255,.95)!important;box-shadow:0 12px 35px rgba(23,29,40,.095)!important}
+.zen-global-bar:before{content:'ASK ZEN'!important;color:#969BA5!important}
+.zen-global-bar .orb{background:#262934!important;width:26px!important;height:26px!important;box-shadow:none!important}
+.zen-global-bar input{font-size:12.5px!important}
+.zen-global-bar button{background:#23262E!important}
+.zen-toast{border-radius:11px!important;background:#242831!important;box-shadow:var(--shadow-md)!important}
+
+/* ---------- Responsive ---------- */
+@media(max-width:1120px){
+  .main{padding-left:28px!important;padding-right:28px!important}
+  .zen-workforce-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #page-agents>.stat-grid{grid-template-columns:repeat(2,1fr)!important}
+}
+@media(max-width:780px){
+  :root{--topbar-h:58px}
+  .topbar{padding:0 13px!important}.zen-mobile-toggle{display:inline-flex}.logo{font-size:14px!important}.logo .dot{width:23px!important;height:23px!important}
+  .tenant-select{max-width:130px!important}.topbar-right #whoami{display:none}.topbar-right .btn{padding:6px 8px!important}
+  .shell{display:block!important}.sidebar{position:fixed!important;left:0!important;top:var(--topbar-h)!important;bottom:0!important;height:auto!important;z-index:60!important;width:min(290px,86vw)!important;transform:translateX(-105%);transition:transform .2s ease!important;box-shadow:18px 0 40px rgba(20,25,35,.12);display:block!important}
+  body.zen-nav-open .sidebar{transform:translateX(0)}
+  body.zen-nav-open:after{content:'';position:fixed;inset:var(--topbar-h) 0 0 0;background:rgba(25,29,37,.25);z-index:55;backdrop-filter:blur(1px)}
+  .main{padding:24px 15px 105px!important;max-width:none!important}.page-header{margin-bottom:16px!important}.page-header h1{font-size:24px!important}
+  .zen-hero h1{font-size:30px!important}.zen-command{min-height:48px!important}.zen-command button{min-width:auto;padding:9px 10px!important}
+  .zen-workforce-grid,#page-agents>.stat-grid{grid-template-columns:1fr!important}
+  .zen-two-col{grid-template-columns:1fr!important;gap:12px!important}.zen-opportunity{padding-left:17px!important;border-top:1px solid var(--border)!important}
+  .row{align-items:stretch!important}.row>.fi{min-width:0!important}.card{padding:16px!important}
+  .zen-global-bar{left:10px!important;right:10px!important;bottom:10px!important}.zen-global-bar:before{display:none}.zen-global-bar button{padding:8px 9px!important}
+  .stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:480px){
+  .tenant-select{display:none}.topbar-right{margin-left:auto}.main{padding-left:11px!important;padding-right:11px!important}
+  .stat-grid{grid-template-columns:1fr!important}.zen-hero h1{font-size:27px!important}.zen-hero p{font-size:12.5px!important}
+  .zen-command .spark{display:none}.zen-suggestions{overflow-x:auto;flex-wrap:nowrap!important;padding-bottom:3px}.zen-chip{white-space:nowrap}
+  .card{border-radius:12px!important;padding:14px!important}.agent-section-body{padding:12px!important}
+  .zen-attention-row{grid-template-columns:24px 1fr!important}.zen-attention-row button{grid-column:2;justify-self:start}
+}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+</style>
+
 </head>
 <body>
 
@@ -1007,12 +1232,35 @@ code, .mw-spinner + code, pre {
             </div>
 
             <div class="card">
-              <h2>WhatsApp connection</h2>
-              <div id="waStatus" style="font-size:13px;padding:10px 14px;border-radius:10px;margin-bottom:12px;"></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+                <h2 style="margin:0;">WhatsApp</h2>
+                <div id="waStatus" style="font-size:12px;padding:5px 12px;border-radius:20px;"></div>
+              </div>
 
-              <details style="margin-bottom:14px;border:1px solid var(--border);border-radius:10px;padding:8px 12px;" ontoggle="if(this.open)loadEngagementIntelligence()">
-                <summary style="cursor:pointer;font-weight:700;font-size:13px;">Intelligence - what the messaging is doing</summary>
-                <div style="margin-top:10px;">
+              <!-- Tabs rather than five stacked collapsibles. The three
+                   things done daily sit in front; setup is a one-time job
+                   and shouldn't compete for attention with them. -->
+              <div class="wa-tabs" style="display:flex;gap:2px;margin:14px 0 12px;border-bottom:1px solid var(--border);flex-wrap:wrap;">
+                <button class="wa-tab active" data-watab="conversations" onclick="showWaTab('conversations')">Conversations <span id="inboxBadge"></span></button>
+                <button class="wa-tab" data-watab="intel" onclick="showWaTab('intel')">Performance</button>
+                <button class="wa-tab" data-watab="logs" onclick="showWaTab('logs')">Message log</button>
+                <button class="wa-tab" data-watab="setup" onclick="showWaTab('setup')">Setup</button>
+              </div>
+
+              <div class="wa-panel" data-wapanel="conversations">
+<div style="margin-top:10px;">
+                  <button class="btn btn-s btn-sm" onclick="loadConversations(true)" style="margin-bottom:8px;">Refresh</button>
+                  <div style="display:flex;gap:10px;align-items:stretch;min-height:260px;flex-wrap:wrap;">
+                    <div id="conversationList" style="flex:1 1 200px;max-width:280px;max-height:420px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:4px;">Loading...</div>
+                    <div id="conversationThread" style="flex:2 1 300px;border:1px solid var(--border);border-radius:8px;padding:10px;display:flex;flex-direction:column;">
+                      <div class="muted" style="margin:auto;font-size:11.5px;">Pick a conversation on the left.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="wa-panel" data-wapanel="intel" style="display:none;">
+<div style="margin-top:10px;">
                   <div class="row" style="gap:6px;margin-bottom:8px;align-items:center;">
                     <select class="fi" id="engIntelDays" style="width:auto;margin:0;font-size:11.5px;" onchange="loadEngagementIntelligence(true)">
                       <option value="7">Last 7 days</option>
@@ -1023,24 +1271,10 @@ code, .mw-spinner + code, pre {
                   </div>
                   <div id="engIntel" class="muted" style="font-size:11.5px;">Loading...</div>
                 </div>
-              </details>
+              </div>
 
-              <details style="margin-bottom:14px;border:1px solid var(--border);border-radius:10px;padding:8px 12px;" ontoggle="if(this.open)loadConversations()">
-                <summary style="cursor:pointer;font-weight:700;font-size:13px;">Conversations <span id="inboxBadge" class="muted" style="font-weight:400;"></span></summary>
-                <div style="margin-top:10px;">
-                  <button class="btn btn-s btn-sm" onclick="loadConversations(true)" style="margin-bottom:8px;">Refresh</button>
-                  <div style="display:flex;gap:10px;align-items:stretch;min-height:260px;flex-wrap:wrap;">
-                    <div id="conversationList" style="flex:1 1 200px;max-width:280px;max-height:420px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:4px;">Loading...</div>
-                    <div id="conversationThread" style="flex:2 1 300px;border:1px solid var(--border);border-radius:8px;padding:10px;display:flex;flex-direction:column;">
-                      <div class="muted" style="margin:auto;font-size:11.5px;">Pick a conversation on the left.</div>
-                    </div>
-                  </div>
-                </div>
-              </details>
-
-              <details style="margin-bottom:14px;border:1px solid var(--border);border-radius:10px;padding:8px 12px;" ontoggle="if(this.open)loadWhatsappMessages()">
-                <summary style="cursor:pointer;font-weight:700;font-size:13px;">Message log - what was actually sent</summary>
-                <div style="margin-top:10px;">
+              <div class="wa-panel" data-wapanel="logs" style="display:none;">
+<div style="margin-top:10px;">
                   <div class="row" style="gap:6px;margin-bottom:8px;">
                     <button class="btn btn-s btn-sm" onclick="loadWhatsappMessages(true)">Refresh</button>
                     <select class="fi" id="waLogRange" style="width:auto;margin:0;font-size:11.5px;" onchange="loadWhatsappMessages(true)">
@@ -1051,11 +1285,11 @@ code, .mw-spinner + code, pre {
                   </div>
                   <div id="waMessageLog" class="muted" style="font-size:11.5px;">Loading...</div>
                 </div>
-              </details>
+              </div>
 
-              <details id="waSetupDetails">
-                <summary style="cursor:pointer;font-weight:700;font-size:13px;padding:8px 0;">Connection setup, registration & testing</summary>
-                <div style="margin-top:10px;">
+              <div class="wa-panel" data-wapanel="setup" style="display:none;">
+                <p class="muted" style="font-size:11.5px;margin:0 0 12px;">One-time configuration. Once WhatsApp is connected you shouldn't need to come back here.</p>
+<div style="margin-top:10px;">
 
                 <details style="margin-bottom:14px;border:1px solid var(--border);border-radius:10px;padding:10px 14px;">
                   <summary style="cursor:pointer;font-weight:700;font-size:13px;">First time with a brand-new number? Register it here</summary>
@@ -1094,7 +1328,7 @@ code, .mw-spinner + code, pre {
                 </div>
 
                 </div>
-              </details>
+              </div>
             </div>
 
             <div class="card">
@@ -1767,7 +2001,7 @@ function showAgentDetail(agent){
   document.getElementById('intelligenceAgentDetail').style.display=agent==='intelligence'?'block':'none';
   window.scrollTo({top:0,behavior:'smooth'});
   if(agent==='marketing'){loadSocialContent();loadCompetitors();}
-  if(agent==='engagement'){loadAtRiskActions();loadAtRiskQueue();}
+  if(agent==='engagement'){loadAtRiskActions();loadAtRiskQueue();loadConversations();}
   if(agent==='intelligence'){loadDailyIntelligence();loadPredictive();renderQuickQuestions();}
 }
 function showMarketingTab(tab){
@@ -2258,10 +2492,10 @@ async function loadWAStatus(){
   const el=document.getElementById('waStatus');
   if(j.ok&&j.configured){
     el.style.background='var(--okl)';el.style.color='var(--ok)';
-    el.textContent='Connected - number ending '+j.phone_number_id_masked+(j.waba_id?' - WABA set':' - WABA ID missing');
+    el.textContent='Connected '+j.phone_number_id_masked;
   } else {
     el.style.background='var(--errl)';el.style.color='var(--err)';
-    el.textContent='Not connected yet.';
+    el.textContent='Not connected';
   }
 }
 async function saveWA(){
@@ -2556,6 +2790,20 @@ let CONVERSATIONS=[], ACTIVE_THREAD=null;
 // Send outcomes and what followed them. Deliberately distinguishes
 // "we don't have this data" from "the number is zero" - those look
 // identical in a dashboard and mean opposite things.
+// Loads on first view rather than up front - four panels all fetching
+// at once would make opening the page slower for no benefit, since only
+// one is visible.
+function showWaTab(name){
+  document.querySelectorAll('.wa-tab').forEach(function(b){
+    b.classList.toggle('active', b.dataset.watab===name);
+  });
+  document.querySelectorAll('.wa-panel').forEach(function(p){
+    p.style.display = p.dataset.wapanel===name ? '' : 'none';
+  });
+  if(name==='conversations') loadConversations();
+  else if(name==='intel') loadEngagementIntelligence();
+  else if(name==='logs') loadWhatsappMessages();
+}
 async function loadEngagementIntelligence(force){
   const el=document.getElementById('engIntel');
   if(!el) return;
@@ -2642,7 +2890,17 @@ async function loadEngagementIntelligence(force){
     '</div>';
   }).join('');
 
-  el.innerHTML=headline+receiptNote+retention+
+  // Replies sit apart from campaigns on purpose. A human answering a
+  // customer isn't an attempt to win anyone back, so folding it into
+  // the same table would make both numbers harder to read.
+  const replyLine = j.replies && (j.replies.sent||j.replies.failed)
+    ? '<div class="muted" style="font-size:10.5px;margin-bottom:8px;">'+
+      'Separately, '+j.replies.sent+' repl'+(j.replies.sent===1?'y':'ies')+' were sent by hand from Conversations'+
+      (j.replies.failed?(', '+j.replies.failed+' failed'):'')+'. These aren\'t campaigns, so they\'re not counted above.'+
+      '</div>'
+    : '';
+
+  el.innerHTML=headline+receiptNote+retention+replyLine+
     '<table style="width:100%;border-collapse:collapse;font-size:10.5px;">'+
       '<tr class="muted" style="font-size:9.5px;text-align:left;">'+
         '<th style="padding:3px 6px;">campaign</th><th style="padding:3px 6px;text-align:right;">sent</th>'+
@@ -5022,5 +5280,57 @@ sb.auth.onAuthStateChange(function(event,sess){
   }
 });
 </script>
+<script id="zenPremiumUXEnhancements">
+(function(){
+  function initials(v){
+    var s=(v||'U').split('@')[0].replace(/[._-]+/g,' ').trim();
+    var p=s.split(/\s+/).filter(Boolean);return ((p[0]||'U')[0]+(p[1]?p[1][0]:'')).toUpperCase();
+  }
+  function enhanceChrome(){
+    var left=document.querySelector('.topbar-left');
+    if(left&&!document.getElementById('zenMobileToggle')){
+      var b=document.createElement('button');b.id='zenMobileToggle';b.className='zen-mobile-toggle';b.type='button';b.setAttribute('aria-label','Open navigation');b.innerHTML='&#9776;';
+      b.onclick=function(){document.body.classList.toggle('zen-nav-open');b.setAttribute('aria-expanded',document.body.classList.contains('zen-nav-open')?'true':'false');};
+      left.insertBefore(b,left.firstChild);
+    }
+    var right=document.querySelector('.topbar-right'),who=document.getElementById('whoami');
+    if(right&&who&&!right.querySelector('.zen-user-avatar')){
+      var a=document.createElement('span');a.className='zen-user-avatar';a.setAttribute('aria-hidden','true');a.textContent=initials(who.textContent);right.insertBefore(a,who);
+      new MutationObserver(function(){a.textContent=initials(who.textContent)}).observe(who,{childList:true,characterData:true,subtree:true});
+    }
+    document.querySelectorAll('.nav-item').forEach(function(n){
+      n.addEventListener('click',function(){if(window.innerWidth<=780)document.body.classList.remove('zen-nav-open')});
+      var text=n.textContent.replace(/\s+/g,' ').trim();if(!n.title)n.title=text;
+    });
+  }
+  function accessibilityPass(root){
+    (root||document).querySelectorAll('button').forEach(function(b){if(!b.getAttribute('type'))b.setAttribute('type','button')});
+    (root||document).querySelectorAll('summary').forEach(function(s){if(!s.hasAttribute('tabindex'))s.setAttribute('tabindex','0')});
+    (root||document).querySelectorAll('input,textarea,select').forEach(function(el){
+      if(!el.getAttribute('aria-label')){
+        var prev=el.previousElementSibling;
+        if(prev&&prev.tagName==='LABEL')el.setAttribute('aria-label',prev.textContent.trim());
+        else if(el.placeholder)el.setAttribute('aria-label',el.placeholder);
+      }
+    });
+  }
+  function enhancePageHeaders(root){
+    (root||document).querySelectorAll('.page-header').forEach(function(h){
+      if(!h.dataset.zenPremium)h.dataset.zenPremium='1';
+    });
+  }
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape')document.body.classList.remove('zen-nav-open');
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){
+      var input=document.querySelector('.zen-global-bar input')||document.getElementById('zenCommandInput');
+      if(input){e.preventDefault();input.focus();}
+    }
+  });
+  document.addEventListener('DOMContentLoaded',function(){enhanceChrome();accessibilityPass(document);enhancePageHeaders(document)});
+  var mo=new MutationObserver(function(muts){muts.forEach(function(m){m.addedNodes.forEach(function(n){if(n.nodeType===1){accessibilityPass(n);enhancePageHeaders(n)}})})});
+  mo.observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
+
 </body>
 </html>
