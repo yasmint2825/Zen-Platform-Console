@@ -2635,7 +2635,15 @@ async function sendReply(mobile){
   if(!message){res.textContent='Type something first.';res.style.color='var(--err)';return;}
   res.innerHTML='<span class="mw-spinner"></span>Sending...';
   const j=await call('send_whatsapp_reply',{to_number:mobile,message:message});
-  if(j.ok){input.value='';res.textContent='';loadConversations(true);}
+  if(j.ok){
+    input.value='';
+    // The message reached the customer either way - but if it couldn't
+    // be saved, the thread won't show it, and silently pretending
+    // otherwise is how you end up wondering where your reply went.
+    if(j.warning){res.textContent=j.warning;res.style.color='var(--warn)';}
+    else{res.textContent='';}
+    loadConversations(true);
+  }
   else{res.textContent='Error: '+j.error;res.style.color='var(--err)';}
 }
 async function markHandled(mobile){
