@@ -1010,6 +1010,14 @@ code, .mw-spinner + code, pre {
               <h2>WhatsApp connection</h2>
               <div id="waStatus" style="font-size:13px;padding:10px 14px;border-radius:10px;margin-bottom:12px;"></div>
 
+              <details style="margin-bottom:14px;border:1px solid var(--border);border-radius:10px;padding:8px 12px;" ontoggle="if(this.open)loadConversations()">
+                <summary style="cursor:pointer;font-weight:700;font-size:13px;">Conversations <span id="inboxBadge" class="muted" style="font-weight:400;"></span></summary>
+                <div style="margin-top:10px;">
+                  <button class="btn btn-s btn-sm" onclick="loadConversations(true)" style="margin-bottom:8px;">Refresh</button>
+                  <div id="conversationList" class="muted" style="font-size:11.5px;">Loading...</div>
+                </div>
+              </details>
+
               <details style="margin-bottom:14px;border:1px solid var(--border);border-radius:10px;padding:8px 12px;" ontoggle="if(this.open)loadWhatsappMessages()">
                 <summary style="cursor:pointer;font-weight:700;font-size:13px;">Message log - what was actually sent</summary>
                 <div style="margin-top:10px;">
@@ -2521,6 +2529,81 @@ async function loadChangeLog(){
 // Reads the send log every WhatsApp send already writes to. This shows
 // what Meta accepted or rejected - deliberately not framed as delivery,
 // which we genuinely can't see without a webhook.
+// The inbox. Only has anything in it once the webhook is receiving -
+// without that, Meta never delivers replies to us at all.
+async function loadConversations(force){
+  const el=document.getElementById('conversationList');
+  if(!el) return;
+  if(el.dataset.loaded==='1' && !force) return;
+  el.innerHTML='<span class="mw-spinner"></span>Loading...';
+  const j=await call('list_conversations',{});
+  if(!j.ok){el.innerHTML='<span style="color:var(--err);">'+j.error+'</span>';return;}
+  el.dataset.loaded='1';
+  const badge=document.getElementById('inboxBadge');
+  if(badge) badge.innerHTML=j.total_unhandled?('<span class="count-badge">'+j.total_unhandled+'</span>'):'';
+
+  if(!j.conversations.length){
+    el.innerHTML='No conversations yet. Replies only appear here once the webhook is configured in Meta - until then they stay in the WhatsApp app.';
+    return;
+  }
+
+  el.innerHTML=j.conversations.map(function(c){
+    const msgs=c.messages.map(function(m){
+      if(m.direction==='in'){
+        return '<div style="margin:3px 0;padding:4px 8px;background:var(--okl,rgba(0,128,0,.06));border-radius:8px;">'+
+          '<b style="font-size:10.5px;">Them</b> <span class="muted" style="font-size:10px;">'+formatDubai(m.at)+'</span>'+
+          '<div>'+esc(m.body)+'</div></div>';
+      }
+      // Delivery and read only appear once the webhook is live; before
+      // that they're genuinely unknown rather than false.
+      const marks=[m.status, m.delivered_at?'delivered':null, m.read_at?'read':null].filter(Boolean).join(' · ');
+      return '<div style="margin:3px 0;padding:4px 8px;border-radius:8px;border:1px solid var(--border);">'+
+        '<b style="font-size:10.5px;">Us</b> <span class="muted" style="font-size:10px;">'+formatDubai(m.at)+' · '+esc(marks)+'</span>'+
+        '<div>'+esc(m.body)+'</div>'+
+        (m.failed_reason?'<div style="color:var(--err);font-size:10px;">'+esc(m.failed_reason)+'</div>':'')+
+      '</div>';
+    }).join('');
+
+    const id=c.mobile.replace(/\D/g,'');
+    const replyBox=c.reply_window_open
+      ? '<div style="display:flex;gap:6px;margin-top:6px;">'+
+          '<input class="fi" type="text" id="reply_'+id+'" placeholder="Type a reply..." style="margin:0;flex:1;font-size:11.5px;">'+
+          '<button class="btn btn-p btn-sm" onclick="sendReply(\''+c.mobile+'\')" style="white-space:nowrap;">Send</button>'+
+        '</div>'+
+        '<div class="muted" style="font-size:10px;margin-top:2px;">Free-text reply allowed for another '+c.reply_window_hours_left+'h.</div>'
+      : '<div class="muted" style="font-size:10.5px;margin-top:6px;">'+
+          'Free-text replies are closed - WhatsApp only allows them within 24 hours of the customer\'s own message. You can still reach them with an approved template from a campaign.'+
+        '</div>';
+
+    return '<details style="margin-bottom:6px;border:1px solid var(--border);border-radius:8px;padding:6px 10px;">'+
+      '<summary style="cursor:pointer;">'+
+        '<b>'+esc(c.customer_name||c.mobile)+'</b> '+
+        '<span class="muted" style="font-size:10.5px;">'+esc(c.mobile)+' · '+formatDubai(c.last_activity)+'</span>'+
+        (c.unhandled?' <span class="count-badge">'+c.unhandled+'</span>':'')+
+      '</summary>'+
+      '<div style="margin-top:6px;">'+msgs+replyBox+
+        '<div id="replyResult_'+id+'" style="font-size:11px;margin-top:4px;"></div>'+
+        (c.unhandled?'<button class="btn btn-s btn-sm" style="margin-top:6px;" onclick="markHandled(\''+c.mobile+'\')">Mark handled without replying</button>':'')+
+      '</div>'+
+    '</details>';
+  }).join('');
+}
+async function sendReply(mobile){
+  const id=mobile.replace(/\D/g,'');
+  const input=document.getElementById('reply_'+id);
+  const res=document.getElementById('replyResult_'+id);
+  const message=input.value.trim();
+  if(!message){res.textContent='Type something first.';res.style.color='var(--err)';return;}
+  res.innerHTML='<span class="mw-spinner"></span>Sending...';
+  const j=await call('send_whatsapp_reply',{to_number:mobile,message:message});
+  if(j.ok){input.value='';res.textContent='Sent.';res.style.color='var(--ok)';loadConversations(true);}
+  else{res.textContent='Error: '+j.error;res.style.color='var(--err)';}
+}
+async function markHandled(mobile){
+  const j=await call('mark_conversation_handled',{to_number:mobile});
+  if(!j.ok){alert('Error: '+j.error);return;}
+  loadConversations(true);
+}
 async function loadWhatsappMessages(force){
   const el=document.getElementById('waMessageLog');
   if(!el) return;
