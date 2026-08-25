@@ -1010,6 +1010,21 @@ code, .mw-spinner + code, pre {
               <h2>WhatsApp connection</h2>
               <div id="waStatus" style="font-size:13px;padding:10px 14px;border-radius:10px;margin-bottom:12px;"></div>
 
+              <details style="margin-bottom:14px;border:1px solid var(--border);border-radius:10px;padding:8px 12px;" ontoggle="if(this.open)loadWhatsappMessages()">
+                <summary style="cursor:pointer;font-weight:700;font-size:13px;">Message log - what was actually sent</summary>
+                <div style="margin-top:10px;">
+                  <div class="row" style="gap:6px;margin-bottom:8px;">
+                    <button class="btn btn-s btn-sm" onclick="loadWhatsappMessages(true)">Refresh</button>
+                    <select class="fi" id="waLogRange" style="width:auto;margin:0;font-size:11.5px;" onchange="loadWhatsappMessages(true)">
+                      <option value="today">Today</option>
+                      <option value="7">Last 7 days</option>
+                      <option value="all">Everything recent</option>
+                    </select>
+                  </div>
+                  <div id="waMessageLog" class="muted" style="font-size:11.5px;">Loading...</div>
+                </div>
+              </details>
+
               <details id="waSetupDetails">
                 <summary style="cursor:pointer;font-weight:700;font-size:13px;padding:8px 0;">Connection setup, registration & testing</summary>
                 <div style="margin-top:10px;">
@@ -2503,6 +2518,46 @@ async function loadChangeLog(){
 // auto-run, so it never runs (and costs) without you asking for it.
 // Shows what actually happened after each message, not just that one
 // was sent - the success rate here is measured against real visits.
+// Reads the send log every WhatsApp send already writes to. This shows
+// what Meta accepted or rejected - deliberately not framed as delivery,
+// which we genuinely can't see without a webhook.
+async function loadWhatsappMessages(force){
+  const el=document.getElementById('waMessageLog');
+  if(!el) return;
+  if(el.dataset.loaded==='1' && !force) return;
+  el.innerHTML='<span class="mw-spinner"></span>Loading...';
+  const range=(document.getElementById('waLogRange')||{}).value||'today';
+  const args={limit:100};
+  if(range==='today') args.since=new Date(new Date().toDateString()).toISOString();
+  else if(range==='7') args.since=new Date(Date.now()-7*86400000).toISOString();
+  const j=await call('list_whatsapp_messages',args);
+  if(!j.ok){el.innerHTML='<span style="color:var(--err);">'+j.error+'</span>';return;}
+  el.dataset.loaded='1';
+  if(!j.messages.length){el.innerHTML='Nothing sent in this period.';return;}
+
+  const summary=Object.keys(j.counts).map(function(k){
+    const bad=(k==='failed');
+    return '<span style="color:'+(bad?'var(--err)':'var(--ok)')+';font-weight:700;">'+j.counts[k]+' '+esc(k)+'</span>';
+  }).join(' &middot; ');
+
+  const rows=j.messages.map(function(m){
+    const failed=m.status==='failed';
+    return '<div class="item" style="padding:6px 8px;">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;">'+
+        '<b>'+esc(m.customer_name||m.mobile)+'</b>'+
+        '<span style="font-size:10.5px;color:'+(failed?'var(--err)':'var(--ok)')+';font-weight:700;">'+esc(m.status)+'</span>'+
+      '</div>'+
+      '<div class="muted" style="font-size:10.5px;">'+esc(m.mobile||'')+' &middot; '+esc(m.msg_type||'')+' &middot; '+esc(m.template_name||'')+' &middot; '+formatDubai(m.sent_at)+'</div>'+
+      // Meta's own error text, shown verbatim - it's usually specific
+      // enough to act on, and paraphrasing it would lose that.
+      (failed&&m.error?'<div style="font-size:10.5px;color:var(--err);margin-top:2px;">'+esc(String(m.error).slice(0,300))+'</div>':'')+
+    '</div>';
+  }).join('');
+
+  el.innerHTML='<div style="margin-bottom:6px;">'+summary+'</div>'+rows+
+    '<div class="muted" style="font-size:10.5px;margin-top:8px;line-height:1.5;">'+
+    '<b>What "sent" means here:</b> Meta accepted the message. Whether it reached the handset, was read, or got a reply isn\'t visible - those arrive on a webhook, which isn\'t set up. Customer replies currently go to the WhatsApp number itself and can only be seen in the WhatsApp app.</div>';
+}
 async function loadOutreachHistory(){
   const el=document.getElementById('outreachHistory');
   if(!el||el.dataset.loaded==='1') return;
