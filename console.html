@@ -765,6 +765,50 @@ code, .mw-spinner + code, pre {
 }
 </style>
 <style id="zenPremiumEnterprise2026">
+  /* ── New-message indicators ──────────────────────────────────
+     Three surfaces, because which one you notice depends on where you
+     are: a count on the tab, a dot on the sidebar, and a toast when
+     you're somewhere else in the console entirely. */
+  .nav-unread{
+    margin-left:auto;min-width:18px;height:18px;padding:0 5px;
+    display:inline-flex;align-items:center;justify-content:center;
+    border-radius:999px;background:#0B7A5E;color:#fff;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:10.5px;font-weight:600;line-height:1;
+  }
+
+  .wa-toast{
+    position:fixed;right:20px;bottom:20px;z-index:200;
+    display:flex;align-items:center;gap:12px;max-width:340px;
+    padding:12px 14px;border-radius:14px;text-align:left;
+    background:#fff;border:1px solid rgba(13,19,16,.10);
+    box-shadow:0 16px 40px rgba(13,19,16,.16),0 2px 8px rgba(13,19,16,.08);
+    font-family:inherit;font-size:13px;color:inherit;cursor:pointer;
+    /* Starts out of the way and inert, so it can't intercept clicks
+       while hidden. */
+    opacity:0;transform:translateY(10px) scale(.98);pointer-events:none;
+    transition:opacity .22s cubic-bezier(.2,.7,.3,1),transform .22s cubic-bezier(.2,.7,.3,1);
+  }
+  .wa-toast.show{opacity:1;transform:none;pointer-events:auto;}
+  .wa-toast:hover{box-shadow:0 20px 48px rgba(13,19,16,.2),0 2px 8px rgba(13,19,16,.1);}
+  .wa-toast b{display:block;font-weight:600;font-size:13px;}
+  .wa-toast-body{display:block;color:#5E6B64;font-size:12px;margin-top:1px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px;}
+  .wa-toast-dot{
+    width:8px;height:8px;border-radius:50%;background:#0B7A5E;flex-shrink:0;
+    box-shadow:0 0 0 4px rgba(11,122,94,.14);
+  }
+  .wa-toast-go{
+    margin-left:auto;flex-shrink:0;font-size:11.5px;font-weight:600;
+    color:#0F4C45;white-space:nowrap;
+  }
+  @media (max-width:640px){
+    .wa-toast{left:12px;right:12px;bottom:12px;max-width:none;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .wa-toast{transition:opacity .01ms;transform:none;}
+  }
+
 /* ============================================================
    ZEN PREMIUM ENTERPRISE 2026
    Final visual system. Intentionally loaded last so legacy UI
@@ -2440,6 +2484,7 @@ async function createTenant(fromOverview){
 function loadDashboard(){
   loadWAStatus();loadTemplateMappings();
   loadSettings();loadPending();loadRuns();loadTeam();loadApiKeys();loadChangeLog();
+  startWhatsappWatch();
   loadTransactionSummary();loadRecentUploads();loadStylists();loadBrandSettings();
   loadOverview();loadApprovals();
 }
@@ -2910,6 +2955,104 @@ async function loadEngagementIntelligence(force){
     '</table>'+failures+
     '<div style="margin-top:8px;"><b style="font-size:11px;">Recent days</b>'+recent+'</div>';
 }
+// ── New-message watch ───────────────────────────────────────────
+// Replies arrive whenever a customer sends one, so the console has to
+// find out on its own rather than waiting to be refreshed. This polls a
+// count-only endpoint - cheap enough to run continuously - and only
+// pulls the actual conversations when something has genuinely changed.
+let WA_WATCH=null, WA_LAST_SEEN=null, WA_UNREAD=0, WA_TITLE=document.title;
+
+function startWhatsappWatch(){
+  if(WA_WATCH) return;
+  checkWhatsappUnread();
+  WA_WATCH=setInterval(checkWhatsappUnread, 20000);
+  // Polling a hidden tab wastes requests and battery for a screen
+  // nobody is looking at. Checks once immediately on return, so coming
+  // back to the tab shows current state rather than a 20s-stale one.
+  document.addEventListener('visibilitychange',function(){
+    if(!document.hidden) checkWhatsappUnread();
+  });
+}
+
+async function checkWhatsappUnread(){
+  if(document.hidden) return;
+  const j=await call('get_unread_count',{});
+  if(!j.ok) return;
+
+  const changed = WA_LAST_SEEN!==null && j.latest_at && j.latest_at!==WA_LAST_SEEN;
+  const firstRun = WA_LAST_SEEN===null;
+  WA_LAST_SEEN=j.latest_at;
+  WA_UNREAD=j.unread;
+
+  paintUnread(j.unread);
+
+  if(changed){
+    // If they're already looking at the inbox, just bring the new
+    // message in - announcing something that's about to appear on
+    // screen anyway would be noise.
+    const inboxOpen = document.querySelector('[data-wapanel="conversations"]')
+                   && document.querySelector('[data-wapanel="conversations"]').style.display!=='none'
+                   && document.querySelector('#page-agents.active');
+    if(inboxOpen) loadConversations(true);
+    else announceNewMessage(j);
+  } else if(firstRun && j.unread){
+    paintUnread(j.unread);
+  }
+}
+
+// The count appears in three places, because which one you notice
+// depends on where you are: the tab, the sidebar, and the browser tab
+// title when the console isn't the window in front of you.
+function paintUnread(n){
+  const badge=document.getElementById('inboxBadge');
+  if(badge) badge.innerHTML = n ? '<span class="count-badge">'+n+'</span>' : '';
+
+  const nav=document.querySelector('.nav-item[data-page="agents"]');
+  if(nav){
+    let dot=nav.querySelector('.nav-unread');
+    if(n && !dot){
+      dot=document.createElement('span');
+      dot.className='nav-unread';
+      dot.setAttribute('aria-label',n+' unread messages');
+      nav.appendChild(dot);
+    }
+    if(dot){
+      dot.textContent=n>9?'9+':String(n||'');
+      dot.style.display = n ? '' : 'none';
+    }
+  }
+
+  document.title = n ? '('+n+') '+WA_TITLE : WA_TITLE;
+}
+
+// A quiet toast rather than a browser notification - this is a tool
+// someone has open while working, and a permission prompt for something
+// they didn't ask for is a poor trade.
+function announceNewMessage(j){
+  let el=document.getElementById('waToast');
+  if(!el){
+    el=document.createElement('button');
+    el.id='waToast'; el.type='button'; el.className='wa-toast';
+    el.onclick=function(){
+      showPage('agents');
+      if(typeof showAgentDetail==='function') showAgentDetail('engagement');
+      if(typeof showWaTab==='function') showWaTab('conversations');
+      loadConversations(true);
+      el.classList.remove('show');
+    };
+    document.body.appendChild(el);
+  }
+  el.innerHTML='<span class="wa-toast-dot"></span>'+
+    '<span><b>'+esc(j.latest_from||'New message')+'</b>'+
+    (j.latest_preview?'<span class="wa-toast-body">'+esc(j.latest_preview)+'</span>':'')+'</span>'+
+    '<span class="wa-toast-go">Open</span>';
+  el.classList.add('show');
+  clearTimeout(el._t);
+  // Long enough to read, short enough not to sit in the way. It stays
+  // countable in the badge either way, so nothing is lost if missed.
+  el._t=setTimeout(function(){el.classList.remove('show');}, 9000);
+}
+
 async function loadConversations(force){
   const listEl=document.getElementById('conversationList');
   if(!listEl) return;
@@ -2919,8 +3062,8 @@ async function loadConversations(force){
   if(!j.ok){listEl.innerHTML='<div style="color:var(--err);padding:8px;">'+j.error+'</div>';return;}
   listEl.dataset.loaded='1';
   CONVERSATIONS=j.conversations||[];
-  const badge=document.getElementById('inboxBadge');
-  if(badge) badge.innerHTML=j.total_unhandled?('<span class="count-badge">'+j.total_unhandled+'</span>'):'';
+  WA_UNREAD=j.total_unhandled||0;
+  paintUnread(WA_UNREAD);
 
   if(!CONVERSATIONS.length){
     listEl.innerHTML='<div class="muted" style="padding:8px;font-size:11px;">No conversations yet.</div>';
@@ -3075,6 +3218,7 @@ async function markHandled(mobile){
   const j=await call('mark_conversation_handled',{to_number:mobile});
   if(!j.ok){alert('Error: '+j.error);return;}
   loadConversations(true);
+  checkWhatsappUnread();
 }
 async function loadWhatsappMessages(force){
   const el=document.getElementById('waMessageLog');
