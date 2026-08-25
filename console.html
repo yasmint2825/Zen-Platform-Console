@@ -1010,6 +1010,21 @@ code, .mw-spinner + code, pre {
               <h2>WhatsApp connection</h2>
               <div id="waStatus" style="font-size:13px;padding:10px 14px;border-radius:10px;margin-bottom:12px;"></div>
 
+              <details style="margin-bottom:14px;border:1px solid var(--border);border-radius:10px;padding:8px 12px;" ontoggle="if(this.open)loadEngagementIntelligence()">
+                <summary style="cursor:pointer;font-weight:700;font-size:13px;">Intelligence - what the messaging is doing</summary>
+                <div style="margin-top:10px;">
+                  <div class="row" style="gap:6px;margin-bottom:8px;align-items:center;">
+                    <select class="fi" id="engIntelDays" style="width:auto;margin:0;font-size:11.5px;" onchange="loadEngagementIntelligence(true)">
+                      <option value="7">Last 7 days</option>
+                      <option value="30" selected>Last 30 days</option>
+                      <option value="90">Last 90 days</option>
+                    </select>
+                    <button class="btn btn-s btn-sm" onclick="loadEngagementIntelligence(true)">Refresh</button>
+                  </div>
+                  <div id="engIntel" class="muted" style="font-size:11.5px;">Loading...</div>
+                </div>
+              </details>
+
               <details style="margin-bottom:14px;border:1px solid var(--border);border-radius:10px;padding:8px 12px;" ontoggle="if(this.open)loadConversations()">
                 <summary style="cursor:pointer;font-weight:700;font-size:13px;">Conversations <span id="inboxBadge" class="muted" style="font-weight:400;"></span></summary>
                 <div style="margin-top:10px;">
@@ -2538,6 +2553,105 @@ async function loadChangeLog(){
 // the right. Held in memory after loading so switching threads is
 // instant rather than a round-trip each time.
 let CONVERSATIONS=[], ACTIVE_THREAD=null;
+// Send outcomes and what followed them. Deliberately distinguishes
+// "we don't have this data" from "the number is zero" - those look
+// identical in a dashboard and mean opposite things.
+async function loadEngagementIntelligence(force){
+  const el=document.getElementById('engIntel');
+  if(!el) return;
+  if(el.dataset.loaded==='1' && !force) return;
+  el.innerHTML='<span class="mw-spinner"></span>Measuring...';
+  const days=(document.getElementById('engIntelDays')||{}).value||30;
+  const j=await call('get_engagement_intelligence',{days:Number(days)});
+  if(!j.ok){el.innerHTML='<span style="color:var(--err);">'+j.error+'</span>';return;}
+  el.dataset.loaded='1';
+  if(!j.totals){el.innerHTML=j.note||'Nothing to report yet.';return;}
+
+  const t=j.totals;
+  function stat(label,value,sub){
+    return '<div style="flex:1 1 90px;padding:6px 8px;border:1px solid var(--border);border-radius:8px;">'+
+      '<div style="font-size:17px;font-weight:700;">'+value+'</div>'+
+      '<div class="muted" style="font-size:10px;">'+label+'</div>'+
+      (sub?'<div class="muted" style="font-size:9.5px;">'+sub+'</div>':'')+
+    '</div>';
+  }
+  const deliveredPct=t.sent?Math.round(t.delivered/t.sent*1000)/10:null;
+  const readPct=t.delivered?Math.round(t.read/t.delivered*1000)/10:null;
+
+  const headline='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">'+
+    stat('sent',t.sent)+
+    stat('delivered', j.receipts_available?t.delivered:'&mdash;', j.receipts_available?(deliveredPct+'% of sent'):'no receipts yet')+
+    stat('read', j.receipts_available?t.read:'&mdash;', j.receipts_available?(readPct+'% of delivered'):'no receipts yet')+
+    stat('failed',t.failed)+
+  '</div>';
+
+  // Without this note, messages sent before the webhook existed look
+  // like delivery failures rather than an absence of data.
+  const receiptNote = j.messages_without_receipts
+    ? '<div class="muted" style="font-size:10px;margin-bottom:8px;padding:5px 7px;border:1px dashed var(--border);border-radius:6px;">'+
+      j.messages_without_receipts+' of these were sent before delivery tracking was switched on, so they have no delivered or read status and never will. Meta does not backfill.'+
+      '</div>'
+    : '';
+
+  const campaignRows=(j.campaigns||[]).map(function(c){
+    const del=j.receipts_available&&c.delivery_rate!=null?c.delivery_rate+'%':'&mdash;';
+    const rd=j.receipts_available&&c.read_rate!=null?c.read_rate+'%':'&mdash;';
+    // A campaign with too few measurable sends gets a caveat rather
+    // than a percentage presented as if it meant something.
+    const thin=c.measurable<10;
+    const ret=c.return_rate!=null
+      ? c.return_rate+'% <span class="muted">('+c.returned+' of '+c.measurable+')</span>'+(thin?' <span style="color:var(--warn);">too few to read into</span>':'')
+      : '<span class="muted">not measurable yet</span>';
+    return '<tr>'+
+      '<td style="padding:3px 6px;"><b>'+esc(c.campaign)+'</b></td>'+
+      '<td style="padding:3px 6px;text-align:right;">'+c.sent+'</td>'+
+      '<td style="padding:3px 6px;text-align:right;">'+del+'</td>'+
+      '<td style="padding:3px 6px;text-align:right;">'+rd+'</td>'+
+      '<td style="padding:3px 6px;text-align:right;'+(c.failed?'color:var(--err);':'')+'">'+c.failed+'</td>'+
+      '<td style="padding:3px 6px;">'+ret+'</td>'+
+    '</tr>';
+  }).join('');
+
+  const r=j.retention;
+  const retention = r.measured_messages
+    ? '<div style="padding:8px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;">'+
+        '<div style="font-weight:700;font-size:11.5px;margin-bottom:2px;">Did they come back?</div>'+
+        '<div style="font-size:15px;font-weight:700;">'+r.return_rate+'%</div>'+
+        '<div class="muted" style="font-size:10px;">'+r.customers_returned+' of '+r.measured_messages+
+          ' messaged customers visited within '+r.return_window_days+' days.</div>'+
+        // The most important sentence in this panel. A return rate after
+        // messaging is not evidence the message caused the return -
+        // some of these people would have come back anyway. Saying so
+        // is the difference between a useful number and a misleading one.
+        '<div class="muted" style="font-size:9.5px;margin-top:4px;">This is what happened after the messages, not proof they caused it. Measuring that properly would need a group deliberately left uncontacted to compare against.</div>'+
+      '</div>'
+    : '<div class="muted" style="font-size:10.5px;margin-bottom:8px;">Nothing is old enough to measure returns yet - a message needs '+j.return_window_days+' days to pass before we can say whether it worked.</div>';
+
+  const failures=(j.failure_reasons||[]).length
+    ? '<div style="margin-top:8px;"><b style="font-size:11px;">Why messages failed</b>'+
+      (j.failure_reasons||[]).map(function(f){
+        return '<div class="muted" style="font-size:10px;padding:2px 0;">'+f.count+' &times; '+esc(f.reason)+'</div>';
+      }).join('')+'</div>'
+    : '';
+
+  const recent=(j.daily||[]).slice(-10).reverse().map(function(d){
+    return '<div class="muted" style="font-size:10px;padding:1px 0;">'+
+      esc(d.date)+' &middot; '+d.sent+' sent'+
+      (j.receipts_available?(' &middot; '+d.delivered+' delivered &middot; '+d.read+' read'):'')+
+      (d.failed?(' &middot; <span style="color:var(--err);">'+d.failed+' failed</span>'):'')+
+    '</div>';
+  }).join('');
+
+  el.innerHTML=headline+receiptNote+retention+
+    '<table style="width:100%;border-collapse:collapse;font-size:10.5px;">'+
+      '<tr class="muted" style="font-size:9.5px;text-align:left;">'+
+        '<th style="padding:3px 6px;">campaign</th><th style="padding:3px 6px;text-align:right;">sent</th>'+
+        '<th style="padding:3px 6px;text-align:right;">delivered</th><th style="padding:3px 6px;text-align:right;">read</th>'+
+        '<th style="padding:3px 6px;text-align:right;">failed</th><th style="padding:3px 6px;">came back</th>'+
+      '</tr>'+campaignRows+
+    '</table>'+failures+
+    '<div style="margin-top:8px;"><b style="font-size:11px;">Recent days</b>'+recent+'</div>';
+}
 async function loadConversations(force){
   const listEl=document.getElementById('conversationList');
   if(!listEl) return;
