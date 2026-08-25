@@ -919,15 +919,10 @@ code, .mw-spinner + code, pre {
                 <summary>At-risk customers - what's actually happening</summary>
                 <div class="agent-section-body">
                   <p class="muted" style="font-size:12.5px;margin-bottom:8px;">Cross-checked against your live campaigns - not just a score from Intelligence agent, but whether anything is actually being done about it.</p>
-                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
-                    <span class="muted" style="font-size:12.5px;">Reach uncovered at-risk customers using</span>
-                    <select class="fi" id="outreachCampaign" style="width:auto;margin:0;">
-                      <option value="lapsed">lapsed (win-back)</option>
-                      <option value="nudge">nudge</option>
-                      <option value="new_customer_offer">new_customer_offer</option>
-                    </select>
-                    <button class="btn btn-p btn-sm" onclick="triggerOutreach()">Trigger outreach</button>
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+                    <button class="btn btn-p btn-sm" onclick="triggerOutreach()">Send win-back to uncovered at-risk customers</button>
                   </div>
+                  <div class="muted" style="font-size:10.5px;margin-bottom:10px;">Uses your lapsed campaign's approved message and its discount. Only reaches at-risk customers who don't already have a message in flight and haven't been contacted within the quiet period.</div>
                   <div id="outreachResult" style="font-size:12.5px;margin-bottom:10px;"></div>
                   <details style="margin-bottom:10px;border:1px solid var(--border);border-radius:10px;padding:8px 12px;">
                     <summary style="cursor:pointer;font-size:11.5px;font-weight:700;">How often is "at risk" recalculated? <span id="scoredFreshness" class="muted" style="font-weight:400;"></span></summary>
@@ -2503,7 +2498,13 @@ async function loadChangeLog(){
 // state into grounded recommendations. Triggered on demand, not
 // auto-run, so it never runs (and costs) without you asking for it.
 async function triggerOutreach(){
-  const campaign=document.getElementById('outreachCampaign').value;
+  // Always the lapsed campaign. An at-risk score means "this person has
+  // gone quiet", which is exactly what the win-back message is written
+  // for - nudge understates it, and new_customer_offer is aimed at
+  // someone on their first or second visit, so firing it at a long-term
+  // customer would read as nonsense and would also bypass that
+  // campaign's own visit-count condition.
+  const campaign='lapsed';
   const r=document.getElementById('outreachResult');
   // Deliberately vague about sending, because what actually happens
   // depends on review mode: in review mode nothing is sent, these just
