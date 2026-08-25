@@ -2598,8 +2598,8 @@ function openThread(i){
         '<div style="font-size:11.5px;">'+esc(m.body)+'</div>'+
         '<div class="muted" style="font-size:9.5px;">'+formatDubai(m.at)+'</div></div>';
     }
-    const marks=m.read_at?'read':m.delivered_at?'delivered':(m.status||'');
-    return '<div style="align-self:flex-end;max-width:80%;border:1px solid var(--border);padding:6px 10px;border-radius:12px 12px 3px 12px;margin:3px 0;">'+
+    const marks=m.status==='sending'?'sending...':m.status==='failed'?'failed':m.read_at?'read':m.delivered_at?'delivered':(m.status||'');
+    return '<div style="align-self:flex-end;max-width:80%;border:1px solid var(--border);padding:6px 10px;border-radius:12px 12px 3px 12px;margin:3px 0;'+(m._pending?'opacity:.6;':'')+'">'+
       '<div style="font-size:11.5px;">'+esc(m.body)+'</div>'+
       '<div class="muted" style="font-size:9.5px;">'+formatDubai(m.at)+' &middot; '+esc(marks)+'</div>'+
       (m.failed_reason?'<div style="color:var(--err);font-size:9.5px;">'+esc(m.failed_reason)+'</div>':'')+
@@ -2633,18 +2633,71 @@ async function sendReply(mobile){
   const res=document.getElementById('replyResult_'+id);
   const message=input.value.trim();
   if(!message){res.textContent='Type something first.';res.style.color='var(--err)';return;}
-  res.innerHTML='<span class="mw-spinner"></span>Sending...';
-  const j=await call('send_whatsapp_reply',{to_number:mobile,message:message});
-  if(j.ok){
-    input.value='';
-    // The message reached the customer either way - but if it couldn't
-    // be saved, the thread won't show it, and silently pretending
-    // otherwise is how you end up wondering where your reply went.
-    if(j.warning){res.textContent=j.warning;res.style.color='var(--warn)';}
-    else{res.textContent='';}
-    loadConversations(true);
+
+  // Optimistic render. The platform already knows what was typed, who
+  // it's going to and when - there's no reason to make someone watch a
+  // spinner while a database write, a Meta call and two updates complete
+  // before their own message appears. It goes in immediately as
+  // "Sending", then the real status replaces it.
+  const conv=CONVERSATIONS.find(function(c){return c.mobile===mobile;});
+  const pending={direction:'out',at:new Date().toISOString(),body:message,status:'sending',sent_by:'agent',_pending:true};
+  if(conv){
+    conv.messages.unshift(pending);
+    conv.last_activity=pending.at;
+    openThread(CONVERSATIONS.indexOf(conv));
   }
-  else{res.textContent='Error: '+j.error;res.style.color='var(--err)';}
+  input.value='';
+  res.textContent='';
+
+  const j=await call('send_whatsapp_reply',{to_number:mobile,message:message});
+
+  // Re-resolve rather than reusing the object captured before the await.
+  // A background refresh may have rebuilt CONVERSATIONS in the meantime,
+  // in which case the old reference is orphaned and updating it would
+  // change nothing on screen - which is how a failed message could
+  // vanish along with the text someone had typed.
+  function currentThread(){
+    const i=CONVERSATIONS.findIndex(function(c){return c.mobile===mobile;});
+    return i>=0?i:-1;
+  }
+  function showPending(state, reason){
+    let i=currentThread();
+    if(i<0){
+      // The thread is gone entirely - recreate enough of it to keep the
+      // message visible rather than silently dropping it.
+      CONVERSATIONS.unshift({mobile:mobile,customer_name:mobile,unhandled:0,
+        reply_window_open:true,reply_window_hours_left:24,
+        last_activity:pending.at,messages:[pending]});
+      i=0;
+    } else if(CONVERSATIONS[i].messages.indexOf(pending)===-1){
+      CONVERSATIONS[i].messages.unshift(pending);
+    }
+    pending.status=state; pending._pending=false;
+    if(reason) pending.failed_reason=reason;
+    openThread(i);
+  }
+
+  // openThread rebuilds the thread pane, and the result element lives
+  // inside it - so anything written to the old reference is discarded.
+  // Re-fetched after rendering rather than before.
+  function say(text, colour){
+    const el=document.getElementById('replyResult_'+id);
+    if(!el) return;
+    el.textContent=text; el.style.color=colour;
+  }
+
+  if(j.ok){
+    showPending('sent');
+    if(j.warning) say(j.warning,'var(--warn)');
+    // Reconciles with the server in the background - the bubble is
+    // already correct, so nothing waits on it.
+    loadConversations(true);
+  } else {
+    // Kept visible and marked failed, so it's obvious what didn't send
+    // and the typed text isn't lost.
+    showPending('failed', j.error);
+    say('Error: '+j.error,'var(--err)');
+  }
 }
 async function markHandled(mobile){
   const j=await call('mark_conversation_handled',{to_number:mobile});
