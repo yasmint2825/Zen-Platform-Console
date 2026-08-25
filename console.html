@@ -923,6 +923,10 @@ code, .mw-spinner + code, pre {
                     <button class="btn btn-p btn-sm" onclick="triggerOutreach()">Send win-back to uncovered at-risk customers</button>
                   </div>
                   <div class="muted" style="font-size:10.5px;margin-bottom:10px;">Uses your lapsed campaign's approved message and its discount. Only reaches at-risk customers who don't already have a message in flight and haven't been contacted within the quiet period.</div>
+                  <details style="margin-bottom:10px;border:1px solid var(--border);border-radius:10px;padding:8px 12px;" ontoggle="if(this.open)loadOutreachHistory()">
+                    <summary style="cursor:pointer;font-size:11.5px;font-weight:700;">Outreach history &amp; what actually worked</summary>
+                    <div id="outreachHistory" class="muted" style="margin-top:8px;font-size:11.5px;">Loading...</div>
+                  </details>
                   <div id="outreachResult" style="font-size:12.5px;margin-bottom:10px;"></div>
                   <details style="margin-bottom:10px;border:1px solid var(--border);border-radius:10px;padding:8px 12px;">
                     <summary style="cursor:pointer;font-size:11.5px;font-weight:700;">How often is "at risk" recalculated? <span id="scoredFreshness" class="muted" style="font-weight:400;"></span></summary>
@@ -2497,6 +2501,74 @@ async function loadChangeLog(){
 // Generate insights — Claude synthesizes real ML results + campaign
 // state into grounded recommendations. Triggered on demand, not
 // auto-run, so it never runs (and costs) without you asking for it.
+// Shows what actually happened after each message, not just that one
+// was sent - the success rate here is measured against real visits.
+async function loadOutreachHistory(){
+  const el=document.getElementById('outreachHistory');
+  if(!el||el.dataset.loaded==='1') return;
+  el.innerHTML='<span class="mw-spinner"></span>Working out what happened after each message...';
+  const j=await call('get_outreach_history',{});
+  if(!j.ok){el.innerHTML='<span style="color:var(--err);">'+j.error+'</span>';return;}
+  el.dataset.loaded='1';
+  if(!j.customers.length){el.innerHTML=j.note||'No outreach history yet.';return;}
+
+  const offers=(j.offer_performance||[]).map(function(o){
+    // Small samples are shown with a warning rather than presented as
+    // a result - 2 out of 3 is not a 67% success rate in any real sense.
+    const thin=o.sent<10;
+    return '<div style="padding:3px 0;">'+
+      '<b>'+esc(o.offer)+'</b> - '+o.returned+' of '+o.sent+' came back ('+o.return_rate_percent+'%)'+
+      (thin?' <span style="color:var(--warn);">too few sends to read much into</span>':'')+
+    '</div>';
+  }).join('');
+
+  const rows=j.customers.map(function(c){
+    const pct=c.return_probability!=null?Math.round(c.return_probability*100)+'%':'not scored';
+    const msgs=c.messages.slice(0,5).map(function(m){
+      const ok=m.returned_within_window;
+      return '<div style="font-size:10.5px;padding:2px 0;color:'+(ok?'var(--ok)':'var(--muted)')+';">'+
+        m.sent_at.slice(0,10)+' · '+esc(m.campaign)+(m.offer?' · '+esc(m.offer):'')+' → '+
+        (ok?('came back after '+m.days_to_return+' days'):'no visit in '+j.return_window_days+' days')+'</div>';
+    }).join('');
+    return '<div class="item" style="margin-bottom:6px;">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;">'+
+        '<b>'+esc(c.name||c.mobile)+'</b>'+
+        '<span class="muted" style="font-size:10.5px;">'+c.times_returned+'/'+c.messages_sent+' messages worked · '+pct+' likely to return</span>'+
+      '</div>'+
+      '<div class="muted" style="font-size:10.5px;">'+esc(c.mobile||'')+' · '+c.total_visits+' visits'+(c.last_visit?' · last '+formatVisitDate(c.last_visit):'')+(c.avg_spend?' · avg '+c.avg_spend:'')+'</div>'+
+      msgs+
+      '<button class="btn btn-s btn-sm" style="margin-top:6px;" onclick="proposeComeback(\''+encodeURIComponent(c.customer_key)+'\',this)">Plan a comeback</button>'+
+      '<div class="comeback-plan" style="font-size:11px;margin-top:6px;"></div>'+
+    '</div>';
+  }).join('');
+
+  el.innerHTML=
+    '<div style="margin-bottom:10px;"><b style="font-size:11.5px;">Which offers actually brought people back</b>'+
+    '<div class="muted" style="font-size:10.5px;margin:2px 0 4px;">Measured over '+j.return_window_days+' days after each message.</div>'+offers+'</div>'+
+    '<div><b style="font-size:11.5px;">Customers, least likely to return first</b></div>'+rows;
+}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+// Asks the agent to reason over this one customer's real history and
+// propose what to do - including recommending no contact at all.
+async function proposeComeback(encodedKey,btn){
+  const panel=btn.nextElementSibling;
+  panel.innerHTML='<span class="mw-spinner"></span>Reading their history...';
+  const j=await call('propose_comeback_plan',{customer_key:decodeURIComponent(encodedKey)});
+  if(!j.ok){panel.innerHTML='<span style="color:var(--err);">'+j.error+'</span>';return;}
+  const p=j.plan||{};
+  const actionColor=p.recommended_action==='do_not_contact'?'var(--err)':p.recommended_action==='wait'?'var(--warn)':'var(--ok)';
+  panel.innerHTML=
+    '<div style="border-left:3px solid '+actionColor+';padding-left:8px;">'+
+      '<div style="font-weight:700;color:'+actionColor+';">'+esc(String(p.recommended_action||'').replace(/_/g,' '))+
+        ' <span class="muted" style="font-weight:400;">· '+esc(p.confidence||'')+' confidence</span></div>'+
+      '<div style="margin:4px 0;">'+esc(p.assessment||'')+'</div>'+
+      (p.recommended_offer?'<div><b>Offer:</b> '+esc(p.recommended_offer)+(p.recommended_discount_percent!=null?' ('+p.recommended_discount_percent+'%)':'')+'</div>':'')+
+      (p.timing?'<div><b>Timing:</b> '+esc(p.timing)+'</div>':'')+
+      (p.angle?'<div><b>Angle:</b> '+esc(p.angle)+'</div>':'')+
+      '<div class="muted" style="font-size:10.5px;margin-top:4px;"><b>Based on:</b> '+esc(p.evidence_basis||'')+'</div>'+
+      (p.judgement_calls?'<div class="muted" style="font-size:10.5px;"><b>Judgement, not data:</b> '+esc(p.judgement_calls)+'</div>':'')+
+    '</div>';
+}
 async function triggerOutreach(){
   // Always the lapsed campaign. An at-risk score means "this person has
   // gone quiet", which is exactly what the win-back message is written
