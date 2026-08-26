@@ -5418,7 +5418,24 @@ async function runNow(){
     if(res.submitted){
       r.textContent=(res.candidates||0)+' candidates scanned, '+(res.chunks||0)+' batch(es) submitted for processing. Decisions will appear once results are ready (usually within a couple hours, not immediately) — check back or refresh Pending review shortly.';
     } else {
-      r.textContent=(res.candidates||0)+' candidates scanned, nothing to submit ('+(res.reason||'no eligible candidates today')+').';
+      // "nothing to submit" is not an explanation. If the scan found
+      // people and the rules threw them away, say which rule - otherwise
+      // the run reads as broken when it's actually doing as configured.
+      const blocked=res.blocked_by_disabled_campaigns||{};
+      const blockedKeys=Object.keys(blocked);
+      if(blockedKeys.length){
+        const parts=blockedKeys.map(function(k){return blocked[k]+' '+k.replace(/_/g,' ');});
+        r.textContent=(res.candidates||0)+' candidates found, but none could be actioned: '+
+          parts.join(', ')+' — '+(blockedKeys.length===1?'that campaign is':'those campaigns are')+
+          ' switched off in the rule book above. '+
+          (blockedKeys.length===1?'Enable it':'Enable them')+' to start messaging these customers.';
+        r.style.color='var(--warn)';
+      } else {
+        r.textContent=(res.candidates||0)+' candidates scanned, nothing to submit ('+(res.reason||'no eligible candidates today')+').';
+        r.style.color='var(--ok)';
+      }
+      loadPending();loadRuns();loadOverview();
+      return;
     }
     r.style.color='var(--ok)';
     loadPending();loadRuns();loadOverview();
