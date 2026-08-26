@@ -1702,6 +1702,49 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
   /* The rows that answer the question. */
   .ar-type-rel td{background:#E8F6F1;color:#0B7A5E;font-weight:600;}
 </style>
+
+<style id="zenAdTable">
+  /* One table, sorted by what is spending now. */
+  .at-totals{
+    display:flex;gap:16px;flex-wrap:wrap;padding-bottom:10px;margin-bottom:10px;
+    border-bottom:1px solid var(--line,#E4E7E4);font-size:11.5px;color:var(--muted,#5E6B64);
+  }
+  .at-totals b{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:14px;
+    color:var(--ink,#0D1310);margin-right:4px;font-variant-numeric:tabular-nums;
+  }
+  .at-note{font-size:10.5px;line-height:1.5;color:var(--muted,#5E6B64);margin-bottom:10px;}
+  .at-table{width:100%;border-collapse:collapse;font-size:11.5px;}
+  .at-table th{
+    text-align:right;padding:5px 7px;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:9px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;
+    color:var(--faint,#8B968F);border-bottom:1px solid var(--line,#E4E7E4);vertical-align:bottom;
+  }
+  .at-table th:first-child{text-align:left;}
+  .at-table th span{font-size:8px;opacity:.75;}
+  .at-table td{padding:8px 7px;border-bottom:1px solid var(--line,#F0F2F0);vertical-align:top;}
+  .at-table td:first-child b{font-size:12px;}
+  .at-n{text-align:right;font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;}
+  .at-sub{font-size:10px;color:var(--muted,#5E6B64);margin-top:1px;}
+  .at-unit{
+    font-size:8.5px;letter-spacing:.03em;color:var(--faint,#8B968F);
+    text-transform:uppercase;margin-top:1px;
+  }
+  /* Paused rows recede rather than disappear - still worth reading. */
+  .at-off{opacity:.55;}
+  .at-off td:first-child b::after{
+    content:'paused';margin-left:6px;padding:1px 6px;border-radius:999px;
+    background:#EEF1EF;color:#5E6B64;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:8px;font-weight:600;letter-spacing:.03em;
+  }
+  .at-act{white-space:nowrap;}
+  .at-act .btn{padding:3px 8px;min-height:26px;font-size:10.5px;margin-right:3px;}
+  .at-result{font-size:10px;margin-top:3px;}
+  @media (max-width:760px){
+    .at-table th:nth-child(3),.at-table td:nth-child(3),
+    .at-table th:nth-child(4),.at-table td:nth-child(4){display:none;}
+  }
+</style>
 </head>
 <body>
 
@@ -2063,26 +2106,28 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
 
             <div id="marketingTab-performance" class="marketing-tab-content" style="display:none;">
             <p class="muted" style="font-size:11.5px;margin:0 0 14px;">How the spend is doing, and what it produced.</p>
-<details class="card">
-            <summary><h2 style="display:inline;">Ad control &amp; calendar</h2></summary>
-            <p class="muted" style="font-size:11.5px;">Pause and restart ads on a schedule, and plan the month ahead. Nothing changes without you previewing it first.</p>
-            <div id="adControlPerm" class="muted" style="font-size:11.5px;margin-bottom:10px;"></div>
-            <div class="row" style="gap:6px;margin-bottom:12px;">
-              <button class="btn btn-p btn-sm" onclick="loadAdControl()">Ad sets</button>
-              <select class="fi" id="adRecDays" style="width:auto;margin:0;font-size:11.5px;min-height:32px;">
+<div class="card">
+            <h2>Ads</h2>
+            <p class="muted">Every ad set with what it cost and what it produced. Pause, resume or move budget from any row.</p>
+            <div class="row" style="gap:6px;margin-bottom:12px;flex-wrap:wrap;">
+              <select class="fi" id="adTableDays" style="width:auto;margin:0;font-size:11.5px;min-height:32px;" onchange="loadAdTable()">
+                <option value="7">Last 7 days</option>
                 <option value="30" selected>Last 30 days</option>
-                <option value="60">Last 60 days</option>
                 <option value="90">Last 90 days</option>
               </select>
+              <select class="fi" id="adTableLevel" style="width:auto;margin:0;font-size:11.5px;min-height:32px;" onchange="loadAdTable()">
+                <option value="adset" selected>By ad set</option>
+                <option value="ad">By ad</option>
+              </select>
+              <button class="btn btn-p btn-sm" onclick="loadAdTable()">Refresh</button>
               <button class="btn btn-s btn-sm" onclick="loadAdRecommendations()">Suggest changes</button>
               <button class="btn btn-s btn-sm" onclick="loadAdActions()">History</button>
-              <button class="btn btn-s btn-sm" onclick="diagnoseAdActions()">Why no conversations?</button>
             </div>
+            <div id="adControlPerm" class="muted" style="font-size:11.5px;margin-bottom:10px;"></div>
             <div id="adRecs" style="margin-bottom:12px;"></div>
-            <div id="adSchedulePreview" style="font-size:12px;margin-bottom:10px;"></div>
-            <div id="adControlList" class="muted" style="font-size:12px;">Click Load ad sets to begin.</div>
+            <div id="adTable" class="muted" style="font-size:12px;">Loading...</div>
             <div id="adActionsList" style="margin-top:12px;"></div>
-          </details>
+          </div>
 
           <div class="card">
             <h2>Ad spend monitoring</h2>
@@ -2906,6 +2951,7 @@ function showMarketingTab(tab){
     if(typeof loadConversations==='function') loadConversations();
     if(typeof loadWhatsappStatus==='function') loadWhatsappStatus();
   } else if(tab==='performance'){
+    if(typeof loadAdTable==='function') loadAdTable();
     if(typeof loadMetaAdsStatus==='function') loadMetaAdsStatus();
     if(typeof loadLeadsStatus==='function') loadLeadsStatus();
     if(typeof loadCompetitors==='function') loadCompetitors();
@@ -6030,6 +6076,102 @@ async function diagnoseAdActions(){
         }).join('')+'</table>'
       : '<div class="muted" style="font-size:12px;">Meta reported no action events at all &mdash; only impressions and clicks.</div>')+
   '</div>';
+}
+
+
+// One table: what each ad cost and what it produced, with the controls
+// to act on it.
+//
+// Earlier versions assumed messaging campaigns and reported zeroes for
+// anything else. This shows whatever result each objective optimises
+// for, so it works the same for engagement, traffic or messages.
+let AD_TABLE=[];
+
+async function loadAdTable(){
+  const el=document.getElementById('adTable');
+  const days=Number((document.getElementById('adTableDays')||{}).value||30);
+  const level=(document.getElementById('adTableLevel')||{}).value||'adset';
+  el.innerHTML='<span class="mw-spinner"></span>Loading...';
+
+  const perm=await call('check_ads_management',{});
+  const pEl=document.getElementById('adControlPerm');
+  if(pEl){
+    pEl.innerHTML = (perm.ok && !perm.can_manage)
+      ? '<span style="color:var(--warn);">This token can read ads but not change them &mdash; pausing or moving budget needs the <b>ads_management</b> permission.</span>'
+      : '';
+  }
+
+  const j=await call('get_ad_table',{days:days,level:level});
+  if(!j.ok){el.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
+  if(!j.rows.length){el.innerHTML='No active or paused ads in this account.';return;}
+  AD_TABLE=j.rows;
+
+  const t=j.totals||{};
+  el.innerHTML=
+    '<div class="at-totals">'+
+      '<span><b>'+Math.round(t.spend||0)+'</b> spent</span>'+
+      '<span><b>'+(t.impressions||0).toLocaleString()+'</b> impressions</span>'+
+      '<span><b>'+(t.clicks||0)+'</b> clicks</span>'+
+      '<span><b>'+(t.result||0)+'</b> results</span>'+
+    '</div>'+
+    (j.result_note?'<div class="at-note">'+esc(j.result_note)+'</div>':'')+
+    '<div style="overflow-x:auto;"><table class="at-table">'+
+      '<tr><th>ad set</th><th>spend</th><th>reach</th><th>impr.</th><th>clicks</th><th>CTR</th>'+
+      '<th>results</th><th>cost per<br><span>result</span></th><th></th></tr>'+
+      j.rows.map(function(r,i){
+        const live=r.status==='ACTIVE';
+        return '<tr class="'+(live?'at-live':'at-off')+'">'+
+          '<td><b>'+esc(r.name)+'</b>'+
+            '<div class="at-sub">'+esc(r.campaign||'')+
+              (r.adset_name?(' &middot; '+esc(r.adset_name)):'')+
+              (r.daily_budget?(' &middot; '+r.daily_budget+'/day'):'')+'</div></td>'+
+          '<td class="at-n">'+Math.round(r.spend)+'</td>'+
+          '<td class="at-n">'+(r.reach||0).toLocaleString()+'</td>'+
+          '<td class="at-n">'+(r.impressions||0).toLocaleString()+'</td>'+
+          '<td class="at-n">'+r.clicks+'</td>'+
+          '<td class="at-n">'+r.ctr+'%</td>'+
+          // The result count means different things per objective, so it
+          // carries its own label rather than a bare number.
+          '<td class="at-n"><b>'+r.result+'</b>'+
+            (r.result_label?'<div class="at-unit">'+esc(r.result_label)+'</div>':'')+'</td>'+
+          '<td class="at-n">'+(r.cost_per_result!=null?r.cost_per_result:'&mdash;')+'</td>'+
+          '<td class="at-act">'+
+            '<button class="btn btn-s btn-sm" onclick="quickToggle('+i+')">'+(live?'Pause':'Resume')+'</button>'+
+            (r.budget_owner_id?'<button class="btn btn-s btn-sm" onclick="quickBudget('+i+')">Budget</button>':'')+
+            '<div id="atR_'+i+'" class="at-result"></div>'+
+          '</td>'+
+        '</tr>';
+      }).join('')+
+    '</table></div>';
+}
+
+async function quickToggle(i){
+  const r=AD_TABLE[i], out=document.getElementById('atR_'+i);
+  const to=r.status==='ACTIVE'?'PAUSED':'ACTIVE';
+  if(!confirm((to==='PAUSED'?'Pause "':'Resume "')+r.name+'"?\n\nThis changes your live ads.')) return;
+  out.innerHTML='<span class="mw-spinner"></span>';
+  const j=await call('set_ad_status',{entity_id:r.budget_owner_id||r.id,entity_name:r.name,status:to});
+  if(j.ok){out.textContent='Done';out.style.color='var(--ok)';loadAdTable();}
+  else{out.textContent=j.error;out.style.color='var(--err)';}
+}
+
+async function quickBudget(i){
+  const r=AD_TABLE[i], out=document.getElementById('atR_'+i);
+  // Budgets live on the ad set. When viewing by ad, the change applies
+  // to its parent - said out loud so nobody is surprised by it.
+  const owner=r.level==='ad'?('its ad set ('+esc(r.adset_name||'')+')'):('"'+r.name+'"');
+  const now=r.daily_budget||0;
+  const v=prompt('Daily budget for '+owner.replace(/<[^>]+>/g,'')+'\n\nCurrently '+(now||'not set')+' AED/day.',now||'');
+  if(v===null) return;
+  const n=Number(v);
+  if(!n||n<=0){alert('Enter a number above zero.');return;}
+  out.innerHTML='<span class="mw-spinner"></span>';
+  const j=await call('apply_ad_recommendation',{
+    entity_id:r.budget_owner_id, entity_name:r.adset_name||r.name,
+    verdict:'increase', new_budget:n, reason:'Changed by hand from the ads table',
+  });
+  if(j.ok){out.textContent='Done';out.style.color='var(--ok)';loadAdTable();}
+  else{out.textContent=j.error;out.style.color='var(--err)';}
 }
 
 // The agent's own view of what should change.
