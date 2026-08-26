@@ -1543,6 +1543,13 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     .zc-input .btn{width:100%;}
   }
 </style>
+
+<style id="zenApExplain">
+  .ap-explain{
+    font-size:11px;line-height:1.5;color:var(--muted,#5E6B64);
+    margin:-4px 0 11px;
+  }
+</style>
 </head>
 <body>
 
@@ -2708,6 +2715,17 @@ function showMarketingTab(tab){
     const active=btn.getAttribute('data-tab')===tab;
     btn.className='btn btn-sm marketing-tab-btn '+(active?'btn-p':'btn-s');
   });
+  // Bring the tab row into view on every switch. Choosing a tab from
+  // halfway down a long page otherwise changes content you cannot see.
+  const bar=document.querySelector('.mkt-tabs');
+  if(bar){
+    const y=bar.getBoundingClientRect().top;
+    // Only if it has actually scrolled out of comfortable view - moving
+    // the page when the tabs are already visible is disorienting.
+    if(y<0||y>window.innerHeight*0.5){
+      window.scrollTo({top:Math.max(0,bar.getBoundingClientRect().top+window.pageYOffset-72),behavior:'smooth'});
+    }
+  }
   // Each panel loads when it is first opened rather than on arrival -
   // six tabs all fetching at once would make the page slower for the
   // sake of five panels nobody is looking at.
@@ -2910,6 +2928,19 @@ function openZenWhatsApp(){
   showPage('agents');
   if(typeof showAgentDetail==='function') showAgentDetail('marketing');
   if(typeof showMarketingTab==='function') showMarketingTab('zenwhatsapp');
+  // Switching the tab isn't arriving - the panel sits well below the
+  // fold, so without this you land on the marketing header and have to
+  // hunt for the thing you asked for. Deferred a frame so the panel has
+  // been made visible and has a real position to scroll to.
+  requestAnimationFrame(function(){
+    const panel=document.getElementById('marketingTab-zenwhatsapp');
+    if(!panel) return;
+    // Scrolls the tab row into view rather than the panel itself, so the
+    // tabs stay visible and it's obvious where you are.
+    const anchor=document.querySelector('.mkt-tabs')||panel;
+    const top=anchor.getBoundingClientRect().top+window.pageYOffset-72;  // clear the sticky topbar
+    window.scrollTo({top:Math.max(0,top),behavior:'smooth'});
+  });
 }
 function zcRenderSuggestions(){
   const el=document.getElementById('zcSuggest');
@@ -5741,16 +5772,20 @@ async function loadAdPerformance(){
 
   el.innerHTML='<div class="ap-card">'+
     '<div class="ap-head">Per ad &middot; last '+j.days+' days</div>'+
+    '<div class="ap-explain">Meta counts a chat as soon as someone opens one. Your inbox only has the ones that actually arrived here. Only the last two columns say whether any of it turned into business.</div>'+
     '<div class="ap-totals">'+
       '<span><b>'+Math.round(t.spend||0)+'</b> spent</span>'+
-      '<span><b>'+(t.conversations||0)+'</b> conversations (Meta)</span>'+
-      '<span><b>'+(t.zen_conversations||0)+'</b> in your inbox</span>'+
-      '<span><b>'+(t.visited||0)+'</b> visited</span>'+
+      '<span><b>'+(t.conversations||0)+'</b> chats started</span>'+
+      '<span><b>'+(t.zen_conversations||0)+'</b> reached your inbox</span>'+
+      '<span><b>'+(t.visited||0)+'</b> came into the salon</span>'+
     '</div>'+
     (j.tracking_note?'<div class="ap-note">'+esc(j.tracking_note)+'</div>':'')+
     '<div style="overflow-x:auto;"><table class="ap-table">'+
-      '<tr><th>ad</th><th>spend</th><th>clicks</th><th>convos<br><span>Meta</span></th>'+
-      '<th>convos<br><span>inbox</span></th><th>visited</th><th>cost/visit</th></tr>'+rows+
+      '<tr><th>ad</th><th>spend</th><th>clicks</th>'+
+      '<th>chats started<br><span>per Meta</span></th>'+
+      '<th>chats received<br><span>in your inbox</span></th>'+
+      '<th>came in<br><span>to the salon</span></th>'+
+      '<th>cost per<br><span>visit</span></th></tr>'+rows+
     '</table></div>'+
   '</div>';
 }
