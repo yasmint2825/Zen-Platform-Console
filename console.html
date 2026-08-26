@@ -1550,6 +1550,94 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     margin:-4px 0 11px;
   }
 </style>
+
+<style id="zenAdControl">
+  /* ── Ad control ───────────────────────────────────────────────
+     The calendar strip is the point: a list of phases is unreadable
+     once overlaps and hourly rules interact, but thirty coloured days
+     show the plan at a glance. */
+  .ac-set{border:1px solid var(--line,#E4E7E4);border-radius:11px;padding:12px 13px;margin-bottom:10px;}
+  .ac-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .ac-head b{font-size:12.5px;}
+  .ac-sub{font-size:10.5px;color:var(--muted,#5E6B64);margin-top:1px;font-variant-numeric:tabular-nums;}
+  .ac-status{
+    margin-left:auto;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:9px;font-weight:600;letter-spacing:.04em;padding:2px 8px;border-radius:999px;
+  }
+  .ac-live{background:#E8F6F1;color:#0B7A5E;}
+  .ac-off{background:#EEF1EF;color:#5E6B64;}
+
+  .ac-strip{display:flex;gap:2px;margin:10px 0 4px;flex-wrap:wrap;}
+  .ac-day{width:9px;height:20px;border-radius:2px;background:#E4E7E4;}
+  .ac-on{background:#0B7A5E;}
+  /* Partial = running, but only during set hours. Distinct from full
+     days so a heavily restricted schedule is visible at a glance. */
+  .ac-partial{background:#7FC4AE;}
+  .ac-paused{background:#E8B4AF;}
+  .ac-unmanaged{background:#E4E7E4;}
+  .ac-wknd{box-shadow:inset 0 -3px 0 rgba(15,76,69,.35);}
+  .ac-strip-meta{font-size:10.5px;color:var(--muted,#5E6B64);font-variant-numeric:tabular-nums;}
+  .ac-strip-meta b{color:var(--ink,#0D1310);font-family:'IBM Plex Mono',ui-monospace,monospace;}
+
+  .ac-editor{margin-top:8px;border-top:1px solid var(--line,#EDEFEC);padding-top:8px;}
+  .ac-editor > summary{cursor:pointer;font-size:11.5px;font-weight:600;color:var(--muted,#5E6B64);}
+  .ac-editor > summary:hover{color:var(--ink,#0D1310);}
+  .ac-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:10px 0 4px;}
+  .ac-grid label{display:block;font-size:10.5px;color:var(--muted,#5E6B64);}
+  .ac-grid .fi{margin-top:3px;margin-bottom:0;font-size:12px;min-height:34px;}
+
+  .ac-phases{margin-top:10px;}
+  .ac-phase{
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    padding:7px 0;border-top:1px solid var(--line,#F0F2F0);
+    font-size:11.5px;font-variant-numeric:tabular-nums;
+  }
+  .ac-ph-mode{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9px;font-weight:600;
+    padding:2px 7px;border-radius:999px;letter-spacing:.04em;
+  }
+  .ac-ph-run{background:#E8F6F1;color:#0B7A5E;}
+  .ac-ph-pause{background:#FBEDEC;color:#A8271E;}
+  .ac-ph-label{width:100%;font-size:10.5px;color:var(--muted,#5E6B64);}
+
+  /* Preview is the gate before anything real happens, so it reads as a
+     decision rather than a status line. */
+  .ac-preview{border:1px solid #9A5B0F;border-radius:11px;padding:11px 13px;background:#FDF8F0;}
+  .ac-pv-head{font-size:12px;font-weight:600;color:#9A5B0F;margin-bottom:8px;}
+  .ac-pv-row{padding:6px 0;border-top:1px solid rgba(154,91,15,.15);font-size:11.5px;}
+  .ac-pv-row:first-of-type{border-top:0;}
+  .ac-pv-change{
+    margin-left:8px;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:11px;color:#0F4C45;
+  }
+  .ac-pv-why{font-size:10.5px;color:var(--muted,#5E6B64);margin-top:2px;}
+
+  .ac-log{border-top:1px solid var(--line,#E4E7E4);padding-top:10px;}
+  .ac-log-head{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;
+    letter-spacing:.07em;text-transform:uppercase;color:var(--faint,#8B968F);margin-bottom:6px;
+  }
+  .ac-log-row{padding:7px 0;border-bottom:1px solid var(--line,#F0F2F0);font-size:11.5px;
+    display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;}
+  .ac-log-fail{background:rgba(168,39,30,.04);}
+  .ac-log-when{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;color:var(--faint,#8B968F);}
+  .ac-log-what{flex:1;min-width:0;}
+  .ac-log-src{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9px;
+    color:var(--faint,#8B968F);letter-spacing:.04em;
+  }
+  .ac-log-why{width:100%;font-size:10.5px;color:var(--muted,#5E6B64);}
+
+  @media (max-width:640px){
+    .ac-day{width:7px;height:18px;}
+    .ac-head{gap:7px;}
+    .ac-status{margin-left:0;}
+  }
+</style>
+
+<style id="zenUpAct">
+  .up-act{margin-top:5px;padding:3px 9px;min-height:26px;font-size:10.5px;}
+</style>
 </head>
 <body>
 
@@ -1911,7 +1999,21 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
 
             <div id="marketingTab-performance" class="marketing-tab-content" style="display:none;">
             <p class="muted" style="font-size:11.5px;margin:0 0 14px;">How the spend is doing, and what it produced.</p>
-<div class="card">
+<details class="card">
+            <summary><h2 style="display:inline;">Ad control &amp; calendar</h2></summary>
+            <p class="muted" style="font-size:11.5px;">Pause and restart ads on a schedule, and plan the month ahead. Nothing changes without you previewing it first.</p>
+            <div id="adControlPerm" class="muted" style="font-size:11.5px;margin-bottom:10px;"></div>
+            <div class="row" style="gap:6px;margin-bottom:12px;">
+              <button class="btn btn-p btn-sm" onclick="loadAdControl()">Load ad sets</button>
+              <button class="btn btn-s btn-sm" onclick="previewAdSchedule()">Preview what would change</button>
+              <button class="btn btn-s btn-sm" onclick="loadAdActions()">History</button>
+            </div>
+            <div id="adSchedulePreview" style="font-size:12px;margin-bottom:10px;"></div>
+            <div id="adControlList" class="muted" style="font-size:12px;">Click Load ad sets to begin.</div>
+            <div id="adActionsList" style="margin-top:12px;"></div>
+          </details>
+
+          <div class="card">
             <h2>Ad spend monitoring</h2>
             <p class="muted">Pulls real campaign and placement data directly from Meta's own Marketing API - no third-party service, no ongoing subscription. Requires the Ad Account ID set in Brand setup above.</p>
             <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;">
@@ -5789,6 +5891,265 @@ async function loadAdPerformance(){
     '</table></div>'+
   '</div>';
 }
+
+// Applies a recommendation from the analysis.
+//
+// The analysis names an ad, the control layer can pause one - but
+// nothing connected them, so acting on advice meant finding the ad set
+// by hand in another card. This closes that, and deliberately shows the
+// match before doing anything: the model works from ad names, and a
+// near-match on the wrong ad set would pause the wrong spend.
+async function actOnRecommendation(name){
+  if(!AD_SETS.length){
+    const sets=await call('list_ad_entities',{});
+    if(!sets.ok){alert('Could not load ad sets: '+sets.error);return;}
+    AD_SETS=sets.adsets||[];
+  }
+  const needle=String(name).toLowerCase().trim();
+  let match=AD_SETS.find(function(a){return String(a.name).toLowerCase().trim()===needle;});
+  if(!match) match=AD_SETS.find(function(a){
+    const n=String(a.name).toLowerCase();
+    return n.includes(needle)||needle.includes(n);
+  });
+  if(!match){
+    alert('No ad set matching "'+name+'".\n\nThe analysis works from names, which don\'t always line up with an ad set exactly. Pause it from Ad control instead.');
+    return;
+  }
+  if(match.effective_status!=='ACTIVE'){
+    alert('"'+match.name+'" is already paused.');
+    return;
+  }
+  if(!confirm('Pause "'+match.name+'"?\n\nRecommended for: '+name+
+    (match.daily_budget?('\nCurrently '+match.daily_budget+'/day'):'')+
+    '\n\nThis stops delivery immediately. You can resume it from Ad control.')) return;
+  const j=await call('set_ad_status',{entity_id:match.id,entity_name:match.name,status:'PAUSED'});
+  if(!j.ok){alert('Error: '+j.error);return;}
+  alert('"'+match.name+'" paused. It is recorded in the change log with the reason.');
+  if(typeof loadAdControl==='function') loadAdControl();
+}
+
+// ── Ad control ────────────────────────────────────────────────────
+// Pausing an ad and moving budget is the platform spending or
+// withholding real money, so every path here shows what would happen
+// before it happens.
+let AD_SETS=[], AD_FORECAST={};
+
+async function loadAdControl(){
+  const el=document.getElementById('adControlList');
+  el.innerHTML='<span class="mw-spinner"></span>Loading...';
+
+  // Checked first: reading performance needs ads_read, changing anything
+  // needs ads_management. Finding that out here beats watching a
+  // schedule silently do nothing for a week.
+  const perm=await call('check_ads_management',{});
+  const pEl=document.getElementById('adControlPerm');
+  if(perm.ok && !perm.can_manage){
+    pEl.innerHTML='<span style="color:var(--warn);">This token can read ads but not change them. '+
+      'Pausing or moving budget needs the <b>ads_management</b> permission &mdash; regenerate the token with it.</span>';
+  } else if(perm.ok){
+    pEl.innerHTML='<span style="color:var(--ok);">Token can pause ads and move budget.</span>';
+  } else { pEl.textContent=''; }
+
+  const [sets,forecast]=await Promise.all([
+    call('list_ad_entities',{}),
+    call('get_ad_plan_forecast',{days:30}),
+  ]);
+  if(!sets.ok){el.innerHTML='<span style="color:var(--err);">'+esc(sets.error)+'</span>';return;}
+  AD_SETS=sets.adsets||[];
+  AD_FORECAST={};
+  (forecast.entities||[]).forEach(function(e){AD_FORECAST[e.entity_id]=e;});
+  AD_FORECAST.__phases=forecast.phases||[];
+  if(!AD_SETS.length){el.innerHTML='No ad sets found in this account.';return;}
+  renderAdControl();
+}
+
+function renderAdControl(){
+  document.getElementById('adControlList').innerHTML=AD_SETS.map(function(a,i){
+    const r=a.rule||{};
+    const f=AD_FORECAST[a.id];
+    const live=a.effective_status==='ACTIVE';
+
+    // One block per day for the next month. A list of phases is hard to
+    // read once overlaps and hourly rules interact; seeing the days
+    // resolved is the only honest picture of the plan.
+    const strip = f ? '<div class="ac-strip">'+f.timeline.map(function(d){
+        return '<span class="ac-day ac-'+d.state+(d.weekend?' ac-wknd':'')+'" title="'+
+          esc(d.date+' — '+d.state+(d.budget?(' · '+d.budget):'')+(d.label?(' · '+d.label):''))+'"></span>';
+      }).join('')+'</div>'+
+      '<div class="ac-strip-meta">'+
+        'Next 30 days &middot; <b>'+f.planned_spend+'</b> planned spend'+
+        (f.paused_days?(' &middot; '+f.paused_days+' day(s) deliberately off'):'')+
+        // A day with no rule and no phase isn't off - Meta keeps doing
+        // whatever it was. Worth flagging so a gap isn't mistaken for a plan.
+        (f.unmanaged_days?(' &middot; <span style="color:var(--warn);">'+f.unmanaged_days+' day(s) not covered by any rule</span>'):'')+
+      '</div>'
+      : '<div class="ac-strip-meta muted">No schedule yet &mdash; this ad set runs however Meta was left.</div>';
+
+    return '<div class="ac-set">'+
+      '<div class="ac-head">'+
+        '<div><b>'+esc(a.name)+'</b>'+
+          '<div class="ac-sub">'+esc(a.campaign||'')+(a.daily_budget?(' &middot; '+a.daily_budget+'/day'):'')+'</div></div>'+
+        '<span class="ac-status '+(live?'ac-live':'ac-off')+'">'+esc(a.effective_status||a.status)+'</span>'+
+        '<button class="btn btn-s btn-sm" onclick="toggleAdStatus('+i+')">'+(live?'Pause':'Resume')+'</button>'+
+      '</div>'+
+      strip+
+      '<details class="ac-editor"><summary>Hours &amp; budget</summary>'+
+        '<div class="ac-grid">'+
+          '<label>Weekday hours<input class="fi" id="acWdH_'+i+'" placeholder="10-23 or 10,11,12" value="'+esc(hoursToText(r.weekday_hours))+'"></label>'+
+          '<label>Weekend hours<input class="fi" id="acWeH_'+i+'" placeholder="blank = all day" value="'+esc(hoursToText(r.weekend_hours))+'"></label>'+
+          '<label>Weekday budget<input class="fi" type="number" id="acWdB_'+i+'" value="'+(r.weekday_budget||'')+'"></label>'+
+          '<label>Weekend budget<input class="fi" type="number" id="acWeB_'+i+'" value="'+(r.weekend_budget||'')+'"></label>'+
+          '<label>Never exceed<input class="fi" type="number" id="acMax_'+i+'" value="'+(r.max_daily_budget||'')+'"></label>'+
+        '</div>'+
+        '<div class="muted" style="font-size:10px;margin-bottom:8px;">Leave hours blank to run all day. &ldquo;Never exceed&rdquo; is a hard ceiling the automation can\'t go past, whatever a rule says.</div>'+
+        '<button class="btn btn-p btn-sm" onclick="saveAdRule('+i+')">Save rule</button>'+
+        (a.rule?'<button class="btn btn-s btn-sm" onclick="deleteAdRule('+i+')">Remove rule</button>':'')+
+        '<div id="acRuleResult_'+i+'" style="font-size:11.5px;margin-top:6px;"></div>'+
+      '</details>'+
+      '<details class="ac-editor"><summary>Plan a period</summary>'+
+        '<div class="ac-grid">'+
+          '<label>From<input class="fi" type="date" id="acPhS_'+i+'"></label>'+
+          '<label>To<input class="fi" type="date" id="acPhE_'+i+'"></label>'+
+          '<label>Mode<select class="fi" id="acPhM_'+i+'"><option value="run">Run</option><option value="pause">Pause</option></select></label>'+
+          '<label>Budget/day<input class="fi" type="number" id="acPhB_'+i+'" placeholder="optional"></label>'+
+        '</div>'+
+        '<input class="fi" id="acPhL_'+i+'" placeholder="Why, e.g. &lsquo;closed for refit&rsquo; — shown on the calendar and in the log">'+
+        '<button class="btn btn-p btn-sm" onclick="saveAdPhase('+i+')">Add to plan</button>'+
+        '<div id="acPhResult_'+i+'" style="font-size:11.5px;margin-top:6px;"></div>'+
+        (f&&f.timeline?renderPhaseList(a.id):'')+
+      '</details>'+
+    '</div>';
+  }).join('');
+}
+
+// "10-23" is how someone thinks about opening hours; [10,11,12...] is
+// how the API wants them.
+function hoursToText(arr){
+  if(!arr||!arr.length) return '';
+  const a=[...arr].sort(function(x,y){return x-y;});
+  let out=[],start=a[0],prev=a[0];
+  for(let i=1;i<=a.length;i++){
+    if(a[i]===prev+1){prev=a[i];continue;}
+    out.push(start===prev?String(start):(start+'-'+prev));
+    start=a[i];prev=a[i];
+  }
+  return out.join(',');
+}
+function textToHours(t){
+  if(!t||!t.trim()) return [];
+  const out=[];
+  t.split(',').forEach(function(part){
+    const m=part.trim().match(/^(\d{1,2})\s*-\s*(\d{1,2})$/);
+    if(m){for(let h=+m[1];h<=+m[2];h++) if(h>=0&&h<=23) out.push(h);}
+    else{const h=+part.trim(); if(h>=0&&h<=23) out.push(h);}
+  });
+  return [...new Set(out)];
+}
+
+async function saveAdRule(i){
+  const a=AD_SETS[i], r=document.getElementById('acRuleResult_'+i);
+  const j=await call('save_ad_rule',{
+    entity_id:a.id, entity_name:a.name,
+    weekday_hours:textToHours(document.getElementById('acWdH_'+i).value),
+    weekend_hours:textToHours(document.getElementById('acWeH_'+i).value),
+    weekday_budget:document.getElementById('acWdB_'+i).value||null,
+    weekend_budget:document.getElementById('acWeB_'+i).value||null,
+    max_daily_budget:document.getElementById('acMax_'+i).value||null,
+  });
+  if(j.ok){r.textContent='Saved. Preview to see what it would change.';r.style.color='var(--ok)';loadAdControl();}
+  else{r.textContent='Error: '+j.error;r.style.color='var(--err)';}
+}
+async function deleteAdRule(i){
+  if(!confirm('Remove the schedule for '+AD_SETS[i].name+'? It will run however Meta is set.')) return;
+  const j=await call('delete_ad_rule',{entity_id:AD_SETS[i].id});
+  if(!j.ok){alert('Error: '+j.error);return;}
+  loadAdControl();
+}
+async function saveAdPhase(i){
+  const a=AD_SETS[i], r=document.getElementById('acPhResult_'+i);
+  const from=document.getElementById('acPhS_'+i).value, to=document.getElementById('acPhE_'+i).value;
+  if(!from||!to){r.textContent='Both dates are needed.';r.style.color='var(--err)';return;}
+  const j=await call('save_ad_phase',{
+    entity_id:a.id, entity_name:a.name, starts_on:from, ends_on:to,
+    mode:document.getElementById('acPhM_'+i).value,
+    daily_budget:document.getElementById('acPhB_'+i).value||null,
+    label:document.getElementById('acPhL_'+i).value||null,
+  });
+  if(j.ok){r.textContent='Added to the plan.';r.style.color='var(--ok)';loadAdControl();}
+  else{r.textContent='Error: '+j.error;r.style.color='var(--err)';}
+}
+function renderPhaseList(entityId){
+  const ph=(AD_FORECAST.__phases||[]).filter(function(p){return p.entity_id===entityId;});
+  if(!ph.length) return '';
+  return '<div class="ac-phases">'+ph.map(function(p){
+    return '<div class="ac-phase"><span class="ac-ph-mode ac-ph-'+p.mode+'">'+p.mode+'</span>'+
+      esc(p.starts_on)+' &rarr; '+esc(p.ends_on)+(p.daily_budget?(' &middot; '+p.daily_budget+'/day'):'')+
+      (p.label?('<div class="ac-ph-label">'+esc(p.label)+'</div>'):'')+
+      '<button class="btn btn-s btn-sm" onclick="deleteAdPhase(\''+p.id+'\')">Remove</button></div>';
+  }).join('')+'</div>';
+}
+async function deleteAdPhase(id){
+  const j=await call('delete_ad_phase',{id:id});
+  if(!j.ok){alert('Error: '+j.error);return;}
+  loadAdControl();
+}
+async function toggleAdStatus(i){
+  const a=AD_SETS[i];
+  const to=a.effective_status==='ACTIVE'?'PAUSED':'ACTIVE';
+  if(!confirm((to==='PAUSED'?'Pause ':'Resume ')+a.name+'?')) return;
+  const j=await call('set_ad_status',{entity_id:a.id,entity_name:a.name,status:to});
+  if(!j.ok){alert('Error: '+j.error);return;}
+  loadAdControl();
+}
+
+// Nothing is applied without this being available first.
+async function previewAdSchedule(){
+  const el=document.getElementById('adSchedulePreview');
+  el.innerHTML='<span class="mw-spinner"></span>Working out what would change...';
+  const j=await call('apply_ad_schedule',{dry_run:true});
+  if(!j.ok){el.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
+  const p=j.planned||[];
+  if(!p.length){
+    el.innerHTML='<span class="muted">Nothing would change right now &mdash; everything already matches its rule.</span>';
+    return;
+  }
+  el.innerHTML='<div class="ac-preview">'+
+    '<div class="ac-pv-head">'+p.length+' change(s) would be applied now ('+j.hour+':00 Dubai, '+(j.weekend?'weekend':'weekday')+')</div>'+
+    p.map(function(c){
+      return '<div class="ac-pv-row"><b>'+esc(c.name)+'</b><span class="ac-pv-change">'+esc(c.change)+'</span>'+
+        '<div class="ac-pv-why">'+esc(c.reason)+'</div></div>';
+    }).join('')+
+    '<button class="btn btn-p btn-sm" style="margin-top:8px;" onclick="applyAdSchedule()">Apply these '+p.length+' change(s)</button>'+
+  '</div>';
+}
+async function applyAdSchedule(){
+  if(!confirm('Apply these changes to your live ads?')) return;
+  const el=document.getElementById('adSchedulePreview');
+  el.innerHTML='<span class="mw-spinner"></span>Applying...';
+  const j=await call('apply_ad_schedule',{dry_run:false});
+  if(!j.ok){el.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
+  el.innerHTML='<span style="color:var(--ok);">'+j.changed+' change(s) applied'+(j.failed?(', '+j.failed+' failed'):'')+'.</span>';
+  loadAdControl();
+}
+
+async function loadAdActions(){
+  const el=document.getElementById('adActionsList');
+  el.innerHTML='<span class="mw-spinner"></span>Loading...';
+  const j=await call('list_ad_actions',{limit:40});
+  if(!j.ok){el.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
+  if(!j.actions.length){el.innerHTML='<span class="muted" style="font-size:11.5px;">Nothing has been changed yet.</span>';return;}
+  el.innerHTML='<div class="ac-log"><div class="ac-log-head">What has been changed</div>'+
+    j.actions.map(function(a){
+      return '<div class="ac-log-row'+(a.succeeded?'':' ac-log-fail')+'">'+
+        '<span class="ac-log-when">'+formatDubai(a.created_at)+'</span>'+
+        '<span class="ac-log-what"><b>'+esc(a.entity_name||a.entity_id)+'</b> '+esc(a.action)+
+          (a.new_value?(' &rarr; '+esc(a.new_value)):'')+'</span>'+
+        '<span class="ac-log-src">'+esc(a.source)+'</span>'+
+        '<div class="ac-log-why">'+esc(a.reason||'')+(a.error?(' &mdash; '+esc(a.error)):'')+'</div>'+
+      '</div>';
+    }).join('')+'</div>';
+}
+
 async function analyseAdSpend(force){
   const el=document.getElementById('adAnalysis');
   const days=(document.getElementById('metaAdsLookback')||{}).value||30;
@@ -5839,7 +6200,13 @@ async function analyseAdSpend(force){
             '<td class="up-n">'+Math.round(u.spend||0)+'</td>'+
             '<td class="up-why">'+esc(u.problem||'')+'</td>'+
             '<td><span class="up-tag '+cls+'">'+esc(u.verdict||'')+'</span>'+
-              (u.frees?'<div class="up-frees">frees '+Math.round(u.frees)+'</div>':'')+'</td>'+
+              (u.frees?'<div class="up-frees">frees '+Math.round(u.frees)+'</div>':'')+
+              // Only offered when the advice maps to something that can
+              // actually be actioned. A "change creative" verdict has no
+              // API equivalent, and a button that quietly did nothing
+              // would be worse than none.
+              (v==='pause'?'<button class="btn btn-s btn-sm up-act" onclick="actOnRecommendation('+JSON.stringify(esc(u.name)).replace(/"/g,'&quot;')+')">Pause this</button>':'')+
+            '</td>'+
           '</tr>';
         }).join('')+'</table>'
       : '')+
