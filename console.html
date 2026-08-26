@@ -1321,6 +1321,55 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
   .ig-link{display:flex;gap:6px;margin-top:8px;}
   @media (max-width:640px){ .ig-link{flex-wrap:wrap;} .ig-link .btn{width:100%;} }
 </style>
+
+<style id="zenAdLeads">
+  /* ── Ad leads ─────────────────────────────────────────────────
+     A lead that visited is the only one that mattered, so it gets the
+     visual weight. Everything else is a name waiting to be followed
+     up. */
+  .lead-summary{
+    display:flex;gap:14px;flex-wrap:wrap;padding-bottom:10px;margin-bottom:10px;
+    border-bottom:1px solid var(--line,#E4E7E4);
+    font-size:11.5px;color:var(--muted,#5E6B64);
+  }
+  .lead-summary b{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:13px;color:var(--ink,#0D1310);margin-right:3px;
+    font-variant-numeric:tabular-nums;
+  }
+
+  .lead-row{
+    display:flex;align-items:flex-start;gap:12px;
+    padding:11px 0;border-bottom:1px solid var(--line,#EDEFEC);
+  }
+  .lead-row:last-child{border-bottom:0;}
+  .lead-won{border-left:2px solid #0B7A5E;padding-left:10px;margin-left:-12px;}
+  .lead-main{flex:1;min-width:0;}
+  .lead-main b{font-size:12.5px;}
+  .lead-meta{
+    font-size:11px;color:var(--muted,#5E6B64);margin-top:2px;
+    font-variant-numeric:tabular-nums;
+  }
+  .lead-visit{font-size:11.5px;color:#0B7A5E;margin-top:3px;font-weight:500;font-variant-numeric:tabular-nums;}
+  .lead-err{font-size:10.5px;color:#A8271E;margin-top:3px;}
+  .lead-actions{flex-shrink:0;}
+
+  .lead-tag{
+    display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:9px;font-weight:600;letter-spacing:.04em;vertical-align:1px;
+  }
+  .lead-tag-won{background:#E8F6F1;color:#0B7A5E;}
+  /* Worth distinguishing: an existing customer filling a lead form is
+     not a new customer the ad won. */
+  .lead-tag-old{background:#EEF1EF;color:#5E6B64;}
+  .lead-tag-warn{background:#FDF3E7;color:#9A5B0F;}
+
+  @media (max-width:640px){
+    .lead-row{flex-wrap:wrap;gap:8px;}
+    .lead-actions{width:100%;}
+  }
+</style>
 </head>
 <body>
 
@@ -1977,6 +2026,23 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
           </div>
 
               <div class="card">
+            <h2>Ad leads</h2>
+            <p class="muted">People who filled in a lead form. A lead only counts as converted when they actually visit &mdash; not because the form was submitted.</p>
+            <div class="row" style="gap:6px;margin-bottom:10px;">
+              <select class="fi" id="leadsFilter" style="width:auto;margin:0;font-size:11.5px;" onchange="loadAdLeads()">
+                <option value="">All</option>
+                <option value="new">New</option>
+                <option value="contacted">Contacted</option>
+                <option value="converted">Converted</option>
+                <option value="rejected">Rejected</option>
+              </select>
+              <button class="btn btn-p btn-sm" onclick="loadAdLeads()">Refresh</button>
+              <button class="btn btn-s btn-sm" onclick="retryLeadFetch()">Retry missing details</button>
+            </div>
+            <div id="adLeadsResult" class="muted" style="font-size:12px;">Click Refresh to load.</div>
+          </div>
+
+          <div class="card">
             <h2>Ad spend monitoring</h2>
             <p class="muted">Pulls real campaign and placement data directly from Meta's own Marketing API - no third-party service, no ongoing subscription. Requires the Ad Account ID set in Brand setup above.</p>
             <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;">
@@ -1991,6 +2057,19 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
             <div id="adAnalysis"></div>
             <div id="metaAdsResult"></div>
           </div>
+
+              <details class="card">
+                <summary><h2 style="display:inline;">Lead ads connection</h2></summary>
+                <div id="leadsStatus" class="muted" style="margin-bottom:10px;margin-top:10px;">Checking...</div>
+                <p class="muted" style="font-size:11px;">Separate from ad performance. Lead forms deliver a name and phone number before any conversation starts &mdash; so Zen can message them on WhatsApp, and the thread lands in the same inbox.</p>
+                <div class="row" style="margin-bottom:8px;flex-wrap:wrap;">
+                  <input class="fi" type="text" id="leadsPageId" placeholder="Facebook Page ID" style="flex:1;min-width:200px;">
+                  <input class="fi" type="password" id="leadsToken" placeholder="Page token with leads_retrieval" style="flex:1;min-width:200px;">
+                  <button class="btn btn-s btn-sm" onclick="saveLeadsCredentials()">Save</button>
+                </div>
+                <div id="leadsSaveResult" style="font-size:12px;"></div>
+                <div class="muted" style="font-size:10.5px;margin-top:6px;">Webhook: subscribe the Page to <b>leadgen</b> at <code>/functions/v1/mw-leads-webhook</code>. Meta keeps lead data for 90 days &mdash; after that an uncollected lead is gone.</div>
+              </details>
 
               <details class="card">
                 <summary><h2 style="display:inline;">Meta ads connection</h2></summary>
@@ -2378,7 +2457,7 @@ function showAgentDetail(agent){
   document.getElementById('marketingAgentDetail').style.display=agent==='marketing'?'block':'none';
   document.getElementById('intelligenceAgentDetail').style.display=agent==='intelligence'?'block':'none';
   window.scrollTo({top:0,behavior:'smooth'});
-  if(agent==='marketing'){loadSocialContent();loadCompetitors();loadMetaAdsStatus();}
+  if(agent==='marketing'){loadSocialContent();loadCompetitors();loadMetaAdsStatus();loadLeadsStatus();}
   if(agent==='engagement'){loadAtRiskActions();loadAtRiskQueue();loadConversations();}
   if(agent==='intelligence'){loadDailyIntelligence();loadPredictive();renderQuickQuestions();}
 }
@@ -5401,6 +5480,83 @@ async function sendAdConversions(dryRun){
       ((j.errors||[]).length?': '+esc(j.errors[0]):'')+'</div>':'');
 }
 
+async function loadLeadsStatus(){
+  const el=document.getElementById('leadsStatus');
+  if(!el) return;
+  const j=await call('get_leads_status',{});
+  if(!j.ok){el.textContent='Error: '+j.error;return;}
+  if(j.connected){
+    el.innerHTML='<span style="color:var(--ok);">Connected &middot; page '+esc(j.page_id)+' &middot; '+j.total_leads+' lead(s) received</span>';
+    document.getElementById('leadsPageId').value=j.page_id||'';
+  } else {
+    el.textContent='Not connected yet.';
+  }
+}
+async function saveLeadsCredentials(){
+  const r=document.getElementById('leadsSaveResult');
+  const page_id=document.getElementById('leadsPageId').value.trim();
+  const leads_token=document.getElementById('leadsToken').value.trim();
+  if(!page_id||!leads_token){r.textContent='Both fields are needed.';r.style.color='var(--err)';return;}
+  const j=await call('save_leads_credentials',{page_id:page_id,leads_token:leads_token});
+  if(j.ok){document.getElementById('leadsToken').value='';r.textContent='Saved.';r.style.color='var(--ok)';loadLeadsStatus();}
+  else {r.textContent='Error: '+j.error;r.style.color='var(--err)';}
+}
+async function loadAdLeads(){
+  const el=document.getElementById('adLeadsResult');
+  el.innerHTML='<span class="mw-spinner"></span>Loading...';
+  const j=await call('list_ad_leads',{status:document.getElementById('leadsFilter').value||undefined});
+  if(!j.ok){el.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
+  if(!j.leads.length){el.innerHTML=esc(j.note||'No leads yet.');return;}
+
+  const c=j.counts||{};
+  const summary='<div class="lead-summary">'+
+    Object.keys(c).filter(function(k){return c[k];}).map(function(k){
+      return '<span><b>'+c[k]+'</b> '+esc(k.replace(/_/g,' '))+'</span>';
+    }).join('')+'</div>';
+
+  el.innerHTML=summary+j.leads.map(function(l){
+    // A lead with no phone number can't be followed up, and that is
+    // worth saying loudly rather than leaving someone to notice.
+    const noPhone = !l.phone;
+    const pending = !l.fetched_at;
+    return '<div class="lead-row'+(l.visited?' lead-won':'')+'">'+
+      '<div class="lead-main">'+
+        '<b>'+esc(l.full_name||(pending?'Details still arriving':'No name given'))+'</b>'+
+        (l.visited?'<span class="lead-tag lead-tag-won">visited</span>':'')+
+        (l.was_existing_customer?'<span class="lead-tag lead-tag-old">existing customer</span>':'')+
+        (noPhone&&!pending?'<span class="lead-tag lead-tag-warn">no phone</span>':'')+
+        '<div class="lead-meta">'+
+          (l.phone?esc(l.phone):'')+
+          (l.email?(' &middot; '+esc(l.email)):'')+
+          (l.campaign_name?(' &middot; '+esc(l.campaign_name)):'')+
+          (l.submitted_at?(' &middot; '+formatDubai(l.submitted_at)):'')+
+        '</div>'+
+        (l.first_visit?'<div class="lead-visit">Visited '+esc(l.first_visit)+(l.visit_value?(' &middot; '+l.visit_value):'')+'</div>':'')+
+        (l.fetch_error?'<div class="lead-err">'+esc(l.fetch_error)+'</div>':'')+
+      '</div>'+
+      '<div class="lead-actions">'+
+        '<select class="fi" style="margin:0;font-size:11px;padding:4px 8px;min-height:30px;" onchange="setLeadStatus(\''+l.id+'\',this.value)">'+
+          ['new','contacted','converted','rejected'].map(function(st){
+            return '<option value="'+st+'"'+(l.status===st?' selected':'')+'>'+st+'</option>';
+          }).join('')+
+        '</select>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+async function setLeadStatus(id,status){
+  const j=await call('update_lead_status',{lead_id:id,status:status});
+  if(!j.ok) alert('Error: '+j.error);
+}
+async function retryLeadFetch(){
+  const el=document.getElementById('adLeadsResult');
+  el.innerHTML='<span class="mw-spinner"></span>Fetching missing details...';
+  const j=await call('retry_lead_fetch',{});
+  if(!j.ok){el.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
+  if(j.fetched===0&&j.failed===0){el.innerHTML=esc(j.note||'Nothing to fetch.');return;}
+  alert(j.fetched+' fetched'+(j.failed?(', '+j.failed+' failed: '+(j.errors||[])[0]):''));
+  loadAdLeads();
+}
 async function loadMetaAdsStatus(){
   const el=document.getElementById('metaAdsStatus');
   if(!el) return;
