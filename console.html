@@ -765,6 +765,100 @@ code, .mw-spinner + code, pre {
 }
 </style>
 <style id="zenPremiumEnterprise2026">
+  /* ── Review queue: selection model ────────────────────────────
+     Approving forty messages one at a time is forty decisions the
+     owner never needed to make separately. Tick, then act once. */
+  .queue-bar{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    padding:8px 10px;margin-bottom:10px;
+    background:var(--surface-2,#FAFBFA);
+    border:1px solid var(--line,#E1E7E3);border-radius:10px;
+    position:sticky;top:0;z-index:5;
+  }
+  .queue-all{display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+    font-size:12px;font-weight:600;user-select:none;}
+  .queue-all input{width:15px;height:15px;accent-color:#0F4C45;cursor:pointer;margin:0;}
+  .queue-sel{font-size:11px;font-variant-numeric:tabular-nums;}
+
+  /* The whole row is the label, so tapping anywhere ticks it - a
+     15px checkbox is not a fair target on a phone. */
+  .queue-row{
+    display:flex;align-items:flex-start;gap:11px;cursor:pointer;
+    padding:11px 13px;margin-bottom:6px;
+    transition:border-color .14s,background .14s;
+  }
+  .queue-row:hover{border-color:var(--line-strong,#CBD5CF);background:var(--surface-2,#FAFBFA);}
+  .queue-row:has(.queue-check:checked){
+    border-color:#0F4C45;background:rgba(15,76,69,.045);
+  }
+  .queue-row.is-done{border-left:3px solid #0B7A5E;}
+  .queue-check{width:15px;height:15px;margin-top:2px;flex-shrink:0;
+    accent-color:#0F4C45;cursor:pointer;}
+  .queue-check:disabled{cursor:default;opacity:.35;}
+
+  .queue-body{display:block;min-width:0;flex:1;}
+  .queue-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
+  .queue-top b{font-size:13.5px;}
+  .queue-meta{display:block;font-size:11px;color:var(--muted,#5E6B64);margin-top:1px;
+    font-variant-numeric:tabular-nums;}
+  .queue-reason{display:block;font-size:12px;color:var(--muted,#5E6B64);margin-top:4px;line-height:1.45;}
+  .queue-warn{display:block;font-size:11px;font-weight:600;color:#A8271E;margin-bottom:4px;}
+  .queue-undo{display:block;margin-top:8px;}
+
+  @media (max-width:640px){
+    .queue-bar{gap:7px;padding:8px;}
+    .queue-bar .btn{flex:1 1 auto;}
+    .queue-sel{width:100%;order:3;}
+  }
+
+  /* ── Needs your attention ───────────────────────────────────
+     This is the first thing seen each morning and it was cramped.
+     More room per row, the action aligned right, and a divider
+     instead of boxes inside a box. */
+  .zen-attention-card{padding:18px 20px;}
+  .zen-attention-head{
+    display:flex;align-items:flex-start;justify-content:space-between;
+    gap:12px;padding-bottom:14px;margin-bottom:4px;
+    border-bottom:1px solid var(--line,#E1E7E3);
+  }
+  .zen-attention-head h2{margin:0;font-size:15px;letter-spacing:-.01em;}
+
+  .zen-attention-row{
+    display:flex;align-items:center;gap:13px;
+    padding:14px 0;border-bottom:1px solid var(--line,#E1E7E3);
+  }
+  .zen-attention-row:last-child{border-bottom:none;padding-bottom:2px;}
+  .zen-attention-row > div:nth-child(2){flex:1;min-width:0;}
+  .zen-attention-row b{display:block;font-size:13.5px;font-weight:600;line-height:1.35;}
+  .zen-attention-row p{
+    margin:3px 0 0;font-size:12px;line-height:1.45;
+    color:var(--muted,#5E6B64);
+  }
+  .zen-attention-icon{
+    width:8px;height:8px;border-radius:50%;flex-shrink:0;
+    background:#9A5B0F;box-shadow:0 0 0 4px rgba(154,91,15,.13);
+    font-size:0;line-height:0;align-self:center;
+  }
+  .zen-attention-row button{
+    flex-shrink:0;padding:7px 14px;min-height:34px;border-radius:8px;
+    border:1px solid var(--line-strong,#CBD5CF);background:#fff;
+    font-family:inherit;font-size:12.5px;font-weight:600;color:#0F4C45;
+    cursor:pointer;transition:background .14s,border-color .14s;
+  }
+  .zen-attention-row button:hover{background:rgba(15,76,69,.06);border-color:#0F4C45;}
+  .zen-attention-count{
+    flex-shrink:0;min-width:26px;height:26px;padding:0 8px;
+    display:inline-flex;align-items:center;justify-content:center;
+    border-radius:999px;background:#9A5B0F;color:#fff;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;
+  }
+  @media (max-width:640px){
+    .zen-attention-card{padding:15px 16px;}
+    .zen-attention-row{flex-wrap:wrap;gap:10px;}
+    .zen-attention-row button{width:100%;}
+  }
+
   /* ── New-message indicators ──────────────────────────────────
      Three surfaces, because which one you notice depends on where you
      are: a count on the tab, a dot on the sidebar, and a toast when
@@ -5225,8 +5319,15 @@ async function renderDecisionQueue(opts){
         // Approving and sending are deliberately separate now - approve
         // marks messages without firing anything, and one explicit
         // "Send approved" is the only thing that actually sends.
-        '<div class="row" style="margin-bottom:8px;gap:6px;">'+
-          '<button class="btn btn-s btn-sm" onclick="approveAllInGroup(\''+key+'\',\''+opts.source+'\')"'+(pendingCount?'':' disabled')+'>Approve all'+(pendingCount?' '+pendingCount:'')+'</button>'+
+        // One action bar driven by what's ticked, rather than a button
+        // on every row. Approving 40 messages one at a time is 40
+        // decisions the owner didn't need to make separately.
+        '<div class="queue-bar" id="qbar_'+opts.source+'_'+key+'">'+
+          '<label class="queue-all"><input type="checkbox" onchange="toggleAllInGroup(\''+opts.source+'\',\''+key+'\',this.checked)"><span>Select all</span></label>'+
+          '<span class="queue-sel muted" id="qsel_'+opts.source+'_'+key+'">none selected</span>'+
+          '<span style="flex:1;"></span>'+
+          '<button class="btn btn-s btn-sm" onclick="approveSelected(\''+opts.source+'\',\''+key+'\')" disabled>Approve</button>'+
+          '<button class="btn btn-s btn-sm" onclick="rejectSelected(\''+opts.source+'\',\''+key+'\')" disabled>Reject</button>'+
           '<button class="btn btn-p btn-sm" onclick="sendApprovedInGroup(\''+key+'\',\''+opts.source+'\')"'+(approvedCount?'':' disabled')+'>Send approved'+(approvedCount?' ('+approvedCount+')':'')+'</button>'+
         '</div>'+
         // Scheduling is the alternative to sending now - same approved
@@ -5249,22 +5350,26 @@ async function renderDecisionQueue(opts){
           let stateLabel='';
           if(isApproved) stateLabel='<span style="color:var(--ok);font-size:11px;font-weight:700;">Approved - not sent yet</span>';
           else if(isScheduled) stateLabel='<span style="color:var(--ok);font-size:11px;font-weight:700;">Scheduled '+formatDubai(d.scheduled_send_at)+'</span>';
-          return '<div class="item"'+((isApproved||isScheduled)?' style="border-left:3px solid var(--ok);"':'')+'>'+
-            (isDup?'<div style="color:var(--err);font-size:11px;font-weight:700;margin-bottom:4px;">&#9888; Also pending in another campaign - check before approving both</div>':'')+
-            '<div style="display:flex;justify-content:space-between;align-items:center;"><b>'+(d.customer_name||d.mobile)+'</b>'+stateLabel+'</div>'+
-            // Real context while approving - who this actually goes to,
-            // and when they were genuinely last in.
-            '<div class="muted" style="font-size:11px;">'+(d.mobile||'no number')+(d.last_visit_date?' &middot; last visit '+formatVisitDate(d.last_visit_date):'')+'</div>'+
-            '<div class="muted">'+(d.reasoning||'')+'</div>'+
-            '<div class="row" style="margin-top:6px;">'+
-              (isScheduled
-                ? '<button class="btn btn-s btn-sm" onclick="unscheduleDecision(\''+d.id+'\')">Cancel schedule</button>'
-                : isApproved
-                ? '<button class="btn btn-s btn-sm" onclick="unapproveDecision(\''+d.id+'\')">Undo approval</button>'
-                : '<button class="btn btn-s btn-sm" onclick="approveDecision(\''+d.id+'\')">Approve</button>')+
-              '<button class="btn btn-s btn-sm" onclick="rejectDecision(\''+d.id+'\')">Reject</button>'+
-            '</div>'+
-          '</div>';
+          const selectable=d.status==='pending_review';
+          return '<label class="item queue-row'+((isApproved||isScheduled)?' is-done':'')+'">'+
+            '<input type="checkbox" class="queue-check" data-qgroup="'+opts.source+'_'+key+'" value="'+d.id+'"'+
+              (selectable?'':' disabled')+' onchange="updateQueueSelection(\''+opts.source+'\',\''+key+'\')">'+
+            '<span class="queue-body">'+
+              (isDup?'<span class="queue-warn">&#9888; Also pending in another campaign &mdash; check before approving both</span>':'')+
+              '<span class="queue-top"><b>'+(d.customer_name||d.mobile)+'</b>'+stateLabel+'</span>'+
+              // Real context while approving - who this goes to and when
+              // they were actually last in.
+              '<span class="queue-meta">'+(d.mobile||'no number')+(d.last_visit_date?' &middot; last visit '+formatVisitDate(d.last_visit_date):'')+'</span>'+
+              '<span class="queue-reason">'+(d.reasoning||'')+'</span>'+
+              ((isScheduled||isApproved)
+                ? '<span class="queue-undo">'+
+                    (isScheduled
+                      ? '<button type="button" class="btn btn-s btn-sm" onclick="event.preventDefault();unscheduleDecision(\''+d.id+'\')">Cancel schedule</button>'
+                      : '<button type="button" class="btn btn-s btn-sm" onclick="event.preventDefault();unapproveDecision(\''+d.id+'\')">Undo</button>')+
+                  '</span>'
+                : '')+
+            '</span>'+
+          '</label>';
         }).join('')+
       '</div>'+
     '</details>';
@@ -5273,6 +5378,55 @@ async function renderDecisionQueue(opts){
 // Marks every pending message in this group as approved - deliberately
 // sends nothing, so this is safe to click and still reversible per
 // message until "Send approved" is used.
+// ── Queue selection ─────────────────────────────────────────────
+function queueChecks(source,key,onlyChecked){
+  const sel='.queue-check[data-qgroup="'+source+'_'+key+'"]'+(onlyChecked?':checked':'');
+  return Array.prototype.slice.call(document.querySelectorAll(sel));
+}
+function updateQueueSelection(source,key){
+  const all=queueChecks(source,key).filter(function(c){return !c.disabled;});
+  const on=all.filter(function(c){return c.checked;});
+  const bar=document.getElementById('qbar_'+source+'_'+key);
+  const label=document.getElementById('qsel_'+source+'_'+key);
+  if(label) label.textContent = on.length ? (on.length+' of '+all.length+' selected') : 'none selected';
+  if(bar){
+    const btns=bar.querySelectorAll('button');
+    // First two are approve/reject; the third sends what's already
+    // approved and has nothing to do with the current selection.
+    if(btns[0]) btns[0].disabled = on.length===0;
+    if(btns[1]) btns[1].disabled = on.length===0;
+    const master=bar.querySelector('.queue-all input');
+    if(master){
+      master.checked = all.length>0 && on.length===all.length;
+      master.indeterminate = on.length>0 && on.length<all.length;
+    }
+  }
+}
+function toggleAllInGroup(source,key,checked){
+  queueChecks(source,key).forEach(function(c){ if(!c.disabled) c.checked=checked; });
+  updateQueueSelection(source,key);
+}
+async function approveSelected(source,key){
+  const ids=queueChecks(source,key,true).map(function(c){return c.value;});
+  if(!ids.length) return;
+  const j=await call('approve_decisions',{ids:ids});
+  if(!j.ok){alert('Error: '+j.error);return;}
+  // Says what actually changed rather than what was asked - a row
+  // someone else already actioned is skipped, and the difference is
+  // how you'd notice.
+  if(j.approved<j.requested) alert(j.approved+' approved. '+(j.requested-j.approved)+' were already actioned and left alone.');
+  loadPending();loadAtRiskQueue();loadOverview();loadApprovals();
+}
+async function rejectSelected(source,key){
+  const ids=queueChecks(source,key,true).map(function(c){return c.value;});
+  if(!ids.length) return;
+  // Rejection is the destructive direction, so it asks. Approving
+  // doesn't send anything on its own, so it doesn't need to.
+  if(!confirm('Reject '+ids.length+' message'+(ids.length===1?'':'s')+'? They won\'t be sent.')) return;
+  const j=await call('reject_decisions',{ids:ids});
+  if(!j.ok){alert('Error: '+j.error);return;}
+  loadPending();loadAtRiskQueue();loadOverview();loadApprovals();
+}
 async function approveAllInGroup(campaignKey,source){
   const j=await call('approve_all_in_group',{campaign_key:campaignKey,source:source});
   if(!j.ok){alert('Error: '+j.error);return;}
