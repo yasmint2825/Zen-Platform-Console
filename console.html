@@ -2028,6 +2028,7 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
               <div class="card">
             <h2>Ad leads</h2>
             <p class="muted">People who filled in a lead form. A lead only counts as converted when they actually visit &mdash; not because the form was submitted.</p>
+            <p class="muted" style="font-size:10.5px;">The webhook only delivers leads submitted after it was switched on &mdash; Meta never backfills. Use <b>Import existing leads</b> to pull in anything from before that, up to Meta&rsquo;s 90-day retention limit.</p>
             <div class="row" style="gap:6px;margin-bottom:10px;">
               <select class="fi" id="leadsFilter" style="width:auto;margin:0;font-size:11.5px;" onchange="loadAdLeads()">
                 <option value="">All</option>
@@ -2038,6 +2039,7 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
               </select>
               <button class="btn btn-p btn-sm" onclick="loadAdLeads()">Refresh</button>
               <button class="btn btn-s btn-sm" onclick="retryLeadFetch()">Retry missing details</button>
+              <button class="btn btn-s btn-sm" onclick="importHistoricalLeads()">Import existing leads</button>
             </div>
             <div id="adLeadsResult" class="muted" style="font-size:12px;">Click Refresh to load.</div>
           </div>
@@ -5529,6 +5531,7 @@ async function loadAdLeads(){
           (l.phone?esc(l.phone):'')+
           (l.email?(' &middot; '+esc(l.email)):'')+
           (l.campaign_name?(' &middot; '+esc(l.campaign_name)):'')+
+          (l.form_name?(' &middot; '+esc(l.form_name)):'')+
           (l.submitted_at?(' &middot; '+formatDubai(l.submitted_at)):'')+
         '</div>'+
         (l.first_visit?'<div class="lead-visit">Visited '+esc(l.first_visit)+(l.visit_value?(' &middot; '+l.visit_value):'')+'</div>':'')+
@@ -5543,6 +5546,24 @@ async function loadAdLeads(){
       '</div>'+
     '</div>';
   }).join('');
+}
+async function importHistoricalLeads(){
+  const el=document.getElementById('adLeadsResult');
+  el.innerHTML='<span class="mw-spinner"></span>Pulling leads from Meta...';
+  const j=await call('import_historical_leads',{});
+  if(!j.ok){
+    el.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>'+
+      (j.hint?'<div class="muted" style="font-size:10.5px;margin-top:3px;">'+esc(j.hint)+'</div>':'');
+    return;
+  }
+  // Reports per form rather than one total - if one form is empty and
+  // another has hundreds, that is worth seeing.
+  const detail=(j.per_form||[]).map(function(f){return esc(f.form)+': '+f.leads;}).join(' &middot; ');
+  alert(j.imported+' lead(s) imported from '+j.forms+' form(s)'+
+    (j.failed?('. '+j.failed+' failed: '+(j.errors||[])[0]):'')+
+    (j.note?('\n\n'+j.note):''));
+  if(detail) console.log('per form:',detail);
+  loadAdLeads();
 }
 async function setLeadStatus(id,status){
   const j=await call('update_lead_status',{lead_id:id,status:status});
