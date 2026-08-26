@@ -1882,6 +1882,9 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
                   <button class="btn btn-s btn-sm" onclick="saveInstagramCredentials()">Save</button>
                 </div>
                 <div id="instagramSaveResult" style="font-size:12px;"></div>
+                <button class="btn btn-s btn-sm" onclick="testInstagramConnection()" style="margin-top:6px;">Check connection</button>
+                <div class="muted" style="font-size:10.5px;margin-top:4px;">Reads the account to confirm the token works. Posts nothing.</div>
+                <div id="instagramTestResult" style="font-size:12px;margin-top:8px;"></div>
               </details>
 
               <details class="card">
@@ -5142,6 +5145,30 @@ async function loadSocialContent(){
     statusEl.style.color=j.connected?'var(--ok)':'var(--muted)';
   }
   loadMascotSection();
+}
+// Confirms the credentials without publishing. The only other way to
+// find out they are wrong is a failed post to a public feed.
+async function testInstagramConnection(){
+  const r=document.getElementById('instagramTestResult');
+  r.innerHTML='<span class="mw-spinner"></span>Checking...';
+  const j=await call('test_instagram_connection',{});
+  if(!j.ok){
+    r.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>'+
+      ((j.attempts||[]).length
+        ? '<div class="muted" style="font-size:10.5px;margin-top:4px;">'+
+          j.attempts.map(function(a){return esc(a.surface)+': '+esc(a.detail);}).join('<br>')+'</div>'
+        : '');
+    return;
+  }
+  // A token can be valid and still be on the wrong API surface -
+  // publishing goes through graph.instagram.com, so a credential that
+  // only answers on graph.facebook.com would pass a naive check and
+  // then fail to post.
+  const warn = j.publish_compatible ? '' :
+    '<div style="color:var(--warn);font-size:11px;margin-top:4px;">These credentials answer on '+esc(j.surface)+
+    ', but publishing uses graph.instagram.com. Posting will likely fail - this usually means the app was set up with Facebook Login rather than Instagram Login.</div>';
+  r.innerHTML='<span style="color:var(--ok);">Connected as @'+esc(j.username||'unknown')+
+    (j.media_count!=null?(' · '+j.media_count+' posts'):'')+'</span>'+warn;
 }
 async function saveInstagramCredentials(){
   const accountId=document.getElementById('igAccountId').value.trim();
