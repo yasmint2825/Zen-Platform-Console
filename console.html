@@ -1487,6 +1487,62 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     background:#FDF3E7;color:#9A5B0F;font-size:11px;line-height:1.45;
   }
 </style>
+
+<style id="zenIaRefresh">
+  /* ── Card headings ────────────────────────────────────────────
+     Every card heading was the same size as a page title, so a page
+     of eight cards read as eight competing sections with nothing to
+     say which was the actual subject. Cards are now clearly
+     subordinate to the page and the tab above them. */
+  .card > h2,
+  .card > details > summary > h2,
+  details.card > summary > h2{
+    font-size:13.5px !important;
+    font-weight:600 !important;
+    letter-spacing:-.005em !important;
+    line-height:1.35 !important;
+    margin:0 0 3px !important;
+  }
+  .card > p.muted,
+  details.card > p.muted{font-size:11.5px;line-height:1.5;margin:0 0 12px;}
+
+  /* Tighter cards - the padding was set for a page with two of them. */
+  .card{padding:16px 18px;}
+  @media (max-width:640px){ .card{padding:14px 15px;} }
+
+  /* ── Tab row ─────────────────────────────────────────────────
+     Six tabs need to scroll on a phone rather than wrap into a block
+     that pushes the content off screen. */
+  .mkt-tabs{gap:6px;flex-wrap:wrap;}
+  @media (max-width:760px){
+    .mkt-tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;
+      scrollbar-width:none;padding-bottom:2px;}
+    .mkt-tabs::-webkit-scrollbar{display:none;}
+    .mkt-tabs .btn{flex:0 0 auto;}
+  }
+
+  /* ── ZenChat ─────────────────────────────────────────────── */
+  .zc-input{display:flex;gap:8px;align-items:center;}
+  .zc-suggest{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
+  .zc-chip{
+    background:var(--surface-2,#FAFBFA);border:1px solid var(--line,#E4E7E4);
+    border-radius:999px;padding:6px 12px;font-family:inherit;font-size:11.5px;
+    color:var(--muted,#5E6B64);cursor:pointer;text-align:left;
+    transition:background .13s,border-color .13s,color .13s;
+  }
+  .zc-chip:hover{background:rgba(15,76,69,.06);border-color:#0F4C45;color:#0F4C45;}
+  .zc-thinking{font-size:12px;color:var(--muted,#5E6B64);padding:8px 0;}
+  .zc-answer{border-top:1px solid var(--line,#EDEFEC);padding-top:12px;}
+  .zc-q{
+    font-size:11.5px;color:var(--muted,#5E6B64);margin-bottom:8px;
+    padding-left:9px;border-left:2px solid var(--line-strong,#CBD5CF);
+  }
+  .zc-a{font-size:13px;line-height:1.6;color:var(--ink,#0D1310);}
+  @media (max-width:640px){
+    .zc-input{flex-wrap:wrap;}
+    .zc-input .btn{width:100%;}
+  }
+</style>
 </head>
 <body>
 
@@ -1525,6 +1581,10 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
       <button class="nav-item active" data-page="overview" onclick="showPage('overview')"><span class="ic">&#9635;</span>Command Center</button>
       <button class="nav-item" data-page="agents" onclick="showPage('agents')"><span class="ic">&#9673;</span>Agents</button>
       <button class="nav-item" data-page="customers" onclick="showPage('customers')"><span class="ic">&#128100;</span>Customers</button>
+      <button class="nav-item" data-page="zenchat" onclick="showPage('zenchat')"><span class="ic">&#128172;</span>ZenChat</button>
+      <!-- Straight to the WhatsApp inbox rather than making someone find
+           it through Marketing, since it is checked several times a day. -->
+      <button class="nav-item" onclick="openZenWhatsApp()"><span class="ic">&#128241;</span>ZenWhatsApp</button>
       <button class="nav-item" data-page="reports" onclick="showPage('reports')"><span class="ic">&#128200;</span>Reports</button>
       <button class="nav-item" data-page="settings" onclick="showPage('settings')"><span class="ic">&#9881;</span>Settings</button>
       <div class="nav-group-label">Business</div>
@@ -1744,143 +1804,9 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
               </details>
             </div>
 
-            <div class="card">
-              <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
-                <h2 style="margin:0;">WhatsApp</h2>
-                <div id="waStatus" style="font-size:12px;padding:5px 12px;border-radius:20px;"></div>
-              </div>
+            
 
-              <!-- Tabs rather than five stacked collapsibles. The three
-                   things done daily sit in front; setup is a one-time job
-                   and shouldn't compete for attention with them. -->
-              <div class="wa-tabs" style="display:flex;gap:2px;margin:14px 0 12px;border-bottom:1px solid var(--border);flex-wrap:wrap;">
-                <button class="wa-tab active" data-watab="conversations" onclick="showWaTab('conversations')">Conversations <span id="inboxBadge"></span></button>
-                <button class="wa-tab" data-watab="intel" onclick="showWaTab('intel')">Performance</button>
-                <button class="wa-tab" data-watab="logs" onclick="showWaTab('logs')">Message log</button>
-                <button class="wa-tab" data-watab="setup" onclick="showWaTab('setup')">Setup</button>
-              </div>
-
-              <div class="wa-panel" data-wapanel="conversations">
-<div style="margin-top:10px;">
-                  <button class="btn btn-s btn-sm" onclick="loadConversations(true)" style="margin-bottom:8px;">Refresh</button>
-                  <div style="display:flex;gap:10px;align-items:stretch;min-height:260px;flex-wrap:wrap;">
-                    <div id="conversationList" style="flex:1 1 200px;max-width:280px;max-height:420px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:4px;">Loading...</div>
-                    <div id="conversationThread" style="flex:2 1 300px;border:1px solid var(--border);border-radius:8px;padding:10px;display:flex;flex-direction:column;">
-                      <div class="muted" style="margin:auto;font-size:11.5px;">Pick a conversation on the left.</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="wa-panel" data-wapanel="intel" style="display:none;">
-<div style="margin-top:10px;">
-                  <div class="row" style="gap:6px;margin-bottom:8px;align-items:center;">
-                    <select class="fi" id="engIntelDays" style="width:auto;margin:0;font-size:11.5px;" onchange="loadEngagementIntelligence(true)">
-                      <option value="today">Today</option>
-                      <option value="7">Last 7 days</option>
-                      <option value="30" selected>Last 30 days</option>
-                      <option value="90">Last 90 days</option>
-                    </select>
-                    <button class="btn btn-s btn-sm" onclick="loadEngagementIntelligence(true)">Refresh</button>
-                  </div>
-                  <div id="engIntel" class="muted" style="font-size:11.5px;">Loading...</div>
-                </div>
-              </div>
-
-              <div class="wa-panel" data-wapanel="logs" style="display:none;">
-<div style="margin-top:10px;">
-                  <div class="row" style="gap:6px;margin-bottom:8px;">
-                    <button class="btn btn-s btn-sm" onclick="loadWhatsappMessages(true)">Refresh</button>
-                    <select class="fi" id="waLogRange" style="width:auto;margin:0;font-size:11.5px;" onchange="loadWhatsappMessages(true)">
-                      <option value="today">Today</option>
-                      <option value="today">Today</option>
-                      <option value="7">Last 7 days</option>
-                      <option value="all">Everything recent</option>
-                    </select>
-                  </div>
-                  <div id="waMessageLog" class="muted" style="font-size:11.5px;">Loading...</div>
-                </div>
-              </div>
-
-              <div class="wa-panel" data-wapanel="setup" style="display:none;">
-                <p class="muted" style="font-size:11.5px;margin:0 0 12px;">One-time configuration. Once WhatsApp is connected you shouldn't need to come back here.</p>
-<div style="margin-top:10px;">
-
-                <details style="margin-bottom:14px;border:1px solid var(--border);border-radius:10px;padding:10px 14px;">
-                  <summary style="cursor:pointer;font-weight:700;font-size:13px;">First time with a brand-new number? Register it here</summary>
-                  <div style="margin-top:10px;">
-                    <p class="muted" style="font-size:12px;margin-bottom:10px;">A genuinely new WhatsApp number shows "Pending" in Meta until it's registered for Cloud API use - this is a separate, one-time step from just connecting it below. Uses the access token and phone number ID entered below, so fill those in first.</p>
-                    <label class="fl">Choose a 6-digit PIN (this becomes the number's permanent two-step verification PIN - pick something you'll remember)</label>
-                    <input class="fi" type="text" id="waRegisterPin" placeholder="e.g. 482913" maxlength="6" inputmode="numeric">
-                    <button class="btn btn-s btn-sm" onclick="registerWhatsappNumber()" style="margin-top:6px;">Register number</button>
-                    <div id="waRegisterResult" style="font-size:12.5px;margin-top:8px;"></div>
-                  </div>
-                </details>
-
-                <label class="fl">Access token</label>
-                <input class="fi" type="password" id="waToken" placeholder="Paste permanent access token">
-                <label class="fl">Phone number ID</label>
-                <input class="fi" type="text" id="waPhoneId" placeholder="e.g. 109876543210987">
-                <label class="fl">WABA ID</label>
-                <input class="fi" type="text" id="waWabaId" placeholder="For template management">
-                <button class="btn btn-p btn-sm" onclick="saveWA()">Save and connect</button>
-                <div id="waSaveResult" style="font-size:12.5px;margin-top:8px;"></div>
-
-                <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
-                  <label class="fl">Send a test message</label>
-                  <div style="display:flex;gap:6px;margin-bottom:6px;">
-                    <input class="fi" type="text" id="waTestNumber" placeholder="Recipient number, e.g. 971501234567" style="margin:0;">
-                    <button class="btn btn-s btn-sm" onclick="sendWATestMessage()" style="white-space:nowrap;">Send test</button>
-                  </div>
-                  <input class="fi" type="text" id="waTestTemplateName" placeholder="Template name (default: hello_world - not every account has this, see note below)" style="margin:0;font-size:11.5px;margin-bottom:6px;">
-                  <input class="fi" type="text" id="waTestLanguageCode" value="en" placeholder="Language code (must match exactly what the template was approved under)" style="margin:0;font-size:11.5px;margin-bottom:6px;">
-                  <input class="fi" type="text" id="waTestHeaderParams" placeholder="Header parameters, comma-separated (leave blank if the header has no variable, or no header)" style="margin:0;font-size:11.5px;margin-bottom:6px;">
-                  <input class="fi" type="text" id="waTestBodyParams" placeholder="Body parameters, comma-separated in order (e.g. 10%, Keyaan, 31 August, COMEBACK10) - leave blank if none" style="margin:0;font-size:11.5px;">
-                  <div class="muted" style="font-size:10.5px;margin-top:4px;">Language code must match exactly what the template shows in Meta's dashboard - "en" and "en_US" are genuinely different and won't match each other, even though they look similar. Header and body have their own, separate {{1}}, {{2}} numbering in WhatsApp's template structure - they're not the same slots, even when both use {{1}}. hello_world only exists for accounts that went through Meta's free test-number flow - if this account connected a real number directly instead, use one of your own real template names here.</div>
-                  <div id="waTestResult" style="font-size:12.5px;margin-top:8px;"></div>
-                  <button class="btn btn-s btn-sm" onclick="listWATemplates()" style="margin-top:10px;">Diagnose: show templates Meta actually sees for this account</button>
-                  <div id="waTemplatesResult" style="font-size:12px;margin-top:8px;"></div>
-                </div>
-
-                </div>
-              </div>
-            </div>
-
-            <div class="card">
-              <h2>Message templates</h2>
-              <div class="row" style="margin-bottom:12px;">
-                <button class="btn btn-s btn-sm" onclick="loadTemplates()">Refresh</button>
-                <button class="btn btn-p btn-sm" onclick="toggleTplForm()">+ New template</button>
-              </div>
-              <div id="tplForm" style="display:none;border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;">
-                <label class="fl">Name</label><input class="fi" type="text" id="tplName" placeholder="e.g. nudge_reminder">
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                  <div><label class="fl">Category</label><select class="fi" id="tplCat"><option value="MARKETING">Marketing</option><option value="UTILITY">Utility</option><option value="AUTHENTICATION">Authentication</option></select></div>
-                  <div><label class="fl">Language</label><select class="fi" id="tplLang"><option value="en">English</option><option value="ar">Arabic</option></select></div>
-                </div>
-                <label class="fl">Header (optional - at most one variable, {{1}} only)</label><input class="fi" type="text" id="tplHeader" placeholder="e.g. Haircut time for {{1}}, or static text with no variable">
-                <label class="fl">Header sample value (only needed if header has {{1}})</label><input class="fi" type="text" id="tplHeaderExample">
-                <label class="fl">Body - use {{1}}, {{2}} for variables</label><textarea class="fi" id="tplBody" rows="3"></textarea>
-                <label class="fl">Sample values (comma separated)</label><input class="fi" type="text" id="tplExamples">
-                <label class="fl">Footer (optional)</label><input class="fi" type="text" id="tplFooter">
-                <div id="tplWarnings" style="font-size:12px;color:var(--warn);margin-bottom:8px;"></div>
-                <button class="btn btn-p btn-sm" onclick="submitTemplate()">Check and submit</button>
-                <div id="tplCreateResult" style="font-size:12.5px;margin-top:8px;"></div>
-              </div>
-              <div id="tplList" class="muted">Click Refresh to load.</div>
-
-              <details style="margin-top:14px;">
-                <summary style="cursor:pointer;font-size:13px;color:var(--muted);">Type mappings (used by the agent to pick a template per campaign)</summary>
-                <div style="margin-top:10px;">
-                  <div class="row">
-                    <input class="fi" type="text" id="mapType" placeholder="type_key e.g. boy_nudge" style="flex:1;">
-                    <input class="fi" type="text" id="mapTplName" placeholder="approved template name" style="flex:1;">
-                    <button class="btn btn-s btn-sm" onclick="saveMapping()">Save mapping</button>
-                  </div>
-                  <div id="mapList" class="muted" style="margin-top:8px;"></div>
-                </div>
-              </details>
-            </div>
+            
           </div>
 
           <div id="marketingAgentDetail">
@@ -1889,13 +1815,20 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
               <p class="muted">Generated automatically from your Brand DNA - nothing publishes until you approve it. Branded graphics only, never real customer photos.</p>
             </div>
 
-            <div class="row" style="margin-bottom:20px;">
-              <button class="btn btn-p btn-sm marketing-tab-btn" data-tab="strategy" onclick="showMarketingTab('strategy')">Strategy &amp; content plan</button>
+            <!-- Grouped by what you're trying to do, not by which system a
+                 setting happens to belong to. The weekly things come first;
+                 connections are a one-time job and sit at the end. -->
+            <div class="row mkt-tabs" style="margin-bottom:20px;">
+              <button class="btn btn-p btn-sm marketing-tab-btn" data-tab="setup" onclick="showMarketingTab('setup')">Brand DNA</button>
+              <button class="btn btn-s btn-sm marketing-tab-btn" data-tab="strategy" onclick="showMarketingTab('strategy')">Strategy &amp; content</button>
               <button class="btn btn-s btn-sm marketing-tab-btn" data-tab="scheduling" onclick="showMarketingTab('scheduling')">Scheduling &amp; posting <span id="schedulingCount" class="muted"></span></button>
-              <button class="btn btn-s btn-sm marketing-tab-btn" data-tab="setup" onclick="showMarketingTab('setup')">Brand setup</button>
+              <button class="btn btn-s btn-sm marketing-tab-btn" data-tab="zenwhatsapp" onclick="showMarketingTab('zenwhatsapp')">ZenWhatsApp</button>
+              <button class="btn btn-s btn-sm marketing-tab-btn" data-tab="performance" onclick="showMarketingTab('performance')">Performance</button>
+              <button class="btn btn-s btn-sm marketing-tab-btn" data-tab="meta" onclick="showMarketingTab('meta')">Meta setup</button>
+              <button class="btn btn-s btn-sm marketing-tab-btn" data-tab="lab" onclick="showMarketingTab('lab')">Content lab</button>
             </div>
 
-            <div id="marketingTab-strategy" class="marketing-tab-content">
+            <div id="marketingTab-strategy" class="marketing-tab-content" style="display:none;">
               <details class="card">
                 <summary><h2 style="display:inline;">Business strategy</h2></summary>
                 <p class="muted">Your standing marketing direction - what you want marketing to achieve. Edit anytime; this never gets overwritten by AI.</p>
@@ -1944,7 +1877,89 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
                 <div id="contentPlanBlocks" style="margin-top:14px;"></div>
               </details>
 
+              
+
               <details class="card">
+                <summary><h2 style="display:inline;">Quick post - generate right now</h2></summary>
+                <p class="muted">Skips the monthly plan entirely - generates one Instagram post immediately from your Brand DNA. Review it in Approvals once it's ready.</p>
+                <button class="btn btn-p btn-sm" onclick="generateNewSocialPost()">Generate a new post now</button>
+                <span id="generatePostResult" style="font-size:12px;margin-left:10px;"></span>
+              </details>
+            
+<details class="card">
+                <summary><h2 style="display:inline;">Generation history</h2></summary>
+                <button class="btn btn-s btn-sm" onclick="loadGenerationHistory()" style="margin-top:10px;">Refresh</button>
+                <div id="generationHistoryList" class="muted" style="margin-top:10px;">Click Refresh to load.</div>
+              </details>
+          </div>
+
+            <div id="marketingTab-scheduling" class="marketing-tab-content" style="display:none;">
+              <div class="card">
+                <h2>Scheduling &amp; posting</h2>
+                <p class="muted">Everything approved and on its way out - pick a date, publish now, or review the image and caption one more time before it goes live.</p>
+                <div id="schedulingEmpty" class="muted" style="padding:12px 0;">Nothing here yet - approve something in Content plan and it'll show up here.</div>
+                <div id="schedulingBlocks"></div>
+              </div>
+            </div>
+
+            <div id="marketingTab-performance" class="marketing-tab-content" style="display:none;">
+            <p class="muted" style="font-size:11.5px;margin:0 0 14px;">How the spend is doing, and what it produced.</p>
+<div class="card">
+            <h2>Ad spend monitoring</h2>
+            <p class="muted">Pulls real campaign and placement data directly from Meta's own Marketing API - no third-party service, no ongoing subscription. Requires the Ad Account ID set in Brand setup above.</p>
+            <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;">
+              <select class="fi" id="metaAdsLookback" style="width:auto;margin:0;">
+                <option value="7">Last 7 days</option>
+                <option value="30" selected>Last 30 days</option>
+                <option value="90">Last 90 days</option>
+              </select>
+              <button class="btn btn-p btn-sm" onclick="loadMetaAdsSummary()">Check spend</button>
+              <button class="btn btn-s btn-sm" onclick="analyseAdSpend()">Analyse</button>
+              <button class="btn btn-s btn-sm" onclick="analyseAdSpend(true)" title="Ignore the cached answer and re-run">Re-analyse</button>
+              <button class="btn btn-s btn-sm" onclick="loadAdPerformance()">Per ad</button>
+            </div>
+            <div id="adAnalysis"></div>
+            <div id="adPerformance"></div>
+            <div id="metaAdsResult"></div>
+          </div>
+
+<div class="card">
+            <h2>Ad leads</h2>
+            <p class="muted">People who filled in a lead form. A lead only counts as converted when they actually visit &mdash; not because the form was submitted.</p>
+            <p class="muted" style="font-size:10.5px;">The webhook only delivers leads submitted after it was switched on &mdash; Meta never backfills. Use <b>Import existing leads</b> to pull in anything from before that, up to Meta&rsquo;s 90-day retention limit.</p>
+            <div class="row" style="gap:6px;margin-bottom:10px;">
+              <select class="fi" id="leadsFilter" style="width:auto;margin:0;font-size:11.5px;" onchange="loadAdLeads()">
+                <option value="">All</option>
+                <option value="new">New</option>
+                <option value="contacted">Contacted</option>
+                <option value="converted">Converted</option>
+                <option value="rejected">Rejected</option>
+              </select>
+              <button class="btn btn-p btn-sm" onclick="loadAdLeads()">Refresh</button>
+              <button class="btn btn-s btn-sm" onclick="retryLeadFetch()">Retry missing details</button>
+              <button class="btn btn-s btn-sm" onclick="importHistoricalLeads()">Import existing leads</button>
+            </div>
+            <div id="adLeadsResult" class="muted" style="font-size:12px;">Click Refresh to load.</div>
+          </div>
+
+<details class="card">
+            <summary><h2 style="display:inline;">Competitors</h2></summary>
+
+            <p class="muted">AI research finds what's genuinely publicly indexed - reviews, ratings, reputation, promotions that surfaced somewhere. It can't see a competitor's actual Instagram feed directly, so your own observations from browsing their page matter just as much as the AI research, not a lesser fallback.</p>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
+              <input class="fi" type="text" id="newCompetitorName" placeholder="Competitor name" style="flex:1;min-width:120px;">
+              <input class="fi" type="text" id="newCompetitorInstagram" placeholder="Instagram handle (optional)" style="flex:1;min-width:120px;">
+              <input class="fi" type="text" id="newCompetitorGoogle" placeholder="Google listing name (optional)" style="flex:1;min-width:120px;">
+              <button class="btn btn-p btn-sm" onclick="addCompetitor()">Add</button>
+            </div>
+            <div id="competitorsList" class="muted">Loading...</div>
+          
+          </details>
+          </div>
+
+          <div id="marketingTab-lab" class="marketing-tab-content" style="display:none;">
+            <p class="muted" style="font-size:11.5px;margin:0 0 14px;">Try things out here before they reach a customer.</p>
+<details class="card">
                 <summary><h2 style="display:inline;">Creative Lab - one-off generation</h2></summary>
                 <p class="muted">Describe what you want, built automatically from your approved Brand DNA - the compiled prompt is always shown before anything generates.</p>
                 <textarea class="fi" id="labIdea" rows="2" placeholder="e.g. Create a back-to-school image where our expert rates four hairstyles"></textarea>
@@ -1982,24 +1997,232 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
                 </div>
               </details>
 
-              <details class="card">
-                <summary><h2 style="display:inline;">Quick post - generate right now</h2></summary>
-                <p class="muted">Skips the monthly plan entirely - generates one Instagram post immediately from your Brand DNA. Review it in Approvals once it's ready.</p>
-                <button class="btn btn-p btn-sm" onclick="generateNewSocialPost()">Generate a new post now</button>
-                <span id="generatePostResult" style="font-size:12px;margin-left:10px;"></span>
+<details class="card">
+                <summary><h2 style="display:inline;">Test Replicate generation</h2></summary>
+                <p class="muted">Fire a prompt at any Replicate model directly - no result shown here, check your Replicate dashboard for the image.</p>
+                <textarea class="fi" id="testReplicatePrompt" rows="2" placeholder="Your prompt..." style="margin-bottom:8px;"></textarea>
+                <div class="row" style="margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+                  <select class="fi" id="testReplicateModel" style="flex:1;min-width:180px;">
+                    <option value="black-forest-labs/flux-schnell">flux-schnell (fastest, cheapest)</option>
+                    <option value="black-forest-labs/flux-1.1-pro">flux-1.1-pro</option>
+                    <option value="black-forest-labs/flux-2-pro" selected>flux-2-pro (current default)</option>
+                    <option value="black-forest-labs/flux-2-max">flux-2-max (highest fidelity)</option>
+                    <option value="krea/krea-2-large">krea-2-large (photorealistic)</option>
+                    <option value="black-forest-labs/flux-kontext-pro">flux-kontext-pro (reference-image editing)</option>
+                  </select>
+                  <select class="fi" id="testReplicateAspectRatio" style="flex:1;min-width:100px;">
+                    <option value="1:1" selected>1:1 (square)</option>
+                    <option value="16:9">16:9</option>
+                    <option value="9:16">9:16</option>
+                    <option value="4:3">4:3</option>
+                    <option value="3:4">3:4</option>
+                    <option value="3:2">3:2</option>
+                    <option value="2:3">2:3</option>
+                  </select>
+                  <select class="fi" id="testReplicateFormat" style="flex:1;min-width:100px;">
+                    <option value="png" selected>PNG (lossless)</option>
+                    <option value="webp">WebP</option>
+                    <option value="jpg">JPG</option>
+                  </select>
+                  <select class="fi" id="testReplicateQuality" style="flex:1;min-width:100px;">
+                    <option value="100">Quality: 100</option>
+                    <option value="90" selected>Quality: 90</option>
+                    <option value="80">Quality: 80</option>
+                    <option value="70">Quality: 70</option>
+                  </select>
+                </div>
+                <button class="btn btn-p btn-sm" onclick="testReplicatePrompt()">Generate</button>
+                <div id="testReplicateResult" style="font-size:12px;margin-top:8px;"></div>
+              </details>
+          </div>
+
+          <div id="marketingTab-zenwhatsapp" class="marketing-tab-content" style="display:none;">
+<div class="card">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+                <h2 style="margin:0;">WhatsApp chat</h2>
+                <div id="waStatus" style="font-size:12px;padding:5px 12px;border-radius:20px;"></div>
+              </div>
+              <div class="wa-tabs" style="display:flex;gap:2px;margin:14px 0 12px;border-bottom:1px solid var(--border);flex-wrap:wrap;">
+                <button class="wa-tab active" data-watab="conversations" onclick="showWaTab('conversations')">Conversations <span id="inboxBadge"></span></button>
+                <button class="wa-tab" data-watab="intel" onclick="showWaTab('intel')">Performance</button>
+                <button class="wa-tab" data-watab="logs" onclick="showWaTab('logs')">Message log</button>
+              </div>
+<div class="wa-panel" data-wapanel="conversations">
+<div style="margin-top:10px;">
+                  <button class="btn btn-s btn-sm" onclick="loadConversations(true)" style="margin-bottom:8px;">Refresh</button>
+                  <div style="display:flex;gap:10px;align-items:stretch;min-height:260px;flex-wrap:wrap;">
+                    <div id="conversationList" style="flex:1 1 200px;max-width:280px;max-height:420px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:4px;">Loading...</div>
+                    <div id="conversationThread" style="flex:2 1 300px;border:1px solid var(--border);border-radius:8px;padding:10px;display:flex;flex-direction:column;">
+                      <div class="muted" style="margin:auto;font-size:11.5px;">Pick a conversation on the left.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+<div class="wa-panel" data-wapanel="intel" style="display:none;">
+<div style="margin-top:10px;">
+                  <div class="row" style="gap:6px;margin-bottom:8px;align-items:center;">
+                    <select class="fi" id="engIntelDays" style="width:auto;margin:0;font-size:11.5px;" onchange="loadEngagementIntelligence(true)">
+                      <option value="today">Today</option>
+                      <option value="7">Last 7 days</option>
+                      <option value="30" selected>Last 30 days</option>
+                      <option value="90">Last 90 days</option>
+                    </select>
+                    <button class="btn btn-s btn-sm" onclick="loadEngagementIntelligence(true)">Refresh</button>
+                  </div>
+                  <div id="engIntel" class="muted" style="font-size:11.5px;">Loading...</div>
+                </div>
+              </div>
+<div class="wa-panel" data-wapanel="logs" style="display:none;">
+<div style="margin-top:10px;">
+                  <div class="row" style="gap:6px;margin-bottom:8px;">
+                    <button class="btn btn-s btn-sm" onclick="loadWhatsappMessages(true)">Refresh</button>
+                    <select class="fi" id="waLogRange" style="width:auto;margin:0;font-size:11.5px;" onchange="loadWhatsappMessages(true)">
+                      <option value="today">Today</option>
+                      <option value="today">Today</option>
+                      <option value="7">Last 7 days</option>
+                      <option value="all">Everything recent</option>
+                    </select>
+                  </div>
+                  <div id="waMessageLog" class="muted" style="font-size:11.5px;">Loading...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="marketingTab-meta" class="marketing-tab-content" style="display:none;">
+            <p class="muted" style="font-size:11.5px;margin:0 0 14px;">One-time connections. Once these are set up you shouldn't need to come back.</p>
+<details class="card">
+                <summary><h2 style="display:inline;">WhatsApp connection</h2></summary>
+                <div id="waStatusSetup" style="font-size:12px;padding:5px 12px;border-radius:20px;margin:10px 0;"></div>
+<div class="wa-panel" data-wapanel="setup" >
+                <p class="muted" style="font-size:11.5px;margin:0 0 12px;">One-time configuration. Once WhatsApp is connected you shouldn't need to come back here.</p>
+<div style="margin-top:10px;">
+
+                <details style="margin-bottom:14px;border:1px solid var(--border);border-radius:10px;padding:10px 14px;">
+                  <summary style="cursor:pointer;font-weight:700;font-size:13px;">First time with a brand-new number? Register it here</summary>
+                  <div style="margin-top:10px;">
+                    <p class="muted" style="font-size:12px;margin-bottom:10px;">A genuinely new WhatsApp number shows "Pending" in Meta until it's registered for Cloud API use - this is a separate, one-time step from just connecting it below. Uses the access token and phone number ID entered below, so fill those in first.</p>
+                    <label class="fl">Choose a 6-digit PIN (this becomes the number's permanent two-step verification PIN - pick something you'll remember)</label>
+                    <input class="fi" type="text" id="waRegisterPin" placeholder="e.g. 482913" maxlength="6" inputmode="numeric">
+                    <button class="btn btn-s btn-sm" onclick="registerWhatsappNumber()" style="margin-top:6px;">Register number</button>
+                    <div id="waRegisterResult" style="font-size:12.5px;margin-top:8px;"></div>
+                  </div>
+                </details>
+
+                <label class="fl">Access token</label>
+                <input class="fi" type="password" id="waToken" placeholder="Paste permanent access token">
+                <label class="fl">Phone number ID</label>
+                <input class="fi" type="text" id="waPhoneId" placeholder="e.g. 109876543210987">
+                <label class="fl">WABA ID</label>
+                <input class="fi" type="text" id="waWabaId" placeholder="For template management">
+                <button class="btn btn-p btn-sm" onclick="saveWA()">Save and connect</button>
+                <div id="waSaveResult" style="font-size:12.5px;margin-top:8px;"></div>
+
+                <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
+                  <label class="fl">Send a test message</label>
+                  <div style="display:flex;gap:6px;margin-bottom:6px;">
+                    <input class="fi" type="text" id="waTestNumber" placeholder="Recipient number, e.g. 971501234567" style="margin:0;">
+                    <button class="btn btn-s btn-sm" onclick="sendWATestMessage()" style="white-space:nowrap;">Send test</button>
+                  </div>
+                  <input class="fi" type="text" id="waTestTemplateName" placeholder="Template name (default: hello_world - not every account has this, see note below)" style="margin:0;font-size:11.5px;margin-bottom:6px;">
+                  <input class="fi" type="text" id="waTestLanguageCode" value="en" placeholder="Language code (must match exactly what the template was approved under)" style="margin:0;font-size:11.5px;margin-bottom:6px;">
+                  <input class="fi" type="text" id="waTestHeaderParams" placeholder="Header parameters, comma-separated (leave blank if the header has no variable, or no header)" style="margin:0;font-size:11.5px;margin-bottom:6px;">
+                  <input class="fi" type="text" id="waTestBodyParams" placeholder="Body parameters, comma-separated in order (e.g. 10%, Keyaan, 31 August, COMEBACK10) - leave blank if none" style="margin:0;font-size:11.5px;">
+                  <div class="muted" style="font-size:10.5px;margin-top:4px;">Language code must match exactly what the template shows in Meta's dashboard - "en" and "en_US" are genuinely different and won't match each other, even though they look similar. Header and body have their own, separate {{1}}, {{2}} numbering in WhatsApp's template structure - they're not the same slots, even when both use {{1}}. hello_world only exists for accounts that went through Meta's free test-number flow - if this account connected a real number directly instead, use one of your own real template names here.</div>
+                  <div id="waTestResult" style="font-size:12.5px;margin-top:8px;"></div>
+                  <button class="btn btn-s btn-sm" onclick="listWATemplates()" style="margin-top:10px;">Diagnose: show templates Meta actually sees for this account</button>
+                  <div id="waTemplatesResult" style="font-size:12px;margin-top:8px;"></div>
+                </div>
+
+                </div>
+              </div>
+              </details>
+
+<div class="card">
+              <h2>Message templates</h2>
+              <div class="row" style="margin-bottom:12px;">
+                <button class="btn btn-s btn-sm" onclick="loadTemplates()">Refresh</button>
+                <button class="btn btn-p btn-sm" onclick="toggleTplForm()">+ New template</button>
+              </div>
+              <div id="tplForm" style="display:none;border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;">
+                <label class="fl">Name</label><input class="fi" type="text" id="tplName" placeholder="e.g. nudge_reminder">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                  <div><label class="fl">Category</label><select class="fi" id="tplCat"><option value="MARKETING">Marketing</option><option value="UTILITY">Utility</option><option value="AUTHENTICATION">Authentication</option></select></div>
+                  <div><label class="fl">Language</label><select class="fi" id="tplLang"><option value="en">English</option><option value="ar">Arabic</option></select></div>
+                </div>
+                <label class="fl">Header (optional - at most one variable, {{1}} only)</label><input class="fi" type="text" id="tplHeader" placeholder="e.g. Haircut time for {{1}}, or static text with no variable">
+                <label class="fl">Header sample value (only needed if header has {{1}})</label><input class="fi" type="text" id="tplHeaderExample">
+                <label class="fl">Body - use {{1}}, {{2}} for variables</label><textarea class="fi" id="tplBody" rows="3"></textarea>
+                <label class="fl">Sample values (comma separated)</label><input class="fi" type="text" id="tplExamples">
+                <label class="fl">Footer (optional)</label><input class="fi" type="text" id="tplFooter">
+                <div id="tplWarnings" style="font-size:12px;color:var(--warn);margin-bottom:8px;"></div>
+                <button class="btn btn-p btn-sm" onclick="submitTemplate()">Check and submit</button>
+                <div id="tplCreateResult" style="font-size:12.5px;margin-top:8px;"></div>
+              </div>
+              <div id="tplList" class="muted">Click Refresh to load.</div>
+
+              <details style="margin-top:14px;">
+                <summary style="cursor:pointer;font-size:13px;color:var(--muted);">Type mappings (used by the agent to pick a template per campaign)</summary>
+                <div style="margin-top:10px;">
+                  <div class="row">
+                    <input class="fi" type="text" id="mapType" placeholder="type_key e.g. boy_nudge" style="flex:1;">
+                    <input class="fi" type="text" id="mapTplName" placeholder="approved template name" style="flex:1;">
+                    <button class="btn btn-s btn-sm" onclick="saveMapping()">Save mapping</button>
+                  </div>
+                  <div id="mapList" class="muted" style="margin-top:8px;"></div>
+                </div>
               </details>
             </div>
 
-            <div id="marketingTab-scheduling" class="marketing-tab-content" style="display:none;">
-              <div class="card">
-                <h2>Scheduling &amp; posting</h2>
-                <p class="muted">Everything approved and on its way out - pick a date, publish now, or review the image and caption one more time before it goes live.</p>
-                <div id="schedulingEmpty" class="muted" style="padding:12px 0;">Nothing here yet - approve something in Content plan and it'll show up here.</div>
-                <div id="schedulingBlocks"></div>
-              </div>
-            </div>
+<details class="card">
+                <summary><h2 style="display:inline;">Instagram connection</h2></summary>
+                <div id="instagramStatus" class="muted" style="margin-bottom:10px;margin-top:10px;">Checking...</div>
+                <div class="row" style="margin-bottom:8px;flex-wrap:wrap;">
+                  <input class="fi" type="text" id="igAccountId" placeholder="Instagram Business Account ID" style="flex:1;min-width:220px;">
+                  <input class="fi" type="password" id="igAccessToken" placeholder="Access token" style="flex:1;min-width:220px;">
+                  <button class="btn btn-s btn-sm" onclick="saveInstagramCredentials()">Save</button>
+                </div>
+                <div id="instagramSaveResult" style="font-size:12px;"></div>
+                <button class="btn btn-s btn-sm" onclick="testInstagramConnection()" style="margin-top:6px;">Check connection</button>
+                <div class="muted" style="font-size:10.5px;margin-top:4px;">Reads the account to confirm the token works. Posts nothing.</div>
+                <div id="instagramTestResult" style="font-size:12px;margin-top:8px;"></div>
+              </details>
 
-            <div id="marketingTab-setup" class="marketing-tab-content" style="display:none;">
+<details class="card">
+                <summary><h2 style="display:inline;">Meta ads connection</h2></summary>
+                <div id="metaAdsStatus" class="muted" style="margin-bottom:10px;margin-top:10px;">Checking...</div>
+                <div class="row" style="margin-bottom:8px;flex-wrap:wrap;">
+                  <input class="fi" type="text" id="metaAdAccountId" placeholder="Ad Account ID, e.g. 638838775406298" style="flex:1;min-width:220px;">
+                  <input class="fi" type="password" id="metaAdsToken" placeholder="Access token with ads_read" style="flex:1;min-width:220px;">
+                  <button class="btn btn-s btn-sm" onclick="saveMetaAdsCredentials()">Save</button>
+                </div>
+                <input class="fi" type="text" id="metaCapiDataset" placeholder="Events Manager dataset ID (optional - needed to send conversions back)" style="font-size:11.5px;">
+                <div class="muted" style="font-size:10.5px;margin-top:-6px;margin-bottom:8px;">Meta creates this dataset against your WhatsApp Business Account. Without it, ad reporting still works &mdash; you just can&rsquo;t tell Meta which clicks became visits.</div>
+                <div id="metaAdsSaveResult" style="font-size:12px;"></div>
+                <button class="btn btn-s btn-sm" onclick="testMetaAdsConnection()" style="margin-top:6px;">Check connection</button>
+                <button class="btn btn-s btn-sm" onclick="sendAdConversions(true)" style="margin-top:6px;">Preview conversions</button>
+                <button class="btn btn-p btn-sm" onclick="sendAdConversions(false)" style="margin-top:6px;">Send conversions to Meta</button>
+                <div class="muted" style="font-size:10.5px;margin-top:4px;">Tells Meta which ad clicks became real visits, so it optimises for customers who turn up rather than people who just message. Preview first &mdash; it shows what would be sent without sending it.</div>
+                <div id="adConversionResult" style="font-size:12px;margin-top:8px;"></div>
+                <div class="muted" style="font-size:10.5px;margin-top:4px;">Reads the ad account to confirm the token works. Pulls no reports and spends nothing.</div>
+                <div id="metaAdsTestResult" style="font-size:12px;margin-top:8px;"></div>
+              </details>
+
+<details class="card">
+                <summary><h2 style="display:inline;">Lead ads connection</h2></summary>
+                <div id="leadsStatus" class="muted" style="margin-bottom:10px;margin-top:10px;">Checking...</div>
+                <p class="muted" style="font-size:11px;">Separate from ad performance. Lead forms deliver a name and phone number before any conversation starts &mdash; so Zen can message them on WhatsApp, and the thread lands in the same inbox.</p>
+                <div class="row" style="margin-bottom:8px;flex-wrap:wrap;">
+                  <input class="fi" type="text" id="leadsPageId" placeholder="Facebook Page ID" style="flex:1;min-width:200px;">
+                  <input class="fi" type="password" id="leadsToken" placeholder="Page token with leads_retrieval" style="flex:1;min-width:200px;">
+                  <button class="btn btn-s btn-sm" onclick="saveLeadsCredentials()">Save</button>
+                </div>
+                <div id="leadsSaveResult" style="font-size:12px;"></div>
+                <div class="muted" style="font-size:10.5px;margin-top:6px;">Webhook: subscribe the Page to <b>leadgen</b> at <code>/functions/v1/mw-leads-webhook</code>. Meta keeps lead data for 90 days &mdash; after that an uncollected lead is gone.</div>
+              </details>
+          </div>
+
+          <div id="marketingTab-setup" class="marketing-tab-content">
               <details class="card">
                 <summary><h2 style="display:inline;">Brand DNA</h2></summary>
                 <p class="muted">Describe your business - save it directly anytime. "Propose with AI" is optional, for turning this into structured, prioritized rules the image generator uses.</p>
@@ -2130,146 +2353,21 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
                 <div id="assetLibraryList" style="margin-top:14px;"></div>
               </details>
 
-              <div class="card">
-            <h2>Competitors</h2>
-            <p class="muted">AI research finds what's genuinely publicly indexed - reviews, ratings, reputation, promotions that surfaced somewhere. It can't see a competitor's actual Instagram feed directly, so your own observations from browsing their page matter just as much as the AI research, not a lesser fallback.</p>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
-              <input class="fi" type="text" id="newCompetitorName" placeholder="Competitor name" style="flex:1;min-width:120px;">
-              <input class="fi" type="text" id="newCompetitorInstagram" placeholder="Instagram handle (optional)" style="flex:1;min-width:120px;">
-              <input class="fi" type="text" id="newCompetitorGoogle" placeholder="Google listing name (optional)" style="flex:1;min-width:120px;">
-              <button class="btn btn-p btn-sm" onclick="addCompetitor()">Add</button>
-            </div>
-            <div id="competitorsList" class="muted">Loading...</div>
-          </div>
+              
 
-              <div class="card">
-            <h2>Ad leads</h2>
-            <p class="muted">People who filled in a lead form. A lead only counts as converted when they actually visit &mdash; not because the form was submitted.</p>
-            <p class="muted" style="font-size:10.5px;">The webhook only delivers leads submitted after it was switched on &mdash; Meta never backfills. Use <b>Import existing leads</b> to pull in anything from before that, up to Meta&rsquo;s 90-day retention limit.</p>
-            <div class="row" style="gap:6px;margin-bottom:10px;">
-              <select class="fi" id="leadsFilter" style="width:auto;margin:0;font-size:11.5px;" onchange="loadAdLeads()">
-                <option value="">All</option>
-                <option value="new">New</option>
-                <option value="contacted">Contacted</option>
-                <option value="converted">Converted</option>
-                <option value="rejected">Rejected</option>
-              </select>
-              <button class="btn btn-p btn-sm" onclick="loadAdLeads()">Refresh</button>
-              <button class="btn btn-s btn-sm" onclick="retryLeadFetch()">Retry missing details</button>
-              <button class="btn btn-s btn-sm" onclick="importHistoricalLeads()">Import existing leads</button>
-            </div>
-            <div id="adLeadsResult" class="muted" style="font-size:12px;">Click Refresh to load.</div>
-          </div>
+              
 
-          <div class="card">
-            <h2>Ad spend monitoring</h2>
-            <p class="muted">Pulls real campaign and placement data directly from Meta's own Marketing API - no third-party service, no ongoing subscription. Requires the Ad Account ID set in Brand setup above.</p>
-            <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;">
-              <select class="fi" id="metaAdsLookback" style="width:auto;margin:0;">
-                <option value="7">Last 7 days</option>
-                <option value="30" selected>Last 30 days</option>
-                <option value="90">Last 90 days</option>
-              </select>
-              <button class="btn btn-p btn-sm" onclick="loadMetaAdsSummary()">Check spend</button>
-              <button class="btn btn-s btn-sm" onclick="analyseAdSpend()">Analyse</button>
-              <button class="btn btn-s btn-sm" onclick="analyseAdSpend(true)" title="Ignore the cached answer and re-run">Re-analyse</button>
-              <button class="btn btn-s btn-sm" onclick="loadAdPerformance()">Per ad</button>
-            </div>
-            <div id="adAnalysis"></div>
-            <div id="adPerformance"></div>
-            <div id="metaAdsResult"></div>
-          </div>
+          
 
-              <details class="card">
-                <summary><h2 style="display:inline;">Lead ads connection</h2></summary>
-                <div id="leadsStatus" class="muted" style="margin-bottom:10px;margin-top:10px;">Checking...</div>
-                <p class="muted" style="font-size:11px;">Separate from ad performance. Lead forms deliver a name and phone number before any conversation starts &mdash; so Zen can message them on WhatsApp, and the thread lands in the same inbox.</p>
-                <div class="row" style="margin-bottom:8px;flex-wrap:wrap;">
-                  <input class="fi" type="text" id="leadsPageId" placeholder="Facebook Page ID" style="flex:1;min-width:200px;">
-                  <input class="fi" type="password" id="leadsToken" placeholder="Page token with leads_retrieval" style="flex:1;min-width:200px;">
-                  <button class="btn btn-s btn-sm" onclick="saveLeadsCredentials()">Save</button>
-                </div>
-                <div id="leadsSaveResult" style="font-size:12px;"></div>
-                <div class="muted" style="font-size:10.5px;margin-top:6px;">Webhook: subscribe the Page to <b>leadgen</b> at <code>/functions/v1/mw-leads-webhook</code>. Meta keeps lead data for 90 days &mdash; after that an uncollected lead is gone.</div>
-              </details>
+              
 
-              <details class="card">
-                <summary><h2 style="display:inline;">Meta ads connection</h2></summary>
-                <div id="metaAdsStatus" class="muted" style="margin-bottom:10px;margin-top:10px;">Checking...</div>
-                <div class="row" style="margin-bottom:8px;flex-wrap:wrap;">
-                  <input class="fi" type="text" id="metaAdAccountId" placeholder="Ad Account ID, e.g. 638838775406298" style="flex:1;min-width:220px;">
-                  <input class="fi" type="password" id="metaAdsToken" placeholder="Access token with ads_read" style="flex:1;min-width:220px;">
-                  <button class="btn btn-s btn-sm" onclick="saveMetaAdsCredentials()">Save</button>
-                </div>
-                <input class="fi" type="text" id="metaCapiDataset" placeholder="Events Manager dataset ID (optional - needed to send conversions back)" style="font-size:11.5px;">
-                <div class="muted" style="font-size:10.5px;margin-top:-6px;margin-bottom:8px;">Meta creates this dataset against your WhatsApp Business Account. Without it, ad reporting still works &mdash; you just can&rsquo;t tell Meta which clicks became visits.</div>
-                <div id="metaAdsSaveResult" style="font-size:12px;"></div>
-                <button class="btn btn-s btn-sm" onclick="testMetaAdsConnection()" style="margin-top:6px;">Check connection</button>
-                <button class="btn btn-s btn-sm" onclick="sendAdConversions(true)" style="margin-top:6px;">Preview conversions</button>
-                <button class="btn btn-p btn-sm" onclick="sendAdConversions(false)" style="margin-top:6px;">Send conversions to Meta</button>
-                <div class="muted" style="font-size:10.5px;margin-top:4px;">Tells Meta which ad clicks became real visits, so it optimises for customers who turn up rather than people who just message. Preview first &mdash; it shows what would be sent without sending it.</div>
-                <div id="adConversionResult" style="font-size:12px;margin-top:8px;"></div>
-                <div class="muted" style="font-size:10.5px;margin-top:4px;">Reads the ad account to confirm the token works. Pulls no reports and spends nothing.</div>
-                <div id="metaAdsTestResult" style="font-size:12px;margin-top:8px;"></div>
-              </details>
+              
 
-              <details class="card">
-                <summary><h2 style="display:inline;">Instagram connection</h2></summary>
-                <div id="instagramStatus" class="muted" style="margin-bottom:10px;margin-top:10px;">Checking...</div>
-                <div class="row" style="margin-bottom:8px;flex-wrap:wrap;">
-                  <input class="fi" type="text" id="igAccountId" placeholder="Instagram Business Account ID" style="flex:1;min-width:220px;">
-                  <input class="fi" type="password" id="igAccessToken" placeholder="Access token" style="flex:1;min-width:220px;">
-                  <button class="btn btn-s btn-sm" onclick="saveInstagramCredentials()">Save</button>
-                </div>
-                <div id="instagramSaveResult" style="font-size:12px;"></div>
-                <button class="btn btn-s btn-sm" onclick="testInstagramConnection()" style="margin-top:6px;">Check connection</button>
-                <div class="muted" style="font-size:10.5px;margin-top:4px;">Reads the account to confirm the token works. Posts nothing.</div>
-                <div id="instagramTestResult" style="font-size:12px;margin-top:8px;"></div>
-              </details>
+              
 
-              <details class="card">
-                <summary><h2 style="display:inline;">Test Replicate generation</h2></summary>
-                <p class="muted">Fire a prompt at any Replicate model directly - no result shown here, check your Replicate dashboard for the image.</p>
-                <textarea class="fi" id="testReplicatePrompt" rows="2" placeholder="Your prompt..." style="margin-bottom:8px;"></textarea>
-                <div class="row" style="margin-bottom:8px;flex-wrap:wrap;gap:8px;">
-                  <select class="fi" id="testReplicateModel" style="flex:1;min-width:180px;">
-                    <option value="black-forest-labs/flux-schnell">flux-schnell (fastest, cheapest)</option>
-                    <option value="black-forest-labs/flux-1.1-pro">flux-1.1-pro</option>
-                    <option value="black-forest-labs/flux-2-pro" selected>flux-2-pro (current default)</option>
-                    <option value="black-forest-labs/flux-2-max">flux-2-max (highest fidelity)</option>
-                    <option value="krea/krea-2-large">krea-2-large (photorealistic)</option>
-                    <option value="black-forest-labs/flux-kontext-pro">flux-kontext-pro (reference-image editing)</option>
-                  </select>
-                  <select class="fi" id="testReplicateAspectRatio" style="flex:1;min-width:100px;">
-                    <option value="1:1" selected>1:1 (square)</option>
-                    <option value="16:9">16:9</option>
-                    <option value="9:16">9:16</option>
-                    <option value="4:3">4:3</option>
-                    <option value="3:4">3:4</option>
-                    <option value="3:2">3:2</option>
-                    <option value="2:3">2:3</option>
-                  </select>
-                  <select class="fi" id="testReplicateFormat" style="flex:1;min-width:100px;">
-                    <option value="png" selected>PNG (lossless)</option>
-                    <option value="webp">WebP</option>
-                    <option value="jpg">JPG</option>
-                  </select>
-                  <select class="fi" id="testReplicateQuality" style="flex:1;min-width:100px;">
-                    <option value="100">Quality: 100</option>
-                    <option value="90" selected>Quality: 90</option>
-                    <option value="80">Quality: 80</option>
-                    <option value="70">Quality: 70</option>
-                  </select>
-                </div>
-                <button class="btn btn-p btn-sm" onclick="testReplicatePrompt()">Generate</button>
-                <div id="testReplicateResult" style="font-size:12px;margin-top:8px;"></div>
-              </details>
+              
 
-              <details class="card">
-                <summary><h2 style="display:inline;">Generation history</h2></summary>
-                <button class="btn btn-s btn-sm" onclick="loadGenerationHistory()" style="margin-top:10px;">Refresh</button>
-                <div id="generationHistoryList" class="muted" style="margin-top:10px;">Click Refresh to load.</div>
-              </details>
+              
             </div>
 
           
@@ -2391,6 +2489,26 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
         </div>
 
         <!-- REPORTS -->
+        <!-- ZENCHAT -->
+        <div class="page" id="page-zenchat">
+          <div class="page-header">
+            <h1>ZenChat</h1>
+            <div class="muted">Ask anything about the business. It answers from your own data.</div>
+          </div>
+          <div class="card">
+            <div class="zc-input">
+              <input class="fi" id="zcInput" placeholder="Which customers haven't been in for a while?" style="margin:0;flex:1;"
+                     onkeydown="if(event.key==='Enter')zcAsk()">
+              <button class="btn btn-p btn-sm" onclick="zcAsk()">Ask</button>
+            </div>
+            <!-- Real questions with answers in the data, not a menu of
+                 features. An empty box rarely tells anyone what this can
+                 actually answer. -->
+            <div class="zc-suggest" id="zcSuggest"></div>
+            <div id="zcAnswer" style="margin-top:14px;"></div>
+          </div>
+        </div>
+
         <div class="page" id="page-reports">
           <div class="page-header"><h1>Reports</h1><p class="muted">Performance across every agent, in one place - all from data already computed, nothing duplicated.</p></div>
 
@@ -2590,6 +2708,27 @@ function showMarketingTab(tab){
     const active=btn.getAttribute('data-tab')===tab;
     btn.className='btn btn-sm marketing-tab-btn '+(active?'btn-p':'btn-s');
   });
+  // Each panel loads when it is first opened rather than on arrival -
+  // six tabs all fetching at once would make the page slower for the
+  // sake of five panels nobody is looking at.
+  if(tab==='zenwhatsapp'){
+    if(typeof loadConversations==='function') loadConversations();
+    if(typeof loadWhatsappStatus==='function') loadWhatsappStatus();
+  } else if(tab==='performance'){
+    if(typeof loadMetaAdsStatus==='function') loadMetaAdsStatus();
+    if(typeof loadLeadsStatus==='function') loadLeadsStatus();
+    if(typeof loadCompetitors==='function') loadCompetitors();
+  } else if(tab==='meta'){
+    if(typeof loadWhatsappStatus==='function') loadWhatsappStatus();
+    if(typeof loadInstagramStatus==='function') loadInstagramStatus();
+    if(typeof loadMetaAdsStatus==='function') loadMetaAdsStatus();
+    if(typeof loadLeadsStatus==='function') loadLeadsStatus();
+  } else if(tab==='setup'){
+    if(typeof loadBrandDna==='function') loadBrandDna();
+    if(typeof loadAssetLibrary==='function') loadAssetLibrary();
+  } else if(tab==='strategy'){
+    if(typeof loadGenerationHistory==='function') loadGenerationHistory();
+  }
 }
 function showSettingsTab(tab){
   document.querySelectorAll('.settings-tab-content').forEach(el=>el.style.display='none');
@@ -2613,6 +2752,7 @@ function showPage(id){
   if(id==='agents'){showAgentDetail('engagement');loadSocialContent();loadBrandDna();loadGenerationHistory();loadAssetLibrary();loadBusinessStrategy();loadMonthlyStrategy();}
   if(id==='approvals') loadApprovals();
   if(id==='content') loadCalendar();
+  if(id==='zenchat') zcRenderSuggestions();
   if(id==='reports') loadReports();
   if(id==='overview') loadCommandCenter();
 }
@@ -2756,6 +2896,39 @@ async function loadCommandCenter(){
 function zenGoAgent(agent){
   showPage('agents');
   if(typeof showAgentDetail==='function') showAgentDetail(agent);
+}
+const ZC_SUGGESTIONS=[
+  "Which customers haven't been in for a while?",
+  "How did the birthday campaign do?",
+  "Which stylist keeps customers coming back?",
+  "What's my quietest day, and what could fill it?",
+  "Is the ad spend actually bringing anyone in?",
+];
+// The inbox is checked far more often than anything else in Marketing,
+// so it gets a direct route rather than three clicks through a tab.
+function openZenWhatsApp(){
+  showPage('agents');
+  if(typeof showAgentDetail==='function') showAgentDetail('marketing');
+  if(typeof showMarketingTab==='function') showMarketingTab('zenwhatsapp');
+}
+function zcRenderSuggestions(){
+  const el=document.getElementById('zcSuggest');
+  if(!el) return;
+  el.innerHTML=ZC_SUGGESTIONS.map(function(q){
+    return '<button class="zc-chip" onclick="zcAsk('+JSON.stringify(q).replace(/"/g,'&quot;')+')">'+esc(q)+'</button>';
+  }).join('');
+}
+async function zcAsk(preset){
+  const input=document.getElementById('zcInput');
+  const q=(preset||input.value||'').trim();
+  if(!q) return;
+  if(preset) input.value=preset;
+  const out=document.getElementById('zcAnswer');
+  out.innerHTML='<div class="zc-thinking"><span class="mw-spinner"></span>Looking at your data...</div>';
+  const j=await call('ask_business_question',{question:q});
+  if(!j.ok){out.innerHTML='<div style="color:var(--err);">'+esc(j.error)+'</div>';return;}
+  out.innerHTML='<div class="zc-answer"><div class="zc-q">'+esc(q)+'</div>'+
+    '<div class="zc-a">'+esc(j.answer||'').replace(/\n/g,'<br>')+'</div></div>';
 }
 function zenCommand(text){
   const q=(text||document.getElementById('zenCommandInput')?.value||'').trim();
