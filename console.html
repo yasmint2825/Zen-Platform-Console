@@ -6110,7 +6110,11 @@ async function previewAdSchedule(){
   if(!j.ok){el.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
   const p=j.planned||[];
   if(!p.length){
-    el.innerHTML='<span class="muted">Nothing would change right now &mdash; everything already matches its rule.</span>';
+    // "Everything matches its rule" is true and useless when there are
+    // no rules. The two states need different answers.
+    el.innerHTML = j.nothing_configured
+      ? '<span class="muted">'+esc(j.note||'No rules set yet.')+' Open an ad set below, set its hours or budget under <b>Hours &amp; budget</b>, then preview again.</span>'
+      : '<span class="muted">Nothing would change right now &mdash; every ad set already matches its rule.</span>';
     return;
   }
   el.innerHTML='<div class="ac-preview">'+
