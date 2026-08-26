@@ -1745,6 +1745,39 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     .at-table th:nth-child(4),.at-table td:nth-child(4){display:none;}
   }
 </style>
+
+<style id="zenProposalQueue">
+  /* Approval queue. Nothing pre-ticked, and anything that can't be
+     applied says why rather than sitting greyed out. */
+  .pq{border:1px solid var(--line,#E4E7E4);border-radius:10px;overflow:hidden;}
+  .pq-row{
+    display:flex;gap:10px;align-items:flex-start;
+    padding:10px 12px;border-bottom:1px solid var(--line,#F0F2F0);
+    cursor:pointer;transition:background .12s;
+  }
+  .pq-row:hover{background:var(--surface-2,#FAFBFA);}
+  .pq-row:last-of-type{border-bottom:0;}
+  .pq-check{margin-top:2px;width:15px;height:15px;flex-shrink:0;cursor:pointer;accent-color:#0F4C45;}
+  .pq-x{color:var(--faint,#B6BEB9);font-size:15px;line-height:1;margin-top:1px;flex-shrink:0;width:15px;text-align:center;}
+  .pq-body{display:block;flex:1;min-width:0;}
+  .pq-what{display:block;font-size:12.5px;line-height:1.4;}
+  .pq-why{display:block;font-size:11px;color:var(--muted,#5E6B64);margin-top:2px;line-height:1.45;}
+  .pq-now{
+    display:block;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:10px;color:var(--faint,#8B968F);margin-top:3px;font-variant-numeric:tabular-nums;
+  }
+  .pq-blocked{cursor:default;opacity:.7;}
+  .pq-blocked:hover{background:transparent;}
+  .pq-blocked-why{
+    display:block;font-size:10.5px;color:#9A5B0F;margin-top:3px;
+  }
+  .pq-foot{
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    padding:10px 12px;background:var(--surface-2,#FAFBFA);
+    border-top:1px solid var(--line,#E4E7E4);
+  }
+  @media (max-width:640px){ .pq-foot .btn{flex:1;} }
+</style>
 </head>
 <body>
 
@@ -6499,6 +6532,82 @@ async function loadAdActions(){
     }).join('')+'</div>';
 }
 
+// Approval queue built from the analysis.
+//
+// The analysis already decided what should change and why; this only
+// asks which of it you accept. Nothing is pre-ticked - an approval flow
+// where everything is selected by default is a confirmation dialog
+// wearing a disguise.
+window.__renderProposals=function(a){
+  const props=(a.proposals||[]);
+  if(!props.length) return '';
+  window.AD_PROPOSALS=props;
+
+  const rows=props.map(function(p,i){
+    const blocked=!p.actionable;
+    const label = p.kind==='move'
+      ? ('Move '+Math.round(p.amount||0)+' AED from <b>'+esc(p.from)+'</b> to <b>'+esc(p.to)+'</b>')
+      : (p.verdict==='pause'?'Pause <b>'+esc(p.name)+'</b>'
+        :p.verdict==='reduce'?'Spend less on <b>'+esc(p.name)+'</b>'
+        :esc(String(p.verdict||''))+' <b>'+esc(p.name)+'</b>');
+    const detail = p.kind==='move' ? esc(p.why||'')
+      : esc(p.problem||'');
+    const now = p.kind==='move'
+      ? ((p.from_budget!=null?('now '+p.from_budget+'/day'):'')+(p.to_budget!=null?(' &rarr; '+p.to_budget+'/day'):''))
+      : (p.current_budget!=null?('now '+p.current_budget+'/day'):'');
+    return '<label class="pq-row'+(blocked?' pq-blocked':'')+'">'+
+      (blocked?'<span class="pq-x">&times;</span>'
+             :'<input type="checkbox" class="pq-check" data-i="'+i+'">')+
+      '<span class="pq-body">'+
+        '<span class="pq-what">'+label+'</span>'+
+        (detail?'<span class="pq-why">'+detail+'</span>':'')+
+        (now?'<span class="pq-now">'+now+'</span>':'')+
+        // Why something cannot be approved, rather than a disabled row
+        // with no explanation.
+        (blocked?'<span class="pq-blocked-why">'+esc(p.blocked_reason||'Not actionable')+'</span>':'')+
+      '</span>'+
+    '</label>';
+  }).join('');
+
+  const n=props.filter(function(p){return p.actionable;}).length;
+  return '<div class="aa-section">Approve changes</div>'+
+    '<div class="pq">'+rows+
+      (n?'<div class="pq-foot">'+
+        '<button class="btn btn-s btn-sm" onclick="pqSelectAll()">Select all '+n+'</button>'+
+        '<button class="btn btn-p btn-sm" onclick="applyProposals()">Apply selected</button>'+
+        '<span id="pqResult" style="font-size:11.5px;"></span>'+
+      '</div>':'<div class="pq-foot muted" style="font-size:11px;">None of these can be applied automatically.</div>')+
+    '</div>';
+};
+
+function pqSelectAll(){
+  document.querySelectorAll('.pq-check').forEach(function(c){c.checked=true;});
+}
+
+async function applyProposals(){
+  const picked=[...document.querySelectorAll('.pq-check:checked')]
+    .map(function(c){return (window.AD_PROPOSALS||[])[Number(c.dataset.i)];})
+    .filter(Boolean);
+  const out=document.getElementById('pqResult');
+  if(!picked.length){out.textContent='Nothing selected.';out.style.color='var(--muted)';return;}
+
+  const summary=picked.map(function(p){
+    return p.kind==='move'
+      ? ('• Move '+Math.round(p.amount)+' from '+p.from+' to '+p.to)
+      : ('• '+(p.verdict==='pause'?'Pause ':'Reduce ')+p.name);
+  }).join('\n');
+  if(!confirm('Apply '+picked.length+' change(s) to your live ads?\n\n'+summary)) return;
+
+  out.innerHTML='<span class="mw-spinner"></span>Applying...';
+  const j=await call('apply_ad_proposals',{proposals:picked});
+  if(!j.ok){out.textContent=j.error;out.style.color='var(--err)';return;}
+  // Per-item, because a budget move is two calls and either can fail.
+  out.innerHTML='<div style="margin-top:6px;">'+(j.results||[]).map(function(r){
+    return '<div style="color:'+(r.ok?'var(--ok)':'var(--err)')+';font-size:11px;">'+
+      (r.ok?'&check; ':'&times; ')+esc(r.label)+' &mdash; '+esc(r.detail)+'</div>';
+  }).join('')+'</div>';
+}
+
 async function analyseAdSpend(force){
   const el=document.getElementById('adAnalysis');
   const days=(document.getElementById('metaAdsLookback')||{}).value||30;
@@ -6536,6 +6645,10 @@ async function analyseAdSpend(force){
     (recs?'<div class="aa-section">What I would do</div>'+recs:'')+
     // Kept prominent rather than buried. An analysis that never states
     // its own blind spots gets trusted more than it should.
+    // Proposals, tickable. Replaces the separate recommendation engine:
+    // one analysis produces both the reasoning and the actions, so there
+    // is no second opinion to reconcile.
+    (window.__renderProposals?window.__renderProposals(a):'')+
     // The ads costing money and returning little, named. This is the
     // section that should be actionable without reading anything else.
     ((a.underperformers||[]).length
