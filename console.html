@@ -1686,6 +1686,22 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     .ar-act .btn{flex:1;}
   }
 </style>
+
+<style id="zenArTypes">
+  .ar-types{width:100%;border-collapse:collapse;font-size:11px;margin-top:4px;}
+  .ar-types th{
+    text-align:left;padding:4px 6px;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:9px;letter-spacing:.05em;text-transform:uppercase;
+    color:var(--faint,#8B968F);border-bottom:1px solid var(--line,#E4E7E4);
+  }
+  .ar-types td{
+    padding:4px 6px;border-bottom:1px solid var(--line,#F0F2F0);
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;
+  }
+  .ar-types td:last-child{text-align:right;}
+  /* The rows that answer the question. */
+  .ar-type-rel td{background:#E8F6F1;color:#0B7A5E;font-weight:600;}
+</style>
 </head>
 <body>
 
@@ -2055,6 +2071,7 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
               <button class="btn btn-p btn-sm" onclick="loadAdControl()">Ad sets</button>
               <button class="btn btn-s btn-sm" onclick="loadAdRecommendations()">Suggest changes</button>
               <button class="btn btn-s btn-sm" onclick="loadAdActions()">History</button>
+              <button class="btn btn-s btn-sm" onclick="diagnoseAdActions()">Why no conversations?</button>
             </div>
             <div id="adRecs" style="margin-bottom:12px;"></div>
             <div id="adSchedulePreview" style="font-size:12px;margin-bottom:10px;"></div>
@@ -5977,6 +5994,39 @@ async function actOnRecommendation(name){
   if(typeof loadAdControl==='function') loadAdControl();
 }
 
+// What Meta is actually reporting.
+//
+// Every conversation figure matches one action type out of Meta's
+// actions array. When that comes back zero for an account whose ads
+// open WhatsApp chats, the likeliest cause is a name mismatch rather
+// than genuinely no conversations - and guessing at it from the outside
+// is hopeless.
+async function diagnoseAdActions(){
+  const el=document.getElementById('adRecs');
+  el.innerHTML='<div class="ar-card"><span class="mw-spinner"></span>Asking Meta what it actually reports...</div>';
+  const j=await call('diagnose_ad_actions',{days:90});
+  if(!j.ok){el.innerHTML='<div class="ar-card" style="color:var(--err);">'+esc(j.error)+'</div>';return;}
+
+  const list=(j.action_types||[]).slice(0,20);
+  el.innerHTML='<div class="ar-card">'+
+    '<div class="ar-head"><b>What Meta reports for this account</b>'+
+      '<span class="ar-meta">'+j.ad_sets+' ad sets &middot; '+j.spend+' AED &middot; '+
+      j.impressions+' impressions &middot; '+j.clicks+' clicks</span></div>'+
+    '<div class="ar-caveat">'+esc(j.note)+'</div>'+
+    (j.objectives&&j.objectives.length
+      ? '<div class="ar-nums" style="margin-bottom:9px;">Objectives in use: '+esc(j.objectives.join(', '))+'</div>' : '')+
+    (list.length
+      ? '<table class="ar-types"><tr><th>action type</th><th>count</th></tr>'+
+        list.map(function(t){
+          // Highlights the ones that look like a chat opening, since
+          // that is the whole question.
+          const rel=/messag|conversation|whatsapp|lead|contact/i.test(t.type);
+          return '<tr'+(rel?' class="ar-type-rel"':'')+'><td>'+esc(t.type)+'</td><td>'+Math.round(t.value)+'</td></tr>';
+        }).join('')+'</table>'
+      : '<div class="muted" style="font-size:12px;">Meta reported no action events at all &mdash; only impressions and clicks.</div>')+
+  '</div>';
+}
+
 // The agent's own view of what should change.
 //
 // This replaces asking the owner to configure a rule engine. Rules put
@@ -5996,11 +6046,13 @@ async function loadAdRecommendations(){
   }
 
   const recs=j.recommendations||[];
-  const head='<div class="ar-head">'+
-    '<b>What I would change</b>'+
-    '<span class="ar-meta">'+(j.total_conversations||0)+' conversations on '+(j.total_spend||0)+' AED'+
-      (j.account_avg_cost_per_conversation?(' &middot; '+j.account_avg_cost_per_conversation+' average per conversation'):'')+'</span>'+
-  '</div>';
+  // Says which evidence it used. A click-based verdict is a real
+  // answer but a weaker one, and burying that would overstate it.
+  const basis = j.measure==='clicks'
+    ? ((j.total_spend||0)+' AED spent &middot; judged on clicks'+(j.account_avg_ctr?(', '+j.account_avg_ctr+'% average CTR'):''))
+    : ((j.total_conversations||0)+' conversations on '+(j.total_spend||0)+' AED'+
+       (j.account_avg_cost_per_conversation?(' &middot; '+j.account_avg_cost_per_conversation+' each'):''));
+  const head='<div class="ar-head"><b>What I would change</b><span class="ar-meta">'+basis+'</span></div>';
 
   // Volume caveat first. A confident-looking list built on twelve
   // conversations would be worse than no list.
