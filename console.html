@@ -1423,6 +1423,63 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     font-size:9.5px;line-height:1.5;color:var(--faint,#8B968F);
   }
 </style>
+
+<style id="zenUnderperformers">
+  /* Non-performing ads. This table should be readable on its own -
+     name, cost, what's wrong, what to do. */
+  .up-table{width:100%;border-collapse:collapse;font-size:11.5px;margin-bottom:4px;}
+  .up-table th{
+    text-align:left;padding:5px 8px;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:9.5px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;
+    color:var(--faint,#8B968F);border-bottom:1px solid var(--line,#E4E7E4);
+  }
+  .up-table td{padding:9px 8px;border-bottom:1px solid var(--line,#F0F2F0);vertical-align:top;}
+  .up-table td:nth-child(2){text-align:right;}
+  .up-n{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;}
+  .up-lvl{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:9px;letter-spacing:.05em;text-transform:uppercase;
+    color:var(--faint,#8B968F);margin-top:1px;
+  }
+  .up-why{font-size:11px;line-height:1.45;color:var(--muted,#5E6B64);}
+  .up-tag{
+    display:inline-block;padding:2px 8px;border-radius:999px;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:9px;font-weight:600;letter-spacing:.04em;white-space:nowrap;
+  }
+  /* Stop is the strongest verdict and reads that way. */
+  .up-stop{background:#FBEDEC;color:#A8271E;}
+  .up-cut{background:#FDF3E7;color:#9A5B0F;}
+  .up-fix{background:#E9F2F7;color:#1A5C82;}
+  .up-watch{background:#EEF1EF;color:#5E6B64;}
+  .up-frees{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:9.5px;color:#0B7A5E;margin-top:3px;font-variant-numeric:tabular-nums;
+  }
+
+  .re-total{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:15px;font-weight:600;color:#0B7A5E;margin-bottom:8px;
+    font-variant-numeric:tabular-nums;
+  }
+  .re-move{
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    padding:8px 0;border-bottom:1px solid var(--line,#F0F2F0);font-size:11.5px;
+  }
+  .re-move:last-child{border-bottom:0;}
+  .re-from{color:#A8271E;font-weight:500;}
+  .re-arrow{color:var(--faint,#8B968F);}
+  .re-to{color:#0B7A5E;font-weight:600;}
+  .re-amt{
+    margin-left:auto;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-weight:600;font-variant-numeric:tabular-nums;
+  }
+  .re-why{width:100%;font-size:10.5px;color:var(--muted,#5E6B64);line-height:1.45;}
+  @media (max-width:640px){
+    .up-table th:nth-child(3),.up-table td:nth-child(3){display:none;}
+  }
+</style>
 </head>
 <body>
 
@@ -5554,6 +5611,38 @@ async function analyseAdSpend(force){
     (recs?'<div class="aa-section">What I would do</div>'+recs:'')+
     // Kept prominent rather than buried. An analysis that never states
     // its own blind spots gets trusted more than it should.
+    // The ads costing money and returning little, named. This is the
+    // section that should be actionable without reading anything else.
+    ((a.underperformers||[]).length
+      ? '<div class="aa-section">Not earning their keep</div>'+
+        '<table class="up-table"><tr><th>ad / ad set</th><th>spend</th><th>problem</th><th>verdict</th></tr>'+
+        a.underperformers.map(function(u){
+          const v=String(u.verdict||'').toLowerCase();
+          const cls = v==='pause'?'up-stop': v==='reduce'?'up-cut': v.indexOf('creative')>=0?'up-fix':'up-watch';
+          return '<tr>'+
+            '<td><b>'+esc(u.name)+'</b><div class="up-lvl">'+esc(u.level||'')+'</div></td>'+
+            '<td class="up-n">'+Math.round(u.spend||0)+'</td>'+
+            '<td class="up-why">'+esc(u.problem||'')+'</td>'+
+            '<td><span class="up-tag '+cls+'">'+esc(u.verdict||'')+'</span>'+
+              (u.frees?'<div class="up-frees">frees '+Math.round(u.frees)+'</div>':'')+'</td>'+
+          '</tr>';
+        }).join('')+'</table>'
+      : '')+
+    // Where the freed money should go. A recommendation to stop
+    // spending is only half an answer.
+    ((a.reallocation&&(a.reallocation.moves||[]).length)
+      ? '<div class="aa-section">Where to move it</div>'+
+        '<div class="re-total">'+Math.round(a.reallocation.total_freed||0)+' AED freed</div>'+
+        a.reallocation.moves.map(function(m){
+          return '<div class="re-move">'+
+            '<span class="re-from">'+esc(m.from)+'</span>'+
+            '<span class="re-arrow">&rarr;</span>'+
+            '<span class="re-to">'+esc(m.to)+'</span>'+
+            '<span class="re-amt">'+Math.round(m.amount||0)+'</span>'+
+            '<div class="re-why">'+esc(m.why||'')+'</div>'+
+          '</div>';
+        }).join('')
+      : '')+
     // Cross-cutting observations, kept separate from findings - these
     // are the ones nobody would spot by scrolling a table.
     ((a.patterns||[]).length
