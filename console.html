@@ -1437,6 +1437,7 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
 <div style="margin-top:10px;">
                   <div class="row" style="gap:6px;margin-bottom:8px;align-items:center;">
                     <select class="fi" id="engIntelDays" style="width:auto;margin:0;font-size:11.5px;" onchange="loadEngagementIntelligence(true)">
+                      <option value="today">Today</option>
                       <option value="7">Last 7 days</option>
                       <option value="30" selected>Last 30 days</option>
                       <option value="90">Last 90 days</option>
@@ -1452,6 +1453,7 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
                   <div class="row" style="gap:6px;margin-bottom:8px;">
                     <button class="btn btn-s btn-sm" onclick="loadWhatsappMessages(true)">Refresh</button>
                     <select class="fi" id="waLogRange" style="width:auto;margin:0;font-size:11.5px;" onchange="loadWhatsappMessages(true)">
+                      <option value="today">Today</option>
                       <option value="today">Today</option>
                       <option value="7">Last 7 days</option>
                       <option value="all">Everything recent</option>
@@ -2995,8 +2997,21 @@ async function loadEngagementIntelligence(force){
   if(!el) return;
   if(el.dataset.loaded==='1' && !force) return;
   el.innerHTML='<span class="mw-spinner"></span>Measuring...';
-  const days=(document.getElementById('engIntelDays')||{}).value||30;
-  const j=await call('get_engagement_intelligence',{days:Number(days)});
+  const sel=(document.getElementById('engIntelDays')||{}).value||'30';
+  const args={};
+  if(sel==='today'){
+    // Midnight in Dubai, not 24 hours ago - "today" should mean the
+    // trading day, so a message sent at 9am doesn't drop off the view
+    // at 9am tomorrow.
+    const now=new Date();
+    const dubai=new Date(now.getTime()+4*3600000);
+    const y=dubai.getUTCFullYear(), m=String(dubai.getUTCMonth()+1).padStart(2,'0'), d=String(dubai.getUTCDate()).padStart(2,'0');
+    args.since=new Date(y+'-'+m+'-'+d+'T00:00:00+04:00').toISOString();
+    args.days=1;
+  } else {
+    args.days=Number(sel);
+  }
+  const j=await call('get_engagement_intelligence',args);
   if(!j.ok){el.innerHTML='<span style="color:var(--err);">'+j.error+'</span>';return;}
   el.dataset.loaded='1';
   if(!j.totals){el.innerHTML=j.note||'Nothing to report yet.';return;}
