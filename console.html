@@ -1873,6 +1873,46 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
                 <div id="assetLibraryList" style="margin-top:14px;"></div>
               </details>
 
+              <div class="card">
+            <h2>Competitors</h2>
+            <p class="muted">AI research finds what's genuinely publicly indexed - reviews, ratings, reputation, promotions that surfaced somewhere. It can't see a competitor's actual Instagram feed directly, so your own observations from browsing their page matter just as much as the AI research, not a lesser fallback.</p>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
+              <input class="fi" type="text" id="newCompetitorName" placeholder="Competitor name" style="flex:1;min-width:120px;">
+              <input class="fi" type="text" id="newCompetitorInstagram" placeholder="Instagram handle (optional)" style="flex:1;min-width:120px;">
+              <input class="fi" type="text" id="newCompetitorGoogle" placeholder="Google listing name (optional)" style="flex:1;min-width:120px;">
+              <button class="btn btn-p btn-sm" onclick="addCompetitor()">Add</button>
+            </div>
+            <div id="competitorsList" class="muted">Loading...</div>
+          </div>
+
+              <div class="card">
+            <h2>Ad spend monitoring</h2>
+            <p class="muted">Pulls real campaign and placement data directly from Meta's own Marketing API - no third-party service, no ongoing subscription. Requires the Ad Account ID set in Brand setup above.</p>
+            <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;">
+              <select class="fi" id="metaAdsLookback" style="width:auto;margin:0;">
+                <option value="7">Last 7 days</option>
+                <option value="30" selected>Last 30 days</option>
+                <option value="90">Last 90 days</option>
+              </select>
+              <button class="btn btn-p btn-sm" onclick="loadMetaAdsSummary()">Check spend</button>
+            </div>
+            <div id="metaAdsResult"></div>
+          </div>
+
+              <details class="card">
+                <summary><h2 style="display:inline;">Meta ads connection</h2></summary>
+                <div id="metaAdsStatus" class="muted" style="margin-bottom:10px;margin-top:10px;">Checking...</div>
+                <div class="row" style="margin-bottom:8px;flex-wrap:wrap;">
+                  <input class="fi" type="text" id="metaAdAccountId" placeholder="Ad Account ID, e.g. 638838775406298" style="flex:1;min-width:220px;">
+                  <input class="fi" type="password" id="metaAdsToken" placeholder="Access token with ads_read" style="flex:1;min-width:220px;">
+                  <button class="btn btn-s btn-sm" onclick="saveMetaAdsCredentials()">Save</button>
+                </div>
+                <div id="metaAdsSaveResult" style="font-size:12px;"></div>
+                <button class="btn btn-s btn-sm" onclick="testMetaAdsConnection()" style="margin-top:6px;">Check connection</button>
+                <div class="muted" style="font-size:10.5px;margin-top:4px;">Reads the ad account to confirm the token works. Pulls no reports and spends nothing.</div>
+                <div id="metaAdsTestResult" style="font-size:12px;margin-top:8px;"></div>
+              </details>
+
               <details class="card">
                 <summary><h2 style="display:inline;">Instagram connection</h2></summary>
                 <div id="instagramStatus" class="muted" style="margin-bottom:10px;margin-top:10px;">Checking...</div>
@@ -1932,31 +1972,9 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
               </details>
             </div>
 
-          <div class="card">
-            <h2>Competitors</h2>
-            <p class="muted">AI research finds what's genuinely publicly indexed - reviews, ratings, reputation, promotions that surfaced somewhere. It can't see a competitor's actual Instagram feed directly, so your own observations from browsing their page matter just as much as the AI research, not a lesser fallback.</p>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
-              <input class="fi" type="text" id="newCompetitorName" placeholder="Competitor name" style="flex:1;min-width:120px;">
-              <input class="fi" type="text" id="newCompetitorInstagram" placeholder="Instagram handle (optional)" style="flex:1;min-width:120px;">
-              <input class="fi" type="text" id="newCompetitorGoogle" placeholder="Google listing name (optional)" style="flex:1;min-width:120px;">
-              <button class="btn btn-p btn-sm" onclick="addCompetitor()">Add</button>
-            </div>
-            <div id="competitorsList" class="muted">Loading...</div>
-          </div>
+          
 
-          <div class="card">
-            <h2>Ad spend monitoring</h2>
-            <p class="muted">Pulls real campaign and placement data directly from Meta's own Marketing API - no third-party service, no ongoing subscription. Requires the Ad Account ID set in Brand setup above.</p>
-            <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;">
-              <select class="fi" id="metaAdsLookback" style="width:auto;margin:0;">
-                <option value="7">Last 7 days</option>
-                <option value="30" selected>Last 30 days</option>
-                <option value="90">Last 90 days</option>
-              </select>
-              <button class="btn btn-p btn-sm" onclick="loadMetaAdsSummary()">Check spend</button>
-            </div>
-            <div id="metaAdsResult"></div>
-          </div>
+          
           </div>
 
           <div id="intelligenceAgentDetail" style="display:none;">
@@ -2261,7 +2279,7 @@ function showAgentDetail(agent){
   document.getElementById('marketingAgentDetail').style.display=agent==='marketing'?'block':'none';
   document.getElementById('intelligenceAgentDetail').style.display=agent==='intelligence'?'block':'none';
   window.scrollTo({top:0,behavior:'smooth'});
-  if(agent==='marketing'){loadSocialContent();loadCompetitors();}
+  if(agent==='marketing'){loadSocialContent();loadCompetitors();loadMetaAdsStatus();}
   if(agent==='engagement'){loadAtRiskActions();loadAtRiskQueue();loadConversations();}
   if(agent==='intelligence'){loadDailyIntelligence();loadPredictive();renderQuickQuestions();}
 }
@@ -5175,6 +5193,57 @@ async function testInstagramConnection(){
       ', but '+esc(j.saved_account_id||'?')+' is saved above. Posts would go to the wrong account - update the ID to match.</div>'
     : '';
   r.innerHTML='<span style="color:var(--ok);">Connected as @'+esc(j.username||'unknown')+'</span>'+warn+mismatch;
+}
+async function loadMetaAdsStatus(){
+  const el=document.getElementById('metaAdsStatus');
+  if(!el) return;
+  const j=await call('get_meta_ads_status',{});
+  if(!j.ok){el.textContent='Error: '+j.error;return;}
+  if(j.connected){
+    el.innerHTML='<span style="color:var(--ok);">Connected &middot; account '+esc(j.ad_account_id)+'</span>';
+    document.getElementById('metaAdAccountId').value=j.ad_account_id||'';
+  } else if(j.legacy_token_present && j.legacy_ad_account_id){
+    // Still on the old setup. Saying "not connected" would be wrong -
+    // ad spend is working - but it should still be moved.
+    el.innerHTML='<span style="color:var(--warn);">Using the older setup &middot; account '+esc(j.legacy_ad_account_id)+
+      '</span><div class="muted" style="font-size:10.5px;margin-top:3px;">Working, but the token lives in a function secret shared across tenants. Re-enter it here to move it.</div>';
+    document.getElementById('metaAdAccountId').value=j.legacy_ad_account_id||'';
+  } else {
+    el.textContent='Not connected yet.';
+  }
+}
+async function saveMetaAdsCredentials(){
+  const r=document.getElementById('metaAdsSaveResult');
+  const ad_account_id=document.getElementById('metaAdAccountId').value.trim();
+  const access_token=document.getElementById('metaAdsToken').value.trim();
+  if(!ad_account_id||!access_token){r.textContent='Both fields are needed.';r.style.color='var(--err)';return;}
+  r.innerHTML='<span class="mw-spinner"></span>Saving...';
+  const j=await call('save_meta_ads_credentials',{ad_account_id:ad_account_id,access_token:access_token});
+  if(j.ok){
+    // Cleared once stored, same as the WhatsApp token - no reason for a
+    // secret to sit visible in a form after it has been saved.
+    document.getElementById('metaAdsToken').value='';
+    r.textContent='Saved.';r.style.color='var(--ok)';
+    loadMetaAdsStatus();
+  } else { r.textContent='Error: '+j.error;r.style.color='var(--err)'; }
+}
+async function testMetaAdsConnection(){
+  const r=document.getElementById('metaAdsTestResult');
+  r.innerHTML='<span class="mw-spinner"></span>Checking...';
+  const j=await call('test_meta_ads_connection',{});
+  if(!j.ok){
+    r.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>'+
+      (j.hint?'<div class="muted" style="font-size:10.5px;margin-top:3px;">'+esc(j.hint)+'</div>':'');
+    return;
+  }
+  // An account that can't spend is worth flagging here rather than
+  // leaving someone to wonder why a campaign isn't delivering.
+  const inactive = j.active===false
+    ? '<div style="color:var(--warn);font-size:11px;margin-top:4px;">This ad account isn\'t active (status '+esc(String(j.account_status))+'), so campaigns won\'t deliver.</div>'
+    : '';
+  r.innerHTML='<span style="color:var(--ok);">Connected to '+esc(j.account_name||'ad account')+
+    (j.currency?(' &middot; '+esc(j.currency)):'')+'</span>'+inactive+
+    '<div class="muted" style="font-size:10px;margin-top:3px;">Credentials '+esc(j.source)+'.</div>';
 }
 async function saveInstagramCredentials(){
   const accountId=document.getElementById('igAccountId').value.trim();
