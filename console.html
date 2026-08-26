@@ -1778,6 +1778,46 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
   }
   @media (max-width:640px){ .pq-foot .btn{flex:1;} }
 </style>
+
+<style id="zenReplyAssistant">
+  /* Draft reply. Sits between the thread and the send box, because that
+     is where the decision happens. */
+  .dr-box{
+    border:1px solid var(--line-strong,#CBD5CF);border-radius:10px;
+    padding:10px 12px;margin-top:8px;background:var(--surface-2,#FAFBFA);
+  }
+  .dr-label{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9px;
+    letter-spacing:.06em;text-transform:uppercase;color:var(--faint,#8B968F);margin-bottom:5px;
+  }
+  .dr-text{width:100%;margin:0;font-size:12.5px;line-height:1.5;resize:vertical;}
+  .dr-gaps{
+    font-size:10.5px;line-height:1.45;color:#9A5B0F;
+    background:#FDF8F0;border-radius:7px;padding:6px 9px;margin-top:7px;
+  }
+  .dr-warn{
+    font-size:10.5px;line-height:1.45;color:#9A5B0F;
+    background:#FDF8F0;border-radius:7px;padding:6px 9px;margin-bottom:8px;
+  }
+  .dr-act{display:flex;gap:6px;margin-top:8px;}
+
+  .fact-row{
+    display:flex;gap:10px;align-items:flex-start;
+    padding:8px 0;border-bottom:1px solid var(--line,#F0F2F0);
+  }
+  .fact-cat{
+    flex-shrink:0;width:70px;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint,#8B968F);padding-top:2px;
+  }
+  .fact-body{flex:1;min-width:0;}
+  .fact-body b{font-size:12px;}
+  .fact-ans{font-size:11.5px;color:var(--muted,#5E6B64);margin-top:2px;line-height:1.45;}
+  /* A placeholder answer would be sent as though true. */
+  .fact-stub{background:rgba(154,91,15,.05);}
+  .fact-stub .fact-ans{color:#9A5B0F;}
+  .fact-add{margin-top:12px;padding-top:12px;border-top:1px solid var(--line,#E4E7E4);}
+  .fact-add .fi{margin-bottom:6px;}
+</style>
 </head>
 <body>
 
@@ -2295,6 +2335,28 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
           </div>
 
           <div id="marketingTab-zenwhatsapp" class="marketing-tab-content" style="display:none;">
+            <details class="card">
+              <summary><h2 style="display:inline;">Reply assistant &mdash; what it knows</h2></summary>
+              <p class="muted" style="font-size:11.5px;">The assistant may only say what is listed here. Anything missing, it flags for you rather than guessing &mdash; a wrong price sent over WhatsApp is a promise you have to honour or retract.</p>
+              <div id="factsList" class="muted" style="font-size:12px;">Loading...</div>
+              <div class="fact-add">
+                <input class="fi" id="factQ" placeholder="A question in a customer's words, e.g. &ldquo;how much for a 4 year old?&rdquo;">
+                <textarea class="fi" id="factA" rows="2" placeholder="The answer, in your voice &mdash; this is used close to word for word"></textarea>
+                <div class="row" style="gap:6px;flex-wrap:wrap;">
+                  <select class="fi" id="factCat" style="width:auto;margin:0;font-size:11.5px;min-height:32px;">
+                    <option value="prices">Prices</option>
+                    <option value="hours">Hours</option>
+                    <option value="services">Services</option>
+                    <option value="booking">Booking</option>
+                    <option value="location">Location</option>
+                    <option value="general">General</option>
+                  </select>
+                  <button class="btn btn-p btn-sm" onclick="saveFact()">Add</button>
+                </div>
+                <div id="factResult" style="font-size:11.5px;margin-top:6px;"></div>
+              </div>
+            </details>
+
 <div class="card">
               <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
                 <h2 style="margin:0;">WhatsApp chat</h2>
@@ -2983,6 +3045,7 @@ function showMarketingTab(tab){
   if(tab==='zenwhatsapp'){
     if(typeof loadConversations==='function') loadConversations();
     if(typeof loadWhatsappStatus==='function') loadWhatsappStatus();
+    if(typeof loadFacts==='function') loadFacts();
   } else if(tab==='performance'){
     if(typeof loadAdTable==='function') loadAdTable();
     if(typeof loadMetaAdsStatus==='function') loadMetaAdsStatus();
@@ -4220,7 +4283,9 @@ function openThread(i){
     ? '<div style="display:flex;gap:6px;margin-top:8px;">'+
         '<input class="fi" type="text" id="reply_'+id+'" placeholder="Type a reply and press Enter" style="margin:0;flex:1;font-size:11.5px;" onkeydown="if(event.key===\'Enter\')sendReply(\''+c.mobile+'\')">'+
         '<button class="btn btn-p btn-sm" onclick="sendReply(\''+c.mobile+'\')">Send</button>'+
+        '<button class="btn btn-s btn-sm" onclick="draftReply(\''+c.mobile+'\')" title="Draft a reply for you to review">Draft</button>'+
       '</div>'+
+      '<div id="draftBox_'+id+'"></div>'+
       '<div class="muted" style="font-size:9.5px;margin-top:2px;">Reply window open for another '+c.reply_window_hours_left+'h'+
         (isIG?' — Instagram has no template fallback once it closes.':'')+'</div>'
     : '<div class="muted" style="font-size:10.5px;margin-top:8px;padding:6px;border:1px dashed var(--border);border-radius:6px;">'+
@@ -4327,6 +4392,89 @@ async function sendReply(mobile){
     say('Error: '+j.error,'var(--err)');
   }
 }
+async function loadFacts(){
+  const el=document.getElementById('factsList');
+  if(!el) return;
+  const j=await call('list_business_facts',{});
+  if(!j.ok){el.textContent='Error: '+j.error;return;}
+  if(!j.facts.length){
+    el.innerHTML='<span style="color:var(--warn);">Nothing entered yet &mdash; the assistant can only greet people until you add your prices, hours and services.</span>';
+    return;
+  }
+  // Placeholders are worse than nothing: they look answered and would
+  // be sent to a customer as though true.
+  const stub=j.facts.filter(function(f){return /\[ADD /.test(f.answer);}).length;
+  el.innerHTML=(stub?'<div class="dr-warn">'+stub+' answer(s) are still placeholders. Edit them before relying on the assistant.</div>':'')+
+    j.facts.map(function(f){
+      const isStub=/\[ADD /.test(f.answer);
+      return '<div class="fact-row'+(isStub?' fact-stub':'')+'">'+
+        '<div class="fact-cat">'+esc(f.category)+'</div>'+
+        '<div class="fact-body"><b>'+esc(f.question)+'</b>'+
+          '<div class="fact-ans">'+esc(f.answer)+'</div></div>'+
+        '<button class="btn btn-s btn-sm" onclick="deleteFact(\''+f.id+'\')">Remove</button>'+
+      '</div>';
+    }).join('');
+}
+async function saveFact(){
+  const r=document.getElementById('factResult');
+  const q=document.getElementById('factQ').value.trim();
+  const a=document.getElementById('factA').value.trim();
+  if(!q||!a){r.textContent='Both a question and an answer are needed.';r.style.color='var(--err)';return;}
+  const j=await call('save_business_fact',{question:q,answer:a,category:document.getElementById('factCat').value});
+  if(j.ok){
+    document.getElementById('factQ').value='';document.getElementById('factA').value='';
+    r.textContent='Added.';r.style.color='var(--ok)';loadFacts();
+  } else {r.textContent=j.error;r.style.color='var(--err)';}
+}
+async function deleteFact(id){
+  if(!confirm('Remove this?')) return;
+  const j=await call('delete_business_fact',{id:id});
+  if(!j.ok){alert(j.error);return;}
+  loadFacts();
+}
+
+// Drafts a reply for review. Never sends on its own - a wrong price
+// over WhatsApp is a promise the salon has to honour or retract, and
+// editing the message afterwards doesn't undo it.
+async function draftReply(mobile){
+  const id=mobile.replace(/\D/g,'');
+  const box=document.getElementById('draftBox_'+id);
+  if(!box) return;
+  box.innerHTML='<div class="dr-box"><span class="mw-spinner"></span>Drafting...</div>';
+  const j=await call('suggest_whatsapp_reply',{mobile:mobile});
+  if(!j.ok){box.innerHTML='<div class="dr-box" style="color:var(--err);">'+esc(j.error)+'</div>';return;}
+  const d=j.draft||{};
+
+  // What it deliberately did not answer matters more than what it did -
+  // that is the part the owner has to handle.
+  const gaps=(d.needs_owner||[]).length
+    ? '<div class="dr-gaps"><b>Left for you:</b> '+d.needs_owner.map(esc).join('; ')+'</div>' : '';
+  const grounding=j.grounding_note
+    ? '<div class="dr-warn">'+esc(j.grounding_note)+'</div>' : '';
+
+  box.innerHTML='<div class="dr-box">'+
+    grounding+
+    '<div class="dr-label">Suggested reply &middot; '+esc(d.confidence||'')+' confidence</div>'+
+    '<textarea class="fi dr-text" id="draftText_'+id+'" rows="3">'+esc(d.reply||'')+'</textarea>'+
+    gaps+
+    '<div class="dr-act">'+
+      '<button class="btn btn-p btn-sm" onclick="useDraft(\''+mobile+'\')">Use this</button>'+
+      '<button class="btn btn-s btn-sm" onclick="document.getElementById(\'draftBox_'+id+'\').innerHTML=\'\'">Discard</button>'+
+    '</div>'+
+  '</div>';
+}
+
+// Puts the draft in the reply box rather than sending it. One more
+// deliberate step between a generated sentence and a customer reading
+// it.
+function useDraft(mobile){
+  const id=mobile.replace(/\D/g,'');
+  const t=document.getElementById('draftText_'+id);
+  const r=document.getElementById('reply_'+id);
+  if(t&&r){ r.value=t.value; r.focus(); }
+  document.getElementById('draftBox_'+id).innerHTML='';
+}
+
 async function linkInstagramLead(igUserId,domId){
   const input=document.getElementById('iglink_'+domId);
   const mobile=(input&&input.value||'').trim();
