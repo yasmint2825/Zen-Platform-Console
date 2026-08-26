@@ -1150,6 +1150,17 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
 </style>
 
 <style id="zenScheduleHealth">
+  /* The qualifying measurement, set apart from the model's sentence -
+     mono because it's data, and quieter because it's supporting
+     evidence rather than the headline. */
+  .queue-signal{
+    display:block;margin-top:5px;padding-top:5px;
+    border-top:1px dashed var(--line,#E9ECE9);
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:10px;line-height:1.45;color:var(--faint,#8B968F);
+    font-variant-numeric:tabular-nums;
+  }
+
   /* ── Scheduled work ───────────────────────────────────────────
      Status carries through a dot AND a word, never colour alone -
      "Overdue" has to read the same to someone who can't tell amber
@@ -5546,6 +5557,11 @@ async function renderDecisionQueue(opts){
               // they were actually last in.
               '<span class="queue-meta">'+(d.mobile||'no number')+(d.last_visit_date?' &middot; last visit '+formatVisitDate(d.last_visit_date):'')+'</span>'+
               '<span class="queue-reason">'+(d.reasoning||'')+'</span>'+
+              // The measurement, kept visually distinct from the model's
+              // judgement above it. When a decision looks wrong the
+              // question is usually "why was this person picked", and
+              // that answer lives here.
+              (d.signal?'<span class="queue-signal">'+esc(d.signal)+'</span>':'')+
               ((isScheduled||isApproved)
                 ? '<span class="queue-undo">'+
                     (isScheduled
