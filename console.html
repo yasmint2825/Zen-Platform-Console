@@ -5167,8 +5167,14 @@ async function testInstagramConnection(){
   const warn = j.publish_compatible ? '' :
     '<div style="color:var(--warn);font-size:11px;margin-top:4px;">These credentials answer on '+esc(j.surface)+
     ', but publishing uses graph.instagram.com. Posting will likely fail - this usually means the app was set up with Facebook Login rather than Instagram Login.</div>';
-  r.innerHTML='<span style="color:var(--ok);">Connected as @'+esc(j.username||'unknown')+
-    (j.media_count!=null?(' · '+j.media_count+' posts'):'')+'</span>'+warn;
+  // A valid token belonging to a different account is worse than an
+  // invalid one: nothing errors, and the post lands on the wrong
+  // Instagram.
+  const mismatch = (j.id_matches===false)
+    ? '<div style="color:var(--err);font-size:11px;margin-top:4px;">This token belongs to account '+esc(j.account_id||'?')+
+      ', but '+esc(j.saved_account_id||'?')+' is saved above. Posts would go to the wrong account - update the ID to match.</div>'
+    : '';
+  r.innerHTML='<span style="color:var(--ok);">Connected as @'+esc(j.username||'unknown')+'</span>'+warn+mismatch;
 }
 async function saveInstagramCredentials(){
   const accountId=document.getElementById('igAccountId').value.trim();
