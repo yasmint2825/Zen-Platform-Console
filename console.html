@@ -1370,6 +1370,49 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     .lead-actions{width:100%;}
   }
 </style>
+
+<style id="zenAdPerformance">
+  /* Per-ad table. The last two columns are the ones Meta can't produce,
+     so they carry the emphasis. */
+  .ap-card{
+    background:var(--surface,#fff);border:1px solid var(--line,#E4E7E4);
+    border-radius:14px;padding:16px 18px;margin:12px 0;
+  }
+  .ap-head{font-size:13px;font-weight:600;margin-bottom:10px;}
+  .ap-totals{
+    display:flex;gap:16px;flex-wrap:wrap;padding-bottom:11px;margin-bottom:11px;
+    border-bottom:1px solid var(--line,#EDEFEC);
+    font-size:11.5px;color:var(--muted,#5E6B64);
+  }
+  .ap-totals b{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:14px;
+    color:var(--ink,#0D1310);margin-right:4px;font-variant-numeric:tabular-nums;
+  }
+  .ap-note{
+    font-size:10.5px;line-height:1.45;color:var(--muted,#5E6B64);
+    padding:7px 9px;border:1px dashed var(--line-strong,#CBD5CF);
+    border-radius:8px;margin-bottom:11px;
+  }
+  .ap-table{width:100%;border-collapse:collapse;font-size:11.5px;}
+  .ap-table th{
+    text-align:right;padding:5px 8px;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:9.5px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;
+    color:var(--faint,#8B968F);border-bottom:1px solid var(--line,#E4E7E4);vertical-align:bottom;
+  }
+  .ap-table th:first-child{text-align:left;}
+  .ap-table th span{font-size:8.5px;opacity:.75;letter-spacing:.03em;}
+  .ap-table td{padding:8px;border-bottom:1px solid var(--line,#F0F2F0);vertical-align:top;}
+  .ap-n{text-align:right;font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;}
+  .ap-win{color:#0B7A5E;font-weight:600;}
+  .ap-sub{font-size:10px;color:var(--muted,#5E6B64);margin-top:1px;}
+  /* Spend, no conversations. The row worth acting on today. */
+  .ap-dead{background:rgba(168,39,30,.04);}
+  .ap-dead td:first-child b::after{
+    content:'no conversations';margin-left:7px;padding:1px 6px;border-radius:999px;
+    background:#FBEDEC;color:#A8271E;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:8.5px;font-weight:600;letter-spacing:.03em;
+  }
+</style>
 </head>
 <body>
 
@@ -2055,8 +2098,10 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
               </select>
               <button class="btn btn-p btn-sm" onclick="loadMetaAdsSummary()">Check spend</button>
               <button class="btn btn-s btn-sm" onclick="analyseAdSpend()">Analyse</button>
+              <button class="btn btn-s btn-sm" onclick="loadAdPerformance()">Per ad</button>
             </div>
             <div id="adAnalysis"></div>
+            <div id="adPerformance"></div>
             <div id="metaAdsResult"></div>
           </div>
 
@@ -5419,6 +5464,48 @@ async function testInstagramConnection(){
 // Reads the spend and says what to do about it. The value isn't the
 // summary - Meta already shows you that - it's the comparison against
 // what the spend actually produced, which only exists here.
+// Per-ad, with what each ad actually produced. Meta stops at
+// "conversation started"; the last two columns are the ones it can't
+// give you.
+async function loadAdPerformance(){
+  const el=document.getElementById('adPerformance');
+  const days=(document.getElementById('metaAdsLookback')||{}).value||90;
+  el.innerHTML='<div class="ap-card"><span class="mw-spinner"></span>Loading per-ad numbers...</div>';
+  const j=await call('get_ad_performance',{days:Number(days)});
+  if(!j.ok){el.innerHTML='<div class="ap-card" style="color:var(--err);">'+esc(j.error)+'</div>';return;}
+  if(!j.ads.length){el.innerHTML='<div class="ap-card muted">'+esc(j.note||'No data.')+'</div>';return;}
+
+  const t=j.totals||{};
+  const rows=j.ads.map(function(a){
+    // An ad with spend and no conversations is the one to act on, so it
+    // is marked rather than left to be spotted in a table.
+    const dead = a.spend>0 && !a.conversations && !a.zen_conversations;
+    return '<tr'+(dead?' class="ap-dead"':'')+'>'+
+      '<td><b>'+esc(a.ad_name||a.ad_id)+'</b><div class="ap-sub">'+esc(a.campaign_name||'')+'</div></td>'+
+      '<td class="ap-n">'+Math.round(a.spend)+'</td>'+
+      '<td class="ap-n">'+a.clicks+'</td>'+
+      '<td class="ap-n">'+(a.conversations||0)+'</td>'+
+      '<td class="ap-n">'+(a.zen_conversations||0)+'</td>'+
+      '<td class="ap-n ap-win">'+(a.zen_visited||0)+'</td>'+
+      '<td class="ap-n">'+(a.cost_per_visit!=null?a.cost_per_visit:'&mdash;')+'</td>'+
+    '</tr>';
+  }).join('');
+
+  el.innerHTML='<div class="ap-card">'+
+    '<div class="ap-head">Per ad &middot; last '+j.days+' days</div>'+
+    '<div class="ap-totals">'+
+      '<span><b>'+Math.round(t.spend||0)+'</b> spent</span>'+
+      '<span><b>'+(t.conversations||0)+'</b> conversations (Meta)</span>'+
+      '<span><b>'+(t.zen_conversations||0)+'</b> in your inbox</span>'+
+      '<span><b>'+(t.visited||0)+'</b> visited</span>'+
+    '</div>'+
+    (j.tracking_note?'<div class="ap-note">'+esc(j.tracking_note)+'</div>':'')+
+    '<div style="overflow-x:auto;"><table class="ap-table">'+
+      '<tr><th>ad</th><th>spend</th><th>clicks</th><th>convos<br><span>Meta</span></th>'+
+      '<th>convos<br><span>inbox</span></th><th>visited</th><th>cost/visit</th></tr>'+rows+
+    '</table></div>'+
+  '</div>';
+}
 async function analyseAdSpend(){
   const el=document.getElementById('adAnalysis');
   const days=(document.getElementById('metaAdsLookback')||{}).value||30;
