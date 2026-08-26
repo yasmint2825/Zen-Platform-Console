@@ -1638,6 +1638,54 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
 <style id="zenUpAct">
   .up-act{margin-top:5px;padding:3px 9px;min-height:26px;font-size:10.5px;}
 </style>
+
+<style id="zenAdRecs">
+  /* ── Agent recommendations ────────────────────────────────────
+     The primary view. Each row is a decision with its evidence and a
+     button, not a setting to configure. */
+  .ar-card{border:1px solid var(--line,#E4E7E4);border-radius:12px;padding:14px 16px;background:var(--surface,#fff);}
+  .ar-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+  .ar-head b{font-size:13px;}
+  .ar-meta{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;
+    color:var(--faint,#8B968F);font-variant-numeric:tabular-nums;
+  }
+  .ar-caveat{
+    font-size:11px;line-height:1.5;color:#9A5B0F;background:#FDF8F0;
+    border-radius:8px;padding:8px 10px;margin-bottom:11px;
+  }
+  .ar-row{padding:11px 0;border-top:1px solid var(--line,#F0F2F0);}
+  .ar-row:first-of-type{border-top:0;}
+  .ar-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .ar-top b{font-size:12.5px;}
+  .ar-tag{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9px;font-weight:600;
+    letter-spacing:.04em;padding:3px 8px;border-radius:999px;white-space:nowrap;
+  }
+  .ar-stop{background:#FBEDEC;color:#A8271E;}
+  .ar-cut{background:#FDF3E7;color:#9A5B0F;}
+  .ar-up{background:#E8F6F1;color:#0B7A5E;}
+  .ar-fix{background:#E9F2F7;color:#1A5C82;}
+  .ar-info{background:#EEF1EF;color:#5E6B64;}
+  .ar-state{
+    margin-left:auto;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:9px;color:var(--faint,#8B968F);letter-spacing:.04em;
+  }
+  .ar-why{font-size:12px;line-height:1.5;margin-top:4px;color:var(--ink-2,#38443E);}
+  .ar-nums{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;
+    color:var(--faint,#8B968F);margin-top:4px;font-variant-numeric:tabular-nums;line-height:1.45;
+  }
+  .ar-act{display:flex;align-items:center;gap:7px;margin-top:8px;flex-wrap:wrap;}
+  .ar-manual{
+    font-size:11px;color:var(--muted,#5E6B64);margin-top:7px;
+    padding-left:9px;border-left:2px solid var(--line-strong,#CBD5CF);
+  }
+  @media (max-width:640px){
+    .ar-state{margin-left:0;}
+    .ar-act .btn{flex:1;}
+  }
+</style>
 </head>
 <body>
 
@@ -2004,10 +2052,11 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
             <p class="muted" style="font-size:11.5px;">Pause and restart ads on a schedule, and plan the month ahead. Nothing changes without you previewing it first.</p>
             <div id="adControlPerm" class="muted" style="font-size:11.5px;margin-bottom:10px;"></div>
             <div class="row" style="gap:6px;margin-bottom:12px;">
-              <button class="btn btn-p btn-sm" onclick="loadAdControl()">Load ad sets</button>
-              <button class="btn btn-s btn-sm" onclick="previewAdSchedule()">Preview what would change</button>
+              <button class="btn btn-p btn-sm" onclick="loadAdRecommendations()">What should I change?</button>
+              <button class="btn btn-s btn-sm" onclick="loadAdControl()">All ad sets</button>
               <button class="btn btn-s btn-sm" onclick="loadAdActions()">History</button>
             </div>
+            <div id="adRecs" style="margin-bottom:12px;"></div>
             <div id="adSchedulePreview" style="font-size:12px;margin-bottom:10px;"></div>
             <div id="adControlList" class="muted" style="font-size:12px;">Click Load ad sets to begin.</div>
             <div id="adActionsList" style="margin-top:12px;"></div>
@@ -5928,6 +5977,90 @@ async function actOnRecommendation(name){
   if(typeof loadAdControl==='function') loadAdControl();
 }
 
+// The agent's own view of what should change.
+//
+// This replaces asking the owner to configure a rule engine. Rules put
+// the thinking on the wrong side: they require someone to already know
+// the policy, and then obey it whether or not it still makes sense.
+async function loadAdRecommendations(){
+  const el=document.getElementById('adRecs');
+  el.innerHTML='<div class="ar-card"><span class="mw-spinner"></span>Reading 90 days across every ad set, running and paused...</div>';
+  const j=await call('recommend_ad_actions',{days:90});
+  if(!j.ok){el.innerHTML='<div class="ar-card" style="color:var(--err);">'+esc(j.error)+'</div>';return;}
+
+  const recs=j.recommendations||[];
+  const head='<div class="ar-head">'+
+    '<b>What I would change</b>'+
+    '<span class="ar-meta">'+(j.total_conversations||0)+' conversations on '+(j.total_spend||0)+' AED'+
+      (j.account_avg_cost_per_conversation?(' &middot; '+j.account_avg_cost_per_conversation+' average per conversation'):'')+'</span>'+
+  '</div>';
+
+  // Volume caveat first. A confident-looking list built on twelve
+  // conversations would be worse than no list.
+  const caveat=j.note?'<div class="ar-caveat">'+esc(j.note)+'</div>':'';
+
+  if(!recs.length){
+    el.innerHTML='<div class="ar-card">'+head+caveat+
+      '<div class="muted" style="font-size:12px;">Nothing worth changing right now. Every ad set is either performing about average or too new to judge.</div></div>';
+    return;
+  }
+
+  const label={pause:'Pause',reduce:'Spend less',increase:'Spend more',
+    refresh:'New creative needed',reinstate:'Bring back',reinstate_awareness:'Bring back'};
+  const tone={pause:'ar-stop',reduce:'ar-cut',increase:'ar-up',
+    refresh:'ar-fix',reinstate:'ar-up',reinstate_awareness:'ar-info'};
+
+  el.innerHTML='<div class="ar-card">'+head+caveat+recs.map(function(r,i){
+    const v=r.verdict;
+    const needsBudget=(v==='increase'||v==='reduce');
+    const suggested=needsBudget
+      ? Math.max(5, Math.round((r.daily_budget||20)*(v==='increase'?1.5:0.6)))
+      : null;
+    return '<div class="ar-row">'+
+      '<div class="ar-top">'+
+        '<span class="ar-tag '+(tone[v]||'ar-info')+'">'+esc(label[v]||v)+'</span>'+
+        '<b>'+esc(r.name)+'</b>'+
+        '<span class="ar-state">'+esc(r.status)+'</span>'+
+      '</div>'+
+      '<div class="ar-why">'+esc(r.why)+'</div>'+
+      '<div class="ar-nums">'+
+        esc(r.campaign||'')+' &middot; '+r.spend+' spent &middot; '+r.conversations+' conversations'+
+        (r.cost_per_conversation?(' &middot; '+r.cost_per_conversation+' each'):'')+
+        (r.daily_budget?(' &middot; now '+r.daily_budget+'/day'):'')+
+      '</div>'+
+      (v==='refresh'
+        // Honest about what can't be automated rather than offering a
+        // button that would quietly do nothing.
+        ? '<div class="ar-manual">This one needs new creative &mdash; not something the platform can do for you.</div>'
+        : '<div class="ar-act">'+
+            (needsBudget?'<input class="fi" type="number" id="arB_'+i+'" value="'+suggested+'" style="width:90px;margin:0;font-size:12px;min-height:32px;"><span class="muted" style="font-size:11px;">AED/day</span>':'')+
+            '<button class="btn btn-p btn-sm" onclick="applyAdRec('+i+')">'+esc(label[v]||v)+'</button>'+
+            '<span id="arR_'+i+'" style="font-size:11.5px;"></span>'+
+          '</div>')+
+    '</div>';
+  }).join('')+'</div>';
+  window.AD_RECS=recs;
+}
+
+async function applyAdRec(i){
+  const r=(window.AD_RECS||[])[i];
+  if(!r) return;
+  const out=document.getElementById('arR_'+i);
+  const bEl=document.getElementById('arB_'+i);
+  const budget=bEl?Number(bEl.value):null;
+  const what=r.verdict==='pause'?'Pause "'+r.name+'"?'
+    :r.verdict.indexOf('reinstate')===0?'Bring "'+r.name+'" back to active?'
+    :'Change "'+r.name+'" to '+budget+' AED/day?';
+  if(!confirm(what+'\n\n'+r.why+'\n\nThis changes your live ads.')) return;
+  out.innerHTML='<span class="mw-spinner"></span>';
+  const j=await call('apply_ad_recommendation',{
+    entity_id:r.id, entity_name:r.name, verdict:r.verdict,
+    new_budget:budget||undefined, reason:r.why,
+  });
+  if(j.ok){out.textContent='Done.';out.style.color='var(--ok)';}
+  else{out.textContent=j.error;out.style.color='var(--err)';}
+}
+
 // ── Ad control ────────────────────────────────────────────────────
 // Pausing an ad and moving budget is the platform spending or
 // withholding real money, so every path here shows what would happen
@@ -5964,6 +6097,12 @@ async function loadAdControl(){
 }
 
 function renderAdControl(){
+  // Running ad sets first - they are the ones spending money right now.
+  AD_SETS.sort(function(a,b){
+    const av=a.effective_status==='ACTIVE'?0:1, bv=b.effective_status==='ACTIVE'?0:1;
+    if(av!==bv) return av-bv;
+    return (b.daily_budget||0)-(a.daily_budget||0);
+  });
   document.getElementById('adControlList').innerHTML=AD_SETS.map(function(a,i){
     const r=a.rule||{};
     const f=AD_FORECAST[a.id];
