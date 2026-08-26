@@ -1230,6 +1230,79 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     .zh-grid{grid-template-columns:1fr;}
   }
 </style>
+
+<style id="zenAdAnalysis">
+  /* ── Ad spend analysis ────────────────────────────────────────
+     Reads as advice rather than a report: a headline, what stands
+     out, what to do. Severity carries a dot and a word, never
+     colour alone. */
+  .aa-card{
+    background:var(--surface,#fff);border:1px solid var(--line,#E4E7E4);
+    border-radius:14px;padding:16px 18px;margin:12px 0;
+  }
+  .aa-headline{
+    font-size:15px;font-weight:600;line-height:1.35;letter-spacing:-.01em;
+    color:var(--ink,#0D1310);
+  }
+  .aa-assess{margin:8px 0 0;font-size:12.5px;line-height:1.55;color:var(--ink-2,#38443E);}
+  .aa-outcome{
+    margin-top:10px;padding:8px 11px;border-radius:9px;
+    background:#E8F6F1;color:#0B7A5E;font-size:11.5px;line-height:1.45;
+    font-variant-numeric:tabular-nums;
+  }
+  .aa-section{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:10px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--faint,#8B968F);margin:16px 0 8px;
+  }
+
+  .aa-finding{
+    border-left:2px solid var(--line-strong,#CBD5CF);
+    padding:2px 0 2px 11px;margin-bottom:11px;
+  }
+  .aa-high{border-left-color:#A8271E;}
+  .aa-med{border-left-color:#9A5B0F;}
+  .aa-low{border-left-color:#B6BEB9;}
+  .aa-f-top{display:flex;align-items:center;gap:7px;}
+  .aa-f-top b{font-size:12.5px;}
+  .aa-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;}
+  .aa-high .aa-dot{background:#A8271E;} .aa-med .aa-dot{background:#9A5B0F;} .aa-low .aa-dot{background:#B6BEB9;}
+  .aa-sev{
+    margin-left:auto;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint,#8B968F);
+  }
+  .aa-f-detail{font-size:12px;line-height:1.5;color:var(--ink-2,#38443E);margin-top:3px;}
+  .aa-f-ev{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:10.5px;color:var(--faint,#8B968F);margin-top:4px;
+    font-variant-numeric:tabular-nums;line-height:1.45;
+  }
+
+  .aa-rec{display:flex;gap:11px;padding:11px 0;border-bottom:1px solid var(--line,#EDEFEC);}
+  .aa-rec:last-child{border-bottom:0;}
+  .aa-r-n{
+    flex-shrink:0;width:21px;height:21px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:#0F4C45;color:#fff;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;font-weight:600;
+  }
+  .aa-rec b{font-size:12.5px;line-height:1.35;display:block;}
+  .aa-r-why{font-size:11.5px;line-height:1.5;color:var(--muted,#5E6B64);margin-top:3px;}
+  .aa-r-impact{
+    font-size:11.5px;font-weight:500;color:#0F4C45;margin-top:4px;
+    font-variant-numeric:tabular-nums;
+  }
+  .aa-r-conf{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;
+    color:var(--faint,#8B968F);margin-top:4px;
+  }
+  .aa-blind{
+    margin-top:14px;padding:9px 11px;border:1px dashed var(--line-strong,#CBD5CF);
+    border-radius:9px;font-size:11px;line-height:1.5;color:var(--muted,#5E6B64);
+  }
+  @media (max-width:640px){ .aa-card{padding:14px;} }
+</style>
 </head>
 <body>
 
@@ -1895,7 +1968,9 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
                 <option value="90">Last 90 days</option>
               </select>
               <button class="btn btn-p btn-sm" onclick="loadMetaAdsSummary()">Check spend</button>
+              <button class="btn btn-s btn-sm" onclick="analyseAdSpend()">Analyse</button>
             </div>
+            <div id="adAnalysis"></div>
             <div id="metaAdsResult"></div>
           </div>
 
@@ -1907,8 +1982,14 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
                   <input class="fi" type="password" id="metaAdsToken" placeholder="Access token with ads_read" style="flex:1;min-width:220px;">
                   <button class="btn btn-s btn-sm" onclick="saveMetaAdsCredentials()">Save</button>
                 </div>
+                <input class="fi" type="text" id="metaCapiDataset" placeholder="Events Manager dataset ID (optional - needed to send conversions back)" style="font-size:11.5px;">
+                <div class="muted" style="font-size:10.5px;margin-top:-6px;margin-bottom:8px;">Meta creates this dataset against your WhatsApp Business Account. Without it, ad reporting still works &mdash; you just can&rsquo;t tell Meta which clicks became visits.</div>
                 <div id="metaAdsSaveResult" style="font-size:12px;"></div>
                 <button class="btn btn-s btn-sm" onclick="testMetaAdsConnection()" style="margin-top:6px;">Check connection</button>
+                <button class="btn btn-s btn-sm" onclick="sendAdConversions(true)" style="margin-top:6px;">Preview conversions</button>
+                <button class="btn btn-p btn-sm" onclick="sendAdConversions(false)" style="margin-top:6px;">Send conversions to Meta</button>
+                <div class="muted" style="font-size:10.5px;margin-top:4px;">Tells Meta which ad clicks became real visits, so it optimises for customers who turn up rather than people who just message. Preview first &mdash; it shows what would be sent without sending it.</div>
+                <div id="adConversionResult" style="font-size:12px;margin-top:8px;"></div>
                 <div class="muted" style="font-size:10.5px;margin-top:4px;">Reads the ad account to confirm the token works. Pulls no reports and spends nothing.</div>
                 <div id="metaAdsTestResult" style="font-size:12px;margin-top:8px;"></div>
               </details>
@@ -5194,6 +5275,72 @@ async function testInstagramConnection(){
     : '';
   r.innerHTML='<span style="color:var(--ok);">Connected as @'+esc(j.username||'unknown')+'</span>'+warn+mismatch;
 }
+// Reads the spend and says what to do about it. The value isn't the
+// summary - Meta already shows you that - it's the comparison against
+// what the spend actually produced, which only exists here.
+async function analyseAdSpend(){
+  const el=document.getElementById('adAnalysis');
+  const days=(document.getElementById('metaAdsLookback')||{}).value||30;
+  el.innerHTML='<div class="aa-card"><span class="mw-spinner"></span>Reading the numbers and working out what they mean...</div>';
+  const j=await call('analyse_ad_spend',{lookback_days:Number(days)});
+  if(!j.ok){el.innerHTML='<div class="aa-card" style="color:var(--err);">'+esc(j.error)+'</div>';return;}
+  const a=j.analysis||{};
+
+  const sev={high:'aa-high',medium:'aa-med',low:'aa-low'};
+  const findings=(a.findings||[]).map(function(f){
+    return '<div class="aa-finding '+(sev[f.severity]||'aa-low')+'">'+
+      '<div class="aa-f-top"><span class="aa-dot"></span><b>'+esc(f.title)+'</b>'+
+        '<span class="aa-sev">'+esc(f.severity||'')+'</span></div>'+
+      '<div class="aa-f-detail">'+esc(f.detail)+'</div>'+
+      (f.evidence?'<div class="aa-f-ev">'+esc(f.evidence)+'</div>':'')+
+    '</div>';
+  }).join('');
+
+  const recs=(a.recommendations||[]).map(function(r,i){
+    return '<div class="aa-rec">'+
+      '<div class="aa-r-n">'+(i+1)+'</div>'+
+      '<div><b>'+esc(r.action)+'</b>'+
+        '<div class="aa-r-why">'+esc(r.rationale||'')+'</div>'+
+        (r.impact?'<div class="aa-r-impact">'+esc(r.impact)+'</div>':'')+
+        '<div class="aa-r-conf">'+esc(r.confidence||'')+' confidence</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+
+  el.innerHTML='<div class="aa-card">'+
+    '<div class="aa-headline">'+esc(a.headline||'')+'</div>'+
+    (a.assessment?'<p class="aa-assess">'+esc(a.assessment)+'</p>':'')+
+    (j.outcome_note?'<div class="aa-outcome">'+esc(j.outcome_note)+'</div>':'')+
+    (findings?'<div class="aa-section">What stands out</div>'+findings:'')+
+    (recs?'<div class="aa-section">What I would do</div>'+recs:'')+
+    // Kept prominent rather than buried. An analysis that never states
+    // its own blind spots gets trusted more than it should.
+    (a.what_i_cannot_see?'<div class="aa-blind"><b>What I can\'t see:</b> '+esc(a.what_i_cannot_see)+'</div>':'')+
+  '</div>';
+}
+
+async function sendAdConversions(dryRun){
+  const el=document.getElementById('adConversionResult');
+  el.innerHTML='<span class="mw-spinner"></span>'+(dryRun?'Checking what would be sent...':'Sending...');
+  const j=await call('send_ad_conversions',{dry_run:!!dryRun});
+  if(!j.ok){el.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
+  if(dryRun){
+    const list=(j.would_send||[]);
+    el.innerHTML = list.length
+      ? '<span style="color:var(--ok);">'+list.length+' conversion(s) ready to send</span>'+
+        '<div class="muted" style="font-size:10.5px;margin-top:3px;">'+
+        list.slice(0,8).map(function(x){return esc(x.mobile)+' &middot; '+x.value;}).join('<br>')+
+        (list.length>8?'<br>and '+(list.length-8)+' more':'')+'</div>'+
+        (j.no_visit_yet?'<div class="muted" style="font-size:10.5px;margin-top:3px;">'+j.no_visit_yet+' other conversation(s) haven\'t produced a visit yet.</div>':'')
+      : '<span class="muted">'+esc(j.note||'Nothing ready to send.')+'</span>';
+    return;
+  }
+  el.innerHTML='<span style="color:'+(j.sent?'var(--ok)':'var(--muted)')+';">'+
+    (j.sent?(j.sent+' conversion(s) reported to Meta'):esc(j.note||'Nothing to send'))+'</span>'+
+    (j.failed?'<div style="color:var(--err);font-size:10.5px;margin-top:3px;">'+j.failed+' failed'+
+      ((j.errors||[]).length?': '+esc(j.errors[0]):'')+'</div>':'');
+}
+
 async function loadMetaAdsStatus(){
   const el=document.getElementById('metaAdsStatus');
   if(!el) return;
@@ -5202,6 +5349,7 @@ async function loadMetaAdsStatus(){
   if(j.connected){
     el.innerHTML='<span style="color:var(--ok);">Connected &middot; account '+esc(j.ad_account_id)+'</span>';
     document.getElementById('metaAdAccountId').value=j.ad_account_id||'';
+    if(j.capi_dataset_id) document.getElementById('metaCapiDataset').value=j.capi_dataset_id;
   } else if(j.legacy_token_present && j.legacy_ad_account_id){
     // Still on the old setup. Saying "not connected" would be wrong -
     // ad spend is working - but it should still be moved.
@@ -5218,7 +5366,8 @@ async function saveMetaAdsCredentials(){
   const access_token=document.getElementById('metaAdsToken').value.trim();
   if(!ad_account_id||!access_token){r.textContent='Both fields are needed.';r.style.color='var(--err)';return;}
   r.innerHTML='<span class="mw-spinner"></span>Saving...';
-  const j=await call('save_meta_ads_credentials',{ad_account_id:ad_account_id,access_token:access_token});
+  const j=await call('save_meta_ads_credentials',{ad_account_id:ad_account_id,access_token:access_token,
+    capi_dataset_id:document.getElementById('metaCapiDataset').value.trim()||undefined});
   if(j.ok){
     // Cleared once stored, same as the WhatsApp token - no reason for a
     // secret to sit visible in a form after it has been saved.
