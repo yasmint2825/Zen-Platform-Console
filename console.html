@@ -1303,6 +1303,24 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
   }
   @media (max-width:640px){ .aa-card{padding:14px;} }
 </style>
+
+<style id="zenChannelTags">
+  /* Channel is load-bearing, not decoration: the same person can appear
+     on both, and a reply typed into the wrong thread simply never
+     arrives. Letters rather than colour alone. */
+  .ch-tag{
+    display:inline-block;margin-right:5px;padding:1px 5px;border-radius:4px;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:8.5px;font-weight:600;letter-spacing:.04em;vertical-align:1px;
+  }
+  .ch-wa{background:#E8F6F1;color:#0B7A5E;}
+  .ch-ig{background:#F5EBF6;color:#8B3FA0;}
+  /* Came from an ad - the ones where the loop back to Meta matters. */
+  .ch-ad{background:#FDF3E7;color:#9A5B0F;}
+
+  .ig-link{display:flex;gap:6px;margin-top:8px;}
+  @media (max-width:640px){ .ig-link{flex-wrap:wrap;} .ig-link .btn{width:100%;} }
+</style>
 </head>
 <body>
 
@@ -3484,9 +3502,18 @@ async function loadConversations(force){
 
   listEl.innerHTML=CONVERSATIONS.map(function(c,i){
     const unread=c.unhandled>0;
+    // The channel badge matters: the same person may appear on both,
+    // and a reply typed into the wrong one simply won't arrive.
+    const ch = c.channel==='instagram'
+      ? '<span class="ch-tag ch-ig">IG</span>'
+      : '<span class="ch-tag ch-wa">WA</span>';
+    const adTag = c.from_ad ? '<span class="ch-tag ch-ad">AD</span>' : '';
+    const who = c.channel==='instagram'
+      ? (c.customer_name || (c.ig_username?('@'+c.ig_username):'Instagram user'))
+      : (c.customer_name || c.mobile);
     return '<div onclick="openThread('+i+')" id="thread_item_'+i+'" style="cursor:pointer;padding:7px 8px;border-radius:6px;margin-bottom:2px;'+(unread?'background:var(--okl,rgba(0,128,0,.07));':'')+'">'+
       '<div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">'+
-        '<b style="font-size:11.5px;'+(unread?'':'font-weight:500;')+'">'+esc(c.customer_name||c.mobile)+'</b>'+
+        '<b style="font-size:11.5px;'+(unread?'':'font-weight:500;')+'">'+ch+adTag+esc(who)+'</b>'+
         (unread?'<span class="count-badge">'+c.unhandled+'</span>':'')+
       '</div>'+
       '<div class="muted" style="font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(previewOf(c))+'</div>'+
@@ -3531,14 +3558,18 @@ function openThread(i){
   }).join('');
 
   const id=c.mobile.replace(/\D/g,'');
+  const isIG = c.channel==='instagram';
   const composer=c.reply_window_open
     ? '<div style="display:flex;gap:6px;margin-top:8px;">'+
         '<input class="fi" type="text" id="reply_'+id+'" placeholder="Type a reply and press Enter" style="margin:0;flex:1;font-size:11.5px;" onkeydown="if(event.key===\'Enter\')sendReply(\''+c.mobile+'\')">'+
         '<button class="btn btn-p btn-sm" onclick="sendReply(\''+c.mobile+'\')">Send</button>'+
       '</div>'+
-      '<div class="muted" style="font-size:9.5px;margin-top:2px;">Free-text reply open for another '+c.reply_window_hours_left+'h.</div>'
+      '<div class="muted" style="font-size:9.5px;margin-top:2px;">Reply window open for another '+c.reply_window_hours_left+'h'+
+        (isIG?' — Instagram has no template fallback once it closes.':'')+'</div>'
     : '<div class="muted" style="font-size:10.5px;margin-top:8px;padding:6px;border:1px dashed var(--border);border-radius:6px;">'+
-        'Free-text replies closed. WhatsApp only allows them within 24 hours of the customer\'s own message - after that, only an approved template.'+
+        (isIG
+          ? 'Reply window closed. Instagram only allows replies within 24 hours of their message, and there is no template to fall back on.'
+          : 'Free-text replies closed. WhatsApp only allows them within 24 hours of the customer\'s own message - after that, only an approved template.')+
       '</div>';
 
   document.getElementById('conversationThread').innerHTML=
@@ -3547,6 +3578,16 @@ function openThread(i){
         '<div class="muted" style="font-size:10px;">'+esc(c.mobile)+'</div></div>'+
       (c.unhandled?'<button class="btn btn-s btn-sm" onclick="markHandled(\''+c.mobile+'\')">Mark read</button>':'')+
     '</div>'+
+    // An Instagram lead is anonymous until they give a number. Linking
+    // them is what connects the ad they came from to the visit they
+    // eventually make.
+    (isIG && !c.customer_key
+      ? '<div class="ig-link">'+
+          '<input class="fi" type="text" id="iglink_'+id+'" placeholder="Their phone number, once they share it" style="margin:0;flex:1;font-size:11.5px;">'+
+          '<button class="btn btn-s btn-sm" onclick="linkInstagramLead(\''+(c.ig_user_id||'')+'\',\''+id+'\')">Link to customer</button>'+
+        '</div>'+
+        '<div class="muted" style="font-size:9.5px;margin-top:2px;">Connects this conversation to their visits, so the ad that brought them can be credited.</div>'
+      : '')+
     '<div style="flex:1;overflow-y:auto;max-height:280px;display:flex;flex-direction:column;">'+(bubbles||'<div class="muted" style="margin:auto;font-size:11px;">No messages yet.</div>')+'</div>'+
     composer+
     '<div id="replyResult_'+id+'" style="font-size:11px;margin-top:4px;"></div>';
@@ -3573,7 +3614,13 @@ async function sendReply(mobile){
   input.value='';
   res.textContent='';
 
-  const j=await call('send_whatsapp_reply',{to_number:mobile,message:message});
+  // Same button, different API. Sending an Instagram reply through the
+  // WhatsApp endpoint would fail with an unhelpful error about an
+  // invalid phone number.
+  const conv0=CONVERSATIONS.find(function(x){return x.mobile===mobile;});
+  const j = (conv0 && conv0.channel==='instagram')
+    ? await call('send_instagram_reply',{ig_user_id:conv0.ig_user_id||mobile,message:message})
+    : await call('send_whatsapp_reply',{to_number:mobile,message:message});
 
   // Re-resolve rather than reusing the object captured before the await.
   // A background refresh may have rebuilt CONVERSATIONS in the meantime,
@@ -3622,6 +3669,19 @@ async function sendReply(mobile){
     showPending('failed', j.error);
     say('Error: '+j.error,'var(--err)');
   }
+}
+async function linkInstagramLead(igUserId,domId){
+  const input=document.getElementById('iglink_'+domId);
+  const mobile=(input&&input.value||'').trim();
+  if(!mobile){alert('Enter their phone number first.');return;}
+  const j=await call('link_instagram_lead',{ig_user_id:igUserId,mobile:mobile});
+  if(!j.ok){alert('Error: '+j.error);return;}
+  // Says plainly when the number matches nobody yet, rather than
+  // implying a link that hasn't happened.
+  alert(j.matched_customer
+    ? ('Linked to '+j.matched_customer+'.')
+    : (j.note||'Saved.'));
+  loadConversations(true);
 }
 async function markHandled(mobile){
   const j=await call('mark_conversation_handled',{to_number:mobile});
