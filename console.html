@@ -1480,6 +1480,13 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     .up-table th:nth-child(3),.up-table td:nth-child(3){display:none;}
   }
 </style>
+
+<style id="zenAnalysisTrunc">
+  .aa-trunc{
+    margin-top:12px;padding:8px 11px;border-radius:9px;
+    background:#FDF3E7;color:#9A5B0F;font-size:11px;line-height:1.45;
+  }
+</style>
 </head>
 <body>
 
@@ -5652,6 +5659,10 @@ async function analyseAdSpend(force){
     (a.what_i_cannot_see?'<div class="aa-blind"><b>What I can\'t see:</b> '+esc(a.what_i_cannot_see)+'</div>':'')+
     // Says whether this was recomputed or reused, so a stale-looking
     // answer can be explained rather than doubted.
+    // A salvaged analysis is still worth reading, but the reader
+    // should know some of it is missing rather than assume the model
+    // simply had less to say.
+    (j.truncated?'<div class="aa-trunc">This analysis was cut short and what you see is the part that completed. Re-analyse for the full version.</div>':'')+
     '<div class="aa-meta">'+
       (j.cached
         ? 'Reused from '+formatDubai(j.cached_at)+' &mdash; the underlying numbers haven\'t changed since. Use Re-analyse to force a fresh run.'
