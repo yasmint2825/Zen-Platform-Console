@@ -1413,6 +1413,16 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     font-size:8.5px;font-weight:600;letter-spacing:.03em;
   }
 </style>
+
+<style id="zenAdAnalysisExtra">
+  .aa-patterns{margin:0;padding-left:18px;}
+  .aa-patterns li{font-size:12px;line-height:1.55;color:var(--ink-2,#38443E);margin-bottom:5px;}
+  .aa-meta{
+    margin-top:12px;padding-top:9px;border-top:1px solid var(--line,#EDEFEC);
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:9.5px;line-height:1.5;color:var(--faint,#8B968F);
+  }
+</style>
 </head>
 <body>
 
@@ -2098,6 +2108,7 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
               </select>
               <button class="btn btn-p btn-sm" onclick="loadMetaAdsSummary()">Check spend</button>
               <button class="btn btn-s btn-sm" onclick="analyseAdSpend()">Analyse</button>
+              <button class="btn btn-s btn-sm" onclick="analyseAdSpend(true)" title="Ignore the cached answer and re-run">Re-analyse</button>
               <button class="btn btn-s btn-sm" onclick="loadAdPerformance()">Per ad</button>
             </div>
             <div id="adAnalysis"></div>
@@ -5506,11 +5517,11 @@ async function loadAdPerformance(){
     '</table></div>'+
   '</div>';
 }
-async function analyseAdSpend(){
+async function analyseAdSpend(force){
   const el=document.getElementById('adAnalysis');
   const days=(document.getElementById('metaAdsLookback')||{}).value||30;
   el.innerHTML='<div class="aa-card"><span class="mw-spinner"></span>Reading the numbers and working out what they mean...</div>';
-  const j=await call('analyse_ad_spend',{lookback_days:Number(days)});
+  const j=await call('analyse_ad_spend',{lookback_days:Number(days),force:!!force});
   if(!j.ok){el.innerHTML='<div class="aa-card" style="color:var(--err);">'+esc(j.error)+'</div>';return;}
   const a=j.analysis||{};
 
@@ -5543,7 +5554,22 @@ async function analyseAdSpend(){
     (recs?'<div class="aa-section">What I would do</div>'+recs:'')+
     // Kept prominent rather than buried. An analysis that never states
     // its own blind spots gets trusted more than it should.
+    // Cross-cutting observations, kept separate from findings - these
+    // are the ones nobody would spot by scrolling a table.
+    ((a.patterns||[]).length
+      ? '<div class="aa-section">Patterns</div><ul class="aa-patterns">'+
+        a.patterns.map(function(p){return '<li>'+esc(p)+'</li>';}).join('')+'</ul>'
+      : '')+
     (a.what_i_cannot_see?'<div class="aa-blind"><b>What I can\'t see:</b> '+esc(a.what_i_cannot_see)+'</div>':'')+
+    // Says whether this was recomputed or reused, so a stale-looking
+    // answer can be explained rather than doubted.
+    '<div class="aa-meta">'+
+      (j.cached
+        ? 'Reused from '+formatDubai(j.cached_at)+' &mdash; the underlying numbers haven\'t changed since. Use Re-analyse to force a fresh run.'
+        : ('Analysed '+(j.analysed?((j.analysed.campaigns||0)+' campaigns, '+(j.analysed.ads||0)+' ads, '+
+           (j.analysed.placements||0)+' placements, '+(j.analysed.demographics||0)+' age/gender splits, '+
+           (j.analysed.days||0)+' days'):'')))+
+    '</div>'+
   '</div>';
 }
 
