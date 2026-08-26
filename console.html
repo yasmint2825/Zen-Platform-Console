@@ -2052,8 +2052,8 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
             <p class="muted" style="font-size:11.5px;">Pause and restart ads on a schedule, and plan the month ahead. Nothing changes without you previewing it first.</p>
             <div id="adControlPerm" class="muted" style="font-size:11.5px;margin-bottom:10px;"></div>
             <div class="row" style="gap:6px;margin-bottom:12px;">
-              <button class="btn btn-p btn-sm" onclick="loadAdRecommendations()">What should I change?</button>
-              <button class="btn btn-s btn-sm" onclick="loadAdControl()">All ad sets</button>
+              <button class="btn btn-p btn-sm" onclick="loadAdControl()">Ad sets</button>
+              <button class="btn btn-s btn-sm" onclick="loadAdRecommendations()">Suggest changes</button>
               <button class="btn btn-s btn-sm" onclick="loadAdActions()">History</button>
             </div>
             <div id="adRecs" style="margin-bottom:12px;"></div>
@@ -5986,7 +5986,14 @@ async function loadAdRecommendations(){
   const el=document.getElementById('adRecs');
   el.innerHTML='<div class="ar-card"><span class="mw-spinner"></span>Reading 90 days across every ad set, running and paused...</div>';
   const j=await call('recommend_ad_actions',{days:90});
-  if(!j.ok){el.innerHTML='<div class="ar-card" style="color:var(--err);">'+esc(j.error)+'</div>';return;}
+  if(!j.ok){
+    const stale = String(j.error||'').toLowerCase().includes('unknown action');
+    el.innerHTML='<div class="ar-card" style="color:var(--err);">'+esc(j.error)+
+      (stale?'<div class="muted" style="font-size:11px;margin-top:5px;color:var(--muted);">'+
+        'The console is asking for something the deployed backend doesn\'t have yet &mdash; deploy the latest <b>mw-admin</b> and try again.</div>':'')+
+      '</div>';
+    return;
+  }
 
   const recs=j.recommendations||[];
   const head='<div class="ar-head">'+
