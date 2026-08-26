@@ -2069,6 +2069,11 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
             <div id="adControlPerm" class="muted" style="font-size:11.5px;margin-bottom:10px;"></div>
             <div class="row" style="gap:6px;margin-bottom:12px;">
               <button class="btn btn-p btn-sm" onclick="loadAdControl()">Ad sets</button>
+              <select class="fi" id="adRecDays" style="width:auto;margin:0;font-size:11.5px;min-height:32px;">
+                <option value="30" selected>Last 30 days</option>
+                <option value="60">Last 60 days</option>
+                <option value="90">Last 90 days</option>
+              </select>
               <button class="btn btn-s btn-sm" onclick="loadAdRecommendations()">Suggest changes</button>
               <button class="btn btn-s btn-sm" onclick="loadAdActions()">History</button>
               <button class="btn btn-s btn-sm" onclick="diagnoseAdActions()">Why no conversations?</button>
@@ -6004,7 +6009,7 @@ async function actOnRecommendation(name){
 async function diagnoseAdActions(){
   const el=document.getElementById('adRecs');
   el.innerHTML='<div class="ar-card"><span class="mw-spinner"></span>Asking Meta what it actually reports...</div>';
-  const j=await call('diagnose_ad_actions',{days:90});
+  const j=await call('diagnose_ad_actions',{days:Number((document.getElementById('adRecDays')||{}).value||30)});
   if(!j.ok){el.innerHTML='<div class="ar-card" style="color:var(--err);">'+esc(j.error)+'</div>';return;}
 
   const list=(j.action_types||[]).slice(0,20);
@@ -6034,13 +6039,15 @@ async function diagnoseAdActions(){
 // the policy, and then obey it whether or not it still makes sense.
 async function loadAdRecommendations(){
   const el=document.getElementById('adRecs');
-  el.innerHTML='<div class="ar-card"><span class="mw-spinner"></span>Reading 90 days across every ad set, running and paused...</div>';
-  const j=await call('recommend_ad_actions',{days:90});
+  const days=Number((document.getElementById('adRecDays')||{}).value||30);
+  el.innerHTML='<div class="ar-card"><span class="mw-spinner"></span>Reading '+days+' days across every ad set, running and paused...</div>';
+  const j=await call('recommend_ad_actions',{days:days});
   if(!j.ok){
     const stale = String(j.error||'').toLowerCase().includes('unknown action');
     el.innerHTML='<div class="ar-card" style="color:var(--err);">'+esc(j.error)+
       (stale?'<div class="muted" style="font-size:11px;margin-top:5px;color:var(--muted);">'+
         'The console is asking for something the deployed backend doesn\'t have yet &mdash; deploy the latest <b>mw-admin</b> and try again.</div>':'')+
+      (j.hint?'<div class="muted" style="font-size:11px;margin-top:5px;color:var(--muted);">'+esc(j.hint)+'</div>':'')+
       '</div>';
     return;
   }
