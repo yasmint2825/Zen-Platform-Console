@@ -6195,12 +6195,9 @@ async function loadAdRecommendations(){
   }
 
   const recs=j.recommendations||[];
-  // Says which evidence it used. A click-based verdict is a real
-  // answer but a weaker one, and burying that would overstate it.
-  const basis = j.measure==='clicks'
-    ? ((j.total_spend||0)+' AED spent &middot; judged on clicks'+(j.account_avg_ctr?(', '+j.account_avg_ctr+'% average CTR'):''))
-    : ((j.total_conversations||0)+' conversations on '+(j.total_spend||0)+' AED'+
-       (j.account_avg_cost_per_conversation?(' &middot; '+j.account_avg_cost_per_conversation+' each'):''));
+  // Describes what was measured rather than what was missing.
+  const basis=(j.total_spend||0)+' AED spent &middot; '+(j.total_results||0)+' '+
+    ((j.result_labels||[]).join(' / ')||'results');
   const head='<div class="ar-head"><b>What I would change</b><span class="ar-meta">'+basis+'</span></div>';
 
   // Volume caveat first. A confident-looking list built on twelve
@@ -6232,8 +6229,9 @@ async function loadAdRecommendations(){
       '</div>'+
       '<div class="ar-why">'+esc(r.why)+'</div>'+
       '<div class="ar-nums">'+
-        esc(r.campaign||'')+' &middot; '+r.spend+' spent &middot; '+r.conversations+' conversations'+
-        (r.cost_per_conversation?(' &middot; '+r.cost_per_conversation+' each'):'')+
+        esc(r.campaign||'')+' &middot; '+Math.round(r.spend)+' spent &middot; '+
+        (r.result||0)+' '+esc(r.result_label||'results')+
+        (r.cost_per_result?(' &middot; '+r.cost_per_result+' each'):'')+
         (r.daily_budget?(' &middot; now '+r.daily_budget+'/day'):'')+
       '</div>'+
       (v==='refresh'
