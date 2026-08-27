@@ -1949,6 +1949,74 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     font-size:11px;line-height:1.5;color:var(--muted,#5E6B64);
   }
 </style>
+
+<style id="zenOpportunityNote">
+  .zen-op-note{
+    font-size:11.5px;line-height:1.5;color:var(--muted,#5E6B64);
+    margin:10px 0 0;padding-left:9px;border-left:2px solid var(--line-strong,#CBD5CF);
+  }
+  .zen-action-alt{
+    background:transparent;border:1px solid var(--line-strong,#CBD5CF);
+    color:var(--muted,#5E6B64);
+  }
+  .zen-action-alt:hover{border-color:#0F4C45;color:#0F4C45;}
+</style>
+
+<style id="zenAdPlain">
+  /* Plain English before the numbers. The table answers "what"; this
+     answers "so what" without anyone having to read columns. */
+  .at-plain{
+    font-size:12.5px;line-height:1.6;color:var(--ink,#0D1310);
+    padding:11px 13px;background:var(--surface-2,#FAFBFA);
+    border-left:2px solid #0F4C45;border-radius:0 9px 9px 0;
+    margin-bottom:12px;
+  }
+</style>
+
+<style id="zenTableAlignment">
+  /* ── Table alignment ──────────────────────────────────────────
+     Headers were right-aligned while cells were only right-aligned if
+     they happened to carry a class, so any column without one - the
+     action columns included - sat left under a right-aligned header.
+     And vertical-align:top pushed single-line numbers to the top of
+     rows whose name wrapped to two lines.
+
+     Set by position rather than by class, so a new column lines up
+     without anyone remembering to add one. */
+
+  .at-table th, .at-table td,
+  .ap-table th, .ap-table td,
+  .ig-table th, .ig-table td,
+  .ar-types th, .ar-types td { text-align: right; }
+
+  /* The first column is always a name, and names read left. */
+  .at-table th:first-child, .at-table td:first-child,
+  .ap-table th:first-child, .ap-table td:first-child,
+  .ig-table th:first-child, .ig-table td:first-child,
+  .up-table th:first-child, .up-table td:first-child,
+  .ar-types th:first-child, .ar-types td:first-child { text-align: left; }
+
+  /* Figures share a baseline with the name beside them instead of
+     floating at the top of a two-line row. */
+  .at-table td, .ap-table td, .ig-table td, .ar-types td { vertical-align: baseline; }
+
+  /* Digit under digit, whether or not a class was remembered. */
+  .at-table td, .ap-table td, .ig-table td, .ar-types td { font-variant-numeric: tabular-nums; }
+
+  /* Underperformers: spend right, verdict left so the tag stays with
+     its row rather than drifting to the edge. */
+  .up-table th:nth-child(2), .up-table td:nth-child(2) { text-align: right; }
+  .up-table th:last-child, .up-table td:last-child { text-align: left; white-space: nowrap; }
+  .up-table td { vertical-align: top; }
+
+  /* Buttons hard right, under an empty header. */
+  .at-table td.at-act { text-align: right; white-space: nowrap; }
+
+  /* Sub-labels under a name are prose, not figures - they stay left
+     even inside a right-aligned cell. */
+  .at-sub, .ap-sub, .up-lvl, .at-unit { text-align: left; }
+  .at-table td:first-child .at-sub { text-align: left; }
+</style>
 </head>
 <body>
 
@@ -2319,28 +2387,7 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
 
             <div id="marketingTab-performance" class="marketing-tab-content" style="display:none;">
             <p class="muted" style="font-size:11.5px;margin:0 0 14px;">How the spend is doing, and what it produced.</p>
-<div class="card">
-            <h2>Ads</h2>
-            <p class="muted">Every ad set with what it cost and what it produced. Pause, resume or move budget from any row.</p>
-            <div class="row" style="gap:6px;margin-bottom:12px;flex-wrap:wrap;">
-              <select class="fi" id="adTableDays" style="width:auto;margin:0;font-size:11.5px;min-height:32px;" onchange="loadAdTable()">
-                <option value="7">Last 7 days</option>
-                <option value="30" selected>Last 30 days</option>
-                <option value="90">Last 90 days</option>
-              </select>
-              <select class="fi" id="adTableLevel" style="width:auto;margin:0;font-size:11.5px;min-height:32px;" onchange="loadAdTable()">
-                <option value="adset" selected>By ad set</option>
-                <option value="ad">By ad</option>
-              </select>
-              <button class="btn btn-p btn-sm" onclick="loadAdTable()">Refresh</button>
-              <button class="btn btn-s btn-sm" onclick="loadAdRecommendations()">Suggest changes</button>
-              <button class="btn btn-s btn-sm" onclick="loadAdActions()">History</button>
-            </div>
-            <div id="adControlPerm" class="muted" style="font-size:11.5px;margin-bottom:10px;"></div>
-            <div id="adRecs" style="margin-bottom:12px;"></div>
-            <div id="adTable" class="muted" style="font-size:12px;">Loading...</div>
-            <div id="adActionsList" style="margin-top:12px;"></div>
-          </div>
+
 
           <div class="card">
             <h2>Ad spend monitoring</h2>
@@ -2352,13 +2399,34 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
                 <option value="90">Last 90 days</option>
               </select>
               <button class="btn btn-p btn-sm" onclick="loadMetaAdsSummary()">Check spend</button>
-              <button class="btn btn-s btn-sm" onclick="analyseAdSpend()">Analyse</button>
-              <button class="btn btn-s btn-sm" onclick="analyseAdSpend(true)" title="Ignore the cached answer and re-run">Re-analyse</button>
+              <button class="btn btn-s btn-sm" onclick="analyseAdSpend()">Ask Zen AI &mdash; how do I spend better?</button>
+              <button class="btn btn-s btn-sm" onclick="analyseAdSpend(true)" title="Ignore the cached answer and ask again">Ask again</button>
               <button class="btn btn-s btn-sm" onclick="loadAdPerformance()">Per ad</button>
             </div>
             <div id="adAnalysis"></div>
             <div id="adPerformance"></div>
             <div id="metaAdsResult"></div>
+          </div>
+
+          <div class="card">
+            <h2>Ads</h2>
+            <p class="muted">What each ad set cost and what it produced. Pause, resume or change budget from any row.</p>
+            <div class="row" style="gap:6px;margin-bottom:12px;flex-wrap:wrap;">
+              <select class="fi" id="adTableDays" style="width:auto;margin:0;font-size:11.5px;min-height:32px;" onchange="loadAdTable()">
+                <option value="7">Last 7 days</option>
+                <option value="30" selected>Last 30 days</option>
+                <option value="90">Last 90 days</option>
+              </select>
+              <select class="fi" id="adTableLevel" style="width:auto;margin:0;font-size:11.5px;min-height:32px;" onchange="loadAdTable()">
+                <option value="adset" selected>By ad set</option>
+                <option value="ad">By ad</option>
+              </select>
+              <button class="btn btn-p btn-sm" onclick="loadAdTable()">Refresh</button>
+              <button class="btn btn-s btn-sm" onclick="loadAdActions()">History</button>
+            </div>
+            <div id="adControlPerm" class="muted" style="font-size:11.5px;margin-bottom:10px;"></div>
+            <div id="adTable" class="muted" style="font-size:12px;">Loading...</div>
+            <div id="adActionsList" style="margin-top:12px;"></div>
           </div>
 
 <div class="card">
@@ -3286,9 +3354,25 @@ async function loadCommandCenter(){
     '<aside class="zen-opportunity">'+
       '<div class="eyebrow">Opportunity detected</div>'+
       '<h3>'+atRisk.count+' customer'+(atRisk.count===1?'':'s')+' at risk of not returning</h3>'+
-      '<p class="muted" style="font-size:12px;">Based on real visit patterns and prediction data.</p>'+
-      (atRisk.revenue_estimate?('<div class="zen-money">~AED '+atRisk.revenue_estimate.toLocaleString()+' <small>estimated, based on this business\'s average transaction value</small></div>'):'')+
-      '<button class="zen-action" onclick="zenGoAgent(\'intelligence\')">Explore in Intelligence</button>'+
+      // Which campaigns, so it connects to what is actually queued
+      // rather than being an abstract count.
+      ((atRisk.by_campaign&&Object.keys(atRisk.by_campaign).length)
+        ? '<p class="muted" style="font-size:12px;">'+
+          Object.entries(atRisk.by_campaign).map(function(e){
+            return e[1]+' '+e[0].replace(/_/g,' ');
+          }).join(' &middot; ')+'</p>'
+        : '<p class="muted" style="font-size:12px;">Based on real visit patterns and prediction data.</p>')+
+      (atRisk.revenue_estimate
+        ? '<div class="zen-money">~AED '+atRisk.revenue_estimate.toLocaleString()+
+          ' <small>one visit each, at their own average of AED '+(atRisk.avg_ticket||0)+
+          '. Not their lifetime value &mdash; what a single returned visit is worth.</small></div>'
+        : '')+
+      // The count read as an unattended problem. It isn't - the
+      // messages are drafted and waiting on approval, and saying so
+      // turns an alarm into a decision.
+      (atRisk.note?'<p class="zen-op-note">'+esc(atRisk.note)+'</p>':'')+
+      '<button class="zen-action" onclick="zenGoAgent(\'engagement\')">Review the messages</button>'+
+      '<button class="zen-action zen-action-alt" onclick="zenGoAgent(\'intelligence\')">Explore in Intelligence</button>'+
     '</aside>'
   ):'';
 
@@ -6513,7 +6597,7 @@ async function diagnoseAdActions(){
 // Earlier versions assumed messaging campaigns and reported zeroes for
 // anything else. This shows whatever result each objective optimises
 // for, so it works the same for engagement, traffic or messages.
-let AD_TABLE=[];
+let AD_TABLE=[], AD_TABLE_SHOWN=10;
 
 async function loadAdTable(){
   const el=document.getElementById('adTable');
@@ -6533,9 +6617,25 @@ async function loadAdTable(){
   if(!j.ok){el.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
   if(!j.rows.length){el.innerHTML='No active or paused ads in this account.';return;}
   AD_TABLE=j.rows;
+  AD_TABLE_SHOWN=10;
+  window.__lastAdTable=j;
+  renderAdTable(j);
+}
+
+// Kept separate from the fetch so "show more" re-renders what is already
+// loaded rather than asking Meta again.
+function renderAdTable(j){
+  const el=document.getElementById('adTable');
 
   const t=j.totals||{};
+  // Plain English above the numbers. Computed server-side from the same
+  // figures, so it can never drift from the table underneath it - and it
+  // costs nothing, because describing a table is not a job for a model.
+  const summary = j.plain_summary
+    ? '<div class="at-plain">'+esc(j.plain_summary)+'</div>' : '';
+
   el.innerHTML=
+    summary+
     '<div class="at-totals">'+
       '<span><b>'+Math.round(t.spend||0)+'</b> spent</span>'+
       '<span><b>'+(t.impressions||0).toLocaleString()+'</b> impressions</span>'+
@@ -6546,7 +6646,7 @@ async function loadAdTable(){
     '<div style="overflow-x:auto;"><table class="at-table">'+
       '<tr><th>ad set</th><th>spend</th><th>reach</th><th>impr.</th><th>clicks</th><th>CTR</th>'+
       '<th>results</th><th>cost per<br><span>result</span></th><th></th></tr>'+
-      j.rows.map(function(r,i){
+      j.rows.slice(0,AD_TABLE_SHOWN).map(function(r,i){
         const st=r.state||(r.status==='ACTIVE'?'running':'paused');
         const live=st==='running';
         return '<tr class="at-'+esc(st)+'">'+
@@ -6582,7 +6682,19 @@ async function loadAdTable(){
           '</td>'+
         '</tr>';
       }).join('')+
-    '</table></div>';
+    '</table></div>'+
+    // Ten is enough to see the shape. The rest is there if wanted, but
+    // a thirty-row table nobody reads is worse than a short one.
+    (j.rows.length>AD_TABLE_SHOWN
+      ? '<button class="btn btn-s btn-sm" style="margin-top:8px;" onclick="showMoreAds()">Show the other '+
+        (j.rows.length-AD_TABLE_SHOWN)+'</button>'
+      : '');
+}
+
+function showMoreAds(){
+  AD_TABLE_SHOWN = 999;
+  // Re-render from what is already loaded rather than fetching again.
+  if(window.__lastAdTable) renderAdTable(window.__lastAdTable);
 }
 
 async function quickToggle(i){
