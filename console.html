@@ -2169,23 +2169,65 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
   .arl-out{font-size:11.5px;color:var(--ink,#0D1310);margin-top:4px;}
   .arl-why{font-size:10.5px;color:var(--muted,#5E6B64);margin-top:3px;}
 </style>
+
+<style id="zenMfa">
+  .mfa-enrol{
+    border:1px solid var(--line,#E4E7E4);border-radius:10px;
+    padding:13px;background:var(--surface-2,#FAFBFA);
+  }
+  .mfa-step{font-size:12px;margin-bottom:9px;}
+  .mfa-step b{margin-right:5px;}
+  .mfa-qr{
+    display:inline-block;padding:9px;background:#fff;border-radius:9px;
+    border:1px solid var(--line,#E4E7E4);margin-bottom:10px;
+  }
+  .mfa-qr svg, .mfa-qr img{display:block;width:168px;height:168px;}
+  /* A phone that cannot scan still needs a way in. */
+  .mfa-secret{font-size:10.5px;color:var(--muted,#5E6B64);margin-bottom:11px;}
+  .mfa-secret code{
+    display:inline-block;margin-left:6px;padding:3px 7px;border-radius:6px;
+    background:#fff;border:1px solid var(--line,#E4E7E4);
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.04em;
+    user-select:all;
+  }
+</style>
 </head>
 <body>
 
 <div id="authScreen">
   <div class="card">
-    <h1>Zen Platform</h1>
-    <p class="muted">Log in or create an account to manage your business.</p>
-    <label class="fl">Email</label>
-    <input class="fi" type="email" id="authEmail" placeholder="you@business.com" autocomplete="username">
-    <label class="fl">Password (at least 6 characters)</label>
-    <input class="fi" type="password" id="authPass" placeholder="********" autocomplete="current-password">
-    <div class="row">
-      <button class="btn btn-p" onclick="doLogin()">Log in</button>
-      <button class="btn btn-s" onclick="doSignup()">Create account</button>
+    <div id="authStep">
+      <h1>Zen Platform</h1>
+      <p class="muted">Log in or create an account to manage your business.</p>
+      <label class="fl">Email</label>
+      <input class="fi" type="email" id="authEmail" placeholder="you@business.com" autocomplete="username">
+      <label class="fl">Password (at least 6 characters)</label>
+      <input class="fi" type="password" id="authPass" placeholder="********" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')doLogin()">
+      <div class="row">
+        <button class="btn btn-p" onclick="doLogin()">Log in</button>
+        <button class="btn btn-s" onclick="doSignup()">Create account</button>
+      </div>
+      <div id="authResult" style="font-size:13px;margin-top:10px;"></div>
+      <div style="margin-top:10px;font-size:12.5px;"><a href="#" onclick="doForgotPassword();return false;">Forgot password?</a></div>
     </div>
-    <div id="authResult" style="font-size:13px;margin-top:10px;"></div>
-    <div style="margin-top:10px;font-size:12.5px;"><a href="#" onclick="doForgotPassword();return false;">Forgot password?</a></div>
+
+    <!-- Second factor. Only shown when the account has an
+         authenticator enrolled - the password alone leaves the session
+         at aal1, which this raises. -->
+    <div id="mfaStep" style="display:none;">
+      <h1>One more step</h1>
+      <p class="muted">Open your authenticator app and enter the six-digit code for Zen Platform.</p>
+      <label class="fl">Six-digit code</label>
+      <input class="fi" type="text" id="mfaCode" inputmode="numeric" autocomplete="one-time-code"
+             maxlength="6" placeholder="000000" style="font-family:'IBM Plex Mono',monospace;font-size:19px;letter-spacing:.22em;text-align:center;"
+             onkeydown="if(event.key==='Enter')submitMfaCode()">
+      <div class="row">
+        <button class="btn btn-p" onclick="submitMfaCode()">Continue</button>
+        <button class="btn btn-s" onclick="cancelMfa()">Back</button>
+      </div>
+      <div id="mfaResult" style="font-size:13px;margin-top:10px;"></div>
+    </div>
   </div>
 </div>
 
@@ -3312,6 +3354,13 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
             </div>
 
             <div class="card">
+              <h2>Security</h2>
+              <p class="muted" style="font-size:11.5px;">A second factor means a stolen password isn&rsquo;t enough on its own. This account can approve customer messages and change ad spend, so it&rsquo;s worth having.</p>
+              <div id="mfaStatus" class="muted" style="font-size:12px;margin-bottom:10px;">Checking...</div>
+              <div id="mfaSetup"></div>
+            </div>
+
+            <div class="card">
               <h2>API keys</h2>
               <p class="muted">For this business's own systems to authenticate - separate from any person's login.</p>
               <div id="apiKeyList" class="muted" style="margin-bottom:12px;">Loading...</div>
@@ -3395,7 +3444,142 @@ async function doLogin(){
   r.textContent='Logging in...';r.style.color='var(--muted)';
   const {data,error}=await sb.auth.signInWithPassword({email,password});
   if(error){r.textContent='Error: '+error.message+' - if unsure of your password, use "Forgot password?" below.';r.style.color='var(--err)';return;}
+
+  // A password alone is only the first factor. If this account has an
+  // authenticator set up, the session it just got is not yet trusted
+  // for anything - Supabase calls that aal1 - and the code is what
+  // raises it. Without this check the session would work anyway, which
+  // would make enrolling pointless.
+  const aal=await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+  if(aal.data && aal.data.nextLevel==='aal2' && aal.data.nextLevel!==aal.data.currentLevel){
+    r.textContent='';
+    showMfaPrompt();
+    return;
+  }
   onAuthed(data.session);
+}
+
+// Abandoning the code step must end the half-finished session too.
+// Leaving an aal1 session behind would mean a reload walks straight in
+// past the factor that was just declined.
+// ── Enrolment ────────────────────────────────────────────────────
+async function loadMfaStatus(){
+  const el=document.getElementById('mfaStatus');
+  if(!el) return;
+  try{
+    const f=await sb.auth.mfa.listFactors();
+    const verified=(f.data&&f.data.totp||[]).filter(function(x){return x.status==='verified';});
+    if(verified.length){
+      el.innerHTML='<span style="color:var(--ok);">Two-factor is on.</span> '+
+        '<button class="btn btn-s btn-sm" style="margin-left:8px;" onclick="removeMfa(\''+verified[0].id+'\')">Turn it off</button>';
+      document.getElementById('mfaSetup').innerHTML='';
+    } else {
+      el.innerHTML='<span style="color:var(--warn);">Two-factor is off &mdash; a password is all anyone needs.</span> '+
+        '<button class="btn btn-p btn-sm" style="margin-left:8px;" onclick="startMfaEnrol()">Set it up</button>';
+    }
+  }catch(e){
+    el.textContent='Two-factor is not available on this project.';
+  }
+}
+
+async function startMfaEnrol(){
+  const box=document.getElementById('mfaSetup');
+  box.innerHTML='<span class="mw-spinner"></span>Preparing...';
+
+  // An unverified factor left over from an abandoned attempt blocks a
+  // new one, and the error Supabase gives for that is opaque.
+  try{
+    const existing=await sb.auth.mfa.listFactors();
+    const stale=(existing.data&&existing.data.totp||[]).filter(function(x){return x.status!=='verified';});
+    for(const f of stale) await sb.auth.mfa.unenroll({factorId:f.id});
+  }catch(e){}
+
+  const {data,error}=await sb.auth.mfa.enroll({factorType:'totp',friendlyName:'Zen Platform'});
+  if(error){box.innerHTML='<span style="color:var(--err);">'+esc(error.message)+'</span>';return;}
+
+  box.innerHTML='<div class="mfa-enrol">'+
+    '<div class="mfa-step"><b>1.</b> Scan this with Google Authenticator, 1Password, or any authenticator app.</div>'+
+    '<div class="mfa-qr">'+data.totp.qr_code+'</div>'+
+    // A phone that cannot scan still needs a way in.
+    '<div class="mfa-secret">Can&rsquo;t scan? Enter this key by hand:<code>'+esc(data.totp.secret)+'</code></div>'+
+    '<div class="mfa-step"><b>2.</b> Enter the six-digit code it shows.</div>'+
+    '<div class="row" style="gap:6px;">'+
+      '<input class="fi" id="mfaEnrolCode" maxlength="6" inputmode="numeric" placeholder="000000" '+
+        'style="width:130px;margin:0;font-family:\'IBM Plex Mono\',monospace;font-size:17px;letter-spacing:.2em;text-align:center;" '+
+        'onkeydown="if(event.key===\'Enter\')confirmMfaEnrol(\''+data.id+'\')">'+
+      '<button class="btn btn-p btn-sm" onclick="confirmMfaEnrol(\''+data.id+'\')">Turn on</button>'+
+      '<button class="btn btn-s btn-sm" onclick="cancelMfaEnrol(\''+data.id+'\')">Cancel</button>'+
+    '</div>'+
+    '<div id="mfaEnrolResult" style="font-size:11.5px;margin-top:7px;"></div>'+
+  '</div>';
+}
+
+async function confirmMfaEnrol(factorId){
+  const code=(document.getElementById('mfaEnrolCode').value||'').replace(/\s/g,'');
+  const r=document.getElementById('mfaEnrolResult');
+  if(code.length!==6){r.textContent='Enter all six digits.';r.style.color='var(--err)';return;}
+  r.textContent='Checking...';r.style.color='var(--muted)';
+  const ch=await sb.auth.mfa.challenge({factorId:factorId});
+  if(ch.error){r.textContent=ch.error.message;r.style.color='var(--err)';return;}
+  const v=await sb.auth.mfa.verify({factorId:factorId,challengeId:ch.data.id,code:code});
+  if(v.error){r.textContent=v.error.message+' — codes change every 30 seconds.';r.style.color='var(--err)';return;}
+  r.textContent='Two-factor is on. You will be asked for a code next time you log in.';
+  r.style.color='var(--ok)';
+  loadMfaStatus();
+}
+
+async function cancelMfaEnrol(factorId){
+  // Removed rather than left half-finished, or the next attempt fails
+  // with an unhelpful error.
+  try{ await sb.auth.mfa.unenroll({factorId:factorId}); }catch(e){}
+  document.getElementById('mfaSetup').innerHTML='';
+  loadMfaStatus();
+}
+
+async function removeMfa(factorId){
+  if(!confirm('Turn off two-factor?\n\nAfter this a password on its own will be enough to reach the console, including approving customer messages and changing ad spend.')) return;
+  const {error}=await sb.auth.mfa.unenroll({factorId:factorId});
+  if(error){alert(error.message);return;}
+  loadMfaStatus();
+}
+
+async function cancelMfa(){
+  await sb.auth.signOut();
+  document.getElementById('mfaStep').style.display='none';
+  document.getElementById('authStep').style.display='block';
+  document.getElementById('mfaCode').value='';
+  document.getElementById('mfaResult').textContent='';
+}
+
+// Second step of signing in.
+function showMfaPrompt(){
+  document.getElementById('mfaStep').style.display='block';
+  document.getElementById('authStep').style.display='none';
+  setTimeout(function(){document.getElementById('mfaCode').focus();},50);
+}
+
+async function submitMfaCode(){
+  const code=(document.getElementById('mfaCode').value||'').replace(/\s/g,'');
+  const r=document.getElementById('mfaResult');
+  if(code.length!==6){r.textContent='Enter the six digits from your authenticator app.';r.style.color='var(--err)';return;}
+  r.textContent='Checking...';r.style.color='var(--muted)';
+
+  const factors=await sb.auth.mfa.listFactors();
+  const totp=(factors.data&&factors.data.totp||[]).find(function(f){return f.status==='verified';});
+  if(!totp){r.textContent='No authenticator is set up on this account.';r.style.color='var(--err)';return;}
+
+  const ch=await sb.auth.mfa.challenge({factorId:totp.id});
+  if(ch.error){r.textContent=ch.error.message;r.style.color='var(--err)';return;}
+  const v=await sb.auth.mfa.verify({factorId:totp.id,challengeId:ch.data.id,code:code});
+  if(v.error){
+    // Codes rotate every 30 seconds, and a wrong one is far more often
+    // a stale code than a wrong device.
+    r.textContent=v.error.message+' — codes change every 30 seconds, so try the current one.';
+    r.style.color='var(--err)';
+    return;
+  }
+  const s=await sb.auth.getSession();
+  onAuthed(s.data.session);
 }
 async function doForgotPassword(){
   const email=document.getElementById('authEmail').value.trim();
@@ -4075,7 +4259,7 @@ async function createTenant(fromOverview){
 
 function loadDashboard(){
   loadWAStatus();loadTemplateMappings();
-  loadSettings();loadBuckets();loadRuns();loadTeam();loadApiKeys();loadChangeLog();
+  loadSettings();loadBuckets();loadRuns();loadTeam();loadApiKeys();loadChangeLog();loadMfaStatus();
   startWhatsappWatch();
   loadTransactionSummary();loadRecentUploads();loadStylists();loadBrandSettings();
   loadOverview();loadApprovals();
@@ -8692,7 +8876,19 @@ async function revokeApiKey(id){if(!confirm('Revoke this key? Any app using it s
 // Resume session on page load
 (async function(){
   const s=await sb.auth.getSession();
-  if(s.data.session) onAuthed(s.data.session);
+  if(!s.data.session) return;
+  // A stored session is enough to reopen the app only if it already
+  // cleared the second factor. Otherwise the app would let someone
+  // back in on a reload without it, which would make enrolling
+  // decorative.
+  try{
+    const aal=await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+    if(aal.data && aal.data.nextLevel==='aal2' && aal.data.nextLevel!==aal.data.currentLevel){
+      showMfaPrompt();
+      return;
+    }
+  }catch(e){ /* MFA unavailable on this project - carry on as before */ }
+  onAuthed(s.data.session);
 })();
 
 // Handles the "Forgot password" email link
