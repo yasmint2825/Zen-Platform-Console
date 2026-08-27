@@ -7286,6 +7286,32 @@ async function analyseAdSpend(force){
     // should know some of it is missing rather than assume the model
     // simply had less to say.
     (j.truncated?'<div class="aa-trunc">This analysis was cut short and what you see is the part that completed. Re-analyse for the full version.</div>':'')+
+    // The rows behind the reasoning. A finding that names an ad set is
+    // more useful when its numbers are on the same screen - otherwise
+    // checking it means leaving the analysis to find them.
+    ((j.adsets||[]).length
+      ? '<div class="aa-section">The numbers behind this</div>'+
+        '<div style="overflow-x:auto;"><table class="at-table">'+
+          '<tr><th>ad set</th><th>spend</th><th>clicks</th><th>CPC</th><th>freq.</th>'+
+          '<th>results</th><th>cost each</th><th>ROAS</th></tr>'+
+          j.adsets.slice(0,8).map(function(a){
+            return '<tr>'+
+              '<td><b>'+esc(a.name)+'</b><div class="at-sub">'+esc(a.campaign||'')+'</div></td>'+
+              '<td>'+Math.round(a.spend)+'</td>'+
+              '<td>'+(a.clicks||0)+'</td>'+
+              '<td>'+(a.cpc||0)+'</td>'+
+              // Above about 3 the same people are seeing it repeatedly,
+              // which is worth noticing at a glance.
+              '<td'+(a.frequency>=3.5?' style="color:#9A5B0F;font-weight:600;"':'')+'>'+(a.frequency||0)+'</td>'+
+              '<td>'+(a.conversations||0)+'</td>'+
+              '<td>'+(a.cost_per_conversation!=null?a.cost_per_conversation:'&mdash;')+'</td>'+
+              '<td'+(a.roas>=1?' style="color:#0B7A5E;font-weight:600;"':'')+'>'+
+                (a.roas!=null?a.roas:'&mdash;')+'</td>'+
+            '</tr>';
+          }).join('')+
+        '</table></div>'+
+        (j.adsets.length>8?'<div class="muted" style="font-size:10.5px;margin-top:5px;">Showing the 8 largest by spend.</div>':'')
+      : '')+
     '<div class="aa-meta">'+
       (j.cached
         ? 'Reused from '+formatDubai(j.cached_at)+' &mdash; the underlying numbers haven\'t changed since. Use Re-analyse to force a fresh run.'
