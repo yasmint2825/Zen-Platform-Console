@@ -1879,6 +1879,40 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     font-size:10.5px;line-height:1.5;color:var(--muted,#5E6B64);
   }
 </style>
+
+<style id="zenBuckets">
+  /* Buckets. A rejection, a holdout and a cooldown were all invisible
+     in the same way - the customer just wasn't there. */
+  .bk-tabs .btn{padding:5px 11px;min-height:30px;font-size:11.5px;}
+  .bk-n{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:10px;opacity:.75;margin-left:3px;
+  }
+  .bk-intro{
+    font-size:11.5px;line-height:1.5;color:var(--muted,#5E6B64);
+    padding:9px 11px;background:var(--surface-2,#FAFBFA);
+    border-radius:9px;margin-bottom:11px;
+  }
+  .bk-row{
+    display:flex;gap:9px;align-items:flex-start;
+    padding:9px 0;border-bottom:1px solid var(--line,#F0F2F0);cursor:pointer;
+  }
+  .bk-row:last-child{border-bottom:0;}
+  .bk-check{margin-top:2px;width:15px;height:15px;flex-shrink:0;accent-color:#0F4C45;cursor:pointer;}
+  .bk-body{flex:1;min-width:0;}
+  .bk-body b{font-size:12.5px;}
+  .bk-tag{
+    margin-left:7px;padding:1px 7px;border-radius:999px;
+    background:var(--surface-2,#F0F2F0);color:var(--muted,#5E6B64);
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:8.5px;
+    font-weight:600;letter-spacing:.03em;vertical-align:1px;
+  }
+  .bk-why{
+    display:block;font-size:11px;line-height:1.45;
+    color:var(--muted,#5E6B64);margin-top:3px;
+    font-variant-numeric:tabular-nums;
+  }
+</style>
 </head>
 <body>
 
@@ -2045,6 +2079,10 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
                       <button class="btn btn-s btn-sm" onclick="rejectAllPending()">Reject all pending</button>
                     </span>
                   </div>
+                  <!-- Buckets, because a rejection, a holdout and a
+                       cooldown all looked identical from the outside:
+                       the customer simply wasn't there. -->
+                  <div class="row bk-tabs" id="bucketTabs" style="gap:4px;margin-bottom:12px;flex-wrap:wrap;"></div>
                   <div id="pendingList" class="muted">Loading...</div>
                 </div>
               </details>
@@ -7599,6 +7637,101 @@ async function runNow(){
     r.textContent='Error: '+(res.error||j.error||'Unknown error');r.style.color='var(--err)';
   }
 }
+let BUCKETS=null, BUCKET_VIEW='pending';
+
+// Everything the agent decided, grouped by outcome.
+async function loadBuckets(view){
+  if(view) BUCKET_VIEW=view;
+  const tabsEl=document.getElementById('bucketTabs');
+  const listEl=document.getElementById('pendingList');
+  if(!BUCKETS){
+    listEl.innerHTML='<span class="mw-spinner"></span>Loading...';
+    const j=await call('get_decision_buckets',{days:60});
+    if(!j.ok){listEl.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
+    BUCKETS=j;
+  }
+  const c=BUCKETS.counts||{};
+  const defs=[
+    ['pending','To review',c.pending||0],
+    ['cooldown','In cooldown',c.cooldown||0],
+    ['rejected','Rejected',c.rejected||0],
+    ['holdout','Held back',c.holdout||0],
+  ];
+  tabsEl.innerHTML=defs.map(function(d){
+    return '<button class="btn btn-sm '+(BUCKET_VIEW===d[0]?'btn-p':'btn-s')+'" onclick="loadBuckets(\''+d[0]+'\')">'+
+      d[1]+' <span class="bk-n">'+d[2]+'</span></button>';
+  }).join('');
+
+  if(BUCKET_VIEW==='pending'){ loadPending(); return; }
+  renderBucket(BUCKET_VIEW);
+}
+
+function renderBucket(kind){
+  const el=document.getElementById('pendingList');
+  const rows=(BUCKETS[kind]||[]);
+  const truncated=(BUCKETS.truncated||{})[kind];
+
+  if(!rows.length){
+    el.innerHTML='<span class="muted" style="font-size:12px;">Nothing here.</span>';
+    return;
+  }
+
+  const intro = kind==='cooldown'
+    ? 'Contacted recently, so held back from any campaign for '+(BUCKETS.cooldown_days||21)+' days. They return on their own.'
+    : kind==='rejected'
+    ? 'You said no to these. They can be put back in the queue, and a rejection clears by itself once the customer visits again.'
+    // Said every time it is opened, because releasing is easy and the
+    // consequence is invisible.
+    : 'Deliberately not contacted, so their return rate can be compared against customers who were. Releasing some of these breaks that comparison &mdash; if you release the promising-looking ones, the measurement can no longer tell you whether messaging works.';
+
+  const actionable = kind==='rejected' || kind==='holdout';
+  el.innerHTML=
+    '<div class="bk-intro">'+intro+'</div>'+
+    (truncated?'<div class="muted" style="font-size:10.5px;margin-bottom:8px;">Showing the first 300. The count above is the full number.</div>':'')+
+    (actionable?'<div class="row" style="gap:6px;margin-bottom:10px;">'+
+      '<button class="btn btn-s btn-sm" onclick="bkSelectAll()">Select all shown</button>'+
+      '<button class="btn btn-p btn-sm" onclick="bkAction(\''+kind+'\')">'+
+        (kind==='rejected'?'Put back in the queue':'Release for sending')+'</button>'+
+      '<span id="bkResult" style="font-size:11.5px;"></span>'+
+    '</div>':'')+
+    rows.map(function(r,i){
+      return '<label class="bk-row">'+
+        (actionable?'<input type="checkbox" class="bk-check" data-id="'+esc(r.id)+'">':'')+
+        '<span class="bk-body">'+
+          '<b>'+esc(r.customer_name||r.mobile||r.customer_id)+'</b>'+
+          '<span class="bk-tag">'+esc(r.campaign_key||r.last_campaign||'')+'</span>'+
+          (kind==='cooldown'
+            ? '<span class="bk-why">Last contacted '+formatDubai(r.last_contacted)+' &middot; free again in '+r.days_left+' day(s)</span>'
+            : '<span class="bk-why">'+esc(r.signal||r.reasoning||'')+'</span>')+
+        '</span>'+
+      '</label>';
+    }).join('');
+}
+
+function bkSelectAll(){
+  document.querySelectorAll('.bk-check').forEach(function(c){c.checked=true;});
+}
+
+async function bkAction(kind){
+  const ids=[...document.querySelectorAll('.bk-check:checked')].map(function(c){return c.dataset.id;});
+  const out=document.getElementById('bkResult');
+  if(!ids.length){out.textContent='Nothing selected.';out.style.color='var(--muted)';return;}
+
+  if(kind==='holdout'){
+    // Two steps on purpose. This is the one action that quietly
+    // destroys something rather than changing it.
+    if(!confirm('Release '+ids.length+' held-back customer(s)?\n\nThese were deliberately not contacted so you could measure whether messaging actually works. Releasing them means that comparison no longer holds for this period.')) return;
+  } else if(!confirm('Put '+ids.length+' rejected decision(s) back in the review queue?')) return;
+
+  out.innerHTML='<span class="mw-spinner"></span>';
+  const j=await call(kind==='holdout'?'release_holdout':'reactivate_decisions',{ids:ids});
+  if(!j.ok){out.textContent=j.error;out.style.color='var(--err)';return;}
+  out.textContent=(j.reactivated||j.released||0)+' moved to the review queue.';
+  out.style.color='var(--ok)';
+  BUCKETS=null;
+  setTimeout(function(){loadBuckets('pending');},900);
+}
+
 async function loadPending(){
   // The main queue deliberately shows only the daily agent's own
   // decisions. Anything raised from the at-risk card is managed there
