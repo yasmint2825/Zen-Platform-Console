@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
+<title>MiniCuts · Check In</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800;900&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+:root{--y:#FFD600;--b:#1565C0;--bd:#0D47A1;--bm:#1976D2;--ok:#16A34A;--err:#DC2626;--warn:#D97706;--pink:#EC4899;--bg:#EEF4FF;--text:#1A1A2E;--muted:#6B7280;--border:#E5E7EB;--r:16px;--rs:10px;--fh:'Baloo 2',cursive;--fb:'Nunito',sans-serif;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{min-height:100vh;font-family:var(--fb);background:var(--bg);color:var(--text);}
+.wrap{max-width:480px;margin:0 auto;padding:16px 14px 88px;}
+.hero{background:linear-gradient(135deg,var(--bd),var(--bm));border-radius:18px;padding:16px 18px;margin-bottom:16px;position:relative;overflow:hidden;}
+.hero::after{content:'✂️';position:absolute;right:14px;bottom:-4px;font-size:72px;opacity:.07;pointer-events:none;}
+.q-strip{display:flex;gap:8px;margin-top:10px;}
+.qstat{flex:1;background:rgba(255,255,255,.12);border-radius:10px;padding:7px 10px;text-align:center;}
+.qstat-n{font-family:var(--fh);font-size:22px;font-weight:900;color:var(--y);}
+.qstat-l{font-size:10px;font-weight:700;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:.04em;}
+.screen{display:none;}.screen.active{display:block;animation:fu .2s ease both;}
+@keyframes fu{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.card{background:#fff;border-radius:var(--r);padding:18px;margin-bottom:14px;box-shadow:0 3px 16px rgba(13,71,161,.08);border:1px solid rgba(13,71,161,.07);}
+.card-title{font-family:var(--fh);font-size:17px;font-weight:800;color:var(--bd);margin-bottom:4px;}
+.card-sub{font-size:12.5px;color:var(--muted);margin-bottom:14px;line-height:1.5;}
+.ey{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.07em;color:var(--b);margin-bottom:5px;}
+.fg{margin-bottom:13px;}.fl{display:block;font-size:12px;font-weight:800;color:var(--text);margin-bottom:5px;}
+.fi{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:var(--rs);font-family:var(--fb);font-size:14px;color:var(--text);background:#fff;outline:none;transition:border-color .18s;}
+.fi:focus{border-color:var(--b);box-shadow:0 0 0 3px rgba(21,101,192,.1);}
+select.fi{appearance:none;-webkit-appearance:none;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 12px center;padding-right:32px;cursor:pointer;}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.fr3{display:grid;grid-template-columns:1fr 1.7fr 1fr;gap:8px;}
+.ph-wrap{display:flex;}
+.ph-pfx{flex-shrink:0;min-width:80px;height:46px;border:1.5px solid var(--border);border-right:none;border-radius:var(--rs) 0 0 var(--rs);background:#F0F7FF url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%231565C0' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 8px center;padding:0 24px 0 10px;font-size:14px;font-weight:700;color:var(--b);appearance:none;-webkit-appearance:none;cursor:pointer;outline:none;}
+.ph-num{flex:1;height:46px;border:1.5px solid var(--border);border-left:none;border-radius:0 var(--rs) var(--rs) 0;background:#fff;color:var(--text);font-size:15px;padding:0 13px;font-family:var(--fb);outline:none;}
+.ph-num:focus{border-color:var(--b);}
+.gr{display:flex;border:1.5px solid var(--border);border-radius:var(--rs);overflow:hidden;}
+.gb{flex:1;padding:10px;text-align:center;cursor:pointer;font-weight:800;font-size:13.5px;background:#fff;border:none;transition:all .15s;}
+.gb.active.boy{background:var(--b);color:#fff;}.gb.active.girl{background:var(--pink);color:#fff;}
+.sm{padding:9px 13px;border-radius:var(--rs);font-size:12.5px;font-weight:700;margin-bottom:12px;display:none;}
+.sm.ok{background:#DCFCE7;color:var(--ok);display:block;}.sm.err{background:#FEE2E2;color:var(--err);display:block;}
+.sm.info{background:#EEF6FF;color:var(--b);display:block;}.sm.warn{background:#FEF3C7;color:var(--warn);display:block;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:11px 18px;border-radius:var(--rs);font-family:var(--fh);font-weight:800;font-size:15px;cursor:pointer;border:none;transition:transform .13s;line-height:1;}
+.btn:active{transform:scale(.97);}.btn:disabled{opacity:.45;cursor:not-allowed;transform:none;}
+.btn-y{background:linear-gradient(135deg,var(--y),#FFB300);color:var(--bd);}
+.btn-b{background:var(--b);color:#fff;}.btn-g{background:var(--ok);color:#fff;}
+.btn-ghost{background:transparent;color:var(--b);border:1.5px solid rgba(21,101,192,.25);}
+.btn-full{width:100%;justify-content:center;}.btn-sm{padding:7px 13px;font-size:13px;}
+.tc{background:linear-gradient(135deg,var(--bd),var(--bm));border-radius:22px;padding:26px 22px;text-align:center;color:#fff;position:relative;overflow:hidden;margin-bottom:14px;}
+.tc::before{content:'';position:absolute;top:-40px;right:-40px;width:140px;height:140px;background:rgba(255,214,0,.12);border-radius:50%;}
+.tc::after{content:'🐼';position:absolute;left:14px;bottom:-4px;font-size:64px;opacity:.1;}
+.tn{font-family:var(--fh);font-size:72px;font-weight:900;color:var(--y);line-height:1;position:relative;z-index:1;}
+.tl{font-size:13px;font-weight:700;color:rgba(255,255,255,.75);text-transform:uppercase;letter-spacing:.08em;margin-top:4px;}
+.tname{font-family:var(--fh);font-size:22px;font-weight:800;margin-top:10px;color:#fff;}
+.tsub{font-size:12px;color:rgba(255,255,255,.65);margin-top:4px;}
+.ta{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;}
+.kid-block{background:#F8FBFF;border:1.5px solid rgba(21,101,192,.12);border-radius:14px;padding:14px;margin-bottom:10px;}
+.kb-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.kid-row{display:flex;align-items:center;gap:10px;padding:11px;border-radius:12px;background:#F0F7FF;border:1.5px solid transparent;cursor:pointer;transition:all .15s;margin-bottom:8px;}
+.kid-row.selected{border-color:var(--b);background:#EEF6FF;box-shadow:0 0 0 3px rgba(21,101,192,.1);}
+.kav{width:36px;height:36px;border-radius:50%;background:var(--b);color:#fff;font-family:var(--fh);font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.kav.girl{background:var(--pink);}
+.steps{display:flex;margin-bottom:20px;}
+.step{flex:1;text-align:center;position:relative;}
+.step::after{content:'';position:absolute;top:14px;left:50%;width:100%;height:2px;background:var(--border);z-index:0;}
+.step:last-child::after{display:none;}
+.sd{width:28px;height:28px;border-radius:50%;background:var(--border);color:var(--muted);font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;position:relative;z-index:1;transition:all .2s;}
+.step.active .sd{background:var(--b);color:#fff;box-shadow:0 0 0 4px rgba(21,101,192,.15);}
+.step.done .sd{background:var(--ok);color:#fff;}
+.step.active::after,.step.done::after{background:var(--b);}
+.sl{font-size:10px;font-weight:700;color:var(--muted);margin-top:5px;}
+.step.active .sl{color:var(--b);}.step.done .sl{color:var(--ok);}
+/* Queue (customer) */
+.qi{display:flex;align-items:center;gap:12px;padding:13px;background:#fff;border-radius:14px;margin-bottom:9px;border:1px solid rgba(13,71,161,.08);}
+.tok{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--bd),var(--bm));color:var(--y);font-family:var(--fh);font-size:18px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.tok.guest{background:linear-gradient(135deg,#6B7280,#9CA3AF);}
+.gw{background:var(--err);border-radius:12px;padding:13px 14px;margin-bottom:14px;}
+.bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:rgba(255,255,255,.97);backdrop-filter:blur(12px);border-top:1px solid var(--border);border-radius:0;padding:6px 10px;display:flex;gap:6px;z-index:50;}
+.bb{flex:1;padding:8px 4px;border:none;border-radius:10px;font-family:var(--fh);font-size:11px;font-weight:800;cursor:pointer;background:#F1F5F9;color:var(--muted);transition:all .15s;line-height:1.25;text-align:center;}
+.bb.active{background:var(--b);color:#fff;}
+#clk{font-family:var(--fh);font-size:11px;font-weight:700;color:rgba(255,255,255,.7);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- HERO -->
+<div class="hero">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+    <div style="font-family:var(--fh);font-size:20px;font-weight:900;color:#fff;">🐼 MiniCuts</div>
+    <div id="clk"></div>
+  </div>
+  <div style="font-family:var(--fh);font-size:15px;font-weight:800;color:rgba(255,255,255,.9);">Customer Check-In</div>
+  <div style="font-size:12px;color:rgba(255,255,255,.65);margin-top:2px;">Register · Get token · Play games</div>
+  <div class="q-strip">
+    <div class="qstat"><div class="qstat-n" id="qs-w">—</div><div class="qstat-l">Waiting</div></div>
+    <div class="qstat"><div class="qstat-n" id="qs-c" style="color:#93C5FD;">—</div><div class="qstat-l">Being Served</div></div>
+    <div class="qstat"><div class="qstat-n" id="qs-n">—</div><div class="qstat-l">Next Token</div></div>
+  </div>
+</div>
+
+<!-- SCREEN: LOOKUP -->
+<div class="screen active" id="s-lookup">
+  <div class="steps">
+    <div class="step active"><div class="sd">1</div><div class="sl">Lookup</div></div>
+    <div class="step"><div class="sd">2</div><div class="sl">Select</div></div>
+    <div class="step"><div class="sd">3</div><div class="sl">Check In</div></div>
+  </div>
+  <div class="card">
+    <div class="ey">Step 1</div>
+    <div class="card-title">Welcome to MiniCuts! 🐼</div>
+    <div class="card-sub">Enter your mobile number to check in for your haircut.</div>
+    <div class="fg">
+      <label class="fl">Parent Mobile 📱</label>
+      <div class="ph-wrap">
+        <select class="ph-pfx" id="lu-pfx" onchange="onLookup()">
+          <option>050</option><option>051</option><option>052</option><option>054</option>
+          <option selected>055</option><option>056</option><option>058</option><option>059</option><option>060</option>
+        </select>
+        <input class="ph-num" type="tel" id="lu-num" placeholder="1234567" maxlength="7" inputmode="numeric" oninput="onLookup()"/>
+      </div>
+    </div>
+    <div id="lu-st" style="display:none;padding:9px 12px;border-radius:10px;font-size:12.5px;font-weight:700;margin-bottom:10px;"></div>
+
+    <!-- STEP 1: Count selector — always shown first once phone is found -->
+    <div id="lu-count" style="display:none;background:#F0F7FF;border:1.5px solid rgba(21,101,192,.2);border-radius:14px;padding:14px;margin-bottom:12px;">
+      <div style="font-family:var(--fh);font-size:14px;font-weight:800;color:var(--bd);margin-bottom:10px;">✂️ How many kids for a haircut today?</div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;" id="kids-count-btns">
+        <button type="button" onclick="setKidsCount(1,this)" class="kids-count-btn" style="padding:14px 6px;border-radius:12px;border:2px solid var(--border);background:#fff;font-family:var(--fh);font-size:22px;font-weight:900;color:var(--bd);cursor:pointer;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:3px;"><span>1</span><span style="font-size:11px;font-weight:700;color:var(--muted);">kid</span></button>
+        <button type="button" onclick="setKidsCount(2,this)" class="kids-count-btn" style="padding:14px 6px;border-radius:12px;border:2px solid var(--border);background:#fff;font-family:var(--fh);font-size:22px;font-weight:900;color:var(--bd);cursor:pointer;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:3px;"><span>2</span><span style="font-size:11px;font-weight:700;color:var(--muted);">kids</span></button>
+        <button type="button" onclick="setKidsCount(3,this)" class="kids-count-btn" style="padding:14px 6px;border-radius:12px;border:2px solid var(--border);background:#fff;font-family:var(--fh);font-size:22px;font-weight:900;color:var(--bd);cursor:pointer;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:3px;"><span>3</span><span style="font-size:11px;font-weight:700;color:var(--muted);">kids</span></button>
+        <button type="button" onclick="setKidsCount(4,this)" class="kids-count-btn" style="padding:14px 6px;border-radius:12px;border:2px solid var(--border);background:#fff;font-family:var(--fh);font-size:22px;font-weight:900;color:var(--bd);cursor:pointer;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:3px;"><span>4</span><span style="font-size:11px;font-weight:700;color:var(--muted);">kids</span></button>
+        <button type="button" onclick="setKidsCount(5,this)" class="kids-count-btn" style="padding:14px 6px;border-radius:12px;border:2px solid var(--border);background:#fff;font-family:var(--fh);font-size:22px;font-weight:900;color:var(--bd);cursor:pointer;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:3px;"><span>5</span><span style="font-size:11px;font-weight:700;color:var(--muted);">kids</span></button>
+      </div>
+      <div id="kids-count-err" style="display:none;margin-top:8px;font-size:12px;font-weight:700;color:var(--err);">Please select how many kids ☝️</div>
+    </div>
+
+    <!-- STEP 2: Registered kids (pre-checked) + new-kid forms (shown after count chosen) -->
+    <div id="lu-kids" style="display:none;"></div>
+    <div id="lu-new-kids" style="display:none;"></div>
+    <div id="lu-reg-sibling" style="display:none;margin-bottom:10px;">
+      <button class="btn btn-ghost btn-full" onclick="showReg(getM())" style="border-style:dashed;">➕ Register New Child for this Number</button>
+    </div>
+
+    <div id="lu-act" style="display:none;">
+      <div id="lu-sum" style="background:#EEF6FF;border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:12.5px;font-weight:700;color:var(--b);display:none;"></div>
+
+      <!-- How did you hear about us -->
+      <div id="lu-hear" style="background:#FFFDF0;border:1.5px solid rgba(255,214,0,.4);border-radius:14px;padding:13px;margin-bottom:12px;">
+        <div style="font-family:var(--fh);font-size:13px;font-weight:800;color:var(--bd);margin-bottom:4px;">🙏 Help us grow for families like yours</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.4;">One tap — how did you first hear about MiniCuts?</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <button type="button" class="hear-btn" onclick="setHear(this,'Ad Board')" style="padding:11px 8px;border-radius:10px;border:2px solid var(--border);background:#fff;font-family:var(--fh);font-size:13px;font-weight:800;color:var(--text);cursor:pointer;transition:all .15s;">📋 Ad Board</button>
+          <button type="button" class="hear-btn" onclick="setHear(this,'Instagram')" style="padding:11px 8px;border-radius:10px;border:2px solid var(--border);background:#fff;font-family:var(--fh);font-size:13px;font-weight:800;color:var(--text);cursor:pointer;transition:all .15s;">📸 Instagram</button>
+          <button type="button" class="hear-btn" onclick="setHear(this,'Friends / Family')" style="padding:11px 8px;border-radius:10px;border:2px solid var(--border);background:#fff;font-family:var(--fh);font-size:13px;font-weight:800;color:var(--text);cursor:pointer;transition:all .15s;">👥 Friends</button>
+          <button type="button" class="hear-btn" onclick="setHear(this,'Google')" style="padding:11px 8px;border-radius:10px;border:2px solid var(--border);background:#fff;font-family:var(--fh);font-size:13px;font-weight:800;color:var(--text);cursor:pointer;transition:all .15s;">🔍 Google</button>
+        </div>
+        <div id="lu-hear-err" style="display:none;margin-top:7px;font-size:12px;font-weight:700;color:var(--err);">Please tap one option above ☝️</div>
+      </div>
+
+      <div id="lu-tc-wrap"></div>
+      <button class="btn btn-y btn-full" id="lu-btn" onclick="proceedCheckin()" style="margin-bottom:8px;">✅ Check In & Get Tokens</button>
+    </div>
+    <div id="lu-nf" style="display:none;margin-top:6px;">
+      <div class="sm warn" style="display:block;">Mobile not registered yet. Register to get started!</div>
+      <button class="btn btn-b btn-full" onclick="showReg(getM(),_kidsCount)" style="margin-bottom:8px;">📝 Register (New Customer)</button>
+      <button class="btn btn-ghost btn-full" onclick="showGuest()" style="opacity:.55;font-size:13px;">Continue without phone</button>
+    </div>
+    <div style="text-align:center;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
+      <div style="background:linear-gradient(135deg,#FFF9E6,#EEF6FF);border-radius:12px;padding:12px 14px;margin-bottom:10px;text-align:left;">
+        <div style="font-family:var(--fh);font-size:13px;font-weight:800;color:var(--bd);margin-bottom:5px;">📱 Check in with your number to unlock:</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.7;">
+          ✂️ Track your queue position<br>
+          🎁 Earn stamps towards a free hair wash<br>
+          🎮 Unlock games &amp; win prizes after your haircut
+        </div>
+      </div>
+      <button onclick="showGuest()" style="background:none;border:none;color:var(--muted);font-size:11.5px;font-weight:700;cursor:pointer;font-family:var(--fb);text-decoration:underline;">No phone? Continue as guest →</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN: REGISTER -->
+<div class="screen" id="s-reg">
+  <div class="steps">
+    <div class="step done"><div class="sd">✓</div><div class="sl">Lookup</div></div>
+    <div class="step active"><div class="sd">2</div><div class="sl">Register</div></div>
+    <div class="step"><div class="sd">3</div><div class="sl">Check In</div></div>
+  </div>
+  <div class="card">
+    <div class="ey">New Customer</div>
+    <div class="card-title">Join MiniCuts! 🐼</div>
+    <div class="card-sub">Register all children in one go — tap + Add Child for siblings.</div>
+    <div class="fg"><label class="fl">Parent Mobile *</label>
+      <div class="ph-wrap">
+        <select class="ph-pfx" id="rg-pfx"><option>050</option><option>051</option><option>052</option><option>054</option><option selected>055</option><option>056</option><option>058</option><option>059</option><option>060</option></select>
+        <input class="ph-num" type="tel" id="rg-num" placeholder="1234567" maxlength="7" inputmode="numeric"/>
+      </div>
+    </div>
+    <div class="fg"><label class="fl">Parent Name <span style="color:var(--muted);font-weight:600;">(Optional)</span></label><input class="fi" type="text" id="rg-par" placeholder="e.g. Ahmed Al Rashid"/></div>
+    <div class="fg"><label class="fl">Location / Area in Dubai *</label>
+      <select class="fi" id="rg-loc">
+        <option value="">Select area... *</option>
+        <option>Dubai Silicon Oasis (DSO)</option><option>Academic City</option><option>Al Barsha</option><option>Al Furjan</option><option>Al Karama</option><option>Al Khail Gate</option><option>Al Nahda</option><option>Al Qusais</option><option>Al Warqa</option><option>Arabian Ranches</option><option>Arjan</option><option>Bur Dubai</option><option>Business Bay</option><option>Damac Hills</option><option>Deira</option><option>Discovery Gardens</option><option>Downtown Dubai</option><option>Dubai Creek Harbour</option><option>Dubai Hills Estate</option><option>Dubai Investments Park (DIP)</option><option>Dubai Marina</option><option>Dubai Production City (IMPZ)</option><option>Dubai South / Expo City</option><option>Emirates Hills</option><option>Falcon City</option><option>Green Community</option><option>Greens / Views</option><option>International City</option><option>JBR / JLT</option><option>JVC / JVT</option><option>Jumeirah</option><option>Jumeirah Islands / Park</option><option>Liwan</option><option>Dubailand</option><option>Meydan</option><option>Mirdif</option><option>Motor City</option><option>Muhaisnah</option><option>Nad Al Sheba</option><option>Oud Metha</option><option>Palm Jumeirah</option><option>Rashidiya</option><option>Remraam</option><option>Ras Al Khor</option><option>Sports City</option><option>Springs / Meadows</option><option>Town Square</option><option>Umm Suqeim</option><option>Umm Ramool</option><option>Other / Outside Dubai</option>
+      </select>
+      <div id="rg-loc-err" style="display:none;margin-top:5px;font-size:12px;font-weight:700;color:var(--err);">Please select your area ☝️</div>
+    </div>
+    <div style="margin:14px 0 6px;">
+      <span style="font-family:var(--fh);font-size:14px;font-weight:800;color:var(--bd);display:block;margin-bottom:10px;">Children 👧👦</span>
+    </div>
+    <div id="rg-kids"></div>
+    <button class="btn btn-full" onclick="addKid()" style="background:linear-gradient(135deg,#EEF6FF,#E0EDFF);border:2px dashed var(--b);color:var(--b);font-size:14px;padding:13px;border-radius:12px;margin-bottom:10px;">
+      ➕ Add Another Child (sibling)
+    </button>
+
+    <!-- How did you hear — always show on registration (first visit) -->
+    <div style="background:#FFFDF0;border:1.5px solid rgba(255,214,0,.4);border-radius:14px;padding:13px;margin-bottom:12px;">
+      <div style="font-family:var(--fh);font-size:13px;font-weight:800;color:var(--bd);margin-bottom:4px;">🙏 Help us grow for families like yours</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.4;">One tap — how did you first hear about MiniCuts?</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button type="button" class="reg-hear-btn" onclick="setRegHear(this,'Ad Board')" style="padding:11px 8px;border-radius:10px;border:2px solid var(--border);background:#fff;font-family:var(--fh);font-size:13px;font-weight:800;color:var(--text);cursor:pointer;transition:all .15s;">📋 Ad Board</button>
+        <button type="button" class="reg-hear-btn" onclick="setRegHear(this,'Instagram')" style="padding:11px 8px;border-radius:10px;border:2px solid var(--border);background:#fff;font-family:var(--fh);font-size:13px;font-weight:800;color:var(--text);cursor:pointer;transition:all .15s;">📸 Instagram</button>
+        <button type="button" class="reg-hear-btn" onclick="setRegHear(this,'Friends / Family')" style="padding:11px 8px;border-radius:10px;border:2px solid var(--border);background:#fff;font-family:var(--fh);font-size:13px;font-weight:800;color:var(--text);cursor:pointer;transition:all .15s;">👥 Friends</button>
+        <button type="button" class="reg-hear-btn" onclick="setRegHear(this,'Google')" style="padding:11px 8px;border-radius:10px;border:2px solid var(--border);background:#fff;font-family:var(--fh);font-size:13px;font-weight:800;color:var(--text);cursor:pointer;transition:all .15s;">🔍 Google</button>
+      </div>
+      <div id="rg-hear-err" style="display:none;margin-top:7px;font-size:12px;font-weight:700;color:var(--err);">Please tap one option above ☝️</div>
+    </div>
+    <div id="rg-msg" class="sm" style="margin-top:6px;"></div>
+    <div id="rg-tc-wrap"></div>
+    <div style="display:flex;gap:9px;margin-top:4px;">
+      <button class="btn btn-ghost" onclick="showScr('s-lookup')" style="padding:11px 14px;">← Back</button>
+      <button class="btn btn-y" style="flex:1;" id="rg-btn" onclick="doRegAll()">Register &amp; Check In ✅</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN: TOKEN RESULT -->
+<div class="screen" id="s-ci">
+  <div id="ci-single" style="display:none;">
+    <div class="tc">
+      <div class="tl">Your Token Number</div>
+      <div class="tn" id="ci-tok">—</div>
+      <div class="tname" id="ci-nm">—</div>
+      <div class="tsub" id="ci-sb">—</div>
+    </div>
+    <div class="ta">
+      <button class="btn btn-b" onclick="goGames()">🎮 Loyalty &amp; Games</button>
+      <button class="btn btn-ghost" onclick="window.open('./minicuts_hair_care_guide_v2.html','_blank')">📖 Smart Guide</button>
+    </div>
+    <div class="card" style="margin-top:14px;">
+      <div style="font-family:var(--fh);font-size:14px;font-weight:800;color:var(--bd);margin-bottom:10px;">🎫 Your Loyalty Passport</div>
+      <div id="ci-passport"></div>
+    </div>
+    <div class="card" style="margin-top:0;">
+      <div class="card-title" style="font-size:15px;">🎮 Games &amp; Prizes After Your Haircut!</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:6px;line-height:1.6;">Once your haircut is done and stamped by our stylist, you unlock <strong>3 games</strong> — Spin the Wheel, Tap Panda and Memory Match. Win <strong>badges and surprise prizes!</strong> 🏆</div>
+      <button class="btn btn-y btn-full" style="margin-top:12px;" onclick="goGames()">🎮 Play After Your Haircut!</button>
+      <a href="./minicuts_hair_care_guide_v2.html" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;padding:11px;background:linear-gradient(135deg,#16A34A,#15803D);border-radius:12px;text-decoration:none;">
+        <span style="font-size:18px;">📖</span>
+        <span style="font-family:var(--fh);font-size:14px;font-weight:800;color:#fff;">Smart Hair Guide for Parents</span>
+      </a>
+    </div>
+    <button class="btn btn-ghost btn-full" onclick="clearInterval(window._ciTimer);resetCI()" style="margin-top:8px;">✅ All done — New Check-In</button>
+    <div style="text-align:center;font-size:12px;color:var(--muted);margin-top:8px;">Auto-resets in <span class="ci-countdown">30</span>s</div>
+  </div>
+  <div id="ci-family" style="display:none;"></div>
+  <div id="ci-load" style="text-align:center;padding:40px;color:var(--muted);">
+    <div style="font-size:40px;margin-bottom:10px;">⏳</div><div style="font-weight:700;">Checking in...</div>
+  </div>
+</div>
+
+<!-- SCREEN: GUEST -->
+<div class="screen" id="s-guest">
+  <div class="gw">
+    <div style="font-family:var(--fh);font-size:15px;font-weight:900;color:#fff;margin-bottom:8px;">👤 Continuing as Guest</div>
+    <div style="display:flex;flex-direction:column;gap:5px;">
+      <div style="display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.2);border-radius:8px;padding:7px 10px;"><span>✖️</span><span style="font-size:13px;font-weight:800;color:#fff;">No access to Loyalty Stamps &amp; Free Wash</span></div>
+      <div style="display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.2);border-radius:8px;padding:7px 10px;"><span>✖️</span><span style="font-size:13px;font-weight:800;color:#fff;">No Game Rewards or Prizes</span></div>
+    </div>
+    <div style="margin-top:10px;background:rgba(255,255,255,.15);border-radius:8px;padding:9px 12px;font-size:12.5px;font-weight:700;color:#fff;text-align:center;">⏱️ It takes just 30 seconds to register and unlock everything!</div>
+  </div>
+  <button class="btn btn-g btn-full" onclick="showScr('s-lookup')" style="margin-bottom:12px;">✅ Register Instead (recommended)</button>
+  <div style="text-align:center;font-size:11.5px;color:var(--muted);margin-bottom:14px;font-weight:700;">— or continue as guest below —</div>
+  <div class="card">
+    <!-- How many kids - shown first, triggers instant token reservation -->
+    <div style="background:#F0F7FF;border:1.5px solid rgba(21,101,192,.2);border-radius:14px;padding:14px;margin-bottom:14px;">
+      <div style="font-family:var(--fh);font-size:14px;font-weight:800;color:var(--bd);margin-bottom:10px;">✂️ How many kids for a haircut today?</div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;" id="g-count-btns">
+        <button type="button" onclick="setGuestCount(1,this)" class="g-count-btn" style="padding:14px 6px;border-radius:12px;border:2px solid var(--border);background:#fff;font-family:var(--fh);font-size:22px;font-weight:900;color:var(--bd);cursor:pointer;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:3px;"><span>1</span><span style="font-size:11px;font-weight:700;color:var(--muted);">kid</span></button>
+        <button type="button" onclick="setGuestCount(2,this)" class="g-count-btn" style="padding:14px 6px;border-radius:12px;border:2px solid var(--border);background:#fff;font-family:var(--fh);font-size:22px;font-weight:900;color:var(--bd);cursor:pointer;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:3px;"><span>2</span><span style="font-size:11px;font-weight:700;color:var(--muted);">kids</span></button>
+        <button type="button" onclick="setGuestCount(3,this)" class="g-count-btn" style="padding:14px 6px;border-radius:12px;border:2px solid var(--border);background:#fff;font-family:var(--fh);font-size:22px;font-weight:900;color:var(--bd);cursor:pointer;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:3px;"><span>3</span><span style="font-size:11px;font-weight:700;color:var(--muted);">kids</span></button>
+        <button type="button" onclick="setGuestCount(4,this)" class="g-count-btn" style="padding:14px 6px;border-radius:12px;border:2px solid var(--border);background:#fff;font-family:var(--fh);font-size:22px;font-weight:900;color:var(--bd);cursor:pointer;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:3px;"><span>4</span><span style="font-size:11px;font-weight:700;color:var(--muted);">kids</span></button>
+        <button type="button" onclick="setGuestCount(5,this)" class="g-count-btn" style="padding:14px 6px;border-radius:12px;border:2px solid var(--border);background:#fff;font-family:var(--fh);font-size:22px;font-weight:900;color:var(--bd);cursor:pointer;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:3px;"><span>5</span><span style="font-size:11px;font-weight:700;color:var(--muted);">kids</span></button>
+      </div>
+      <div id="g-count-err" style="display:none;margin-top:8px;font-size:12px;font-weight:700;color:var(--err);">Please select how many kids ☝️</div>
+    </div>
+    <!-- Name fields built dynamically per kid count -->
+    <div id="g-names" style="display:none;"></div>
+    <div class="fg" id="g-svc-wrap" style="display:none;"><label class="fl">Service</label>
+      <select class="fi" id="g-svc"><option>Haircut</option><option>Haircut + Wash</option><option>Wash Only</option><option>Styling</option><option>Other</option></select>
+    </div>
+    <!-- Heard via for guests -->
+    <div id="g-hear-wrap" style="display:none;background:#FFFDF0;border:1.5px solid rgba(255,214,0,.4);border-radius:14px;padding:13px;margin-bottom:12px;">
+      <div style="font-family:var(--fh);font-size:13px;font-weight:800;color:var(--bd);margin-bottom:4px;">🙏 Quick question — how did you hear about MiniCuts?</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+        <button type="button" class="guest-hear-btn" onclick="setGuestHear(this,'Ad Board')" style="padding:11px 8px;border-radius:10px;border:2px solid var(--border);background:#fff;font-family:var(--fh);font-size:13px;font-weight:800;color:var(--text);cursor:pointer;transition:all .15s;">📋 Ad Board</button>
+        <button type="button" class="guest-hear-btn" onclick="setGuestHear(this,'Instagram')" style="padding:11px 8px;border-radius:10px;border:2px solid var(--border);background:#fff;font-family:var(--fh);font-size:13px;font-weight:800;color:var(--text);cursor:pointer;transition:all .15s;">📸 Instagram</button>
+        <button type="button" class="guest-hear-btn" onclick="setGuestHear(this,'Friends / Family')" style="padding:11px 8px;border-radius:10px;border:2px solid var(--border);background:#fff;font-family:var(--fh);font-size:13px;font-weight:800;color:var(--text);cursor:pointer;transition:all .15s;">👥 Friends</button>
+        <button type="button" class="guest-hear-btn" onclick="setGuestHear(this,'Google')" style="padding:11px 8px;border-radius:10px;border:2px solid var(--border);background:#fff;font-family:var(--fh);font-size:13px;font-weight:800;color:var(--text);cursor:pointer;transition:all .15s;">🔍 Google</button>
+        <button type="button" class="guest-hear-btn" onclick="setGuestHear(this,'Walk-in')" style="padding:11px 8px;border-radius:10px;border:2px solid var(--border);background:#fff;font-family:var(--fh);font-size:13px;font-weight:800;color:var(--text);cursor:pointer;transition:all .15s;">🚶 Walk-in</button>
+      </div>
+      <div id="g-hear-err" style="display:none;margin-top:6px;font-size:12px;font-weight:700;color:var(--err);">Please select how you heard about us ☝️</div>
+    </div>
+
+    <!-- Guest location — mandatory -->
+    <div id="g-loc-wrap" style="display:none;" class="fg">
+      <label class="fl">📍 Your area in Dubai *</label>
+      <select class="fi" id="g-loc">
+        <option value="">Select area... *</option>
+        <option>Dubai Silicon Oasis (DSO)</option><option>Academic City</option><option>Al Barsha</option><option>Al Furjan</option><option>Al Karama</option><option>Al Khail Gate</option><option>Al Nahda</option><option>Al Qusais</option><option>Al Warqa</option><option>Arabian Ranches</option><option>Arjan</option><option>Bur Dubai</option><option>Business Bay</option><option>Damac Hills</option><option>Deira</option><option>Discovery Gardens</option><option>Downtown Dubai</option><option>Dubai Creek Harbour</option><option>Dubai Hills Estate</option><option>Dubai Investments Park (DIP)</option><option>Dubai Marina</option><option>Dubai Production City (IMPZ)</option><option>Dubai South / Expo City</option><option>Emirates Hills</option><option>Falcon City</option><option>Green Community</option><option>Greens / Views</option><option>International City</option><option>JBR / JLT</option><option>JVC / JVT</option><option>Jumeirah</option><option>Jumeirah Islands / Park</option><option>Liwan</option><option>Dubailand</option><option>Meydan</option><option>Mirdif</option><option>Motor City</option><option>Muhaisnah</option><option>Nad Al Sheba</option><option>Oud Metha</option><option>Palm Jumeirah</option><option>Rashidiya</option><option>Remraam</option><option>Ras Al Khor</option><option>Sports City</option><option>Springs / Meadows</option><option>Town Square</option><option>Umm Suqeim</option><option>Umm Ramool</option><option>Other / Outside Dubai</option>
+      </select>
+      <div id="g-loc-err" style="display:none;margin-top:5px;font-size:12px;font-weight:700;color:var(--err);">Please select your area ☝️</div>
+    </div>
+    <div style="display:flex;gap:9px;margin-top:4px;">
+      <button class="btn btn-ghost" onclick="showScr('s-lookup')">← Back</button>
+      <button class="btn btn-y" style="flex:1;" onclick="doGuest()">Get Token 🎫</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN: QUEUE (customer view) -->
+<div class="screen" id="s-queue">
+  <div style="font-family:var(--fh);font-size:19px;font-weight:800;color:var(--bd);margin-bottom:4px;">📋 Today's Queue</div>
+  <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Live queue status · <span style="color:var(--ok);font-weight:700;">Auto-updates</span></div>
+  <div id="cq-list"><div style="text-align:center;padding:40px;color:var(--muted);">Loading...</div></div>
+</div>
+
+</div><!-- end wrap -->
+
+<!-- T&C full text — loaded from DB (staff_config key=tc_text), fallback to inline -->
+<div id="tc-fulltext" style="display:none;position:fixed;inset:0;z-index:9999;background:#fff;overflow-y:auto;padding:20px;">
+  <div style="max-width:520px;margin:0 auto;">
+    <button onclick="document.getElementById('tc-fulltext').style.display='none'" style="background:var(--b);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-weight:700;cursor:pointer;margin-bottom:16px;">← Back</button>
+    <div id="tc-content">
+      <!-- Fallback — overwritten at runtime by loadTCText() if DB has content -->
+      <div style="font-family:var(--fh);font-size:18px;font-weight:900;color:var(--bd);margin-bottom:16px;">🐼 MiNiCUTS — Privacy & Terms</div>
+      <p style="font-size:13px;line-height:1.8;color:var(--text);">MiNiCUTS (operated by MiNiCUTS FZCO, Dubai Silicon Oasis, UAE) collects your mobile number, child's name, date of birth, and visit history for the following purposes:</p>
+      <ul style="font-size:13px;line-height:1.9;color:var(--text);padding-left:18px;margin:10px 0 14px;">
+        <li><strong>Queue management</strong> — to issue your token, track your position, and manage today's queue</li>
+        <li><strong>Loyalty programme</strong> — to track stamps, free wash rewards, and tier benefits</li>
+        <li><strong>In-salon games</strong> — to record game activity, badges, and prizes</li>
+        <li><strong>WhatsApp reminders</strong> — to send appointment reminders and visit follow-ups</li>
+        <li><strong>Promotions</strong> — to share MiNiCUTS offers, seasonal deals, and new services</li>
+      </ul>
+      <p style="font-size:12.5px;line-height:1.7;color:var(--muted);">Your data is used exclusively for MiNiCUTS services and is never sold or shared with third parties. It is stored securely on a GDPR-compliant cloud database. You may request deletion at the salon counter at any time.</p>
+      <p style="font-size:12px;color:var(--muted);margin-top:10px;">MiNiCUTS FZCO · Dubai Silicon Oasis Free Zone · Dubai, UAE</p>
+    </div>
+  </div>
+</div>
+
+<div class="bnav">
+  <button class="bb active" id="bn-ci" onclick="navTo('s-lookup','bn-ci')">✅ Check In</button>
+  <button class="bb" id="bn-q" onclick="navTo('s-queue','bn-q');loadQ();">📋 Queue</button>
+  <button class="bb" id="bn-g" onclick="window.open('./minicuts-game.html','_blank')">🎮 Games</button>
+</div>
+
+<script>
+const SB_URL='https://wtapyfgtwkjyjrjdnhkb.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0YXB5Zmd0d2tqeWpyamRuaGtiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NDc3ODEsImV4cCI6MjA5NTAyMzc4MX0.y_-iPfb8Pcg9zh42h6RGVBsUVZm80LcA9sPlz_Gl_fA';
+function loadCfg(){try{return JSON.parse(localStorage.getItem('mc_ci_cfg')||'{}')}catch(e){return{}}}
+let CFG=loadCfg();
+let STYLISTS=CFG.stylists||['Shakeeb','Farhan','Rizwan','Usman','Hamza','Bilal','Staff'];
+const SVCS=['Haircut','Haircut + Wash','Wash Only','Styling','Trim','Other'];
+// ── T&C Consent — inline checkbox, no modal ──
+function openTC(){
+  document.getElementById('tc-fulltext').style.display='block';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// Load T&C text from DB — stored in staff_config as key='tc_text', value=HTML string
+// Update anytime via SQL: UPDATE staff_config SET value='<new html>' WHERE key='tc_text'
+async function loadTCText(){
+  try{
+    const r=await fetch(SB_URL+'/rest/v1/staff_config?key=eq.tc_text&select=value&limit=1',
+      {headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY}});
+    const rows=await r.json();
+    if(rows&&rows.length&&rows[0].value){
+      const el=document.getElementById('tc-content');
+      if(el) el.innerHTML=typeof rows[0].value==='string'
+        ? rows[0].value
+        : JSON.stringify(rows[0].value); // handle if stored as JSON
+    }
+  }catch(e){/* keep fallback content */}
+}
+loadTCText();
+
+// Check if the inline consent checkbox is ticked (used by both reg and returning flows)
+function isTCchecked(checkboxId){
+  return document.getElementById(checkboxId)?.checked===true;
+}
+
+// After consent: patch DB records and proceed
+function tcGrantConsent(customerIds){
+  if(customerIds&&customerIds.length){
+    customerIds.forEach(id=>{
+      sb('customers','PATCH',{tc_accepted:true,tc_accepted_at:new Date().toISOString()},'id=eq.'+id).catch(()=>{});
+    });
+  }
+}
+
+// Inline consent HTML snippet — used in both registration and returning customer panels
+function tcConsentHTML(checkboxId, forReturning=false){
+  return`<div style="background:linear-gradient(135deg,#F0F9FF,#E0F2FE);border:1.5px solid #BAE6FD;border-radius:12px;padding:12px 14px;margin-bottom:14px;">
+    <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;">
+      <input type="checkbox" id="${checkboxId}" style="width:18px;height:18px;margin-top:2px;accent-color:var(--b);flex-shrink:0;">
+      <span style="font-size:12.5px;font-weight:700;color:var(--bd);line-height:1.6;">
+        <button type="button" onclick="openTC()" style="background:none;border:none;color:var(--b);font-size:13px;font-weight:800;cursor:pointer;padding:0;text-decoration:underline;display:inline;">T&amp;C</button>
+      </span>
+    </label>
+    <div id="${checkboxId}-err" style="display:none;margin-top:6px;font-size:12px;font-weight:700;color:var(--err);">Please tick the box above to continue ☝️</div>
+  </div>`;
+}
+let _qdata=[],_sel=[],_luTimer=null,_genders={},_kcount=0,_hearAbout=null,_regHearAbout=null,_guestHear=null;
+
+function setGuestHear(btn,val){
+  _guestHear=val;
+  document.querySelectorAll('.guest-hear-btn').forEach(b=>{
+    b.style.background='#fff';b.style.borderColor='var(--border)';b.style.color='var(--text)';
+  });
+  btn.style.background='linear-gradient(135deg,var(--y),#FFB300)';
+  btn.style.borderColor='var(--yd)';btn.style.color='var(--bd)';
+}
+
+// Load stylists from DB on startup
+(async function loadStylists(){
+  try{
+    const r=await fetch(SB_URL+'/rest/v1/staff_config?key=eq.staff_config_data&select=value&limit=1',
+      {headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY}});
+    const rows=await r.json();
+    if(rows&&rows.length){
+      const d=typeof rows[0].value==='string'?JSON.parse(rows[0].value):rows[0].value;
+      if(d.stylists&&d.stylists.length) STYLISTS=d.stylists;
+    }
+  }catch(e){/* use defaults */}
+})();
+
+function setHear(btn,val){
+  _hearAbout=val;
+  document.querySelectorAll('.hear-btn').forEach(b=>{
+    b.style.background='#fff';b.style.borderColor='var(--border)';b.style.color='var(--text)';
+  });
+  btn.style.background='linear-gradient(135deg,var(--y),#FFB300)';
+  btn.style.borderColor='var(--yd)';btn.style.color='var(--bd)';
+  document.getElementById('lu-hear-err').style.display='none';
+  updBtn();
+}
+
+function setRegHear(btn,val){
+  _regHearAbout=val;
+  document.querySelectorAll('.reg-hear-btn').forEach(b=>{
+    b.style.background='#fff';b.style.borderColor='var(--border)';b.style.color='var(--text)';
+  });
+  btn.style.background='linear-gradient(135deg,var(--y),#FFB300)';
+  btn.style.borderColor='var(--yd)';btn.style.color='var(--bd)';
+  document.getElementById('rg-hear-err').style.display='none';
+}
+
+async function sb(path,method='GET',body=null,params=''){
+  const url=SB_URL+'/rest/v1/'+path+(params?'?'+params:'');
+  const h={'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'return=representation'};
+  const o={method,headers:h};if(body)o.body=JSON.stringify(body);
+  const r=await fetch(url,o);const t=await r.text();
+  if(!r.ok)throw new Error(t.substring(0,200));
+  return t?JSON.parse(t):[];
+}
+
+// Inject consent checkboxes early so they're visible before submit
+document.addEventListener('DOMContentLoaded',()=>{
+  const rgWrap=document.getElementById('rg-tc-wrap');
+  if(rgWrap&&!rgWrap.innerHTML) rgWrap.innerHTML=tcConsentHTML('rg-tc-check',false);
+});
+
+function showScr(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));const e=document.getElementById(id);if(e){e.classList.add('active');window.scrollTo({top:0,behavior:'smooth'});}}
+function navTo(sid,bid){showScr(sid);document.querySelectorAll('.bb').forEach(b=>b.classList.remove('active'));const b=document.getElementById(bid);if(b)b.classList.add('active');}
+function today(){const n=new Date();return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');}
+function showM(el,msg,t){if(!el)return;el.textContent=msg;el.className='sm '+t;el.style.display='block';}
+function getM(){
+  const pfx=(document.getElementById('lu-pfx')?.value||'055').replace(/\D/g,'');
+  const num=(document.getElementById('lu-num')?.value||'').replace(/\D/g,'');
+  if(!num)return '';return '971'+pfx.slice(1)+num;
+}
+function getRgM(){
+  const pfx=(document.getElementById('rg-pfx')?.value||'055').replace(/\D/g,'');
+  const num=(document.getElementById('rg-num')?.value||'').replace(/\D/g,'');
+  if(!num)return '';return '971'+pfx.slice(1)+num;
+}
+function splitM(m){let s=String(m||'').replace(/\D/g,'');if(s.startsWith('971'))s=s.slice(3);else if(s.startsWith('00971'))s=s.slice(5);if(s.length===9)return{pfx:'0'+s.slice(0,2),num:s.slice(2)};return{pfx:'055',num:s};}
+function setPhF(pId,nId,mob){const p=splitM(mob);const ps=document.getElementById(pId),ns=document.getElementById(nId);if(ps)ps.value=['050','051','052','054','055','056','058','059','060'].includes(p.pfx)?p.pfx:'055';if(ns)ns.value=p.num||'';}
+
+// ── STATE ──
+let _kidsCount = 0;          // how many kids count button selected
+let _foundKids = [];         // kids returned by doLookup (all registered under this mobile)
+let _alreadyQueued = new Set(); // customer_ids already in today's queue
+let _selectedKidIds = new Set(); // ids of registered kids the parent has actually tapped to bring in today
+let _reservedTokens = [];    // not used for pre-reservation anymore — kept for reset cleanup
+
+// ── TOKEN BLOCK: inserts real queue rows atomically at check-in time ──
+async function reserveTokenBlock(n, mob, kidRows){
+  // kidRows: [{customer_id, customer_name, mobile, service, is_guest, heard_via}]
+  const t = today();
+  const now = new Date().toISOString();
+  const ex = await sb('queue','GET',null,'select=token_number&checkin_date=eq.'+t+'&order=token_number.desc&limit=1');
+  const lastTok = (ex&&ex.length) ? Number(ex[0].token_number)||0 : 0;
+  const rows = kidRows.map((k,i)=>({
+    customer_id:   k.customer_id||null,
+    customer_name: k.customer_name,
+    mobile:        mob||null,
+    service:       k.service||'Haircut',
+    token_number:  lastTok+1+i,
+    checkin_date:  t,
+    checkin_time:  now,
+    status:        'waiting',
+    is_guest:      k.is_guest||false,
+    stylist:       null,
+    heard_via:     k.heard_via||null
+  }));
+  const inserted = await sb('queue','POST', rows.length===1?rows[0]:rows);
+  const arr = Array.isArray(inserted)?inserted:[inserted];
+  return arr.map((r,i)=>({id:r.id, token_number:lastTok+1+i, customer_name:kidRows[i].customer_name, customer_id:kidRows[i].customer_id||null}));
+}
+
+// ── REGISTERED-CUSTOMER FLOW ──
+
+// Called when customer taps a count button — just updates UI, NO DB writes
+function setKidsCount(n, btn){
+  _kidsCount = n;
+  _selectedKidIds = new Set(); // changing the count invalidates any prior taps
+  document.querySelectorAll('.kids-count-btn').forEach(b=>{
+    b.style.background='#fff'; b.style.borderColor='var(--border)'; b.style.color='var(--bd)';
+  });
+  btn.style.background='var(--bd)'; btn.style.borderColor='var(--bd)'; btn.style.color='#fff';
+  document.getElementById('kids-count-err').style.display='none';
+  if(_foundKids.length > 0){
+    // Registered customer — show kids panel
+    renderKidsPanel();
+  }
+  // For new customers (_foundKids=[]), count is stored in _kidsCount;
+  // the Register button passes it along via showReg()
+}
+
+// Build the registered-kids display + new-kid forms based on current count
+function renderKidsPanel(){
+  const n = _kidsCount;
+  const eligible = _foundKids.filter(k=>!_alreadyQueued.has(k.id));
+  const newSlots  = Math.max(0, n - eligible.length); // extra kids needing registration (only relevant once enough are tapped)
+
+  // ── Registered kids: shown UNselected, parent taps which ones are here today ──
+  const kidsEl = document.getElementById('lu-kids');
+  if(eligible.length > 0 && n > 0){
+    const selCount = _selectedKidIds.size;
+    let html = '<div style="font-size:11.5px;font-weight:700;color:var(--b);background:#EEF6FF;border-radius:8px;padding:7px 11px;margin-bottom:8px;">👇 Tap which child'+(n>1?'ren are':' is')+' here today ('+selCount+' of '+n+' selected)</div>';
+    eligible.forEach(k=>{
+      const g = k.gender==='girl';
+      const isSel = _selectedKidIds.has(k.id);
+      html += '<div class="kid-row'+(isSel?' selected':'')+'" onclick="toggleKidSelect(\''+k.id+'\')">'
+        +'<div style="font-size:18px;flex-shrink:0;">'+(isSel?'✅':'⬜')+'</div>'
+        +'<div class="kav '+(g?'girl':'')+'">'+(k.name.charAt(0).toUpperCase())+'</div>'
+        +'<div style="flex:1;min-width:0;">'
+          +'<div style="font-weight:800;font-size:14px;">'+k.name+'</div>'
+          +'<div style="font-size:11.5px;color:var(--muted);">'+(g?'👧 Girl':'👦 Boy')+' · '+(k.stamps||0)+' stamps</div>'
+        +'</div></div>';
+    });
+    kidsEl.innerHTML = html;
+    kidsEl.style.display = 'block';
+  } else {
+    kidsEl.innerHTML = '';
+    kidsEl.style.display = 'none';
+  }
+
+  // ── New-kid forms for the extra slots (only once parent has tapped all available registered kids and still needs more) ──
+  const newEl = document.getElementById('lu-new-kids');
+  const showNewSlots = newSlots > 0 && _selectedKidIds.size >= eligible.length;
+  if(showNewSlots){
+    const regSlots = eligible.length;
+    const cy = new Date().getFullYear();
+    const yr = Array.from({length:20},(_,i)=>'<option value="'+(cy-i)+'">'+(cy-i)+'</option>').join('');
+    const mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m,i)=>'<option value="'+String(i+1).padStart(2,'0')+'">'+m+'</option>').join('');
+    const dy = Array.from({length:31},(_,i)=>'<option value="'+String(i+1).padStart(2,'0')+'">'+(i+1)+'</option>').join('');
+    let html = '<div style="font-size:11.5px;font-weight:700;color:var(--warn);background:#FEF3C7;border-radius:8px;padding:7px 11px;margin-bottom:8px;margin-top:8px;">➕ '
+      +newSlots+' new child'+(newSlots>1?'ren':'')+' to register — fill in details below</div>';
+    for(let i=0;i<newSlots;i++){
+      html += '<div class="kid-block" id="nk-'+i+'" style="margin-bottom:10px;">'
+        +'<div style="font-family:var(--fh);font-size:13px;font-weight:800;color:var(--b);margin-bottom:10px;">New Child '+(regSlots+i+1)+'</div>'
+        +'<div class="fg"><label class="fl">First Name *</label>'
+          +'<input class="fi" type="text" id="nk-name-'+i+'" placeholder="Child\'s first name" maxlength="25" autocomplete="off"/></div>'
+        +'<div class="fg"><label class="fl">Gender *</label><div class="gr">'
+          +'<button class="gb boy active" id="nk-boy-'+i+'" onclick="nkGender('+i+',\'boy\')">👦 Boy</button>'
+          +'<button class="gb girl" id="nk-girl-'+i+'" onclick="nkGender('+i+',\'girl\')">👧 Girl</button>'
+        +'</div></div>'
+        +'<div class="fg"><label class="fl">Date of Birth *</label><div class="fr3">'
+          +'<select class="fi" id="nk-dd-'+i+'"><option value="">Day</option>'+dy+'</select>'
+          +'<select class="fi" id="nk-mm-'+i+'"><option value="">Month</option>'+mo+'</select>'
+          +'<select class="fi" id="nk-yy-'+i+'"><option value="">Year</option>'+yr+'</select>'
+        +'</div></div>'
+        +'</div>';
+    }
+    newEl.innerHTML = html;
+    newEl.style.display = 'block';
+  } else {
+    newEl.innerHTML = '';
+    newEl.style.display = 'none';
+  }
+
+  updBtn();
+}
+
+// Toggle a single registered kid in/out of today's selection.
+// Caps at _kidsCount: once the parent has tapped that many, further taps on
+// un-tapped kids are ignored until they untap one (button stays disabled-looking via re-render).
+function toggleKidSelect(id){
+  if(_selectedKidIds.has(id)){
+    _selectedKidIds.delete(id);
+  } else {
+    if(_selectedKidIds.size >= _kidsCount) return; // already at the chosen count — must untap one first
+    _selectedKidIds.add(id);
+  }
+  renderKidsPanel();
+}
+
+function nkGender(i, g){
+  document.getElementById('nk-boy-'+i)?.classList.toggle('active', g==='boy');
+  document.getElementById('nk-girl-'+i)?.classList.toggle('active', g==='girl');
+}
+
+function onLookup(){
+  clearTimeout(_luTimer);
+  const num=(document.getElementById('lu-num')?.value||'').replace(/\D/g,'');
+  ['lu-st','lu-count','lu-kids','lu-new-kids','lu-act','lu-nf','lu-reg-sibling'].forEach(id=>{
+    const e=document.getElementById(id); if(e) e.style.display='none';
+  });
+  _sel=[]; _kidsCount=0; _foundKids=[]; _alreadyQueued=new Set(); _selectedKidIds=new Set();
+  document.querySelectorAll('.kids-count-btn').forEach(b=>{b.style.background='#fff';b.style.borderColor='var(--border)';b.style.color='var(--bd)';});
+  if(!num.length) return;
+  if(num.length<7){
+    const st=document.getElementById('lu-st');
+    st.textContent='Please enter all 7 digits of your number 👆';
+    st.style.cssText='display:block;background:#FEF3C7;color:var(--warn);padding:9px 12px;border-radius:10px;font-size:12.5px;font-weight:700;margin-bottom:10px;';
+    return;
+  }
+  const st=document.getElementById('lu-st');
+  st.textContent='Looking up... 🔍';
+  st.style.cssText='display:block;background:#EEF6FF;color:var(--b);padding:9px 12px;border-radius:10px;font-size:12.5px;font-weight:700;margin-bottom:10px;';
+  _luTimer=setTimeout(doLookup,500);
+}
+
+async function doLookup(){
+  const mob=getM(); const mAlt='0'+mob.slice(3); const st=document.getElementById('lu-st');
+  try{
+    const [rA,rB,queueRows]=await Promise.all([
+      sb('customers','GET',null,'select=id,name,mobile,gender,stamps,game_points,heard_via,tc_accepted,location&mobile=eq.'+encodeURIComponent(mob)+'&limit=20'),
+      sb('customers','GET',null,'select=id,name,mobile,gender,stamps,game_points,heard_via,tc_accepted,location&mobile=eq.'+encodeURIComponent(mAlt)+'&limit=20'),
+      sb('queue','GET',null,'select=customer_id,status&checkin_date=eq.'+today()+'&status=in.(waiting,called)&limit=50')
+    ]);
+    const seen=new Set();
+    const kids=[...(rA||[]),...(rB||[])].filter(c=>{if(seen.has(c.id))return false;seen.add(c.id);return true;});
+
+    // Not registered
+    if(!kids.length){
+      st.style.display='none';
+      document.getElementById('lu-nf').style.display='block';
+      document.getElementById('lu-count').style.display='block';
+      return;
+    }
+
+    _alreadyQueued = new Set((queueRows||[]).map(r=>r.customer_id).filter(Boolean));
+    _foundKids = kids;
+
+    // Inject consent checkbox for returning customers who haven't consented yet
+    const tcWrap=document.getElementById('lu-tc-wrap');
+    if(tcWrap&&kids.some(k=>!k.tc_accepted)){
+      tcWrap.innerHTML=tcConsentHTML('lu-tc-check',true);
+    }else if(tcWrap){tcWrap.innerHTML='';}
+
+    const eligible = kids.filter(k=>!_alreadyQueued.has(k.id));
+
+    if(eligible.length===0){
+      st.textContent='⏳ All children already checked in today — no action needed';
+      st.style.cssText='display:block;background:#FEF3C7;color:var(--warn);padding:9px 12px;border-radius:10px;font-size:12.5px;font-weight:700;margin-bottom:10px;';
+      document.getElementById('lu-reg-sibling').style.display='block';
+      return;
+    }
+
+    // Show count box first
+    st.textContent='✅ Found '+kids.length+' child'+(kids.length>1?'ren':'')+' registered — select how many are here today';
+    st.style.cssText='display:block;background:#DCFCE7;color:var(--ok);padding:9px 12px;border-radius:10px;font-size:12.5px;font-weight:700;margin-bottom:10px;';
+    document.getElementById('lu-count').style.display='block';
+    document.getElementById('lu-reg-sibling').style.display='block';
+
+    // If exactly 1 eligible kid exists at all, there's no ambiguity — auto-select count=1 AND that specific kid
+    if(eligible.length===1){
+      _kidsCount=1;
+      _selectedKidIds=new Set([eligible[0].id]);
+      const firstBtn=document.querySelector('.kids-count-btn');
+      if(firstBtn){firstBtn.style.background='var(--bd)';firstBtn.style.borderColor='var(--bd)';firstBtn.style.color='#fff';}
+      renderKidsPanel();
+    }
+  }catch(e){
+    const st=document.getElementById('lu-st');
+    st.textContent='Error: '+e.message;
+    st.style.cssText='display:block;background:#FEE2E2;color:var(--err);padding:9px 12px;border-radius:10px;font-size:12.5px;font-weight:700;margin-bottom:10px;';
+  }
+}
+
+function updBtn(){
+  const eligible = _foundKids.filter(k=>!_alreadyQueued.has(k.id));
+  const regKids = eligible.filter(k=>_selectedKidIds.has(k.id)); // only the kids the parent actually tapped
+  const regCount = regKids.length;
+  // New-kid slots only "open up" once the parent has tapped every available registered kid and still needs more
+  const newCount = (regCount >= eligible.length) ? Math.max(0, _kidsCount - eligible.length) : 0;
+  const total = regCount + newCount;
+  const act = document.getElementById('lu-act');
+  const btn = document.getElementById('lu-btn');
+  const sum = document.getElementById('lu-sum');
+
+  if(!_kidsCount){ act.style.display='none'; return; }
+
+  // Require the parent to have tapped exactly _kidsCount specific kids (registered + new) before showing the action
+  if(regCount < _kidsCount && regCount < eligible.length){
+    act.style.display='none';
+    return;
+  }
+  if(total < _kidsCount){ act.style.display='none'; return; }
+  if(total===0){ act.style.display='none'; return; }
+  act.style.display='block';
+
+  // Button label
+  const hasNew = newCount > 0;
+  if(total===1 && !hasNew){
+    btn.textContent='✅ Check In '+regKids[0].name;
+    sum.style.display='none';
+  } else if(hasNew){
+    btn.textContent='✅ Register & Check In '+(total>1?total+' Children':'');
+    sum.style.display='block';
+    sum.textContent='🎫 '+regCount+' selected + '+newCount+' new child'+(newCount>1?'ren':'')+' to register';
+  } else {
+    btn.textContent='✅ Check In '+total+' Children';
+    sum.style.display='block';
+    sum.textContent='🎫 '+regKids.map(k=>k.name).join(' → ');
+  }
+
+  // "How did you hear" — show if any new kids OR any returning kid who never answered
+  const needsHear = hasNew || regKids.some(c=>!c.heard_via && (Number(c.stamps)||0)===0);
+  const hearEl = document.getElementById('lu-hear');
+  if(hearEl) hearEl.style.display = needsHear ? 'block' : 'none';
+
+  if(needsHear){
+    btn.disabled = !_hearAbout; btn.style.opacity = _hearAbout?'1':'0.45';
+    let note=document.getElementById('lu-hear-note');
+    if(!note){note=document.createElement('div');note.id='lu-hear-note';note.style.cssText='font-size:11.5px;color:var(--muted);text-align:center;margin-top:6px;font-weight:600;';btn.parentNode.insertBefore(note,btn.nextSibling);}
+    note.textContent=_hearAbout?'':'👆 Tap above to unlock check-in';
+  } else {
+    btn.disabled=false; btn.style.opacity='1';
+    const note=document.getElementById('lu-hear-note'); if(note)note.remove();
+  }
+}
+
+// CHECKIN — handles both pure registered kids AND mixed (registered + new kids to register first)
+async function proceedCheckin(){
+  if(!_kidsCount){ document.getElementById('kids-count-err').style.display='block'; return; }
+  const eligible = _foundKids.filter(k=>!_alreadyQueued.has(k.id));
+  const regKids  = eligible.filter(k=>_selectedKidIds.has(k.id));
+  const newCount = (regKids.length >= eligible.length) ? Math.max(0, _kidsCount - eligible.length) : 0;
+
+  if(regKids.length + newCount < _kidsCount){
+    document.getElementById('kids-count-err').textContent='Please select which child'+(_kidsCount>1?'ren':'')+' is here today 👆';
+    document.getElementById('kids-count-err').style.display='block';
+    return;
+  }
+
+  // T&C gate: returning kids without consent get an inline checkbox shown in the panel
+  const unconsented = regKids.filter(k=>!k.tc_accepted);
+  if(unconsented.length > 0){
+    // Show inline consent in the action panel if not already shown
+    const wrap=document.getElementById('lu-tc-wrap');
+    if(wrap&&!wrap.innerHTML){
+      wrap.innerHTML=tcConsentHTML('lu-tc-check', true);
+    }
+    if(!isTCchecked('lu-tc-check')){
+      const err=document.getElementById('lu-tc-check-err');
+      if(err){err.style.display='block';err.scrollIntoView({behavior:'smooth',block:'nearest'});}
+      return;
+    }
+    tcGrantConsent(unconsented.map(k=>k.id));
+  }
+  _proceedCheckinCore(eligible, regKids, newCount);
+}
+
+async function _proceedCheckinCore(eligible, regKids, newCount){
+  const needsHear = newCount>0 || regKids.some(c=>!c.heard_via && (Number(c.stamps)||0)===0);
+  if(needsHear && !_hearAbout){ document.getElementById('lu-hear-err').style.display='block'; return; }
+
+  // Validate + collect new-kid form data
+  const newKidData = [];
+  for(let i=0;i<newCount;i++){
+    const nameEl = document.getElementById('nk-name-'+i);
+    const name = (nameEl?.value||'').trim();
+    const dd = document.getElementById('nk-dd-'+i)?.value;
+    const mm = document.getElementById('nk-mm-'+i)?.value;
+    const yy = document.getElementById('nk-yy-'+i)?.value;
+    const boyActive = document.getElementById('nk-boy-'+i)?.classList.contains('active');
+    const gender = boyActive ? 'boy' : 'girl';
+    if(!name){
+      nameEl?.focus();
+      const block=document.getElementById('nk-'+i);
+      if(block){const e=block.querySelector('.nk-err');if(e)e.remove();const d=document.createElement('div');d.className='nk-err';d.style.cssText='color:var(--err);font-size:12px;font-weight:700;margin-top:4px;';d.textContent='Please enter a name ❌';block.appendChild(d);}
+      return;
+    }
+    if(!dd||!mm||!yy){
+      const block=document.getElementById('nk-'+i);
+      if(block){const e=block.querySelector('.nk-err');if(e)e.remove();const d=document.createElement('div');d.className='nk-err';d.style.cssText='color:var(--err);font-size:12px;font-weight:700;margin-top:4px;';d.textContent='Date of birth required 🎂';block.appendChild(d);}
+      return;
+    }
+    newKidData.push({name, gender, dob:yy+'-'+mm+'-'+dd});
+  }
+
+  // Show loading screen
+  showScr('s-ci');
+  document.getElementById('ci-single').style.display='none';
+  document.getElementById('ci-family').style.display='none';
+  document.getElementById('ci-load').style.display='block';
+  document.getElementById('ci-load').innerHTML='<div style="font-size:40px;margin-bottom:10px;">⏳</div><div style="font-weight:700;">Checking in...</div>';
+
+  try{
+    const mob = regKids[0]?.mobile || getM();
+    const heardVia = _hearAbout || null;
+    const t = today();
+
+    // Duplicate check for registered kids
+    for(const c of regKids){
+      const active=await sb('queue','GET',null,
+        'select=token_number,status&customer_id=eq.'+c.id+'&checkin_date=eq.'+t+'&status=in.(waiting,called)&limit=1');
+      if(active&&active.length) throw new Error(c.name+' is already in the queue (Token #'+String(active[0].token_number).padStart(2,'0')+').');
+    }
+
+    // Register new kids — inherit location from existing registered sibling
+    const newlyRegistered = [];
+    if(newKidData.length){
+      // Get location from existing sibling (same phone = same family area)
+      const siblingLoc = regKids.find(c=>c.location)?.location || null;
+      // Check for name duplicates under this mobile
+      const existCheck=await sb('customers','GET',null,'select=name,location&mobile=eq.'+encodeURIComponent(mob)+'&limit=50');
+      const existNames=new Set((existCheck||[]).map(c=>c.name.trim().toLowerCase()));
+      // Also try to get location from any existing customer on this phone
+      const locFromDB = siblingLoc || (existCheck||[]).find(c=>c.location)?.location || null;
+      for(const k of newKidData){
+        if(existNames.has(k.name.trim().toLowerCase())) throw new Error(k.name+' is already registered under this number ❌');
+        const res=await sb('customers','POST',{name:k.name,mobile:mob,parent:null,gender:k.gender,dob:k.dob,location:locFromDB||null,stamps:0,redemptions:0,game_points:0,game_spins:0,heard_via:heardVia,tc_accepted:true,tc_accepted_at:new Date().toISOString()});
+        const nc=Array.isArray(res)?res[0]:res;
+        if(!nc?.id) throw new Error('Registration failed for '+k.name);
+        newlyRegistered.push({id:nc.id,name:k.name,mobile:mob,stamps:0,game_points:0,heard_via:heardVia,location:locFromDB});
+      }
+    }
+
+    // All kids in order: registered first, then new
+    const allKids = [...regKids, ...newlyRegistered];
+
+    // Build queue rows and insert atomically
+    const kidRows = allKids.map(c=>({
+      customer_id: c.id||null,
+      customer_name: c.name,
+      mobile: mob,
+      service: 'Haircut',
+      is_guest: false,
+      heard_via: c.heard_via||heardVia||null
+    }));
+    const inserted = await reserveTokenBlock(allKids.length, mob, kidRows);
+
+    // Fire-and-forget: save heard_via for customers who didn't have it
+    allKids.forEach(c=>{
+      if(c.id && heardVia && !c.heard_via)
+        sb('customers','PATCH',{heard_via:heardVia},'id=eq.'+c.id+'&heard_via=is.null').catch(()=>{});
+    });
+
+    // Build _sel for passport strip
+    _sel = allKids.map(c=>({id:c.id,name:c.name,mobile:mob,stamps:c.stamps||0,game_points:c.game_points||0,heard_via:c.heard_via||heardVia}));
+
+    const tokens = inserted.map(r=>({token:r.token_number, name:r.customer_name, id:r.customer_id, mobile:mob}));
+    refreshStats();
+    if(tokens.length===1) showTok(tokens[0].token,tokens[0].name,tokens[0].id,'Checked in! You\'re in the queue. ✅',mob);
+    else showFamTok(tokens,mob);
+  }catch(e){
+    document.getElementById('ci-load').innerHTML='<div style="color:var(--err);padding:20px;text-align:center;font-weight:700;">❌ '+e.message+'</div>';
+  }
+}
+
+// ── GUEST FLOW ──
+let _guestCount = 0;
+
+function showGuest(){
+  _guestCount=0;_guestHear=null;
+  document.querySelectorAll('.g-count-btn').forEach(b=>{b.style.background='#fff';b.style.borderColor='var(--border)';b.style.color='var(--bd)';});
+  document.querySelectorAll('.guest-hear-btn').forEach(b=>{b.style.background='#fff';b.style.borderColor='var(--border)';b.style.color='var(--text)';});
+  document.getElementById('g-names').innerHTML='';
+  document.getElementById('g-names').style.display='none';
+  document.getElementById('g-svc-wrap').style.display='none';
+  document.getElementById('g-hear-wrap').style.display='none';
+  document.getElementById('g-loc-wrap').style.display='none';
+  if(document.getElementById('g-loc'))document.getElementById('g-loc').value='';
+  if(document.getElementById('g-loc-err'))document.getElementById('g-loc-err').style.display='none';
+  if(document.getElementById('g-hear-err'))document.getElementById('g-hear-err').style.display='none';
+  document.getElementById('g-count-err').style.display='none';
+  const msg=document.getElementById('g-msg'); if(msg)msg.style.display='none';
+  const gb=document.querySelector('#s-guest .btn-y'); if(gb)gb.style.display='none';
+  showScr('s-guest');
+}
+
+function setGuestCount(n, btn){
+  _guestCount=n;
+  document.querySelectorAll('.g-count-btn').forEach(b=>{b.style.background='#fff';b.style.borderColor='var(--border)';b.style.color='var(--bd)';});
+  btn.style.background='var(--bd)'; btn.style.borderColor='var(--bd)'; btn.style.color='#fff';
+  document.getElementById('g-count-err').style.display='none';
+
+  // Build one name input per kid (first name only)
+  let html = '';
+  for(let i=0;i<n;i++){
+    html += '<div class="fg" style="margin-bottom:10px;">'
+      +'<label class="fl">'+(n===1?'Child\'s Name *':'Child '+(i+1)+' Name *')+'</label>'
+      +'<input class="fi" type="text" id="g-name-'+i+'" placeholder="e.g. '+(i===0?'Omar':i===1?'Sara':'Ahmed')+'" maxlength="25" autocomplete="off"/>'
+      +'</div>';
+  }
+  const namesEl = document.getElementById('g-names');
+  namesEl.innerHTML = html;
+  namesEl.style.display='block';
+  document.getElementById('g-svc-wrap').style.display='block';
+  document.getElementById('g-hear-wrap').style.display='block';
+  document.getElementById('g-loc-wrap').style.display='block';
+  const gb=document.querySelector('#s-guest .btn-y'); if(gb)gb.style.display='block';
+}
+
+async function doGuest(){
+  const msg=document.getElementById('g-msg');
+  if(!_guestCount){ document.getElementById('g-count-err').style.display='block'; return; }
+
+  // Collect and validate names
+  const names=[];
+  for(let i=0;i<_guestCount;i++){
+    const v=(document.getElementById('g-name-'+i)?.value||'').trim();
+    if(!v){ showM(msg,'Name required for Child '+(i+1)+' ❌','err'); return; }
+    names.push(v);
+  }
+
+  // Heard via mandatory
+  if(!_guestHear){
+    showM(msg,'Please tell us how you heard about MiNiCUTS 👆','err');
+    document.getElementById('g-hear-err').style.display='block';
+    document.getElementById('g-hear-wrap')?.scrollIntoView({behavior:'smooth',block:'nearest'});
+    return;
+  }
+  document.getElementById('g-hear-err').style.display='none';
+
+  // Location mandatory
+  const gLoc=document.getElementById('g-loc')?.value||'';
+  if(!gLoc){
+    document.getElementById('g-loc-err').style.display='block';
+    document.getElementById('g-loc-wrap')?.scrollIntoView({behavior:'smooth',block:'nearest'});
+    return;
+  }
+  document.getElementById('g-loc-err').style.display='none';
+
+  const svc=document.getElementById('g-svc').value||'Haircut';
+  const btn=document.querySelector('#s-guest .btn-y');
+  if(btn){btn.disabled=true; btn.textContent='Issuing...';}
+
+  try{
+    // Reserve tokens only now (at button click)
+    const kidRows = names.map(n=>({customer_id:null, customer_name:n, mobile:null, service:svc, is_guest:true, heard_via:_guestHear||null, location:gLoc}));
+    const inserted = await reserveTokenBlock(_guestCount, null, kidRows);
+    _sel=[];
+    refreshStats();
+    const tokens = inserted.map(r=>({token:r.token_number, name:r.customer_name, id:null, mobile:null}));
+    if(tokens.length===1) showTok(tokens[0].token, tokens[0].name+' (Guest)', null, '⚠️ Guest only — no loyalty or game rewards.', null);
+    else showFamTok(tokens, null);
+  }catch(e){ showM(msg,'Error: '+e.message,'err'); }
+  finally{ if(btn){btn.disabled=false; btn.textContent='Get Token 🎫';} }
+}
+
+
+
+// REGISTER
+function showReg(mob, kidCount){
+  _kcount=0;
+  document.getElementById('rg-kids').innerHTML='';
+  if(mob) setPhF('rg-pfx','rg-num',mob);
+  const n = Math.max(1, kidCount||_kidsCount||1);
+  for(let i=0;i<n;i++) addKid();
+  showScr('s-reg');
+}
+function addKid(){
+  _kcount++;const id='k'+_kcount;_genders[id]='boy';
+  const c=document.getElementById('rg-kids');const b=document.createElement('div');b.className='kid-block';b.id='kb-'+id;
+  const cy=new Date().getFullYear();
+  const yr=Array.from({length:20},(_,i)=>'<option value="'+(cy-i)+'">'+(cy-i)+'</option>').join('');
+  const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m,i)=>'<option value="'+String(i+1).padStart(2,'0')+'">'+m+'</option>').join('');
+  const dy=Array.from({length:31},(_,i)=>'<option value="'+String(i+1).padStart(2,'0')+'">'+(i+1)+'</option>').join('');
+  b.innerHTML='<div class="kb-hdr"><span style="font-family:var(--fh);font-size:13px;font-weight:800;color:var(--b);">Child '+_kcount+'</span>'+(_kcount>1?'<button style="background:none;border:none;color:var(--err);font-size:18px;cursor:pointer;" onclick="rmKid(\''+id+'\')">✕</button>':'')+'</div><div class="fg"><label class="fl">Name *</label><input class="fi" type="text" id="'+id+'-n" placeholder="Child\'s name"/></div><div class="fg"><label class="fl">Gender *</label><div class="gr"><button class="gb boy active" id="'+id+'-b" onclick="setG(\''+id+'\',\'boy\')">👦 Boy</button><button class="gb girl" id="'+id+'-g" onclick="setG(\''+id+'\',\'girl\')">👧 Girl</button></div></div><div class="fg"><label class="fl">Date of Birth *</label><div class="fr3"><select class="fi" id="'+id+'-dd"><option value="">Day</option>'+dy+'</select><select class="fi" id="'+id+'-mm"><option value="">Month</option>'+mo+'</select><select class="fi" id="'+id+'-yy"><option value="">Year</option>'+yr+'</select></div></div><div class="fg"><label class="fl">Service</label><select class="fi" id="'+id+'-sv"><option>Haircut</option><option>Haircut + Wash</option><option>Wash Only</option><option>Styling</option><option>Other</option></select></div>';
+  c.appendChild(b);
+}
+function rmKid(id){const e=document.getElementById('kb-'+id);if(e)e.remove();delete _genders[id];}
+function setG(id,g){_genders[id]=g;document.getElementById(id+'-b')?.classList.toggle('active',g==='boy');document.getElementById(id+'-g')?.classList.toggle('active',g==='girl');}
+async function doRegAll(){
+  const mob=getRgM();const mnum=(document.getElementById('rg-num')?.value||'').replace(/\D/g,'');
+  const par=document.getElementById('rg-par')?.value.trim()||'';
+  const loc=document.getElementById('rg-loc')?.value||'';
+  const msg=document.getElementById('rg-msg');const btn=document.getElementById('rg-btn');
+  if(mnum.length!==7){showM(msg,'Valid 7-digit mobile required 📱','err');return;}
+  if(!loc){
+    const e=document.getElementById('rg-loc-err');if(e){e.style.display='block';e.scrollIntoView({behavior:'smooth',block:'nearest'});}
+    return;
+  }
+  if(!_regHearAbout){
+    const e=document.getElementById('rg-hear-err');if(e){e.style.display='block';e.scrollIntoView({behavior:'smooth',block:'nearest'});}
+    return;
+  }
+  const blocks=document.querySelectorAll('.kid-block');const kids=[];let ok=true;
+  blocks.forEach(b=>{
+    const id=b.id.replace('kb-','');
+    const name=(document.getElementById(id+'-n')?.value||'').trim();
+    const dd=document.getElementById(id+'-dd')?.value;const mm=document.getElementById(id+'-mm')?.value;const yy=document.getElementById(id+'-yy')?.value;
+    const dob=(dd&&mm&&yy)?yy+'-'+mm+'-'+dd:null;
+    const svc=document.getElementById(id+'-sv')?.value||'Haircut';
+    if(!name){showM(msg,'Enter name for all children ❌','err');ok=false;return;}
+    if(!dob){showM(msg,'Date of birth required for all children 🎂','err');ok=false;return;}
+    kids.push({name,gender:_genders[id]||'boy',dob,svc});
+  });
+  if(!ok||!kids.length)return;
+
+  // T&C inline checkbox — must be ticked before registration
+  const tcWrap=document.getElementById('rg-tc-wrap');
+  if(tcWrap&&!tcWrap.innerHTML) tcWrap.innerHTML=tcConsentHTML('rg-tc-check', false);
+  if(!isTCchecked('rg-tc-check')){
+    const err=document.getElementById('rg-tc-check-err');
+    if(err){err.style.display='block';err.scrollIntoView({behavior:'smooth',block:'nearest'});}
+    return;
+  }
+
+  _doRegAllCore(mob, par, loc, kids, btn, msg);
+}
+
+async function _doRegAllCore(mob, par, loc, kids, btn, msg){
+  if(btn){btn.disabled=true;btn.textContent='Registering...';}
+  showM(msg,'Registering...','info');
+  try{
+    const results=[];
+    // Check for duplicates before registering
+    const existCheck=await sb('customers','GET',null,'select=id,name&mobile=eq.'+encodeURIComponent(mob)+'&limit=50');
+    const existingNames=new Set((existCheck||[]).map(c=>c.name.trim().toLowerCase()));
+    for(const k of kids){
+      if(existingNames.has(k.name.trim().toLowerCase())){
+        showM(msg,k.name+' is already registered under this mobile number ❌','err');
+        if(btn){btn.disabled=false;btn.textContent='Register & Check In ✅';}
+        return;
+      }
+      const res=await sb('customers','POST',{name:k.name,mobile:mob,parent:par||null,gender:k.gender,dob:k.dob,location:loc||null,stamps:0,redemptions:0,game_points:0,game_spins:0,heard_via:_regHearAbout,tc_accepted:true,tc_accepted_at:new Date().toISOString()});
+      const nc=Array.isArray(res)?res[0]:res;if(!nc?.id)throw new Error('Registration failed for '+k.name);
+      results.push({customer:nc,svc:k.svc});
+    }
+    showM(msg,'✅ Registered! Issuing tokens...','ok');
+    // Reserve tokens NOW at click-time (atomic insert, no pre-reservation)
+    const kidRows = results.map(({customer,svc})=>({
+      customer_id: customer.id,
+      customer_name: customer.name,
+      mobile: customer.mobile,
+      service: svc||'Haircut',
+      is_guest: false,
+      heard_via: _regHearAbout||null
+    }));
+    const inserted = await reserveTokenBlock(results.length, mob, kidRows);
+    const tokens = inserted.map(r=>({name:r.customer_name,token:r.token_number,id:r.customer_id,mobile:mob,stamps:0,game_points:0}));
+    // Set _sel so buildPassportStrip works on the token screen
+    _sel=tokens.map(t=>({id:t.id,name:t.name,mobile:t.mobile,stamps:0,game_points:0,heard_via:_regHearAbout}));
+    if(tokens.length===1)showTok(tokens[0].token,tokens[0].name,tokens[0].id,'Registered & checked in! ✅',mob);
+    else showFamTok(tokens,mob);
+  }catch(e){showM(msg,'Error: '+e.message,'err');}
+  finally{if(btn){btn.disabled=false;btn.textContent='Register & Check In ✅';}_regHearAbout=null;
+    document.querySelectorAll('.reg-hear-btn').forEach(b=>{b.style.background='#fff';b.style.borderColor='var(--border)';b.style.color='var(--text)';});
+  }
+}
+
+async function doCI(custId,name,mob,svc,heardVia){
+  // Legacy single-customer path (used by registration flow)
+  const t=today();
+  if(custId){
+    const active=await sb('queue','GET',null,
+      'select=id,token_number,status&customer_id=eq.'+custId+
+      '&checkin_date=eq.'+t+'&status=in.(waiting,called)&limit=1');
+    if(active&&active.length){
+      const existing=active[0];
+      throw new Error(name+' is already in the queue (Token #'+String(existing.token_number).padStart(2,'0')+' · '+existing.status+'). Cannot check in twice.');
+    }
+  }
+  const ex=await sb('queue','GET',null,'select=token_number&checkin_date=eq.'+t+'&order=token_number.desc&limit=1');
+  const last=(ex&&ex.length)?Number(ex[0].token_number)||0:0;
+  const tok=last+1;
+  await sb('queue','POST',{customer_id:custId||null,customer_name:name,mobile:mob||null,service:svc||'Haircut',token_number:tok,checkin_date:t,checkin_time:new Date().toISOString(),status:'waiting',is_guest:!custId,stylist:null,heard_via:heardVia||null});
+  if(custId&&heardVia) sb('customers','PATCH',{heard_via:heardVia},'id=eq.'+custId+'&heard_via=is.null').catch(()=>{});
+  refreshStats();return tok;
+}
+function startAutoReset(){
+  clearInterval(window._ciTimer);
+  let secs=30;
+  // Update all countdown elements
+  document.querySelectorAll('.ci-countdown').forEach(el=>el.textContent=secs);
+  window._ciTimer=setInterval(()=>{
+    secs--;
+    document.querySelectorAll('.ci-countdown').forEach(el=>el.textContent=secs);
+    if(secs<=0){clearInterval(window._ciTimer);resetCI();}
+  },1000);
+}
+
+function buildPassportStrip(selKids){
+  const PAID=5;
+  if(!selKids||!selKids.length) return '';
+  return selKids.map(k=>{
+    const stamps=Number(k.stamps)||0;
+    const pts=Number(k.game_points)||0;
+    const free=stamps>=PAID;
+    const left=Math.max(0,PAID-stamps);
+    const isNew=stamps===0;
+    const dots=Array.from({length:PAID},(_,i)=>
+      '<div style="width:30px;height:30px;border-radius:50%;background:'+(i<stamps?'linear-gradient(135deg,var(--y),#FFB300)':'#F3F4F6')+';border:2px solid '+(i<stamps?'#D97706':'#E5E7EB')+';display:flex;align-items:center;justify-content:center;font-size:14px;">'+(i<stamps?'✂️':'')+'</div>'
+    ).join('');
+    return '<div style="background:'+(free?'linear-gradient(135deg,#DCFCE7,#BBF7D0)':isNew?'linear-gradient(135deg,#EEF6FF,#E0EDFF)':'#F8FBFF')+';border:1.5px solid '+(free?'#86EFAC':isNew?'rgba(21,101,192,.15)':'rgba(21,101,192,.1)')+';border-radius:14px;padding:14px;margin-bottom:10px;">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
+        +'<div style="font-family:var(--fh);font-size:14px;font-weight:800;color:var(--bd);">'+(isNew?'🎉 Welcome, ':'✂️ ')+k.name+'!</div>'
+        +(pts>0?'<div style="font-size:11px;font-weight:700;color:var(--muted);">'+pts+' game pts</div>':'')
+      +'</div>'
+      +'<div style="display:flex;gap:7px;justify-content:center;align-items:center;margin-bottom:10px;">'+dots
+        +'<div style="font-size:11px;color:var(--muted);margin-left:4px;">→</div>'
+        +'<div style="width:30px;height:30px;border-radius:50%;background:'+(free?'#22C55E':'#F3F4F6')+';border:2px solid '+(free?'#16A34A':'#E5E7EB')+';display:flex;align-items:center;justify-content:center;font-size:14px;">🚿</div>'
+      +'</div>'
+      +'<div style="text-align:center;font-size:12px;font-weight:700;color:'+(free?'#16A34A':isNew?'var(--b)':'var(--muted)')+';background:'+(free?'rgba(22,163,74,.1)':isNew?'rgba(21,101,192,.07)':'rgba(0,0,0,.04)')+';border-radius:8px;padding:7px;">'
+        +(free?'🎉 Free Hair Wash ready — tell the stylist now!':isNew?'🌟 Collect '+PAID+' stamps for a Free Hair Wash!':'✂️ '+left+' more haircut'+(left!==1?'s':'')+' to earn Free Hair Wash 🚿')
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+
+function showTok(tok,name,cid,sub,mob){
+  clearInterval(window._ciTimer);
+  const ld=document.getElementById('ci-load');const sg=document.getElementById('ci-single');const fam=document.getElementById('ci-family');
+  if(ld)ld.style.display='none';if(fam)fam.style.display='none';
+  const te=document.getElementById('ci-tok');const ne=document.getElementById('ci-nm');const se=document.getElementById('ci-sub')||document.getElementById('ci-sb');
+  if(te)te.textContent=String(tok).padStart(2,'0');if(ne)ne.textContent=name;if(se)se.textContent=sub||'';
+  // Inject passport strip into the waiting card
+  const passportEl=document.getElementById('ci-passport');
+  if(passportEl) passportEl.innerHTML=buildPassportStrip(_sel);
+  if(sg)sg.style.display='block';
+  window._ciMob=mob;window._ciCid=cid;
+  showScr('s-ci');
+  startAutoReset();
+}
+function showFamTok(tokens,mob){
+  clearInterval(window._ciTimer);
+  const ld=document.getElementById('ci-load');const sg=document.getElementById('ci-single');const el=document.getElementById('ci-family');
+  if(ld)ld.style.display='none';if(sg)sg.style.display='none';if(!el)return;
+  window._ciMob=mob;window._ciCid=tokens[0]?.id||null;
+  const rows=tokens.map(t=>'<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:#F0F7FF;border-radius:12px;margin-bottom:8px;border:1px solid rgba(21,101,192,.1);"><div style="min-width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--bd),var(--bm));color:var(--y);font-family:var(--fh);font-size:19px;font-weight:900;display:flex;align-items:center;justify-content:center;">'+String(t.token).padStart(2,'0')+'</div><div><div style="font-family:var(--fh);font-size:15px;font-weight:800;color:var(--bd);">'+t.name+'</div><div style="font-size:11.5px;color:var(--muted);">Token #'+String(t.token).padStart(2,'0')+' · Waiting</div></div></div>').join('');
+  const passportHtml=buildPassportStrip(_sel);
+  el.innerHTML='<div class="tc"><div class="tl">Family Check-In ✅</div><div style="font-size:52px;margin:6px 0;position:relative;z-index:1;">🐼</div><div class="tname">'+tokens.length+' Children Checked In!</div><div class="tsub">Each child has their own token in queue order</div></div>'
+    +'<div class="card" style="margin-bottom:10px;"><div style="font-family:var(--fh);font-size:14px;font-weight:800;color:var(--bd);margin-bottom:10px;">🎫 Your Token Numbers</div>'+rows+'<div style="font-size:12px;color:var(--muted);margin-top:6px;padding:8px;background:#FFF9E6;border-radius:8px;">✂️ Stylist will call each child in queue order</div></div>'
+    +(passportHtml?'<div class="card" style="margin-bottom:10px;"><div style="font-family:var(--fh);font-size:14px;font-weight:800;color:var(--bd);margin-bottom:10px;">🎫 Loyalty Passports</div>'+passportHtml+'</div>':'')
+    +'<div class="ta"><button class="btn btn-b" onclick="goGames()">🎮 Loyalty &amp; Games</button><button class="btn btn-ghost" onclick="goPassport()">🎫 My Passport</button></div>'
+    +'<div style="margin-top:10px;text-align:center;"><button class="btn btn-ghost btn-full" onclick="clearInterval(window._ciTimer);resetCI()">✅ All done — New Check-In</button><div style="font-size:12px;color:var(--muted);margin-top:8px;">Auto-resets in <span class="ci-countdown">30</span>s</div></div>';
+  el.style.display='block';showScr('s-ci');
+  startAutoReset();
+}
+function goGames(){window.open('./minicuts-game.html'+(window._ciMob?'?mobile='+encodeURIComponent(window._ciMob):''),'_blank');}
+function goPassport(){window.open('./index.html?customer=1&lookup='+encodeURIComponent(window._ciMob||''),'_blank');}
+function resetCI(){
+  clearInterval(window._ciTimer);
+  _reservedTokens=[];
+  // Full field reset
+  const numEl=document.getElementById('lu-num');if(numEl)numEl.value='';
+  ['lu-st','lu-count','lu-kids','lu-new-kids','lu-act','lu-nf','lu-reg-sibling'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='none';});
+  _sel=[];_kidsCount=0;_hearAbout=null;_foundKids=[];_alreadyQueued=new Set();_selectedKidIds=new Set();
+  document.querySelectorAll('.hear-btn').forEach(b=>{b.style.background='#fff';b.style.borderColor='var(--border)';b.style.color='var(--text)';});
+  document.querySelectorAll('.kids-count-btn').forEach(b=>{b.style.background='#fff';b.style.borderColor='var(--border)';b.style.color='var(--bd)';});
+  document.querySelectorAll('.kid-row').forEach(r=>r.classList.remove('selected'));
+  document.querySelectorAll('.kid-row input[type=checkbox]').forEach(cb=>{cb.checked=false;});
+  navTo('s-lookup','bn-ci');
+}
+
+// QUEUE - CUSTOMER VIEW
+async function loadQ(){
+  try{const rows=await sb('queue','GET',null,'select=*&checkin_date=eq.'+today()+'&order=token_number.asc&limit=200');_qdata=rows||[];renderCQ();refreshStats();}
+  catch(e){const el=document.getElementById('cq-list');if(el)el.innerHTML='<div style="color:var(--err);padding:16px;">Error: '+e.message+'</div>';}
+}
+function renderCQ(){
+  const visible=_qdata.filter(r=>r.status!=='done'&&r.status!=='cancelled');
+  const le=document.getElementById('cq-list');if(!le)return;
+  if(!visible.length){le.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted);font-size:14px;">Queue is empty — you\'re all set! 🐼</div>';return;}
+  le.innerHTML=visible.map(r=>{
+    const called=r.status==='called';const guest=r.is_guest;
+    return'<div class="qi" style="border-left:4px solid '+(called?'var(--b)':guest?'#9CA3AF':'var(--y)')+'"><div class="tok '+(guest?'guest':'')+'">'+String(r.token_number).padStart(2,'0')+'</div><div style="flex:1;min-width:0;"><div style="font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+r.customer_name+'</div><div style="font-size:11.5px;color:var(--muted);margin-top:2px;">'+(r.service||'Haircut')+' · '+(called?'<span style="color:var(--b);font-weight:800;">Now being served 💈</span>':'<span style="color:var(--warn);font-weight:700;">Waiting</span>')+'</div></div>'+(called?'<div style="font-size:20px;">💈</div>':'<div style="font-size:20px;">⏳</div>')+'</div>';
+  }).join('');
+}
+
+async function refreshStats(){
+  try{const t=today();const r=await sb('queue','GET',null,'select=status,token_number&checkin_date=eq.'+t+'&order=token_number.asc&limit=200');
+  const w=(r||[]).filter(x=>x.status==='waiting').length;
+  const c=(r||[]).filter(x=>x.status==='called').length;
+  const nx=(r||[]).find(x=>x.status==='waiting');
+  const e=id=>document.getElementById(id);
+  if(e('qs-w'))e('qs-w').textContent=w;
+  if(e('qs-c'))e('qs-c').textContent=c;
+  if(e('qs-n'))e('qs-n').textContent=nx?String(nx.token_number).padStart(2,'0'):'—';
+  }catch(e){}
+}
+
+setInterval(()=>{if(document.getElementById('s-queue').classList.contains('active'))loadQ();else refreshStats();},30000);
+refreshStats();
+
+</script>
+</body>
+</html>
