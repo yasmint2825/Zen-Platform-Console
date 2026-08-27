@@ -1938,6 +1938,17 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
   }
   .sc-issue{display:block;font-size:11.5px;line-height:1.45;color:#9A5B0F;margin-top:3px;}
 </style>
+
+<style id="zenSanitySuggest">
+  /* Where the campaign is wrong rather than the contact itself. */
+  .sc-arrow{margin:0 4px;color:var(--faint,#8B968F);font-size:11px;}
+  .sc-suggest{background:#E8F6F1;color:#0B7A5E;}
+  .sc-note{
+    margin-top:11px;padding:8px 10px;border-radius:8px;
+    background:rgba(255,255,255,.6);border:1px solid rgba(154,91,15,.2);
+    font-size:11px;line-height:1.5;color:var(--muted,#5E6B64);
+  }
+</style>
 </head>
 <body>
 
@@ -7695,11 +7706,16 @@ async function sanityCheck(){
         '<input type="checkbox" class="sc-check" data-id="'+esc(p.id)+'" checked>'+
         '<span><b>'+esc(p.name)+'</b>'+
           '<span class="bk-tag">'+esc(p.campaign)+'</span>'+
+          (p.should_be?'<span class="sc-arrow">&rarr;</span><span class="bk-tag sc-suggest">'+esc(p.should_be)+'</span>':'')+
           '<span class="sc-src">'+(p.found_by==='rules'?'rule':'review')+'</span>'+
           '<span class="sc-issue">'+esc(p.issue)+'</span>'+
         '</span>'+
       '</label>';
     }).join('')+
+    // The obvious worry when removing something is that the customer is
+    // lost. They are not, and saying so is cheaper than making anyone
+    // work it out.
+    '<div class="sc-note">Removing these doesn\'t drop the customer. They move to <b>Rejected</b>, and the next agent run re-evaluates them from scratch &mdash; anyone who fits a different campaign will come back under that one instead.</div>'+
     '<div class="row" style="gap:6px;margin-top:10px;">'+
       '<button class="btn btn-p btn-sm" onclick="dropFlagged()">Remove selected from the queue</button>'+
       '<span id="scResult" style="font-size:11.5px;"></span>'+
@@ -7711,7 +7727,7 @@ async function dropFlagged(){
   const ids=[...document.querySelectorAll('.sc-check:checked')].map(function(c){return c.dataset.id;});
   const out=document.getElementById('scResult');
   if(!ids.length){out.textContent='Nothing selected.';out.style.color='var(--muted)';return;}
-  if(!confirm('Remove '+ids.length+' decision(s) from the review queue?\n\nThey move to rejected, so they still count for cooldown and can be put back.')) return;
+  if(!confirm('Remove '+ids.length+' decision(s) from the review queue?\n\nThe customers aren\'t dropped. These move to Rejected, and the next run re-evaluates them - anyone who fits a different campaign returns under that one.')) return;
   out.innerHTML='<span class="mw-spinner"></span>';
   const j=await call('reject_decisions',{ids:ids});
   if(!j.ok){out.textContent=j.error;out.style.color='var(--err)';return;}
