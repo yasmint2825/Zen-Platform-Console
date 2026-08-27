@@ -2017,6 +2017,106 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
   .at-sub, .ap-sub, .up-lvl, .at-unit { text-align: left; }
   .at-table td:first-child .at-sub { text-align: left; }
 </style>
+
+<style id="zenMarketingDiagnosis">
+  /* ── Marketing diagnosis ──────────────────────────────────────
+     Reads top to bottom as a verdict: what happened, how much of it
+     can be trusted, what it means, what to do. */
+  .md-top{
+    padding:16px 18px 13px;display:flex;justify-content:space-between;
+    gap:14px;align-items:flex-start;border-bottom:1px solid var(--line,#E4E7E4);
+  }
+  .md-eyebrow{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--faint,#8B968F);margin-bottom:5px;
+  }
+  .md-headline{
+    margin:0;font-size:16px;line-height:1.38;letter-spacing:-.015em;font-weight:600;
+  }
+  .md-status{
+    white-space:nowrap;border-radius:999px;padding:5px 10px;flex-shrink:0;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:9.5px;font-weight:600;letter-spacing:.03em;
+  }
+  .md-danger{background:#FBEDEC;color:#A8271E;}
+  .md-warn{background:#FDF3E7;color:#9A5B0F;}
+  .md-good{background:#E8F6F1;color:#0B7A5E;}
+  .md-muted{background:#EEF1EF;color:#5E6B64;}
+
+  .md-metrics{
+    display:grid;grid-template-columns:repeat(5,1fr);
+    border-bottom:1px solid var(--line,#E4E7E4);
+  }
+  .md-metric{padding:13px 15px;border-right:1px solid var(--line,#EDEFEC);}
+  .md-metric:last-child{border-right:0;}
+  .md-label{font-size:10.5px;color:var(--muted,#5E6B64);}
+  .md-value{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:19px;font-weight:600;margin-top:3px;
+    font-variant-numeric:tabular-nums;letter-spacing:-.01em;
+  }
+  .md-sub{font-size:10px;color:var(--faint,#8B968F);margin-top:2px;}
+
+  /* The gap between what Meta claims and what can be traced. Given a
+     band of its own because it governs how much the row above means. */
+  .md-warnband{
+    padding:9px 18px;background:#FDF8F0;color:#9A5B0F;
+    font-size:11.5px;line-height:1.5;border-bottom:1px solid var(--line,#E4E7E4);
+  }
+
+  .md-body{display:grid;grid-template-columns:1.1fr .9fr;}
+  .md-left,.md-right{padding:16px 18px;}
+  .md-left{border-right:1px solid var(--line,#EDEFEC);}
+  .md-sec{font-size:11.5px;font-weight:600;margin-bottom:9px;}
+
+  .md-finding{border:1px solid var(--line,#E4E7E4);border-radius:10px;padding:10px 11px;margin-bottom:7px;}
+  .md-finding strong{display:block;font-size:12.5px;margin-bottom:3px;}
+  .md-finding p{margin:0;font-size:11.5px;color:var(--muted,#5E6B64);line-height:1.45;}
+  .md-f-danger{background:#FBEDEC;border-color:#F0D4D1;}
+  .md-f-warn{background:#FDF8F0;border-color:#EBDCC2;}
+  .md-f-info{background:#F2F6F9;border-color:#DAE4EC;}
+
+  .md-plan{display:grid;gap:8px;}
+  .md-step{
+    border:1px solid var(--line,#E4E7E4);border-radius:10px;padding:11px 12px;
+    /* Two columns, not three. The impact line is prose and belongs
+       under the text - as a third column its `auto` width grew to fit
+       a full sentence and squeezed the description into a strip. */
+    display:grid;grid-template-columns:26px 1fr;gap:10px;align-items:start;
+  }
+  .md-step-body{min-width:0;}
+  .md-num{
+    width:26px;height:26px;border-radius:8px;display:grid;place-items:center;
+    background:#0F4C45;color:#fff;flex-shrink:0;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;font-weight:600;
+  }
+  .md-step strong{display:block;font-size:12.5px;margin-bottom:4px;line-height:1.4;}
+  .md-step p{margin:0;font-size:11.5px;color:var(--muted,#5E6B64);line-height:1.5;}
+  .md-impact{
+    margin-top:7px;padding:6px 9px;border-radius:7px;
+    background:#E8F6F1;color:#0B7A5E;
+    font-size:11px;line-height:1.45;
+  }
+
+  .md-footer{
+    padding:12px 18px;border-top:1px solid var(--line,#E4E7E4);
+    display:flex;justify-content:space-between;align-items:center;gap:12px;
+    background:var(--surface-2,#FAFBFA);
+  }
+  .md-note{font-size:11px;color:var(--muted,#5E6B64);line-height:1.45;}
+  .md-actions{display:flex;gap:6px;flex-shrink:0;}
+
+  @media(max-width:900px){
+    .md-metrics{grid-template-columns:1fr 1fr;}
+    .md-metric{border-bottom:1px solid var(--line,#EDEFEC);}
+    .md-body{grid-template-columns:1fr;}
+    .md-left{border-right:0;border-bottom:1px solid var(--line,#EDEFEC);}
+    .md-top,.md-footer{flex-direction:column;align-items:flex-start;}
+    .md-actions{width:100%;}
+    .md-actions .btn{flex:1;}
+  }
+</style>
 </head>
 <body>
 
@@ -2388,6 +2488,10 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
             <div id="marketingTab-performance" class="marketing-tab-content" style="display:none;">
             <p class="muted" style="font-size:11.5px;margin:0 0 14px;">How the spend is doing, and what it produced.</p>
 
+
+          <div class="card" style="padding:0;overflow:hidden;">
+            <div id="mdCard"><div class="muted" style="padding:16px;font-size:12px;">Loading the diagnosis...</div></div>
+          </div>
 
           <div class="card">
             <h2>Ad spend monitoring</h2>
@@ -3267,6 +3371,7 @@ function showMarketingTab(tab){
     if(typeof loadWhatsappStatus==='function') loadWhatsappStatus();
     if(typeof loadFacts==='function') loadFacts();
   } else if(tab==='performance'){
+    if(typeof loadDiagnosis==='function') loadDiagnosis();
     if(typeof loadAdTable==='function') loadAdTable();
     if(typeof loadMetaAdsStatus==='function') loadMetaAdsStatus();
     if(typeof loadLeadsStatus==='function') loadLeadsStatus();
@@ -6471,6 +6576,95 @@ async function testInstagramConnection(){
     : '';
   r.innerHTML='<span style="color:var(--ok);">Connected as @'+esc(j.username||'unknown')+'</span>'+warn+mismatch;
 }
+// The diagnosis card: is this working, and what now.
+//
+// Metrics are facts and come back computed; findings and next steps are
+// the last analysis, reused. Opening this costs nothing - only "Ask Zen
+// AI" spends anything.
+async function loadDiagnosis(){
+  const el=document.getElementById('mdCard');
+  if(!el) return;
+  const j=await call('get_marketing_diagnosis',{days:30});
+  if(!j.ok){el.innerHTML='<div style="padding:16px;color:var(--err);font-size:12px;">'+esc(j.error)+'</div>';return;}
+  const m=j.metrics||{}, a=j.analysis||null;
+
+  const confLabel={high:'Attribution confidence: High',medium:'Attribution confidence: Medium',
+    low:'Attribution confidence: Low',none:'No conversation tracking'};
+  const confClass={high:'md-good',medium:'md-warn',low:'md-danger',none:'md-muted'};
+
+  const metric=function(label,value,sub){
+    return '<div class="md-metric"><div class="md-label">'+label+'</div>'+
+      '<div class="md-value">'+value+'</div>'+
+      (sub?'<div class="md-sub">'+sub+'</div>':'')+'</div>';
+  };
+
+  // Findings come from the analysis where one exists. Where it doesn't,
+  // the card still works - it just says so rather than looking broken.
+  const sevClass={high:'md-f-danger',medium:'md-f-warn',low:'md-f-info'};
+  const findings=(a&&a.findings||[]).slice(0,3).map(function(f){
+    return '<div class="md-finding '+(sevClass[f.severity]||'md-f-info')+'">'+
+      '<strong>'+esc(f.title)+'</strong>'+
+      '<p>'+esc(f.detail||'')+(f.evidence?(' '+esc(f.evidence)+'.'):'')+'</p></div>';
+  }).join('');
+
+  const steps=(a&&a.recommendations||[]).slice(0,3).map(function(r,i){
+    return '<div class="md-step">'+
+      '<div class="md-num">'+(i+1)+'</div>'+
+      '<div class="md-step-body">'+
+        '<strong>'+esc(r.action)+'</strong>'+
+        '<p>'+esc(r.rationale||'')+'</p>'+
+        // Below the description, not beside it. The model writes a
+        // sentence here, not a two-word label, and a sentence in a
+        // third column takes the width the text needed.
+        (r.impact?'<div class="md-impact">'+esc(r.impact)+'</div>':'')+
+      '</div>'+
+    '</div>';
+  }).join('');
+
+  el.innerHTML=
+    '<div class="md-top">'+
+      '<div><div class="md-eyebrow">Zen marketing diagnosis &middot; last '+j.days+' days</div>'+
+      '<h2 class="md-headline">'+esc(j.headline)+'</h2></div>'+
+      '<div class="md-status '+(confClass[j.confidence]||'md-muted')+'">'+(confLabel[j.confidence]||'')+'</div>'+
+    '</div>'+
+
+    '<div class="md-metrics">'+
+      metric('Spend','AED '+(m.spend||0).toLocaleString(),(m.campaigns||0)+' campaigns')+
+      metric('Meta conversations',m.meta_conversations||0,'platform-reported')+
+      // The number that decides whether the rest can be trusted.
+      metric('Zen real contacts',m.zen_contacts||0,m.match_rate!=null?(m.match_rate+'% matched'):'not matched')+
+      metric('Visits',m.visits||0,'observed')+
+      metric('Revenue','AED '+(m.revenue||0).toLocaleString(),
+        m.observed_roas!=null?('observed ROAS '+m.observed_roas):'observed')+
+    '</div>'+
+
+    (j.confidence_note?'<div class="md-warnband">'+esc(j.confidence_note)+'</div>':'')+
+
+    '<div class="md-body">'+
+      '<div class="md-left">'+
+        '<div class="md-sec">What Zen sees</div>'+
+        (findings||'<div class="muted" style="font-size:12px;">No analysis yet &mdash; use <b>Ask Zen AI</b> below to produce one.</div>')+
+      '</div>'+
+      '<div class="md-right">'+
+        '<div class="md-sec">What Zen recommends next</div>'+
+        (steps?'<div class="md-plan">'+steps+'</div>':'<div class="muted" style="font-size:12px;">Recommendations appear once an analysis has run.</div>')+
+      '</div>'+
+    '</div>'+
+
+    '<div class="md-footer">'+
+      '<div class="md-note">'+
+        (m.visits>0
+          ? 'Real visits are being observed, so these figures can carry weight.'
+          : 'Bigger budget moves are worth holding until attribution improves and real bookings show up here.')+
+        (j.analysis_at?(' Analysis from '+formatDubai(j.analysis_at)+'.'):'')+
+      '</div>'+
+      '<div class="md-actions">'+
+        '<button class="btn btn-s btn-sm" onclick="showAgentDetail(\'engagement\')">Review conversations</button>'+
+        '<button class="btn btn-p btn-sm" onclick="analyseAdSpend(true)">Ask Zen AI</button>'+
+      '</div>'+
+    '</div>';
+}
+
 // Reads the spend and says what to do about it. The value isn't the
 // summary - Meta already shows you that - it's the comparison against
 // what the spend actually produced, which only exists here.
