@@ -2129,6 +2129,46 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
   }
   .md-refresh:hover{border-bottom-color:#0F4C45;}
 </style>
+
+<style id="zenAutoReply">
+  .ar-toggle{
+    border:1px solid var(--line,#E4E7E4);border-radius:10px;
+    padding:11px 13px;margin-bottom:14px;background:var(--surface-2,#FAFBFA);
+  }
+  .ar-tg-head{display:flex;align-items:center;gap:10px;}
+  .ar-switch{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px;font-weight:600;}
+  .ar-switch input{width:16px;height:16px;accent-color:#0F4C45;cursor:pointer;}
+  .ar-tg-state{
+    margin-left:auto;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:9px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+    padding:2px 8px;border-radius:999px;
+  }
+  .ar-on{background:#E8F6F1;color:#0B7A5E;}
+  .ar-off{background:#EEF1EF;color:#5E6B64;}
+  .ar-tg-body{display:flex;gap:14px;flex-wrap:wrap;margin:9px 0 7px;font-size:11.5px;color:var(--muted,#5E6B64);}
+  .ar-tg-body label{display:flex;align-items:center;gap:6px;}
+  .ar-tg-note{font-size:10.5px;line-height:1.5;color:var(--muted,#5E6B64);}
+
+  .arl-counts{
+    display:flex;gap:14px;flex-wrap:wrap;padding-bottom:9px;margin-bottom:9px;
+    border-bottom:1px solid var(--line,#E4E7E4);font-size:11.5px;color:var(--muted,#5E6B64);
+  }
+  .arl-counts b{font-family:'IBM Plex Mono',ui-monospace,monospace;color:var(--ink,#0D1310);margin-right:3px;}
+  .arl-row{padding:9px 0 9px 10px;border-left:2px solid var(--line-strong,#CBD5CF);margin-bottom:8px;}
+  .arl-sent{border-left-color:#0B7A5E;}
+  .arl-held{border-left-color:#9A5B0F;}
+  .arl-blocked{border-left-color:#A8271E;}
+  .arl-top{display:flex;align-items:baseline;gap:8px;}
+  .arl-tag{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:8.5px;font-weight:600;
+    letter-spacing:.05em;text-transform:uppercase;
+  }
+  .arl-sent .arl-tag{color:#0B7A5E;} .arl-held .arl-tag{color:#9A5B0F;} .arl-blocked .arl-tag{color:#A8271E;}
+  .arl-when{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;color:var(--faint,#8B968F);}
+  .arl-in{font-size:11.5px;color:var(--ink-2,#38443E);margin-top:4px;font-style:italic;}
+  .arl-out{font-size:11.5px;color:var(--ink,#0D1310);margin-top:4px;}
+  .arl-why{font-size:10.5px;color:var(--muted,#5E6B64);margin-top:3px;}
+</style>
 </head>
 <body>
 
@@ -2674,6 +2714,32 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
             <details class="card">
               <summary><h2 style="display:inline;">Reply assistant &mdash; what it knows</h2></summary>
               <p class="muted" style="font-size:11.5px;">The assistant may only say what is listed here. Anything missing, it flags for you rather than guessing &mdash; a wrong price sent over WhatsApp is a promise you have to honour or retract.</p>
+              <!-- Whether it may send on its own. Off by default:
+                   nobody should discover this is on by finding a
+                   message they did not write. -->
+              <div class="ar-toggle" id="autoReplyBox">
+                <div class="ar-tg-head">
+                  <label class="ar-switch">
+                    <input type="checkbox" id="autoReplyOn" onchange="saveAutoReply()">
+                    <span>Reply automatically when it is safe to</span>
+                  </label>
+                  <span id="autoReplyState" class="ar-tg-state"></span>
+                </div>
+                <div class="ar-tg-body">
+                  <label>Only when confidence is
+                    <select class="fi" id="autoReplyConf" onchange="saveAutoReply()" style="width:auto;margin:0;font-size:11.5px;min-height:30px;">
+                      <option value="high">high</option>
+                      <option value="medium">medium or better</option>
+                    </select>
+                  </label>
+                  <label>Stop after
+                    <input class="fi" type="number" id="autoReplyMax" min="1" max="10" onchange="saveAutoReply()" style="width:60px;margin:0;font-size:11.5px;min-height:30px;">
+                    replies in one conversation
+                  </label>
+                </div>
+                <div class="ar-tg-note">It never answers complaints, booking changes, requests for a person, or anything raising allergies or sensory needs &mdash; those always come to you. It can only say what is listed below.</div>
+              </div>
+
               <div id="factsList" class="muted" style="font-size:12px;">Loading...</div>
               <div class="fact-add">
                 <input class="fi" id="factQ" placeholder="A question in a customer's words, e.g. &ldquo;how much for a 4 year old?&rdquo;">
@@ -2690,6 +2756,15 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
                   <button class="btn btn-p btn-sm" onclick="saveFact()">Add</button>
                 </div>
                 <div id="factResult" style="font-size:11.5px;margin-top:6px;"></div>
+              </div>
+
+              <!-- What it did, and more usefully what it held back. The
+                   held list names the facts that are missing. -->
+              <div class="fact-add">
+                <div class="row" style="gap:6px;margin-bottom:8px;">
+                  <button class="btn btn-s btn-sm" onclick="loadAutoReplyLog()">What has it replied to?</button>
+                </div>
+                <div id="autoReplyLog" style="font-size:12px;"></div>
               </div>
             </details>
 
@@ -3382,6 +3457,7 @@ function showMarketingTab(tab){
     if(typeof loadConversations==='function') loadConversations();
     if(typeof loadWhatsappStatus==='function') loadWhatsappStatus();
     if(typeof loadFacts==='function') loadFacts();
+    if(typeof loadAutoReplySettings==='function') loadAutoReplySettings();
   } else if(tab==='performance'){
     if(typeof loadDiagnosis==='function') loadDiagnosis();
     if(typeof loadAdTable==='function') loadAdTable();
@@ -4835,6 +4911,72 @@ async function sendReply(mobile){
     say('Error: '+j.error,'var(--err)');
   }
 }
+async function loadAutoReplySettings(){
+  const j=await call('get_auto_reply_settings',{});
+  if(!j.ok) return;
+  const on=document.getElementById('autoReplyOn');
+  if(!on) return;
+  on.checked=!!j.enabled;
+  document.getElementById('autoReplyConf').value=j.min_confidence||'high';
+  document.getElementById('autoReplyMax').value=j.max_per_thread||3;
+  const st=document.getElementById('autoReplyState');
+  st.textContent=j.enabled?'on':'off';
+  st.className='ar-tg-state '+(j.enabled?'ar-on':'ar-off');
+
+  // Switching it on with nothing marked safe means it can only ever
+  // greet - better said here than discovered by waiting for a reply
+  // that never comes.
+  const note=document.querySelector('#autoReplyBox .ar-tg-note');
+  if(note && j.enabled && !j.safe_facts){
+    note.innerHTML='<b style="color:#9A5B0F;">Nothing below is marked safe to send unsupervised, so it can only greet people.</b> '+note.innerHTML;
+  }
+}
+
+async function saveAutoReply(){
+  const st=document.getElementById('autoReplyState');
+  const enabled=document.getElementById('autoReplyOn').checked;
+  // Asked once, because switching this on means messages go out
+  // without anyone reading them first.
+  if(enabled && !confirm('Let Zen reply on its own?\n\nIt will only send answers drawn from facts you have marked safe, and never for complaints, booking changes or care needs. Everything else still comes to you.')){
+    document.getElementById('autoReplyOn').checked=false;
+    return;
+  }
+  const j=await call('set_auto_reply',{
+    enabled:enabled,
+    min_confidence:document.getElementById('autoReplyConf').value,
+    max_per_thread:Number(document.getElementById('autoReplyMax').value)||3,
+  });
+  if(!j.ok){alert(j.error);return;}
+  st.textContent=enabled?'on':'off';
+  st.className='ar-tg-state '+(enabled?'ar-on':'ar-off');
+}
+
+async function loadAutoReplyLog(){
+  const el=document.getElementById('autoReplyLog');
+  el.innerHTML='<span class="mw-spinner"></span>Loading...';
+  const j=await call('get_auto_reply_log',{});
+  if(!j.ok){el.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
+  if(!j.replies.length){
+    el.innerHTML='<span class="muted">Nothing yet. Once a customer messages, what it decided will show here &mdash; including the ones it chose not to answer.</span>';
+    return;
+  }
+  const c=j.counts||{};
+  el.innerHTML='<div class="arl-counts">'+
+    Object.keys(c).map(function(k){return '<span><b>'+c[k]+'</b> '+esc(k)+'</span>';}).join('')+'</div>'+
+    j.replies.map(function(r){
+      const cls=r.outcome==='sent'?'arl-sent':r.outcome==='blocked'?'arl-blocked':'arl-held';
+      return '<div class="arl-row '+cls+'">'+
+        '<div class="arl-top"><span class="arl-tag">'+esc(r.outcome)+'</span>'+
+          '<span class="arl-when">'+formatDubai(r.created_at)+'</span></div>'+
+        (r.inbound_message?'<div class="arl-in">&ldquo;'+esc(r.inbound_message)+'&rdquo;</div>':'')+
+        (r.drafted_reply?'<div class="arl-out">'+esc(r.drafted_reply)+'</div>':'')+
+        // Why it held back is the useful part - it names the fact
+        // that is missing.
+        '<div class="arl-why">'+esc(r.reason||'')+'</div>'+
+      '</div>';
+    }).join('');
+}
+
 async function loadFacts(){
   const el=document.getElementById('factsList');
   if(!el) return;
