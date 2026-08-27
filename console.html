@@ -3511,14 +3511,39 @@ async function loadMetaAdsSummary(){
 }
 
 async function call(action,extra){
-  const r=await fetch(MW_ADMIN_URL,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+session.access_token},
-    body:JSON.stringify(Object.assign({action,tenant_id:currentTenant},extra||{}))});
-  return await r.json();
+  // Every failure has to come back as {ok:false,error:string}. Without
+  // this, a 500 with an HTML body or a dropped connection produced a
+  // response with no error field, and every caller in the console
+  // rendered "Error: undefined" - which says nothing about what broke.
+  try{
+    const r=await fetch(MW_ADMIN_URL,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+session.access_token},
+      body:JSON.stringify(Object.assign({action,tenant_id:currentTenant},extra||{}))});
+    const text=await r.text();
+    let j=null;
+    try{ j=JSON.parse(text); }catch(_){}
+    if(j&&typeof j==='object'){
+      // A non-2xx that did return JSON but no error field - report the
+      // status rather than letting undefined through.
+      if(j.ok===undefined&&!j.error) return {ok:r.ok,error:r.ok?undefined:('Server returned '+r.status),raw:j};
+      if(j.error&&!('ok' in j)) return Object.assign({ok:false},j);
+      return j;
+    }
+    return {ok:false,error:'Server returned '+r.status+(text?(': '+String(text).slice(0,160)):' with an empty response')};
+  }catch(e){
+    // Network-level: offline, CORS, function cold-start timeout.
+    return {ok:false,error:'Could not reach the server ('+String(e&&e.message||e)+')'};
+  }
 }
 async function callWA(url,action,extra){
-  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+session.access_token},
-    body:JSON.stringify(Object.assign({action,tenant_id:currentTenant},extra||{}))});
-  return await r.json();
+  try{
+    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+session.access_token},
+      body:JSON.stringify(Object.assign({action,tenant_id:currentTenant},extra||{}))});
+    const text=await r.text();
+    try{ return JSON.parse(text); }
+    catch(_){ return {ok:false,error:'Server returned '+r.status+(text?(': '+String(text).slice(0,160)):'')}; }
+  }catch(e){
+    return {ok:false,error:'Could not reach the server ('+String(e&&e.message||e)+')'};
+  }
 }
 
 async function loadMyTenants(){
@@ -5996,7 +6021,12 @@ async function proposeBrandDna(){
   }).join('');
 }
 async function approveBrandDna(){
-  if(!proposedBrandDna) return;
+  if(!proposedBrandDna){
+    // Silently doing nothing looked identical to a failed save.
+    const r=document.getElementById('brandDnaApproveResult');
+    if(r){r.textContent='Nothing to save - propose or edit the Brand DNA first.';r.style.color='var(--err)';}
+    return;
+  }
   const r=document.getElementById('brandDnaApproveResult');
   r.textContent='Saving...';r.style.color='var(--muted)';
   const j=await call('approve_brand_dna',proposedBrandDna);
