@@ -7694,7 +7694,11 @@ async function renderDecisionQueue(opts){
               // judgement above it. When a decision looks wrong the
               // question is usually "why was this person picked", and
               // that answer lives here.
-              (d.signal?'<span class="queue-signal">'+esc(d.signal)+'</span>':'')+
+              // Only when it adds something. Decisions are now made from
+              // the signal directly, so for most rows reasoning and
+              // signal are the same string - printing both showed the
+              // same sentence twice.
+              (d.signal && d.signal!==d.reasoning ? '<span class="queue-signal">'+esc(d.signal)+'</span>' : '')+
               ((isScheduled||isApproved)
                 ? '<span class="queue-undo">'+
                     (isScheduled
