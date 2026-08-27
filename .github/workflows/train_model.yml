@@ -1,21 +1,37 @@
-name: Train return-probability model
+name: Score return probability
 
 on:
   schedule:
-    # Weekly, Sunday 03:00 UTC — before the daily sync/agent cycle starts
-    # its week, giving fresh predictions in place before Monday.
-    - cron: '0 3 * * 0'
-  workflow_dispatch: {}  # lets you trigger a run manually from the Actions tab, useful while testing
+    # Daily at 05:20 UTC (09:20 Dubai).
+    #
+    # The time matters more than the frequency. The previous schedule ran
+    # at 03:00 UTC — before the 04:45 sync — so every score was computed
+    # on data that predated the day's visits, and a customer who came in
+    # yesterday was still scored as though they hadn't.
+    #
+    # Order is now: sync 04:45 → agent 05:00 → scoring 05:20. Scores land
+    # after the visits that should inform them, and are in place for the
+    # at-risk queue during the day and for tomorrow's agent run.
+    - cron: '20 5 * * *'
+  workflow_dispatch: {}  # manual trigger from the Actions tab
+
+# A run that overlaps its predecessor would have two processes writing
+# predictions for the same customers.
+concurrency:
+  group: score-return-probability
+  cancel-in-progress: false
 
 jobs:
-  train:
+  score:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+          cache: pip
 
       - name: Install dependencies
         run: pip install -r ml_pipeline/requirements.txt
@@ -24,4 +40,17 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
           TENANT_ID: minicuts
+          # Passed for the script to use if it supports a score-only
+          # mode. Retraining daily on ~1,400 customers is acceptable but
+          # not ideal — the underlying patterns don't move in a day, and
+          # a model that refits nightly will chase noise. If the script
+          # ignores this, it simply retrains as before.
+          RETRAIN: ${{ github.event.schedule == '20 5 * * 0' && 'true' || 'false' }}
         run: python3 ml_pipeline/train_and_score.py
+
+      # A workflow that fails silently looks identical to one that never
+      # ran. This makes a failure visible in the repository itself.
+      - name: Report failure
+        if: failure()
+        run: |
+          echo "::error::Scoring failed. Predictions are now stale — the at-risk queue is working from the last successful run."
