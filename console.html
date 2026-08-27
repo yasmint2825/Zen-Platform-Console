@@ -1818,6 +1818,12 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
   .fact-add{margin-top:12px;padding-top:12px;border-top:1px solid var(--line,#E4E7E4);}
   .fact-add .fi{margin-bottom:6px;}
 </style>
+
+<style id="zenButtonBusy">
+  /* A busy button reads as busy, not as disabled - it will come back. */
+  .zen-busy{opacity:.75;cursor:progress;pointer-events:none;}
+  .zen-busy .mw-spinner{margin:0;}
+</style>
 </head>
 <body>
 
@@ -3534,6 +3540,71 @@ async function call(action,extra){
     return {ok:false,error:'Could not reach the server ('+String(e&&e.message||e)+')'};
   }
 }
+
+// ── Button feedback ───────────────────────────────────────────────
+//
+// A button that calls the backend and shows nothing looks broken, so
+// people press it again. For anything that costs a model call that
+// means paying twice and sometimes writing the result twice.
+//
+// Done at the click level rather than inside each handler: there are
+// over a hundred of them, and fixing them one by one would leave the
+// next one added unprotected.
+//
+// Intercepts before the inline onclick runs, calls the handler itself,
+// and uses its promise to decide when to restore the button.
+document.addEventListener('click', function(ev){
+  const btn = ev.target && ev.target.closest && ev.target.closest('button[onclick]');
+  if(!btn) return;
+
+  const raw = btn.getAttribute('onclick') || '';
+  const m = raw.match(/^(\w+)\(([\s\S]*)\)\s*;?\s*$/);
+  if(!m) return;
+  const fn = window[m[1]];
+  // Only async handlers. A synchronous one has finished before anyone
+  // could click again, and a spinner for it would just flicker.
+  if(typeof fn !== 'function' || fn.constructor.name !== 'AsyncFunction') return;
+
+  if(btn.dataset.zenBusy === '1'){
+    // Already running - swallow rather than queue a duplicate.
+    ev.preventDefault(); ev.stopImmediatePropagation();
+    return;
+  }
+
+  // Take over: run the handler here so its promise is available.
+  ev.preventDefault(); ev.stopImmediatePropagation();
+
+  let result;
+  try{
+    // eslint-disable-next-line no-new-func
+    result = new Function('return (' + raw.replace(/;\s*$/, '') + ')').call(btn);
+  }catch(e){
+    console.error('button handler failed', m[1], e);
+    return;
+  }
+  if(!result || typeof result.finally !== 'function') return;
+
+  const original = btn.innerHTML;
+  const width = btn.offsetWidth;
+  btn.dataset.zenBusy = '1';
+  btn.setAttribute('aria-busy', 'true');
+  // Pinned so the button doesn't resize as its label changes.
+  if(width) btn.style.minWidth = width + 'px';
+  btn.innerHTML = '<span class="mw-spinner"></span>';
+  btn.classList.add('zen-busy');
+
+  const restore = function(){
+    delete btn.dataset.zenBusy;
+    btn.removeAttribute('aria-busy');
+    btn.classList.remove('zen-busy');
+    btn.innerHTML = original;
+    btn.style.minWidth = '';
+  };
+  // A handler that never settles would otherwise leave the button dead.
+  const bail = setTimeout(restore, 120000);
+  result.finally(function(){ clearTimeout(bail); restore(); });
+}, true);
+
 async function callWA(url,action,extra){
   try{
     const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+session.access_token},
