@@ -2117,6 +2117,18 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     .md-actions .btn{flex:1;}
   }
 </style>
+
+<style id="zenDiagnosisFreshness">
+  .md-when{color:var(--faint,#8B968F);text-transform:none;letter-spacing:0;}
+  /* Older than a day. Ad figures move daily, so this is worth noticing
+     before acting on anything below it. */
+  .md-stale{color:#9A5B0F;}
+  .md-refresh{
+    color:#0F4C45;text-decoration:none;border-bottom:1px solid rgba(15,76,69,.35);
+    text-transform:none;letter-spacing:0;
+  }
+  .md-refresh:hover{border-bottom-color:#0F4C45;}
+</style>
 </head>
 <body>
 
@@ -6581,6 +6593,13 @@ async function testInstagramConnection(){
 // Metrics are facts and come back computed; findings and next steps are
 // the last analysis, reused. Opening this costs nothing - only "Ask Zen
 // AI" spends anything.
+// Anything older than a day is worth flagging. Ad numbers move daily,
+// so yesterday's reading can be describing a different account.
+function mdIsStale(iso){
+  if(!iso) return false;
+  return (Date.now()-new Date(iso).getTime()) > 24*3600000;
+}
+
 async function loadDiagnosis(){
   const el=document.getElementById('mdCard');
   if(!el) return;
@@ -6622,8 +6641,19 @@ async function loadDiagnosis(){
   }).join('');
 
   el.innerHTML=
+    // When this was worked out, at the top rather than buried in the
+    // footer. Findings from last week read as current unless the card
+    // says otherwise, and acting on stale advice is the failure mode
+    // this is meant to prevent.
     '<div class="md-top">'+
-      '<div><div class="md-eyebrow">Zen marketing diagnosis &middot; last '+j.days+' days</div>'+
+      '<div><div class="md-eyebrow">Zen marketing diagnosis &middot; last '+j.days+' days'+
+        (j.analysis_at
+          ? ' &middot; <span class="md-when'+(mdIsStale(j.analysis_at)?' md-stale':'')+'">'+
+            'from '+formatDubai(j.analysis_at)+
+            (mdIsStale(j.analysis_at)?' &mdash; may be out of date':'')+'</span>'+
+            ' &middot; <a href="#" class="md-refresh" onclick="analyseAdSpend(true);return false;">refresh</a>'
+          : ' &middot; <span class="md-when">no analysis yet</span>')+
+      '</div>'+
       '<h2 class="md-headline">'+esc(j.headline)+'</h2></div>'+
       '<div class="md-status '+(confClass[j.confidence]||'md-muted')+'">'+(confLabel[j.confidence]||'')+'</div>'+
     '</div>'+
@@ -6656,11 +6686,14 @@ async function loadDiagnosis(){
         (m.visits>0
           ? 'Real visits are being observed, so these figures can carry weight.'
           : 'Bigger budget moves are worth holding until attribution improves and real bookings show up here.')+
-        (j.analysis_at?(' Analysis from '+formatDubai(j.analysis_at)+'.'):'')+
+
       '</div>'+
       '<div class="md-actions">'+
         '<button class="btn btn-s btn-sm" onclick="showAgentDetail(\'engagement\')">Review conversations</button>'+
-        '<button class="btn btn-p btn-sm" onclick="analyseAdSpend(true)">Ask Zen AI</button>'+
+        // Not forced: if the numbers haven't moved, the cached answer
+        // is returned and this costs nothing. "refresh" at the top is
+        // the deliberate re-ask.
+        '<button class="btn btn-p btn-sm" onclick="analyseAdSpend()">Ask Zen AI</button>'+
       '</div>'+
     '</div>';
 }
