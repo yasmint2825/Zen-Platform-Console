@@ -1844,6 +1844,41 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     font-size:9px;color:var(--faint,#8B968F);letter-spacing:.04em;
   }
 </style>
+
+<style id="zenIgTrends">
+  .ig-card{border:1px solid var(--line,#E4E7E4);border-radius:12px;padding:14px 16px;background:var(--surface,#fff);}
+  .ig-headline{font-size:14px;font-weight:600;line-height:1.35;margin-bottom:11px;}
+  .ig-table{width:100%;border-collapse:collapse;font-size:11.5px;margin-bottom:12px;}
+  .ig-table th{
+    text-align:right;padding:4px 7px;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:9px;letter-spacing:.05em;text-transform:uppercase;
+    color:var(--faint,#8B968F);border-bottom:1px solid var(--line,#E4E7E4);
+  }
+  .ig-table th:first-child{text-align:left;}
+  .ig-table td{padding:6px 7px;border-bottom:1px solid var(--line,#F0F2F0);}
+  .ig-n{text-align:right;font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;}
+  /* Your own row anchored - everything else is read relative to it. */
+  .ig-self{background:#E8F6F1;}
+  .ig-sec{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;
+    letter-spacing:.07em;text-transform:uppercase;color:var(--faint,#8B968F);margin:14px 0 7px;
+  }
+  .ig-item{padding:8px 0;border-bottom:1px solid var(--line,#F0F2F0);}
+  .ig-item:last-child{border-bottom:0;}
+  .ig-item b{font-size:12.5px;}
+  .ig-ev{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;
+    color:var(--faint,#8B968F);margin-top:3px;font-variant-numeric:tabular-nums;
+  }
+  .ig-so{font-size:11.5px;line-height:1.5;color:var(--ink-2,#38443E);margin-top:4px;}
+  .ig-lead{font-size:12px;line-height:1.5;color:#0B7A5E;}
+  .ig-gap{font-size:12px;line-height:1.5;padding:6px 0 6px 10px;border-left:2px solid #0F4C45;margin-bottom:5px;}
+  .ig-avoid b{color:#A8271E;}
+  .ig-caveat{
+    margin-top:14px;padding:8px 10px;border-radius:8px;background:var(--surface-2,#FAFBFA);
+    font-size:10.5px;line-height:1.5;color:var(--muted,#5E6B64);
+  }
+</style>
 </head>
 <body>
 
@@ -2267,6 +2302,18 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
           </div>
 
 <details class="card">
+            <summary><h2 style="display:inline;">What other kids&rsquo; salons are doing</h2></summary>
+            <p class="muted" style="font-size:11.5px;">Reads the public Instagram accounts of the salons you follow, and yours, then works out what is worth copying &mdash; and what isn&rsquo;t.</p>
+            <div class="row" style="gap:6px;margin-bottom:10px;flex-wrap:wrap;">
+              <button class="btn btn-s btn-sm" onclick="captureInstagram()">Read the accounts</button>
+              <button class="btn btn-p btn-sm" onclick="analyseInstagram()">What should we learn?</button>
+              <span id="igTokens" class="muted" style="font-size:10px;font-family:'IBM Plex Mono',monospace;"></span>
+            </div>
+            <div id="igCapture" style="font-size:11.5px;margin-bottom:10px;"></div>
+            <div id="igTrends"></div>
+          </details>
+
+          <details class="card">
             <summary><h2 style="display:inline;">Competitors</h2></summary>
 
             <p class="muted">AI research finds what's genuinely publicly indexed - reviews, ratings, reputation, promotions that surfaced somewhere. It can't see a competitor's actual Instagram feed directly, so your own observations from browsing their page matter just as much as the AI research, not a lesser fallback.</p>
@@ -6486,6 +6533,73 @@ async function quickBudget(i){
   });
   if(j.ok){out.textContent='Done';out.style.color='var(--ok)';loadAdTable();}
   else{out.textContent=j.error;out.style.color='var(--err)';}
+}
+
+// ── Instagram trends ──────────────────────────────────────────────
+async function captureInstagram(){
+  const el=document.getElementById('igCapture');
+  el.innerHTML='<span class="mw-spinner"></span>Reading public accounts...';
+  const j=await call('capture_instagram_snapshots',{});
+  if(!j.ok){el.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
+  el.innerHTML=(j.results||[]).map(function(r){
+    return '<div style="color:'+(r.ok?'var(--ok)':'var(--err)')+';">'+
+      (r.ok?'&check; ':'&times; ')+'@'+esc(r.handle)+' &mdash; '+esc(r.detail)+'</div>';
+  }).join('')+
+  (j.hint?'<div class="muted" style="font-size:10.5px;margin-top:5px;">'+esc(j.hint)+'</div>':'')+
+  // A single reading is a number; two a week apart is a trend. Said so
+  // nobody expects growth figures immediately.
+  '<div class="muted" style="font-size:10.5px;margin-top:5px;">Read these again in a week or two &mdash; follower growth only means something with two readings to compare.</div>';
+}
+
+async function analyseInstagram(){
+  const el=document.getElementById('igTrends');
+  el.innerHTML='<div class="ig-card"><span class="mw-spinner"></span>Working out what is worth copying...</div>';
+  const j=await call('analyse_instagram_trends',{});
+  if(!j.ok){el.innerHTML='<div class="ig-card" style="color:var(--err);">'+esc(j.error)+'</div>';return;}
+  const a=j.insight||{};
+
+  // Token use kept visible rather than something to wonder about later.
+  const tk=document.getElementById('igTokens');
+  if(tk) tk.textContent = j.cached ? 'reused, no tokens'
+    : (j.tokens&&j.tokens.input)?(j.tokens.input+' in / '+j.tokens.output+' out'):'';
+
+  const accounts=(j.accounts||[]).slice().sort(function(x,y){return (y.engagement_rate||0)-(x.engagement_rate||0);});
+  const table='<table class="ig-table"><tr><th>account</th><th>followers</th><th>posts/wk</th>'+
+    '<th>avg eng.</th><th>rate</th><th>growth</th></tr>'+
+    accounts.map(function(x){
+      return '<tr'+(x.is_self?' class="ig-self"':'')+'>'+
+        '<td>@'+esc(x.handle)+(x.is_self?' <b>(you)</b>':'')+'</td>'+
+        '<td class="ig-n">'+(x.followers||0).toLocaleString()+'</td>'+
+        '<td class="ig-n">'+(x.posts_per_week!=null?x.posts_per_week:'&mdash;')+'</td>'+
+        '<td class="ig-n">'+(x.avg_engagement||0)+'</td>'+
+        '<td class="ig-n">'+(x.engagement_rate||0)+'%</td>'+
+        '<td class="ig-n">'+(x.growth_over_days
+          ?((x.growth_over_days.gained>=0?'+':'')+x.growth_over_days.gained+' / '+x.growth_over_days.days+'d')
+          :'&mdash;')+'</td>'+
+      '</tr>';
+    }).join('')+'</table>';
+
+  const sec=function(title,items,render){
+    if(!items||!items.length) return '';
+    return '<div class="ig-sec">'+title+'</div>'+items.map(render).join('');
+  };
+
+  el.innerHTML='<div class="ig-card">'+
+    '<div class="ig-headline">'+esc(a.headline||'')+'</div>'+
+    '<div style="overflow-x:auto;">'+table+'</div>'+
+    sec('Worth copying',a.what_is_working,function(w){
+      return '<div class="ig-item"><b>'+esc(w.observation)+'</b>'+
+        (w.evidence?'<div class="ig-ev">'+esc(w.evidence)+'</div>':'')+
+        '<div class="ig-so">'+esc(w.so_what||'')+'</div></div>';
+    })+
+    (a.where_you_lead?'<div class="ig-sec">Where you already lead</div><div class="ig-lead">'+esc(a.where_you_lead)+'</div>':'')+
+    sec('Nobody is doing this',a.gaps,function(g){return '<div class="ig-gap">'+esc(g)+'</div>';})+
+    // As useful as what to copy, and rarer advice.
+    sec('Do not copy',a.do_not_copy,function(d){
+      return '<div class="ig-item ig-avoid"><b>'+esc(d.thing)+'</b><div class="ig-so">'+esc(d.why)+'</div></div>';
+    })+
+    '<div class="ig-caveat">This is public engagement data. It shows what earns attention, not what fills chairs &mdash; a salon with a viral reel may be no busier than one without.</div>'+
+  '</div>';
 }
 
 // The agent's own view of what should change.
