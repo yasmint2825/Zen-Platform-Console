@@ -1913,6 +1913,31 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     font-variant-numeric:tabular-nums;
   }
 </style>
+
+<style id="zenSanityCheck">
+  .sc-box{
+    border:1px solid var(--line,#E4E7E4);border-radius:10px;
+    padding:11px 13px;font-size:12px;background:var(--surface-2,#FAFBFA);
+  }
+  .sc-found{border-color:#E4C79A;background:#FDF8F0;}
+  .sc-head{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+  .sc-meta{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;color:var(--faint,#8B968F);}
+  /* Always shown, so what it costs to ask is never a surprise. */
+  .sc-cost{
+    margin-left:auto;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:9.5px;color:var(--faint,#8B968F);
+  }
+  .sc-row{
+    display:flex;gap:9px;align-items:flex-start;padding:7px 0;
+    border-top:1px solid rgba(154,91,15,.15);cursor:pointer;
+  }
+  .sc-check{margin-top:2px;width:15px;height:15px;flex-shrink:0;accent-color:#9A5B0F;cursor:pointer;}
+  .sc-src{
+    margin-left:6px;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:8.5px;letter-spacing:.04em;color:var(--faint,#8B968F);
+  }
+  .sc-issue{display:block;font-size:11.5px;line-height:1.45;color:#9A5B0F;margin-top:3px;}
+</style>
 </head>
 <body>
 
@@ -2083,6 +2108,11 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
                        cooldown all looked identical from the outside:
                        the customer simply wasn't there. -->
                   <div class="row bk-tabs" id="bucketTabs" style="gap:4px;margin-bottom:12px;flex-wrap:wrap;"></div>
+                  <div class="row" style="gap:6px;margin-bottom:10px;flex-wrap:wrap;">
+                    <button class="btn btn-s btn-sm" onclick="sanityCheck()">Check the queue</button>
+                    <span class="muted" style="font-size:10.5px;">Looks for decisions that contradict themselves &mdash; someone chased days after they visited, a birthday already past.</span>
+                  </div>
+                  <div id="sanityResult" style="margin-bottom:10px;"></div>
                   <div id="pendingList" class="muted">Loading...</div>
                 </div>
               </details>
@@ -7638,6 +7668,57 @@ async function runNow(){
   }
 }
 let BUCKETS=null, BUCKET_VIEW='pending';
+
+// Checks the queue for decisions that contradict themselves.
+async function sanityCheck(){
+  const el=document.getElementById('sanityResult');
+  el.innerHTML='<div class="sc-box"><span class="mw-spinner"></span>Checking...</div>';
+  const j=await call('sanity_check_queue',{use_model:true});
+  if(!j.ok){el.innerHTML='<div class="sc-box" style="color:var(--err);">'+esc(j.error)+'</div>';return;}
+
+  if(!j.problems.length){
+    el.innerHTML='<div class="sc-box"><b>Nothing wrong found.</b> '+j.checked+
+      ' decision(s) checked'+(j.model_reviewed?(', '+j.model_reviewed+' reviewed more closely'):'')+'.'+
+      (j.cost_usd?'<span class="sc-cost">$'+j.cost_usd.toFixed(4)+'</span>':'')+'</div>';
+    return;
+  }
+
+  el.innerHTML='<div class="sc-box sc-found">'+
+    '<div class="sc-head"><b>'+j.problems.length+' worth a look</b>'+
+      '<span class="sc-meta">'+j.checked+' checked &middot; '+j.caught_by_rules+' by rules'+
+      (j.caught_by_model?(' &middot; '+j.caught_by_model+' by review'):'')+'</span>'+
+      // Shown so the cost of asking is never a surprise.
+      (j.cost_usd?'<span class="sc-cost">$'+j.cost_usd.toFixed(4)+'</span>':'<span class="sc-cost">free</span>')+
+    '</div>'+
+    j.problems.map(function(p,i){
+      return '<label class="sc-row">'+
+        '<input type="checkbox" class="sc-check" data-id="'+esc(p.id)+'" checked>'+
+        '<span><b>'+esc(p.name)+'</b>'+
+          '<span class="bk-tag">'+esc(p.campaign)+'</span>'+
+          '<span class="sc-src">'+(p.found_by==='rules'?'rule':'review')+'</span>'+
+          '<span class="sc-issue">'+esc(p.issue)+'</span>'+
+        '</span>'+
+      '</label>';
+    }).join('')+
+    '<div class="row" style="gap:6px;margin-top:10px;">'+
+      '<button class="btn btn-p btn-sm" onclick="dropFlagged()">Remove selected from the queue</button>'+
+      '<span id="scResult" style="font-size:11.5px;"></span>'+
+    '</div>'+
+  '</div>';
+}
+
+async function dropFlagged(){
+  const ids=[...document.querySelectorAll('.sc-check:checked')].map(function(c){return c.dataset.id;});
+  const out=document.getElementById('scResult');
+  if(!ids.length){out.textContent='Nothing selected.';out.style.color='var(--muted)';return;}
+  if(!confirm('Remove '+ids.length+' decision(s) from the review queue?\n\nThey move to rejected, so they still count for cooldown and can be put back.')) return;
+  out.innerHTML='<span class="mw-spinner"></span>';
+  const j=await call('reject_decisions',{ids:ids});
+  if(!j.ok){out.textContent=j.error;out.style.color='var(--err)';return;}
+  out.textContent='Removed.';out.style.color='var(--ok)';
+  BUCKETS=null;
+  setTimeout(function(){document.getElementById('sanityResult').innerHTML='';loadBuckets('pending');},700);
+}
 
 // Everything the agent decided, grouped by outcome.
 async function loadBuckets(view){
