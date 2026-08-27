@@ -2191,6 +2191,23 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     user-select:all;
   }
 </style>
+
+<style id="zenFactEditing">
+  .fact-ans{cursor:pointer;border-radius:5px;padding:2px 4px;margin-left:-4px;transition:background .12s;}
+  .fact-ans:hover{background:rgba(15,76,69,.06);}
+  .fact-actions{display:flex;gap:5px;flex-shrink:0;}
+  .fact-actions .btn{padding:3px 8px;min-height:26px;font-size:10.5px;}
+  .fact-safe{
+    display:inline-flex;align-items:center;gap:5px;margin-top:5px;
+    font-size:10.5px;color:var(--muted,#5E6B64);cursor:pointer;
+  }
+  .fact-safe input{width:13px;height:13px;accent-color:#0F4C45;cursor:pointer;}
+  .fact-editing{background:rgba(15,76,69,.04);border-radius:8px;padding:9px;}
+  @media (max-width:640px){
+    .fact-row{flex-wrap:wrap;}
+    .fact-actions{width:100%;margin-top:6px;}
+  }
+</style>
 </head>
 <body>
 
@@ -5174,16 +5191,90 @@ async function loadFacts(){
   // be sent to a customer as though true.
   const stub=j.facts.filter(function(f){return /\[ADD /.test(f.answer);}).length;
   el.innerHTML=(stub?'<div class="dr-warn">'+stub+' answer(s) are still placeholders. Edit them before relying on the assistant.</div>':'')+
-    j.facts.map(function(f){
+    j.facts.map(function(f,i){
       const isStub=/\[ADD /.test(f.answer);
-      return '<div class="fact-row'+(isStub?' fact-stub':'')+'">'+
+      // Editable in place. Removing and re-adding a row to fix a typo
+      // is a strange thing to ask of anyone, and the placeholders in
+      // particular exist specifically to be replaced.
+      return '<div class="fact-row'+(isStub?' fact-stub':'')+'" id="factRow_'+f.id+'">'+
         '<div class="fact-cat">'+esc(f.category)+'</div>'+
-        '<div class="fact-body"><b>'+esc(f.question)+'</b>'+
-          '<div class="fact-ans">'+esc(f.answer)+'</div></div>'+
-        '<button class="btn btn-s btn-sm" onclick="deleteFact(\''+f.id+'\')">Remove</button>'+
+        '<div class="fact-body">'+
+          '<b>'+esc(f.question)+'</b>'+
+          '<div class="fact-ans" onclick="editFact(\''+f.id+'\')" title="Click to edit">'+
+            esc(f.answer)+'</div>'+
+          '<label class="fact-safe">'+
+            '<input type="checkbox" '+(f.auto_send_ok?'checked':'')+
+              ' onchange="toggleFactSafe(\''+f.id+'\',this.checked)">'+
+            ' safe to send without me' +
+          '</label>'+
+        '</div>'+
+        '<div class="fact-actions">'+
+          '<button class="btn btn-s btn-sm" onclick="editFact(\''+f.id+'\')">Edit</button>'+
+          '<button class="btn btn-s btn-sm" onclick="deleteFact(\''+f.id+'\')">Remove</button>'+
+        '</div>'+
       '</div>';
     }).join('');
+  window.__facts=j.facts;
 }
+function editFact(id){
+  const f=(window.__facts||[]).find(function(x){return x.id===id;});
+  if(!f) return;
+  const row=document.getElementById('factRow_'+id);
+  row.classList.add('fact-editing');
+  row.innerHTML=
+    '<div class="fact-cat">'+esc(f.category)+'</div>'+
+    '<div class="fact-body">'+
+      '<input class="fi" id="fq_'+id+'" value="'+esc(f.question)+'" style="margin-bottom:6px;font-size:12px;">'+
+      '<textarea class="fi" id="fa_'+id+'" rows="3" style="margin-bottom:6px;font-size:12px;">'+esc(f.answer)+'</textarea>'+
+      '<label class="fact-safe"><input type="checkbox" id="fs_'+id+'" '+(f.auto_send_ok?'checked':'')+
+        '> safe to send without me</label>'+
+      '<div class="row" style="gap:6px;margin-top:7px;">'+
+        '<button class="btn btn-p btn-sm" onclick="saveFactEdit(\''+id+'\')">Save</button>'+
+        '<button class="btn btn-s btn-sm" onclick="loadFacts()">Cancel</button>'+
+        '<span id="fr_'+id+'" style="font-size:11px;"></span>'+
+      '</div>'+
+    '</div>';
+  document.getElementById('fa_'+id).focus();
+}
+
+async function saveFactEdit(id){
+  const f=(window.__facts||[]).find(function(x){return x.id===id;});
+  const out=document.getElementById('fr_'+id);
+  const question=document.getElementById('fq_'+id).value.trim();
+  const answer=document.getElementById('fa_'+id).value.trim();
+  if(!question||!answer){out.textContent='Both are needed.';out.style.color='var(--err)';return;}
+  // A placeholder marked safe would be sent to a customer as though it
+  // were true, which is the one outcome worth blocking outright.
+  if(/\[ADD /.test(answer) && document.getElementById('fs_'+id).checked){
+    out.textContent='Replace the placeholder before marking it safe to send.';
+    out.style.color='var(--err)';return;
+  }
+  out.innerHTML='<span class="mw-spinner"></span>';
+  const j=await call('save_business_fact',{
+    id:id, question:question, answer:answer,
+    category:(f&&f.category)||'general',
+    auto_send_ok:document.getElementById('fs_'+id).checked,
+  });
+  if(!j.ok){out.textContent=j.error;out.style.color='var(--err)';return;}
+  loadFacts();
+}
+
+async function toggleFactSafe(id,checked){
+  const f=(window.__facts||[]).find(function(x){return x.id===id;});
+  if(!f) return;
+  if(checked && /\[ADD /.test(f.answer)){
+    alert('Replace the placeholder answer first — otherwise this would be sent to a customer as though it were true.');
+    loadFacts();
+    return;
+  }
+  const j=await call('save_business_fact',{
+    id:id, question:f.question, answer:f.answer,
+    category:f.category, auto_send_ok:checked,
+  });
+  if(!j.ok){alert(j.error);loadFacts();return;}
+  f.auto_send_ok=checked;
+}
+
 async function saveFact(){
   const r=document.getElementById('factResult');
   const q=document.getElementById('factQ').value.trim();
