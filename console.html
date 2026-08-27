@@ -3787,7 +3787,7 @@ async function createTenant(fromOverview){
 
 function loadDashboard(){
   loadWAStatus();loadTemplateMappings();
-  loadSettings();loadPending();loadRuns();loadTeam();loadApiKeys();loadChangeLog();
+  loadSettings();loadBuckets();loadRuns();loadTeam();loadApiKeys();loadChangeLog();
   startWhatsappWatch();
   loadTransactionSummary();loadRecentUploads();loadStylists();loadBrandSettings();
   loadOverview();loadApprovals();
@@ -4851,7 +4851,7 @@ async function triggerOutreach(){
   if(j.skipped_unreachable) msg+=' '+j.skipped_unreachable+' were walk-in guests with no real number, skipped.';
   if(j.created&&!j.scheduled&&j.mode&&j.mode.indexOf('review')>=0) msg+=' Review them under Pending review.';
   r.textContent=msg;r.style.color='var(--ok)';
-  loadPredictive();loadPending();loadAtRiskQueue();
+  loadPredictive();loadBuckets();loadAtRiskQueue();
 }
 let insightsHistoryCache=[];
 function renderInsightsContent(summary,recommendations,generatedAt){
@@ -7658,16 +7658,16 @@ async function runNow(){
         r.textContent=(res.candidates||0)+' candidates scanned, nothing to submit ('+(res.reason||'no eligible candidates today')+').';
         r.style.color='var(--ok)';
       }
-      loadPending();loadRuns();loadOverview();
+      BUCKETS=null;loadBuckets('pending');loadRuns();loadOverview();
       return;
     }
     r.style.color='var(--ok)';
-    loadPending();loadRuns();loadOverview();
+    BUCKETS=null;loadBuckets('pending');loadRuns();loadOverview();
   } else {
     r.textContent='Error: '+(res.error||j.error||'Unknown error');r.style.color='var(--err)';
   }
 }
-let BUCKETS=null, BUCKET_VIEW='pending';
+var BUCKETS=null, BUCKET_VIEW='pending';
 
 // Checks the queue for decisions that contradict themselves.
 async function sanityCheck(){
@@ -7743,7 +7743,10 @@ async function loadBuckets(view){
       d[1]+' <span class="bk-n">'+d[2]+'</span></button>';
   }).join('');
 
-  if(BUCKET_VIEW==='pending'){ loadPending(); return; }
+  // Awaited. Unawaited, its fetch resolved after renderBucket had
+  // already drawn another bucket and overwrote it - switching tabs
+  // quickly showed an empty list for no visible reason.
+  if(BUCKET_VIEW==='pending'){ await loadPending(); return; }
   renderBucket(BUCKET_VIEW);
 }
 
