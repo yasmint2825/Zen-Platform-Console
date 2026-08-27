@@ -7567,9 +7567,21 @@ async function runNow(){
       // the run reads as broken when it's actually doing as configured.
       const blocked=res.blocked_by_disabled_campaigns||{};
       const blockedKeys=Object.keys(blocked);
-      if(blockedKeys.length){
-        const parts=blockedKeys.map(function(k){return blocked[k]+' '+k.replace(/_/g,' ');});
-        r.textContent=(res.candidates||0)+' candidates found, but none could be actioned: '+
+      const blockedTotal=blockedKeys.reduce(function(t,k){return t+blocked[k];},0);
+      const decided=res.decisions||0;
+      const parts=blockedKeys.map(function(k){return blocked[k]+' '+k.replace(/_/g,' ');});
+
+      if(decided>0){
+        // The common case, and the one the old message got wrong: some
+        // candidates were blocked by a disabled campaign and the rest
+        // were acted on. Saying "none could be actioned" because a
+        // handful were blocked misreported a successful run as a failure.
+        r.textContent=decided+' decision(s) ready for review from '+(res.candidates||0)+' candidate(s)'+
+          (blockedTotal?('. '+blockedTotal+' skipped — '+parts.join(', ')+' '+
+            (blockedKeys.length===1?'is':'are')+' switched off.'):'.');
+        r.style.color='var(--ok)';
+      } else if(blockedKeys.length){
+        r.textContent=(res.candidates||0)+' candidates found, none actionable: '+
           parts.join(', ')+' — '+(blockedKeys.length===1?'that campaign is':'those campaigns are')+
           ' switched off in the rule book above. '+
           (blockedKeys.length===1?'Enable it':'Enable them')+' to start messaging these customers.';
