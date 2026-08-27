@@ -1824,6 +1824,26 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
   .zen-busy{opacity:.75;cursor:progress;pointer-events:none;}
   .zen-busy .mw-spinner{margin:0;}
 </style>
+
+<style id="zenAdState">
+  .at-state{
+    display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:8px;font-weight:600;letter-spacing:.04em;vertical-align:1px;
+  }
+  .at-state-running{background:#E8F6F1;color:#0B7A5E;}
+  .at-state-paused{background:#EEF1EF;color:#5E6B64;}
+  /* Finished is different from paused: nothing you do restarts it. */
+  .at-state-finished{background:#F2EEF6;color:#6B5B8A;}
+  .at-state-scheduled{background:#E9F2F7;color:#1A5C82;}
+  .at-running{opacity:1;}
+  .at-paused,.at-scheduled{opacity:.7;}
+  .at-finished{opacity:.5;}
+  .at-nocontrol{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:9px;color:var(--faint,#8B968F);letter-spacing:.04em;
+  }
+</style>
 </head>
 <body>
 
@@ -6401,12 +6421,20 @@ async function loadAdTable(){
       '<tr><th>ad set</th><th>spend</th><th>reach</th><th>impr.</th><th>clicks</th><th>CTR</th>'+
       '<th>results</th><th>cost per<br><span>result</span></th><th></th></tr>'+
       j.rows.map(function(r,i){
-        const live=r.status==='ACTIVE';
-        return '<tr class="'+(live?'at-live':'at-off')+'">'+
+        const st=r.state||(r.status==='ACTIVE'?'running':'paused');
+        const live=st==='running';
+        return '<tr class="at-'+esc(st)+'">'+
           '<td><b>'+esc(r.name)+'</b>'+
+            '<span class="at-state at-state-'+esc(st)+'">'+esc(st)+'</span>'+
             '<div class="at-sub">'+esc(r.campaign||'')+
               (r.adset_name?(' &middot; '+esc(r.adset_name)):'')+
-              (r.daily_budget?(' &middot; '+r.daily_budget+'/day'):'')+'</div></td>'+
+              (r.daily_budget?(' &middot; '+r.daily_budget+'/day'):'')+
+              (r.ends_on?(' &middot; '+(st==='finished'?'ended ':'ends ')+esc(r.ends_on)):'')+
+              // Pausing an ad whose parent is off changes nothing, and
+              // resuming it won't start delivery. Worth saying rather
+              // than leaving someone to press a button that does nothing.
+              (r.paused_by_parent?' &middot; <span style="color:var(--warn);">its campaign is paused</span>':'')+
+            '</div></td>'+
           '<td class="at-n">'+Math.round(r.spend)+'</td>'+
           '<td class="at-n">'+(r.reach||0).toLocaleString()+'</td>'+
           '<td class="at-n">'+(r.impressions||0).toLocaleString()+'</td>'+
@@ -6418,8 +6446,12 @@ async function loadAdTable(){
             (r.result_label?'<div class="at-unit">'+esc(r.result_label)+'</div>':'')+'</td>'+
           '<td class="at-n">'+(r.cost_per_result!=null?r.cost_per_result:'&mdash;')+'</td>'+
           '<td class="at-act">'+
-            '<button class="btn btn-s btn-sm" onclick="quickToggle('+i+')">'+(live?'Pause':'Resume')+'</button>'+
-            (r.budget_owner_id?'<button class="btn btn-s btn-sm" onclick="quickBudget('+i+')">Budget</button>':'')+
+            // A finished or not-yet-started ad set can't be paused or
+            // resumed in any meaningful sense.
+            (r.controllable===false
+              ? '<span class="at-nocontrol">'+(st==='finished'?'ended':'not started')+'</span>'
+              : '<button class="btn btn-s btn-sm" onclick="quickToggle('+i+')">'+(live?'Pause':'Resume')+'</button>')+
+            (r.budget_owner_id&&r.controllable!==false?'<button class="btn btn-s btn-sm" onclick="quickBudget('+i+')">Budget</button>':'')+
             '<div id="atR_'+i+'" class="at-result"></div>'+
           '</td>'+
         '</tr>';
