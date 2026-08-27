@@ -3467,11 +3467,26 @@ async function doLogin(){
   // for anything - Supabase calls that aal1 - and the code is what
   // raises it. Without this check the session would work anyway, which
   // would make enrolling pointless.
-  const aal=await sb.auth.mfa.getAuthenticatorAssuranceLevel();
-  if(aal.data && aal.data.nextLevel==='aal2' && aal.data.nextLevel!==aal.data.currentLevel){
-    r.textContent='';
-    showMfaPrompt();
-    return;
+  // Time-limited, not just wrapped.
+  //
+  // A try/catch only helps if the call fails. On a project without MFA
+  // configured it can simply never resolve, and an unbounded await then
+  // leaves the login stuck on "Logging in..." forever - which is what a
+  // catch block cannot rescue. Three seconds, then carry on regardless:
+  // a second factor is worth having, but not at the price of being the
+  // reason nobody can get in.
+  try{
+    const aal=await Promise.race([
+      sb.auth.mfa.getAuthenticatorAssuranceLevel(),
+      new Promise(function(res){setTimeout(function(){res(null);},3000);}),
+    ]);
+    if(aal && aal.data && aal.data.nextLevel==='aal2' && aal.data.nextLevel!==aal.data.currentLevel){
+      r.textContent='';
+      showMfaPrompt();
+      return;
+    }
+  }catch(e){
+    console.warn('MFA check unavailable, continuing without it:', e && e.message);
   }
   onAuthed(data.session);
 }
@@ -8973,8 +8988,11 @@ async function revokeApiKey(id){if(!confirm('Revoke this key? Any app using it s
   // back in on a reload without it, which would make enrolling
   // decorative.
   try{
-    const aal=await sb.auth.mfa.getAuthenticatorAssuranceLevel();
-    if(aal.data && aal.data.nextLevel==='aal2' && aal.data.nextLevel!==aal.data.currentLevel){
+    const aal=await Promise.race([
+      sb.auth.mfa.getAuthenticatorAssuranceLevel(),
+      new Promise(function(res){setTimeout(function(){res(null);},3000);}),
+    ]);
+    if(aal && aal.data && aal.data.nextLevel==='aal2' && aal.data.nextLevel!==aal.data.currentLevel){
       showMfaPrompt();
       return;
     }
