@@ -2241,6 +2241,19 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
   .camp-actions{display:flex;gap:5px;margin-top:10px;flex-wrap:wrap;}
   .camp-actions .btn{padding:3px 9px;min-height:26px;font-size:10.5px;}
 </style>
+
+<style id="zenConvSections">
+  .conv-sec{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;
+    letter-spacing:.07em;text-transform:uppercase;color:var(--faint,#8B968F);
+    margin:14px 0 6px;
+  }
+  .conv-sec:first-child{margin-top:0;}
+  .conv-total{
+    margin-top:12px;padding:9px 11px;border-radius:8px;
+    background:var(--surface-2,#FAFBFA);font-size:12px;line-height:1.5;
+  }
+</style>
 </head>
 <body>
 
@@ -2870,7 +2883,9 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
               </div>
             </details>
 
-<div class="card">
+
+
+                  <div class="card">
               <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
                 <h2 style="margin:0;">WhatsApp chat</h2>
                 <div id="waStatus" style="font-size:12px;padding:5px 12px;border-radius:20px;"></div>
@@ -2920,6 +2935,14 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
                 </div>
               </div>
             </div>
+
+                  <div class="card">
+                    <h2>What conversations turn into</h2>
+                    <p class="muted" style="font-size:11.5px;">People who messaged, and whether they came in afterwards. Split by whether an ad brought them.</p>
+                    <div id="msgConversion" class="muted" style="font-size:12px;">Loading...</div>
+                  </div>
+
+                  
           </div>
 
           <div id="marketingTab-meta" class="marketing-tab-content" style="display:none;">
@@ -3699,7 +3722,7 @@ function showAgentDetail(agent){
   document.getElementById('intelligenceAgentDetail').style.display=agent==='intelligence'?'block':'none';
   window.scrollTo({top:0,behavior:'smooth'});
   if(agent==='marketing'){loadSocialContent();loadCompetitors();loadMetaAdsStatus();loadLeadsStatus();}
-  if(agent==='engagement'){loadAtRiskActions();loadAtRiskQueue();loadConversations();}
+  if(agent==='engagement'){loadAtRiskActions();loadAtRiskQueue();loadConversations();loadMessageConversion();}
   if(agent==='intelligence'){loadDailyIntelligence();loadPredictive();renderQuickQuestions();}
 }
 // ── Campaigns ────────────────────────────────────────────────────
@@ -5114,6 +5137,47 @@ function announceNewMessage(j){
   el._t=setTimeout(function(){el.classList.remove('show');}, 9000);
 }
 
+async function loadMessageConversion(){
+  const el=document.getElementById('msgConversion');
+  if(!el) return;
+  const j=await call('get_message_conversion',{days:90,window_days:14});
+  if(!j.ok){el.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
+  if(!j.groups.length){el.innerHTML='<span class="muted">No messages in the last 90 days.</span>';return;}
+
+  // Campaigns we sent, then people who came to us - they answer
+  // different questions and mixing them in one list obscures both.
+  const sent=j.groups.filter(function(g){return g.outbound;});
+  const came=j.groups.filter(function(g){return !g.outbound;});
+
+  const row=function(g){
+    return '<tr>'+
+      '<td><b>'+esc(g.label.replace(/^We messaged them — /,''))+'</b></td>'+
+      '<td>'+g.people+'</td>'+
+      '<td>'+g.came_back+'</td>'+
+      '<td'+(g.rate>=20?' style="color:#0B7A5E;font-weight:600;"':'')+'>'+
+        (g.rate!=null?(g.rate+'%'):'&mdash;')+
+        (g.thin?'<span class="muted" style="font-size:9px;"> thin</span>':'')+'</td>'+
+      '<td>'+(g.median_days!=null?(g.median_days+'d'):'&mdash;')+'</td>'+
+      '<td>'+(g.revenue?('AED '+g.revenue.toLocaleString()):'&mdash;')+'</td>'+
+      '<td>'+(g.revenue_per_message?('AED '+g.revenue_per_message):'&mdash;')+'</td>'+
+    '</tr>';
+  };
+  const head='<tr><th>&nbsp;</th><th>people</th><th>came in</th><th>rate</th>'+
+    '<th>after</th><th>revenue</th><th>each</th></tr>';
+
+  el.innerHTML=
+    (sent.length?'<div class="conv-sec">Campaigns we sent</div>'+
+      '<div style="overflow-x:auto;"><table class="at-table">'+head+sent.map(row).join('')+'</table></div>':'')+
+    (came.length?'<div class="conv-sec">People who came to us</div>'+
+      '<div style="overflow-x:auto;"><table class="at-table">'+head+came.map(row).join('')+'</table></div>':'')+
+    (j.totals?'<div class="conv-total">'+
+      '<b>'+j.totals.came_back+' of '+j.totals.people+'</b> came in within '+j.window_days+' days'+
+      (j.totals.rate!=null?(' ('+j.totals.rate+'%)'):'')+
+      (j.totals.revenue?(', worth <b>AED '+j.totals.revenue.toLocaleString()+'</b>'):'')+
+      '</div>':'')+
+    '<div class="muted" style="font-size:10.5px;margin-top:8px;line-height:1.5;">'+esc(j.caveat||'')+'</div>';
+}
+
 async function loadConversations(force){
   const listEl=document.getElementById('conversationList');
   if(!listEl) return;
@@ -5193,13 +5257,16 @@ function openThread(i){
 
   const id=c.mobile.replace(/\D/g,'');
   const isIG = c.channel==='instagram';
+  // The draft sits above the composer. Below it, a long draft pushed
+  // the reply box off-screen and you had to scroll back up to read
+  // what you were about to send.
   const composer=c.reply_window_open
-    ? '<div style="display:flex;gap:6px;margin-top:8px;">'+
+    ? '<div id="draftBox_'+id+'"></div>'+
+      '<div style="display:flex;gap:6px;margin-top:8px;">'+
         '<input class="fi" type="text" id="reply_'+id+'" placeholder="Type a reply and press Enter" style="margin:0;flex:1;font-size:11.5px;" onkeydown="if(event.key===\'Enter\')sendReply(\''+c.mobile+'\')">'+
         '<button class="btn btn-p btn-sm" onclick="sendReply(\''+c.mobile+'\')">Send</button>'+
         '<button class="btn btn-s btn-sm" onclick="draftReply(\''+c.mobile+'\')" title="Draft a reply for you to review">Draft</button>'+
       '</div>'+
-      '<div id="draftBox_'+id+'"></div>'+
       '<div class="muted" style="font-size:9.5px;margin-top:2px;">Reply window open for another '+c.reply_window_hours_left+'h'+
         (isIG?' — Instagram has no template fallback once it closes.':'')+'</div>'
     : '<div class="muted" style="font-size:10.5px;margin-top:8px;padding:6px;border:1px dashed var(--border);border-radius:6px;">'+
@@ -5224,9 +5291,35 @@ function openThread(i){
         '</div>'+
         '<div class="muted" style="font-size:9.5px;margin-top:2px;">Connects this conversation to their visits, so the ad that brought them can be credited.</div>'
       : '')+
-    '<div style="flex:1;overflow-y:auto;max-height:280px;display:flex;flex-direction:column;">'+(bubbles||'<div class="muted" style="margin:auto;font-size:11px;">No messages yet.</div>')+'</div>'+
+    '<div id="threadScroll_'+id+'" style="flex:1;overflow-y:auto;max-height:280px;display:flex;flex-direction:column;">'+(bubbles||'<div class="muted" style="margin:auto;font-size:11px;">No messages yet.</div>')+'</div>'+
     composer+
     '<div id="replyResult_'+id+'" style="font-size:11px;margin-top:4px;"></div>';
+
+  // Open on the newest message.
+  //
+  // The thread reads oldest-first, which is right, but that left the
+  // scroll at the top - so opening a long conversation showed messages
+  // from days ago and you had to scroll to find what just arrived.
+  const scroller=document.getElementById('threadScroll_'+id);
+  if(scroller) scroller.scrollTop=scroller.scrollHeight;
+
+  // Reading it is handling it.
+  //
+  // Previously a conversation stayed unread until Zen replied, so an
+  // owner who read something and dealt with it by phone still saw it
+  // flagged. Opening it is the moment it has been seen.
+  if(c.unhandled){
+    c.unhandled=0;
+    WA_UNREAD=Math.max(0,(WA_UNREAD||1)-1);
+    paintUnread(WA_UNREAD);
+    const item=document.getElementById('thread_item_'+i);
+    if(item) item.classList.remove('conv-unread');
+    // to_number, not mobile - the action rejects anything else with a
+    // 400, which is why the badge kept coming back on the next refresh.
+    call('mark_conversation_handled',{to_number:c.mobile}).then(function(r){
+      if(!r||!r.ok) console.warn('could not mark read:', r&&r.error);
+    }).catch(function(){});
+  }
 }
 async function sendReply(mobile){
   const id=mobile.replace(/\D/g,'');
