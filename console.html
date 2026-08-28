@@ -2254,6 +2254,23 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     background:var(--surface-2,#FAFBFA);font-size:12px;line-height:1.5;
   }
 </style>
+
+<style id="zenConvNote">
+  .conv-note{
+    margin-top:11px;padding:9px 11px;border-radius:8px;
+    background:#FDF8F0;border:1px solid #EBDCC2;
+    font-size:11px;line-height:1.5;color:#9A5B0F;
+  }
+</style>
+
+<style id="zenConvGender">
+  /* The raw counts behind each rate, small - a percentage without them
+     hides whether it rests on 3 people or 300. */
+  .conv-n{
+    display:block;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:9px;color:var(--faint,#8B968F);font-weight:400;
+  }
+</style>
 </head>
 <body>
 
@@ -2938,7 +2955,7 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
 
                   <div class="card">
                     <h2>What conversations turn into</h2>
-                    <p class="muted" style="font-size:11.5px;">People who messaged, and whether they came in afterwards. Split by whether an ad brought them.</p>
+                    <p class="muted" style="font-size:11.5px;">Campaigns we sent and people who came to us, and whether either led to a visit within 30 days.</p>
                     <div id="msgConversion" class="muted" style="font-size:12px;">Loading...</div>
                   </div>
 
@@ -5140,7 +5157,10 @@ function announceNewMessage(j){
 async function loadMessageConversion(){
   const el=document.getElementById('msgConversion');
   if(!el) return;
-  const j=await call('get_message_conversion',{days:90,window_days:14});
+  // 30 days, matching the WhatsApp performance card. Two screens
+  // measuring the same thing over different windows gave two different
+  // answers, which is worse than either.
+  const j=await call('get_message_conversion',{days:90,window_days:30});
   if(!j.ok){el.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
   if(!j.groups.length){el.innerHTML='<span class="muted">No messages in the last 90 days.</span>';return;}
 
@@ -5149,27 +5169,44 @@ async function loadMessageConversion(){
   const sent=j.groups.filter(function(g){return g.outbound;});
   const came=j.groups.filter(function(g){return !g.outbound;});
 
+  // Girls and boys side by side rather than as separate rows. The
+  // question is how each behaves for the same campaign, and two
+  // columns answer that at a glance where two rows make you hunt.
+  const pct=function(sub){
+    if(!sub||!sub.people) return '<span class="muted">&mdash;</span>';
+    return '<span'+(sub.rate>=20?' style="color:#0B7A5E;font-weight:600;"':'')+'>'+
+      (sub.rate!=null?(sub.rate+'%'):'&mdash;')+'</span>'+
+      '<span class="conv-n">'+sub.came_back+'/'+sub.people+'</span>'+
+      (sub.thin?'<span class="muted" style="font-size:9px;"> thin</span>':'');
+  };
   const row=function(g){
     return '<tr>'+
-      '<td><b>'+esc(g.label.replace(/^We messaged them — /,''))+'</b></td>'+
+      '<td><b>'+esc(g.label)+'</b></td>'+
       '<td>'+g.people+'</td>'+
-      '<td>'+g.came_back+'</td>'+
       '<td'+(g.rate>=20?' style="color:#0B7A5E;font-weight:600;"':'')+'>'+
         (g.rate!=null?(g.rate+'%'):'&mdash;')+
         (g.thin?'<span class="muted" style="font-size:9px;"> thin</span>':'')+'</td>'+
+      '<td>'+pct(g.girls)+'</td>'+
+      '<td>'+pct(g.boys)+'</td>'+
       '<td>'+(g.median_days!=null?(g.median_days+'d'):'&mdash;')+'</td>'+
       '<td>'+(g.revenue?('AED '+g.revenue.toLocaleString()):'&mdash;')+'</td>'+
       '<td>'+(g.revenue_per_message?('AED '+g.revenue_per_message):'&mdash;')+'</td>'+
     '</tr>';
   };
-  const head='<tr><th>&nbsp;</th><th>people</th><th>came in</th><th>rate</th>'+
-    '<th>after</th><th>revenue</th><th>each</th></tr>';
+  const head='<tr><th>&nbsp;</th><th>people</th><th>rate</th>'+
+    '<th>girls</th><th>boys</th><th>after</th><th>revenue</th><th>each</th></tr>';
 
   el.innerHTML=
     (sent.length?'<div class="conv-sec">Campaigns we sent</div>'+
       '<div style="overflow-x:auto;"><table class="at-table">'+head+sent.map(row).join('')+'</table></div>':'')+
     (came.length?'<div class="conv-sec">People who came to us</div>'+
       '<div style="overflow-x:auto;"><table class="at-table">'+head+came.map(row).join('')+'</table></div>':'')+
+    // Said explicitly rather than left as an absent row. "No ad
+    // conversions" and "no ads that could produce one" look the same
+    // on a screen, and only one of them is a problem.
+    (came.some(function(g){return /from an ad/.test(g.label);})
+      ? ''
+      : '<div class="conv-note">No messages arrived from an ad in this period. Click-to-WhatsApp and Instagram message ads would appear here as their own rows &mdash; the account is currently running engagement objectives, which don\'t produce them.</div>')+
     (j.totals?'<div class="conv-total">'+
       '<b>'+j.totals.came_back+' of '+j.totals.people+'</b> came in within '+j.window_days+' days'+
       (j.totals.rate!=null?(' ('+j.totals.rate+'%)'):'')+
