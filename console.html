@@ -5849,15 +5849,21 @@ async function scheduleContentItem(id){
 async function loadApprovals(){
   const j=await call('list_all_approvals',{});
   const el=document.getElementById('approvalsList');
+  // The badge was removed when the review area became buckets. A page
+  // that throws here renders nothing at all, so a missing optional
+  // element must never be fatal.
   const badge=document.getElementById('approvalsBadge');
+  if(!el) return;
   if(!j.ok){el.textContent='Error: '+j.error;return;}
   if(!j.approvals.length){
     el.innerHTML='Nothing waiting on you right now.';
-    badge.style.display='none';
+    if(badge) badge.style.display='none';
     return;
   }
-  badge.textContent=j.approvals.length;
-  badge.style.display='inline-block';
+  if(badge){
+    badge.textContent=j.approvals.length;
+    badge.style.display='inline-block';
+  }
   const typeConfig={
     whatsapp_decision:{icon:'&#128172;',label:'Engagement',approve:'approveDecision',reject:'rejectDecision'},
     social_post:{icon:'&#128241;',label:'Marketing',approve:'approveSocialPost',reject:'rejectSocialPost'},
@@ -7224,6 +7230,9 @@ async function actOnRecommendation(name){
 // than genuinely no conversations - and guessing at it from the outside
 // is hopeless.
 async function diagnoseAdActions(){
+  // Left over from the removed "Suggest changes" card. Harmless if
+  // called, but it must not throw on the missing container.
+  if(!document.getElementById('adRecs')) return;
   const el=document.getElementById('adRecs');
   el.innerHTML='<div class="ar-card"><span class="mw-spinner"></span>Asking Meta what it actually reports...</div>';
   const j=await call('diagnose_ad_actions',{days:Number((document.getElementById('adRecDays')||{}).value||30)});
@@ -7458,6 +7467,9 @@ async function analyseInstagram(){
 // the thinking on the wrong side: they require someone to already know
 // the policy, and then obey it whether or not it still makes sense.
 async function loadAdRecommendations(){
+  // Left over from the removed "Suggest changes" card. Harmless if
+  // called, but it must not throw on the missing container.
+  if(!document.getElementById('adRecs')) return;
   const el=document.getElementById('adRecs');
   const days=Number((document.getElementById('adRecDays')||{}).value||30);
   el.innerHTML='<div class="ar-card"><span class="mw-spinner"></span>Reading '+days+' days across every ad set, running and paused...</div>';
@@ -7552,6 +7564,7 @@ async function applyAdRec(i){
 let AD_SETS=[], AD_FORECAST={};
 
 async function loadAdControl(){
+  if(!document.getElementById('adControlList')) return;
   const el=document.getElementById('adControlList');
   el.innerHTML='<span class="mw-spinner"></span>Loading...';
 
@@ -7581,6 +7594,7 @@ async function loadAdControl(){
 }
 
 function renderAdControl(){
+  if(!document.getElementById('adControlList')) return;
   // Running ad sets first - they are the ones spending money right now.
   AD_SETS.sort(function(a,b){
     const av=a.effective_status==='ACTIVE'?0:1, bv=b.effective_status==='ACTIVE'?0:1;
@@ -7727,6 +7741,7 @@ async function toggleAdStatus(i){
 
 // Nothing is applied without this being available first.
 async function previewAdSchedule(){
+  if(!document.getElementById('adSchedulePreview')) return;
   const el=document.getElementById('adSchedulePreview');
   el.innerHTML='<span class="mw-spinner"></span>Working out what would change...';
   const j=await call('apply_ad_schedule',{dry_run:true});
@@ -7750,6 +7765,7 @@ async function previewAdSchedule(){
   '</div>';
 }
 async function applyAdSchedule(){
+  if(!document.getElementById('adSchedulePreview')) return;
   if(!confirm('Apply these changes to your live ads?')) return;
   const el=document.getElementById('adSchedulePreview');
   el.innerHTML='<span class="mw-spinner"></span>Applying...';
