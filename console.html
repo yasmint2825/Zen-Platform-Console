@@ -2664,6 +2664,16 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
             <div id="marketingTab-scheduling" class="marketing-tab-content" style="display:none;">
               <div class="card">
                 <h2>Publishing plan</h2>
+                <!-- Which strategy you are looking at. A plan belongs
+                     to a strategy, and without this the screen showed
+                     whichever one happened to be current. -->
+                <div class="row" style="gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
+                  <label class="fl" style="margin:0;">Strategy</label>
+                  <select class="fi" id="strategyPicker" onchange="loadCampaigns()"
+                          style="width:auto;min-width:260px;margin:0;font-size:12px;min-height:32px;"></select>
+                  <button class="btn btn-p btn-sm" id="genPlanBtn" onclick="generatePlanForStrategy()">Generate a plan for this strategy</button>
+                  <span id="genPlanResult" style="font-size:11.5px;"></span>
+                </div>
                 <div id="campaignPlan" class="muted" style="font-size:12px;margin-bottom:14px;">Loading...</div>
                 <p class="muted">Everything approved and on its way out - pick a date, publish now, or review the image and caption one more time before it goes live.</p>
                 <div id="schedulingEmpty" class="muted" style="padding:12px 0;">Nothing here yet - approve something in Content plan and it'll show up here.</div>
@@ -3753,9 +3763,49 @@ function showAgentDetail(agent){
   if(agent==='intelligence'){loadDailyIntelligence();loadPredictive();renderQuickQuestions();}
 }
 // ── Campaigns ────────────────────────────────────────────────────
-let CAMPAIGNS=null;
+let CAMPAIGNS=null, STRATEGIES=[];
+
+async function loadStrategyPicker(){
+  const sel=document.getElementById('strategyPicker');
+  if(!sel) return;
+  const j=await call('list_strategies',{});
+  if(!j.ok||!j.strategies.length){
+    sel.innerHTML='<option value="">No strategies yet</option>';
+    return;
+  }
+  const keep=sel.value;
+  sel.innerHTML='<option value="">All strategies</option>'+
+    j.strategies.map(function(st){
+      // Says whether a plan exists, which is what you want to know
+      // when picking one.
+      return '<option value="'+esc(st.id)+'">'+esc(st.ref)+' &middot; '+esc(st.name)+
+        ' ('+(st.items?(st.items+' items'):'no plan yet')+')</option>';
+    }).join('');
+  if(keep) sel.value=keep;
+  STRATEGIES=j.strategies;
+}
+
+async function generatePlanForStrategy(){
+  const sel=document.getElementById('strategyPicker');
+  const out=document.getElementById('genPlanResult');
+  const id=sel&&sel.value;
+  if(!id){out.textContent='Pick a strategy first.';out.style.color='var(--err)';return;}
+  const chosen=(STRATEGIES||[]).find(function(s){return s.id===id;});
+  if(chosen&&chosen.items&&!confirm(chosen.ref+' already has '+chosen.items+' items.\n\nGenerate another plan for it?')) return;
+  out.innerHTML='<span class="mw-spinner"></span>Writing the plan...';
+  const j=await call('generate_content_plan',{strategy_id:id});
+  if(!j.ok){out.textContent=j.error;out.style.color='var(--err)';return;}
+  out.textContent=(j.items?j.items.length:0)+' items created.';
+  out.style.color='var(--ok)';
+  CAMPAIGNS=null;
+  loadStrategyPicker();
+  loadCampaigns();
+}
 
 async function loadCampaigns(){
+  await loadStrategyPicker();
+  const sel=document.getElementById('strategyPicker');
+  const only=sel&&sel.value;
   const j=await call('list_campaigns',{});
   if(!j.ok){
     const el=document.getElementById('campaignHistory');
@@ -3763,8 +3813,10 @@ async function loadCampaigns(){
     return;
   }
   CAMPAIGNS=j;
-  renderCampaigns('campaignPlan', j.plan, true);
-  renderCampaigns('campaignHistory', j.history, false);
+  // Filtered to the chosen strategy, or everything when none is picked.
+  const pick=function(list){ return only ? list.filter(function(c){return c.id===only;}) : list; };
+  renderCampaigns('campaignPlan', pick(j.plan), true);
+  renderCampaigns('campaignHistory', pick(j.history), false);
   const hc=document.getElementById('historyCount');
   if(hc) hc.textContent=j.history.length?('('+j.history.length+')'):'';
 }
