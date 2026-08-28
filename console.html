@@ -3769,7 +3769,12 @@ async function loadStrategyPicker(){
   const sel=document.getElementById('strategyPicker');
   if(!sel) return;
   const j=await call('list_strategies',{});
-  if(!j.ok||!j.strategies.length){
+  if(!j.ok){
+    sel.innerHTML='<option value="">Could not load strategies</option>';
+    console.warn('list_strategies failed:', j.error);
+    return;
+  }
+  if(!j.strategies.length){
     sel.innerHTML='<option value="">No strategies yet</option>';
     return;
   }
@@ -3808,8 +3813,17 @@ async function loadCampaigns(){
   const only=sel&&sel.value;
   const j=await call('list_campaigns',{});
   if(!j.ok){
-    const el=document.getElementById('campaignHistory');
-    if(el) el.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';
+    // Both containers, not just one. Reporting the failure in history
+    // while the plan sat on "Loading..." made a clear error look like
+    // a hang.
+    const msg='<span style="color:var(--err);">'+esc(j.error||'Could not load campaigns.')+'</span>'+
+      (/unknown action/i.test(j.error||'')
+        ? '<div class="muted" style="font-size:10.5px;margin-top:4px;">This needs the latest mw-admin deployed.</div>'
+        : '');
+    ['campaignPlan','campaignHistory'].forEach(function(id){
+      const el=document.getElementById(id);
+      if(el) el.innerHTML=msg;
+    });
     return;
   }
   CAMPAIGNS=j;
