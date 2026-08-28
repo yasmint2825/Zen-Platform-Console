@@ -3676,9 +3676,20 @@ async function onAuthed(sess){
   document.getElementById('authScreen').style.display='none';
   document.getElementById('app').style.display='block';
   document.getElementById('whoami').textContent=session.user.email;
+  // Timed, because "it hangs on login" needs a number before it can
+  // be fixed - and three sequential awaits here each look identical
+  // from the outside.
+  const t0=Date.now();
   await call('accept_pending_invites',{});
+  const t1=Date.now();
   await loadMyTenants();
-  loadCommandCenter(); // Overview is the default active page - showPage('overview') may never fire on initial load
+  const t2=Date.now();
+  console.log('login timing: invites '+(t1-t0)+'ms, tenants '+(t2-t1)+'ms');
+  // Not awaited: the dashboard should paint before its data arrives,
+  // otherwise a slow query looks like a broken page.
+  loadCommandCenter().then(function(){
+    console.log('command centre '+(Date.now()-t2)+'ms');
+  });
 }
 
 function showAgentDetail(agent){
