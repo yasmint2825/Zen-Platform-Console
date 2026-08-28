@@ -2271,6 +2271,15 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     font-size:9px;color:var(--faint,#8B968F);font-weight:400;
   }
 </style>
+
+<style id="zenCampItems">
+  .camp-item-sched{background:#E9F2F7;border-color:#C5DCE8;color:#1A5C82;}
+  .camp-item[onclick]:hover{border-color:#0F4C45;color:#0F4C45;}
+  .camp-hint{
+    font-size:10px;color:var(--faint,#8B968F);margin-top:6px;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;
+  }
+</style>
 </head>
 <body>
 
@@ -2579,8 +2588,9 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
               <button class="btn btn-p btn-sm marketing-tab-btn" data-tab="setup" onclick="showMarketingTab('setup')">Brand DNA</button>
               <button class="btn btn-s btn-sm marketing-tab-btn" data-tab="strategy" onclick="showMarketingTab('strategy')">Strategy &amp; content</button>
               <button class="btn btn-s btn-sm marketing-tab-btn" data-tab="scheduling" onclick="showMarketingTab('scheduling')">Publishing plan <span id="schedulingCount" class="muted"></span></button>
-              <button class="btn btn-s btn-sm marketing-tab-btn" data-tab="zenwhatsapp" onclick="showMarketingTab('zenwhatsapp')">ZenWhatsApp</button>
               <button class="btn btn-s btn-sm marketing-tab-btn" data-tab="history" onclick="showMarketingTab('history')">Publishing history <span id="historyCount" class="muted"></span></button>
+              <button class="btn btn-s btn-sm marketing-tab-btn" data-tab="zenwhatsapp" onclick="showMarketingTab('zenwhatsapp')">ZenWhatsApp</button>
+              
               <button class="btn btn-s btn-sm marketing-tab-btn" data-tab="performance" onclick="showMarketingTab('performance')">Performance</button>
               <button class="btn btn-s btn-sm marketing-tab-btn" data-tab="meta" onclick="showMarketingTab('meta')">Meta setup</button>
               <button class="btn btn-s btn-sm marketing-tab-btn" data-tab="lab" onclick="showMarketingTab('lab')">Content lab</button>
@@ -3786,10 +3796,19 @@ function renderCampaigns(elId, list, isPlan){
       '<div class="camp-items">'+
         c.items.map(function(i){
           const done=!!i.published_at;
-          return '<span class="camp-item'+(done?' camp-item-done':'')+'" title="'+esc(i.title||'')+'">'+
-            (i.type==='video'?'&#9654;':'&#9632;')+' '+i.number+'</span>';
+          const sched=!done&&i.scheduled_date;
+          // Each post carries its own reference and can be scheduled
+          // from here - previously the chips were decoration, and
+          // scheduling meant finding the item on another screen.
+          return '<span class="camp-item'+(done?' camp-item-done':sched?' camp-item-sched':'')+'" '+
+            'title="'+esc(i.ref||'')+' - '+esc(i.title||'')+
+              (done?' (published)':sched?(' (scheduled '+esc(i.scheduled_date)+')'):'')+'" '+
+            (isPlan&&!done?'onclick="scheduleItem(\''+i.id+'\',\''+esc(i.ref||'')+'\')" style="cursor:pointer;"':'')+'>'+
+            (i.type==='video'?'&#9654;':'&#9632;')+' '+i.number+
+            (done?' &check;':sched?' &#9201;':'')+'</span>';
         }).join('')+
       '</div>'+
+      (isPlan?'<div class="camp-hint">Click a post to schedule it. &#9632; image &middot; &#9654; video &middot; &#9201; scheduled &middot; &check; published</div>':'')+
       // Controls only where they make sense. An archived campaign has
       // nothing left to hold, and a published one cannot be deleted.
       (isPlan?'<div class="camp-actions">'+
@@ -3800,6 +3819,17 @@ function renderCampaigns(elId, list, isPlan){
       '</div>':'')+
     '</div>';
   }).join('');
+}
+
+async function scheduleItem(id,ref){
+  const today=new Date(Date.now()+4*3600000).toISOString().slice(0,10);
+  const when=prompt('Schedule '+ref+' for which date?\n\nYYYY-MM-DD', today);
+  if(!when) return;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(when)){alert('Use the format YYYY-MM-DD.');return;}
+  const j=await call('schedule_content_plan_item',{id:id,scheduled_date:when});
+  if(!j.ok){alert(j.error);return;}
+  CAMPAIGNS=null;
+  loadCampaigns();
 }
 
 async function setCampaign(id,status){
@@ -3872,6 +3902,8 @@ function showSettingsTab(tab){
   // Stylist performance now lives here, not just on Reports - load it
   // directly so it populates even if Reports was never visited first.
   if(tab==='team') loadReports();
+  // Both tabs render from the same fetch, and neither was loading it.
+  if(tab==='history'||tab==='scheduling') loadCampaigns();
 }
 function showPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
