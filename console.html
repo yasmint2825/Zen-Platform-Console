@@ -3856,6 +3856,10 @@ async function loadCommandCenter(){
   const page=document.getElementById('page-overview');
   if(!page) return;
   const j=await call('get_command_center_data',{});
+  // Nested fields the shared guard in call() cannot reach.
+  j.attention_items=j.attention_items||[];j.activity=j.activity||[];
+  j.agents=Object.assign({engagement:{},marketing:{},intelligence:{}},j.agents||{});
+  j.at_risk=j.at_risk||{count:0,by_campaign:{},revenue_estimate:null};
   if(!j.ok) return;
 
   const old=document.getElementById('zenHero');
@@ -4080,9 +4084,22 @@ function zenCommand(text){
 
 const MW_ML_URL=SB_URL+'/functions/v1/mw-ml';
 async function callML(action,extra){
-  const r=await fetch(MW_ML_URL,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+session.access_token},
-    body:JSON.stringify(Object.assign({action,tenant_id:currentTenant},extra||{}))});
-  return await r.json();
+  // Same treatment as call(): a raw r.json() throws on a non-JSON
+  // response, and an uncaught throw here takes the page down.
+  try{
+    const r=await fetch(MW_ML_URL,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+session.access_token},
+      body:JSON.stringify(Object.assign({action,tenant_id:currentTenant},extra||{}))});
+    const text=await r.text();
+    let j=null;
+    try{ j=JSON.parse(text); }catch(_){}
+    if(j&&typeof j==='object'){
+      ['customers','candidates','findings','predictions','rows','results'].forEach(function(f){ if(j[f]==null) j[f]=[]; });
+      return j;
+    }
+    return {ok:false,error:'Server returned '+r.status+(text?(': '+String(text).slice(0,160)):'')};
+  }catch(e){
+    return {ok:false,error:'Could not reach the server ('+String(e&&e.message||e)+')'};
+  }
 }
 // Reads what daily_intelligence.py already computed (see get_daily_intelligence)
 // - this function does no computation itself, just renders real,
@@ -4265,6 +4282,8 @@ async function loadMetaAdsSummary(){
   const lookback=document.getElementById('metaAdsLookback').value;
   el.innerHTML='<span class="mw-spinner"></span>Pulling from Meta...';
   const j=await call('get_meta_ads_summary',{lookback_days:parseInt(lookback,10)});
+  // Nested fields the shared guard in call() cannot reach.
+  j.totals=j.totals||{};j.campaigns=j.campaigns||[];j.placements=j.placements||[];
   if(!j.ok){
     el.innerHTML='<span style="color:var(--err);">Error: '+j.error+'</span>';
     return;
@@ -4286,10 +4305,9 @@ async function loadMetaAdsSummary(){
 }
 
 async function call(action,extra){
-  // Every failure has to come back as {ok:false,error:string}. Without
-  // this, a 500 with an HTML body or a dropped connection produced a
-  // response with no error field, and every caller in the console
-  // rendered "Error: undefined" - which says nothing about what broke.
+  // Every failure comes back as {ok:false,error:string}. Without this a
+  // 500 with an HTML body, or a dropped connection, produced a response
+  // with no error field and every caller rendered "Error: undefined".
   try{
     const r=await fetch(MW_ADMIN_URL,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+session.access_token},
       body:JSON.stringify(Object.assign({action,tenant_id:currentTenant},extra||{}))});
@@ -4297,15 +4315,37 @@ async function call(action,extra){
     let j=null;
     try{ j=JSON.parse(text); }catch(_){}
     if(j&&typeof j==='object'){
-      // A non-2xx that did return JSON but no error field - report the
-      // status rather than letting undefined through.
-      if(j.ok===undefined&&!j.error) return {ok:r.ok,error:r.ok?undefined:('Server returned '+r.status),raw:j};
+      // Missing fields are filled in before any caller sees the
+      // response.
+      //
+      // Dozens of render functions read things like j.tenants.map or
+      // j.tenant.review_mode directly, and each throws if its field is
+      // absent - taking the whole page down, since one uncaught error
+      // stops everything. Guarding them individually would leave the
+      // next one written just as fragile, so it is done once here.
+      //
+      // The lists are derived from what the code actually dereferences:
+      // anything read with .length/.map/.filter defaults to an array,
+      // anything read for a property to an object.
+      const listFields=['actions','activity','ads','adsets','approvals','assets','attempts',
+        'attention_items','batches','blackouts','campaign_history','campaigns','candidates',
+        'competitors','customers','decisions','entries','errors','facts','failed','findings',
+        'generations','history','items','jobs','kept','leads','messages','objectives',
+        'placements','plan','problems','proposed_rules','replies','results','rows','rules',
+        'scheduled','strategies','strategy','stylists','templates','tenants','unscheduled',
+        'visits','warnings','conversations','posts','sources','insight'];
+      listFields.forEach(function(f){ if(j[f]===undefined||j[f]===null) j[f]=[]; });
+      // 'strategy' and 'mode' are deliberately not here - other code
+      // reads them as an array and a string.
+      const objFields=['agents','analysed','brief','engagement','prediction','profile',
+        'tenant','tokens','totals','counts','metrics'];
+      objFields.forEach(function(f){ if(j[f]===undefined||j[f]===null) j[f]={}; });
+      if(j.ok===undefined&&!j.error) return Object.assign(j,{ok:r.ok,error:r.ok?undefined:('Server returned '+r.status)});
       if(j.error&&!('ok' in j)) return Object.assign({ok:false},j);
       return j;
     }
     return {ok:false,error:'Server returned '+r.status+(text?(': '+String(text).slice(0,160)):' with an empty response')};
   }catch(e){
-    // Network-level: offline, CORS, function cold-start timeout.
     return {ok:false,error:'Could not reach the server ('+String(e&&e.message||e)+')'};
   }
 }
@@ -4375,12 +4415,19 @@ document.addEventListener('click', function(ev){
 }, true);
 
 async function callWA(url,action,extra){
+  // Same treatment as call(): a raw r.json() throws on a non-JSON
+  // response, and an uncaught throw here takes the page down.
   try{
     const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+session.access_token},
       body:JSON.stringify(Object.assign({action,tenant_id:currentTenant},extra||{}))});
     const text=await r.text();
-    try{ return JSON.parse(text); }
-    catch(_){ return {ok:false,error:'Server returned '+r.status+(text?(': '+String(text).slice(0,160)):'')}; }
+    let j=null;
+    try{ j=JSON.parse(text); }catch(_){}
+    if(j&&typeof j==='object'){
+      ['templates','messages','conversations','results'].forEach(function(f){ if(j[f]==null) j[f]=[]; });
+      return j;
+    }
+    return {ok:false,error:'Server returned '+r.status+(text?(': '+String(text).slice(0,160)):'')};
   }catch(e){
     return {ok:false,error:'Could not reach the server ('+String(e&&e.message||e)+')'};
   }
@@ -4842,6 +4889,8 @@ async function loadEngagementIntelligence(force){
     args.days=Number(sel);
   }
   const j=await call('get_engagement_intelligence',args);
+  // Nested fields the shared guard in call() cannot reach.
+  j.summary=j.summary||{};j.measured=j.measured||{};
   if(!j.ok){el.innerHTML='<span style="color:var(--err);">'+j.error+'</span>';return;}
   el.dataset.loaded='1';
   if(!j.totals){el.innerHTML=j.note||'Nothing to report yet.';return;}
@@ -5729,9 +5778,22 @@ function renderAskHistory(){
 
 // Sales data upload
 async function callIngest(action,extra){
-  const r=await fetch(MW_INGEST_URL,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+session.access_token},
-    body:JSON.stringify(Object.assign({action,tenant_id:currentTenant},extra||{}))});
-  return await r.json();
+  // Same treatment as call(): a raw r.json() throws on a non-JSON
+  // response, and an uncaught throw here takes the page down.
+  try{
+    const r=await fetch(MW_INGEST_URL,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+session.access_token},
+      body:JSON.stringify(Object.assign({action,tenant_id:currentTenant},extra||{}))});
+    const text=await r.text();
+    let j=null;
+    try{ j=JSON.parse(text); }catch(_){}
+    if(j&&typeof j==='object'){
+      ['batches','files','rows','errors'].forEach(function(f){ if(j[f]==null) j[f]=[]; });
+      return j;
+    }
+    return {ok:false,error:'Server returned '+r.status+(text?(': '+String(text).slice(0,160)):'')};
+  }catch(e){
+    return {ok:false,error:'Could not reach the server ('+String(e&&e.message||e)+')'};
+  }
 }
 async function loadTransactionSummary(){
   const el=document.getElementById('txSummary');
@@ -5855,6 +5917,9 @@ function currentMonthYear(){
 // ── Reports ──
 async function loadReports(){
   const j=await call('get_reports_data',{});
+  // Nested fields the shared guard in call() cannot reach.
+  j.engagement=j.engagement||{};j.engagement.campaigns=j.engagement.campaigns||[];
+  j.marketing=j.marketing||{};j.marketing.posts=j.marketing.posts||[];
   if(!j.ok){document.getElementById('reportsEngagement').textContent='Error: '+j.error;return;}
 
   const engEl=document.getElementById('reportsEngagement');
@@ -9157,6 +9222,29 @@ sb.auth.onAuthStateChange(function(event,sess){
       });
     }
   }
+});
+
+// ── Containment ───────────────────────────────────────────────────
+//
+// A handful of cards read deeply nested response fields - things like
+// j.summary.measured_messages.succeeded - and no shared guard can
+// sensibly default every level of that. Chasing them one at a time
+// would leave the next one written just as fragile.
+//
+// So they are wrapped instead: if one throws, that card stays blank
+// and logs why, and the rest of the page carries on. A missing card is
+// a small problem; a blank console is not.
+['loadMetaAdsSummary','loadEngagementIntelligence','loadReports','loadCommandCenter',
+ 'loadAdPerformance','loadDailyIntelligence','loadPredictive','loadScheduleHealth']
+.forEach(function(name){
+  const original=window[name];
+  if(typeof original!=='function'||original.__wrapped) return;
+  const wrapped=async function(){
+    try{ return await original.apply(this,arguments); }
+    catch(e){ console.warn(name+' failed to render:', e&&e.message); }
+  };
+  wrapped.__wrapped=true;
+  window[name]=wrapped;
 });
 </script>
 <script id="zenPremiumUXEnhancements">
