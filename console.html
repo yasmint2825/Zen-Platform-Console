@@ -2637,7 +2637,7 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
                 </div>
               </details>
 
-              <details class="card">
+              <details class="card" ontoggle="if(this.open&&typeof loadPlanStrategyPicker==='function')loadPlanStrategyPicker()">
                 <summary><h2 style="display:inline;">Content plan <span id="planningCount" class="muted" style="font-weight:400;"></span></h2></summary>
                 <p class="muted">8 image posts + 4 video concepts, generated from your approved strategy as one coordinated campaign. Review, edit, and approve each one here - once approved, it moves to the publishing plan and disappears from this list.</p>
                 <!-- Which strategy this plan is for. It used to assume
@@ -3764,7 +3764,8 @@ function showAgentDetail(agent){
   document.getElementById('marketingAgentDetail').style.display=agent==='marketing'?'block':'none';
   document.getElementById('intelligenceAgentDetail').style.display=agent==='intelligence'?'block':'none';
   window.scrollTo({top:0,behavior:'smooth'});
-  if(agent==='marketing'){loadSocialContent();loadCompetitors();loadMetaAdsStatus();loadLeadsStatus();}
+  if(agent==='marketing'){
+    if(typeof loadPlanStrategyPicker==='function') loadPlanStrategyPicker();loadSocialContent();loadCompetitors();loadMetaAdsStatus();loadLeadsStatus();}
   if(agent==='engagement'){loadAtRiskActions();loadAtRiskQueue();loadConversations();loadMessageConversion();}
   if(agent==='intelligence'){loadDailyIntelligence();loadPredictive();renderQuickQuestions();}
 }
@@ -3945,6 +3946,7 @@ function showMarketingTab(tab){
     if(typeof loadAssetLibrary==='function') loadAssetLibrary();
   } else if(tab==='strategy'){
     if(typeof loadGenerationHistory==='function') loadGenerationHistory();
+    if(typeof loadPlanStrategyPicker==='function') loadPlanStrategyPicker();
   }
 }
 function showSettingsTab(tab){
