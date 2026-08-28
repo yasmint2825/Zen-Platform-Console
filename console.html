@@ -3948,6 +3948,12 @@ function showMarketingTab(tab){
     if(typeof loadGenerationHistory==='function') loadGenerationHistory();
     if(typeof loadPlanStrategyPicker==='function') loadPlanStrategyPicker();
   }
+  // Publishing plan and history are marketing tabs. This was wired to
+  // the settings tab handler by mistake, so neither ever loaded and
+  // both sat on "Loading..." indefinitely.
+  if(tab==='history'||tab==='scheduling'){
+    if(typeof loadCampaigns==='function') loadCampaigns();
+  }
 }
 function showSettingsTab(tab){
   document.querySelectorAll('.settings-tab-content').forEach(el=>el.style.display='none');
@@ -3959,8 +3965,6 @@ function showSettingsTab(tab){
   // Stylist performance now lives here, not just on Reports - load it
   // directly so it populates even if Reports was never visited first.
   if(tab==='team') loadReports();
-  // Both tabs render from the same fetch, and neither was loading it.
-  if(tab==='history'||tab==='scheduling') loadCampaigns();
 }
 function showPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
