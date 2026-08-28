@@ -2208,6 +2208,39 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     .fact-actions{width:100%;margin-top:6px;}
   }
 </style>
+
+<style id="zenCampaigns">
+  .camp{border:1px solid var(--line,#E4E7E4);border-radius:11px;padding:12px 14px;margin-bottom:9px;}
+  /* A held campaign should look paused, not broken. */
+  .camp-held{background:var(--surface-2,#FAFBFA);opacity:.8;}
+  .camp-head{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;}
+  .camp-ref{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;font-weight:600;
+    letter-spacing:.04em;padding:2px 7px;border-radius:5px;
+    background:#0F4C45;color:#fff;
+  }
+  .camp-head b{font-size:13px;}
+  .camp-tag{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:8.5px;font-weight:600;
+    letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:999px;
+    background:#EEF1EF;color:#5E6B64;
+  }
+  .camp-tag-held{background:#FDF3E7;color:#9A5B0F;}
+  .camp-date{
+    margin-left:auto;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:9.5px;color:var(--faint,#8B968F);
+  }
+  .camp-meta{font-size:11px;color:var(--muted,#5E6B64);margin-top:5px;}
+  .camp-items{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px;}
+  .camp-item{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;
+    padding:2px 7px;border-radius:5px;border:1px solid var(--line,#E4E7E4);
+    color:var(--muted,#5E6B64);cursor:default;
+  }
+  .camp-item-done{background:#E8F6F1;border-color:#BFE3D6;color:#0B7A5E;}
+  .camp-actions{display:flex;gap:5px;margin-top:10px;flex-wrap:wrap;}
+  .camp-actions .btn{padding:3px 9px;min-height:26px;font-size:10.5px;}
+</style>
 </head>
 <body>
 
@@ -2515,8 +2548,9 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
             <div class="row mkt-tabs" style="margin-bottom:20px;">
               <button class="btn btn-p btn-sm marketing-tab-btn" data-tab="setup" onclick="showMarketingTab('setup')">Brand DNA</button>
               <button class="btn btn-s btn-sm marketing-tab-btn" data-tab="strategy" onclick="showMarketingTab('strategy')">Strategy &amp; content</button>
-              <button class="btn btn-s btn-sm marketing-tab-btn" data-tab="scheduling" onclick="showMarketingTab('scheduling')">Scheduling &amp; posting <span id="schedulingCount" class="muted"></span></button>
+              <button class="btn btn-s btn-sm marketing-tab-btn" data-tab="scheduling" onclick="showMarketingTab('scheduling')">Publishing plan <span id="schedulingCount" class="muted"></span></button>
               <button class="btn btn-s btn-sm marketing-tab-btn" data-tab="zenwhatsapp" onclick="showMarketingTab('zenwhatsapp')">ZenWhatsApp</button>
+              <button class="btn btn-s btn-sm marketing-tab-btn" data-tab="history" onclick="showMarketingTab('history')">Publishing history <span id="historyCount" class="muted"></span></button>
               <button class="btn btn-s btn-sm marketing-tab-btn" data-tab="performance" onclick="showMarketingTab('performance')">Performance</button>
               <button class="btn btn-s btn-sm marketing-tab-btn" data-tab="meta" onclick="showMarketingTab('meta')">Meta setup</button>
               <button class="btn btn-s btn-sm marketing-tab-btn" data-tab="lab" onclick="showMarketingTab('lab')">Content lab</button>
@@ -2565,7 +2599,7 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
 
               <details class="card">
                 <summary><h2 style="display:inline;">Content plan <span id="planningCount" class="muted" style="font-weight:400;"></span></h2></summary>
-                <p class="muted">8 image posts + 4 video concepts, generated from your approved strategy as one coordinated campaign. Review, edit, and approve each one here - once approved, it moves to Scheduling &amp; posting and disappears from this list.</p>
+                <p class="muted">8 image posts + 4 video concepts, generated from your approved strategy as one coordinated campaign. Review, edit, and approve each one here - once approved, it moves to the publishing plan and disappears from this list.</p>
                 <button class="btn btn-p btn-sm" onclick="generateContentPlan()">Generate content plan</button>
                 <div id="planGenerateResult" style="font-size:12px;margin-top:8px;"></div>
                 <div id="contentPlanBlocks" style="margin-top:14px;"></div>
@@ -2589,10 +2623,19 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
 
             <div id="marketingTab-scheduling" class="marketing-tab-content" style="display:none;">
               <div class="card">
-                <h2>Scheduling &amp; posting</h2>
+                <h2>Publishing plan</h2>
+                <div id="campaignPlan" class="muted" style="font-size:12px;margin-bottom:14px;">Loading...</div>
                 <p class="muted">Everything approved and on its way out - pick a date, publish now, or review the image and caption one more time before it goes live.</p>
                 <div id="schedulingEmpty" class="muted" style="padding:12px 0;">Nothing here yet - approve something in Content plan and it'll show up here.</div>
                 <div id="schedulingBlocks"></div>
+              </div>
+            </div>
+
+            <div id="marketingTab-history" class="marketing-tab-content" style="display:none;">
+              <div class="card">
+                <h2>Publishing history</h2>
+                <p class="muted">Campaigns that have published something, and ones you&rsquo;ve archived. A campaign moves here as soon as one post from it goes out.</p>
+                <div id="campaignHistory" class="muted" style="font-size:12px;">Loading...</div>
               </div>
             </div>
 
@@ -3648,6 +3691,82 @@ function showAgentDetail(agent){
   if(agent==='engagement'){loadAtRiskActions();loadAtRiskQueue();loadConversations();}
   if(agent==='intelligence'){loadDailyIntelligence();loadPredictive();renderQuickQuestions();}
 }
+// ── Campaigns ────────────────────────────────────────────────────
+let CAMPAIGNS=null;
+
+async function loadCampaigns(){
+  const j=await call('list_campaigns',{});
+  if(!j.ok){
+    const el=document.getElementById('campaignHistory');
+    if(el) el.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';
+    return;
+  }
+  CAMPAIGNS=j;
+  renderCampaigns('campaignPlan', j.plan, true);
+  renderCampaigns('campaignHistory', j.history, false);
+  const hc=document.getElementById('historyCount');
+  if(hc) hc.textContent=j.history.length?('('+j.history.length+')'):'';
+}
+
+function renderCampaigns(elId, list, isPlan){
+  const el=document.getElementById(elId);
+  if(!el) return;
+  if(!list.length){
+    el.innerHTML='<span class="muted">'+(isPlan
+      ? 'No campaigns waiting. Generate a plan from Strategy &amp; content.'
+      : 'Nothing published yet.')+'</span>';
+    return;
+  }
+  el.innerHTML=list.map(function(c){
+    const held=c.status==='on_hold';
+    return '<div class="camp'+(held?' camp-held':'')+'">'+
+      '<div class="camp-head">'+
+        '<span class="camp-ref">'+esc(c.ref)+'</span>'+
+        '<b>'+esc(c.name)+'</b>'+
+        (held?'<span class="camp-tag camp-tag-held">on hold</span>':'')+
+        (c.status==='archived'?'<span class="camp-tag">archived</span>':'')+
+        '<span class="camp-date">'+formatDubai(c.created_at)+'</span>'+
+      '</div>'+
+      '<div class="camp-meta">'+
+        c.total+' item'+(c.total===1?'':'s')+
+        ' &middot; '+c.images+' image, '+c.videos+' video'+
+        (c.published?(' &middot; <b>'+c.published+' published</b>'):'')+
+      '</div>'+
+      '<div class="camp-items">'+
+        c.items.map(function(i){
+          const done=!!i.published_at;
+          return '<span class="camp-item'+(done?' camp-item-done':'')+'" title="'+esc(i.title||'')+'">'+
+            (i.type==='video'?'&#9654;':'&#9632;')+' '+i.number+'</span>';
+        }).join('')+
+      '</div>'+
+      // Controls only where they make sense. An archived campaign has
+      // nothing left to hold, and a published one cannot be deleted.
+      (isPlan?'<div class="camp-actions">'+
+        '<button class="btn btn-s btn-sm" onclick="setCampaign(\''+c.id+'\',\''+(held?'open':'on_hold')+'\')">'+
+          (held?'Reopen':'Put on hold')+'</button>'+
+        '<button class="btn btn-s btn-sm" onclick="setCampaign(\''+c.id+'\',\'archived\')">Archive</button>'+
+        (c.published===0?'<button class="btn btn-s btn-sm" onclick="deleteCampaign(\''+c.id+'\',\''+esc(c.ref)+'\')">Delete</button>':'')+
+      '</div>':'')+
+    '</div>';
+  }).join('');
+}
+
+async function setCampaign(id,status){
+  if(status==='archived' && !confirm('Archive this campaign?\n\nIt moves to Publishing history and stops appearing in the plan. Nothing is deleted.')) return;
+  const j=await call('set_campaign_status',{strategy_id:id,status:status});
+  if(!j.ok){alert(j.error);return;}
+  CAMPAIGNS=null;
+  loadCampaigns();
+}
+
+async function deleteCampaign(id,ref){
+  if(!confirm('Delete campaign '+ref+' and everything in it?\n\nThis cannot be undone. If you might want it later, archive it instead.')) return;
+  const j=await call('delete_campaign',{strategy_id:id});
+  if(!j.ok){alert(j.error);return;}
+  CAMPAIGNS=null;
+  loadCampaigns();
+}
+
 function showMarketingTab(tab){
   document.querySelectorAll('.marketing-tab-content').forEach(el=>el.style.display='none');
   document.getElementById('marketingTab-'+tab).style.display='block';
