@@ -2640,7 +2640,15 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
               <details class="card">
                 <summary><h2 style="display:inline;">Content plan <span id="planningCount" class="muted" style="font-weight:400;"></span></h2></summary>
                 <p class="muted">8 image posts + 4 video concepts, generated from your approved strategy as one coordinated campaign. Review, edit, and approve each one here - once approved, it moves to the publishing plan and disappears from this list.</p>
-                <button class="btn btn-p btn-sm" onclick="generateContentPlan()">Generate content plan</button>
+                <!-- Which strategy this plan is for. It used to assume
+                     the current month's, so there was no way to build a
+                     plan against an older or a second strategy. -->
+                <div class="row" style="gap:8px;align-items:center;margin:10px 0;flex-wrap:wrap;">
+                  <label class="fl" style="margin:0;">Build it from</label>
+                  <select class="fi" id="planStrategyPicker"
+                          style="width:auto;min-width:280px;margin:0;font-size:12px;min-height:32px;"></select>
+                  <button class="btn btn-p btn-sm" onclick="generateContentPlan()">Generate content plan</button>
+                </div>
                 <div id="planGenerateResult" style="font-size:12px;margin-top:8px;"></div>
                 <div id="contentPlanBlocks" style="margin-top:14px;"></div>
               </details>
@@ -2664,15 +2672,13 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
             <div id="marketingTab-scheduling" class="marketing-tab-content" style="display:none;">
               <div class="card">
                 <h2>Publishing plan</h2>
-                <!-- Which strategy you are looking at. A plan belongs
-                     to a strategy, and without this the screen showed
-                     whichever one happened to be current. -->
+                <!-- A filter, not a generator. Making a plan belongs
+                     with the content that produces it; this screen is
+                     for seeing what is scheduled and what has gone out. -->
                 <div class="row" style="gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
-                  <label class="fl" style="margin:0;">Strategy</label>
+                  <label class="fl" style="margin:0;">Showing</label>
                   <select class="fi" id="strategyPicker" onchange="loadCampaigns()"
                           style="width:auto;min-width:260px;margin:0;font-size:12px;min-height:32px;"></select>
-                  <button class="btn btn-p btn-sm" id="genPlanBtn" onclick="generatePlanForStrategy()">Generate a plan for this strategy</button>
-                  <span id="genPlanResult" style="font-size:11.5px;"></span>
                 </div>
                 <div id="campaignPlan" class="muted" style="font-size:12px;margin-bottom:14px;">Loading...</div>
                 <p class="muted">Everything approved and on its way out - pick a date, publish now, or review the image and caption one more time before it goes live.</p>
@@ -3763,7 +3769,7 @@ function showAgentDetail(agent){
   if(agent==='intelligence'){loadDailyIntelligence();loadPredictive();renderQuickQuestions();}
 }
 // ── Campaigns ────────────────────────────────────────────────────
-let CAMPAIGNS=null, STRATEGIES=[];
+let CAMPAIGNS=null, STRATEGIES=[], PLAN_STRATEGIES=[];
 
 async function loadStrategyPicker(){
   const sel=document.getElementById('strategyPicker');
@@ -3788,23 +3794,6 @@ async function loadStrategyPicker(){
     }).join('');
   if(keep) sel.value=keep;
   STRATEGIES=j.strategies;
-}
-
-async function generatePlanForStrategy(){
-  const sel=document.getElementById('strategyPicker');
-  const out=document.getElementById('genPlanResult');
-  const id=sel&&sel.value;
-  if(!id){out.textContent='Pick a strategy first.';out.style.color='var(--err)';return;}
-  const chosen=(STRATEGIES||[]).find(function(s){return s.id===id;});
-  if(chosen&&chosen.items&&!confirm(chosen.ref+' already has '+chosen.items+' items.\n\nGenerate another plan for it?')) return;
-  out.innerHTML='<span class="mw-spinner"></span>Writing the plan...';
-  const j=await call('generate_content_plan',{strategy_id:id});
-  if(!j.ok){out.textContent=j.error;out.style.color='var(--err)';return;}
-  out.textContent=(j.items?j.items.length:0)+' items created.';
-  out.style.color='var(--ok)';
-  CAMPAIGNS=null;
-  loadStrategyPicker();
-  loadCampaigns();
 }
 
 async function loadCampaigns(){
@@ -6554,12 +6543,51 @@ async function approveMonthlyStrategyNow(){
 
 // ── Content plan ──
 let contentPlanState={};
+// Fills the strategy selector on the content plan card.
+async function loadPlanStrategyPicker(){
+  const sel=document.getElementById('planStrategyPicker');
+  if(!sel) return;
+  const j=await call('list_strategies',{});
+  if(!j.ok){sel.innerHTML='<option value="">Could not load strategies</option>';return;}
+  const usable=j.strategies.filter(function(s){return !s.archived;});
+  if(!usable.length){sel.innerHTML='<option value="">No strategies yet</option>';return;}
+  const keep=sel.value;
+  sel.innerHTML=usable.map(function(st){
+    // Whether it already has a plan, and whether it is approved - both
+    // decide whether generating against it makes sense.
+    return '<option value="'+esc(st.id)+'"'+(st.status!=='approved'?' disabled':'')+'>'+
+      esc(st.ref)+' &middot; '+esc(st.name)+
+      (st.status!=='approved'?' (not approved yet)':(st.items?(' — '+st.items+' items already'):' — no plan yet'))+
+      '</option>';
+  }).join('');
+  if(keep) sel.value=keep;
+  else {
+    // Default to the first approved one without a plan - the most
+    // likely thing you came here to do.
+    const fresh=usable.find(function(s){return s.status==='approved'&&!s.items;});
+    if(fresh) sel.value=fresh.id;
+  }
+  PLAN_STRATEGIES=usable;
+}
+
 async function generateContentPlan(){
   const r=document.getElementById('planGenerateResult');
-  if(!currentMonthlyStrategy||currentMonthlyStrategy.status!=='approved'){r.textContent='Approve this month\'s strategy first.';r.style.color='var(--err)';return;}
+  const sel=document.getElementById('planStrategyPicker');
+  const id=sel&&sel.value;
+  if(!id){r.textContent='Pick a strategy to build the plan from.';r.style.color='var(--err)';return;}
+  const chosen=(PLAN_STRATEGIES||[]).find(function(s){return s.id===id;});
+  if(chosen&&chosen.items&&
+     !confirm(chosen.ref+' already has '+chosen.items+' items.\n\nGenerate another plan for it?')) return;
   r.innerHTML='<span class="mw-spinner"></span>Planning 8 image posts + 4 video concepts as one campaign...';r.style.color='var(--muted)';
-  const j=await call('generate_content_plan',{strategy_id:currentMonthlyStrategy.id});
-  if(j.ok){r.textContent='Plan generated.';r.style.color='var(--ok)';renderContentPlanSplit(j.items);}
+  const j=await call('generate_content_plan',{strategy_id:id});
+  if(j.ok){
+    r.textContent='Plan generated.';r.style.color='var(--ok)';
+    // Guarded: a successful generation whose render throws looked like
+    // the generation itself had failed.
+    try{ renderContentPlanSplit(j.items||[]); }catch(e){ console.warn('could not render the plan:', e&&e.message); }
+    // The selector still says "no plan yet" until it is refreshed.
+    loadPlanStrategyPicker();
+  }
   else{r.innerHTML='Error: '+j.error+(j.raw_preview?('<div class="muted" style="font-size:11px;margin-top:4px;">Raw response preview: '+j.raw_preview+'</div>'):'');r.style.color='var(--err)';}
 }
 async function loadContentPlanBlocks(strategyId){
