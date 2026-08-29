@@ -2360,6 +2360,28 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     font-size:9.5px;color:var(--faint,#8B968F);
   }
 </style>
+
+<style id="zenOptOut">
+  .oo-box{
+    border:1px solid #EBDCC2;background:#FDF8F0;border-radius:10px;
+    padding:11px 13px;margin-bottom:12px;font-size:12px;
+  }
+  .oo-ok{border-color:#BFE3D6;background:#F4FBF8;color:#0B7A5E;}
+  .oo-head{font-weight:600;font-size:12.5px;margin-bottom:7px;color:#9A5B0F;}
+  .oo-list{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;}
+  .oo-tpl{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;
+    padding:2px 8px;border-radius:5px;background:#fff;border:1px solid #EBDCC2;color:#9A5B0F;
+  }
+  .oo-why{font-size:11px;line-height:1.5;color:var(--muted,#5E6B64);margin-bottom:8px;}
+  .oo-fix{font-size:11px;line-height:1.6;color:var(--muted,#5E6B64);}
+  .oo-fix code{
+    display:block;margin-top:5px;padding:6px 9px;border-radius:6px;
+    background:#fff;border:1px solid var(--line,#E4E7E4);
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;
+    color:var(--ink,#0D1310);user-select:all;
+  }
+</style>
 </head>
 <body>
 
@@ -3011,6 +3033,7 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
                   <div class="card">
                     <h2>Do not message</h2>
                     <p class="muted" style="font-size:11.5px;">People excluded from every campaign &mdash; either marked in the salon system or because they asked us over WhatsApp.</p>
+                    <div id="optOutReadiness"></div>
                     <div id="dndList" class="muted" style="font-size:12px;">Loading...</div>
                   </div>
 
@@ -5512,7 +5535,37 @@ async function loadMessageConversion(){
     '<div class="muted" style="font-size:10.5px;margin-top:8px;line-height:1.5;">'+esc(j.caveat||'')+'</div>';
 }
 
+// Which templates tell customers how to stop.
+//
+// Zen recognises "STOP" regardless, but a customer who can't see a way
+// out blocks you instead - and a block costs your number's quality
+// rating far more than an opt-out does.
+async function loadOptOutReadiness(){
+  const el=document.getElementById('optOutReadiness');
+  if(!el) return;
+  const j=await call('check_opt_out_readiness',{});
+  if(!j.ok||!j.templates.length){el.innerHTML='';return;}
+
+  const missing=j.templates.filter(function(t){return !t.tells_them_how;});
+  if(!missing.length){
+    el.innerHTML='<div class="oo-box oo-ok">All your templates tell customers how to stop. '+
+      (j.opted_out?(j.opted_out+' have used it.'):'Nobody has needed to yet.')+'</div>';
+    return;
+  }
+  el.innerHTML='<div class="oo-box">'+
+    '<div class="oo-head">'+missing.length+' template'+(missing.length===1?'':'s')+
+      ' don&rsquo;t say how to stop</div>'+
+    '<div class="oo-list">'+missing.map(function(t){
+      return '<span class="oo-tpl">'+esc(t.template)+'</span>';
+    }).join('')+'</div>'+
+    '<div class="oo-why">'+esc(j.note||'')+'</div>'+
+    '<div class="oo-fix">Add to each in WhatsApp Manager, then resubmit for approval:'+
+      '<code>'+esc(j.suggested_footer||'Reply STOP to stop these messages.')+'</code></div>'+
+  '</div>';
+}
+
 async function loadDoNotDisturb(){
+  loadOptOutReadiness();
   const el=document.getElementById('dndList');
   if(!el) return;
   const j=await call('list_do_not_disturb',{});
