@@ -89,7 +89,7 @@
   .page-header h1{font-size:22px;}
 
   .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;}
-  .mono-num{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;}
+  .mono-num{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums;}
   .stat-tile{background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;}
   .stat-tile .num{font-size:24px;font-weight:800;letter-spacing:-.02em;}
   .stat-tile .lbl{font-size:12px;color:var(--muted);margin-top:2px;}
@@ -771,13 +771,13 @@ code, .mw-spinner + code, pre {
   .queue-bar{
     display:flex;align-items:center;gap:10px;flex-wrap:wrap;
     padding:8px 10px;margin-bottom:10px;
-    background:var(--surface-2,#FAFBFA);
+    background:var(--surface-2,var(--bg));
     border:1px solid var(--line,#E1E7E3);border-radius:10px;
     position:sticky;top:0;z-index:5;
   }
   .queue-all{display:inline-flex;align-items:center;gap:7px;cursor:pointer;
     font-size:12px;font-weight:600;user-select:none;}
-  .queue-all input{width:15px;height:15px;accent-color:#0F4C45;cursor:pointer;margin:0;}
+  .queue-all input{width:15px;height:15px;accent-color:var(--p);cursor:pointer;margin:0;}
   .queue-sel{font-size:11px;font-variant-numeric:tabular-nums;}
 
   /* The whole row is the label, so tapping anywhere ticks it - a
@@ -787,22 +787,22 @@ code, .mw-spinner + code, pre {
     padding:11px 13px;margin-bottom:6px;
     transition:border-color .14s,background .14s;
   }
-  .queue-row:hover{border-color:var(--line-strong,#CBD5CF);background:var(--surface-2,#FAFBFA);}
+  .queue-row:hover{border-color:var(--line-strong,var(--border));background:var(--surface-2,var(--bg));}
   .queue-row:has(.queue-check:checked){
-    border-color:#0F4C45;background:rgba(15,76,69,.045);
+    border-color:var(--p);background:rgba(15,76,69,.045);
   }
-  .queue-row.is-done{border-left:3px solid #0B7A5E;}
+  .queue-row.is-done{border-left:3px solid var(--ok);}
   .queue-check{width:15px;height:15px;margin-top:2px;flex-shrink:0;
-    accent-color:#0F4C45;cursor:pointer;}
+    accent-color:var(--p);cursor:pointer;}
   .queue-check:disabled{cursor:default;opacity:.35;}
 
   .queue-body{display:block;min-width:0;flex:1;}
   .queue-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
   .queue-top b{font-size:13.5px;}
-  .queue-meta{display:block;font-size:11px;color:var(--muted,#5E6B64);margin-top:1px;
+  .queue-meta{display:block;font-size:11px;color:var(--muted,var(--muted));margin-top:1px;
     font-variant-numeric:tabular-nums;}
-  .queue-reason{display:block;font-size:12px;color:var(--muted,#5E6B64);margin-top:4px;line-height:1.45;}
-  .queue-warn{display:block;font-size:11px;font-weight:600;color:#A8271E;margin-bottom:4px;}
+  .queue-reason{display:block;font-size:12px;color:var(--muted,var(--muted));margin-top:4px;line-height:1.45;}
+  .queue-warn{display:block;font-size:11px;font-weight:600;color:var(--err);margin-bottom:4px;}
   .queue-undo{display:block;margin-top:8px;}
 
   @media (max-width:640px){
@@ -818,8 +818,8 @@ code, .mw-spinner + code, pre {
   .nav-unread{
     margin-left:auto;min-width:18px;height:18px;padding:0 5px;
     display:inline-flex;align-items:center;justify-content:center;
-    border-radius:999px;background:#0B7A5E;color:#fff;
-    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    border-radius:999px;background:var(--ok);color:#fff;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
     font-size:10.5px;font-weight:600;line-height:1;
   }
 
@@ -838,15 +838,15 @@ code, .mw-spinner + code, pre {
   .wa-toast.show{opacity:1;transform:none;pointer-events:auto;}
   .wa-toast:hover{box-shadow:0 20px 48px rgba(13,19,16,.2),0 2px 8px rgba(13,19,16,.1);}
   .wa-toast b{display:block;font-weight:600;font-size:13px;}
-  .wa-toast-body{display:block;color:#5E6B64;font-size:12px;margin-top:1px;
+  .wa-toast-body{display:block;color:var(--muted);font-size:12px;margin-top:1px;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px;}
   .wa-toast-dot{
-    width:8px;height:8px;border-radius:50%;background:#0B7A5E;flex-shrink:0;
+    width:8px;height:8px;border-radius:50%;background:var(--ok);flex-shrink:0;
     box-shadow:0 0 0 4px rgba(11,122,94,.14);
   }
   .wa-toast-go{
     margin-left:auto;flex-shrink:0;font-size:11.5px;font-weight:600;
-    color:#0F4C45;white-space:nowrap;
+    color:var(--p);white-space:nowrap;
   }
   @media (max-width:640px){
     .wa-toast{left:12px;right:12px;bottom:12px;max-width:none;}
@@ -1091,15 +1091,15 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
   .zq-head{
     display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
     padding:0 0 12px;margin-bottom:2px;
-    border-bottom:1px solid var(--line,#E4E7E4);
+    border-bottom:1px solid var(--line,var(--border));
   }
   .zq-head h2{margin:0;font-size:15px;font-weight:600;letter-spacing:-.01em;}
-  .zq-head p{margin:3px 0 0;font-size:11.5px;color:var(--muted,#5E6B64);}
+  .zq-head p{margin:3px 0 0;font-size:11.5px;color:var(--muted,var(--muted));}
   .zq-count{
     flex-shrink:0;min-width:24px;height:24px;padding:0 8px;
     display:inline-flex;align-items:center;justify-content:center;border-radius:999px;
-    background:#9A5B0F;color:#fff;
-    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    background:var(--warn);color:#fff;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
     font-size:11.5px;font-weight:600;font-variant-numeric:tabular-nums;
   }
 
@@ -1109,30 +1109,30 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     display:flex;align-items:center;gap:14px;width:100%;
     padding:13px 12px;margin:0 -12px;
     background:none;border:0;border-radius:10px;
-    border-bottom:1px solid var(--line,#EDEFEC);
+    border-bottom:1px solid var(--line,var(--bg));
     font-family:inherit;text-align:left;cursor:pointer;
     transition:background .14s ease;
   }
   .zq-row:last-child{border-bottom:0;}
   .zq-row:hover{background:rgba(15,76,69,.045);}
-  .zq-row:focus-visible{outline:2px solid #0F4C45;outline-offset:-2px;}
+  .zq-row:focus-visible{outline:2px solid var(--p);outline-offset:-2px;}
 
   .zq-n{
     flex-shrink:0;min-width:46px;
-    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
     font-variant-numeric:tabular-nums;
     font-size:19px;font-weight:600;line-height:1;letter-spacing:-.02em;
-    color:#0F4C45;
+    color:var(--p);
   }
   .zq-dot{
     flex-shrink:0;width:8px;height:8px;margin:0 19px 0 0;border-radius:50%;
-    background:#9A5B0F;box-shadow:0 0 0 4px rgba(154,91,15,.14);
+    background:var(--warn);box-shadow:0 0 0 4px rgba(154,91,15,.14);
   }
   .zq-txt{display:block;flex:1;min-width:0;}
-  .zq-title{display:block;font-size:13px;font-weight:600;line-height:1.3;color:var(--ink,#0D1310);}
-  .zq-sub{display:block;font-size:11.5px;line-height:1.4;color:var(--muted,#5E6B64);margin-top:2px;}
+  .zq-title{display:block;font-size:13px;font-weight:600;line-height:1.3;color:var(--ink,var(--ink));}
+  .zq-sub{display:block;font-size:11.5px;line-height:1.4;color:var(--muted,var(--muted));margin-top:2px;}
   .zq-go{
-    flex-shrink:0;font-size:12px;font-weight:600;color:#0F4C45;
+    flex-shrink:0;font-size:12px;font-weight:600;color:var(--p);
     opacity:.55;transition:opacity .14s ease;
   }
   .zq-row:hover .zq-go{opacity:1;}
@@ -1156,8 +1156,8 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
   .queue-signal{
     display:block;margin-top:5px;padding-top:5px;
     border-top:1px dashed var(--line,#E9ECE9);
-    font-family:'IBM Plex Mono',ui-monospace,monospace;
-    font-size:10px;line-height:1.45;color:var(--faint,#8B968F);
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:10px;line-height:1.45;color:var(--faint,var(--muted));
     font-variant-numeric:tabular-nums;
   }
 
@@ -1167,7 +1167,7 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
      from green. */
   .zh-wrap{margin:22px 0 4px;max-width:1100px;}
   .zh-card{
-    background:var(--surface,#fff);border:1px solid var(--line,#E4E7E4);
+    background:var(--surface,#fff);border:1px solid var(--line,var(--border));
     border-radius:16px;padding:18px 20px;
   }
   .zh-head{
@@ -1175,14 +1175,14 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     padding-bottom:13px;border-bottom:1px solid var(--line,#E9ECE9);
   }
   .zh-head h2{margin:0;font-size:15px;font-weight:600;letter-spacing:-.01em;}
-  .zh-head p{margin:3px 0 0;font-size:11.5px;color:var(--muted,#5E6B64);}
+  .zh-head p{margin:3px 0 0;font-size:11.5px;color:var(--muted,var(--muted));}
   .zh-status{
     flex-shrink:0;font-size:11.5px;font-weight:600;padding:4px 11px;border-radius:999px;
     display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
   }
   .zh-status::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;}
-  .zh-status.good{background:#E8F6F1;color:#0B7A5E;}
-  .zh-status.bad{background:#FDF3E7;color:#9A5B0F;}
+  .zh-status.good{background:var(--okl);color:var(--ok);}
+  .zh-status.bad{background:var(--warnl);color:var(--warn);}
 
   .zh-grid{
     display:grid;gap:10px;padding-top:14px;
@@ -1190,39 +1190,39 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
   }
   .zh-job{
     border:1px solid var(--line,#E9ECE9);border-radius:11px;padding:12px 13px;
-    background:var(--surface-2,#FAFBFA);
+    background:var(--surface-2,var(--bg));
   }
   /* A failing job earns a heavier edge - it's the one thing on this
      screen that needs acting on today. */
-  .zh-job.failed{border-color:#E8B4AF;background:#FDF2F1;}
-  .zh-job.overdue{border-color:#E4C79A;background:#FDF8F0;}
+  .zh-job.failed{border-color:var(--err);background:#FDF2F1;}
+  .zh-job.overdue{border-color:#E4C79A;background:var(--warnl);}
 
   .zh-job-top{display:flex;align-items:center;gap:8px;}
-  .zh-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;background:#0B7A5E;}
-  .zh-job.overdue .zh-dot{background:#9A5B0F;}
-  .zh-job.failed  .zh-dot{background:#A8271E;}
+  .zh-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;background:var(--ok);}
+  .zh-job.overdue .zh-dot{background:var(--warn);}
+  .zh-job.failed  .zh-dot{background:var(--err);}
   .zh-job.unknown .zh-dot{background:#B6BEB9;}
   .zh-name{font-size:12.5px;font-weight:600;flex:1;min-width:0;}
   .zh-state{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
     font-size:9.5px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;
-    color:var(--muted,#5E6B64);flex-shrink:0;
+    color:var(--muted,var(--muted));flex-shrink:0;
   }
-  .zh-job.failed .zh-state{color:#A8271E;}
-  .zh-job.overdue .zh-state{color:#9A5B0F;}
+  .zh-job.failed .zh-state{color:var(--err);}
+  .zh-job.overdue .zh-state{color:var(--warn);}
 
-  .zh-what{font-size:11px;color:var(--muted,#5E6B64);margin-top:3px;}
+  .zh-what{font-size:11px;color:var(--muted,var(--muted));margin-top:3px;}
   .zh-detail{
     font-size:11.5px;margin-top:7px;line-height:1.4;
-    font-variant-numeric:tabular-nums;color:var(--ink,#0D1310);
+    font-variant-numeric:tabular-nums;color:var(--ink,var(--ink));
   }
   .zh-meta{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;
-    font-size:9.5px;color:var(--faint,#8B968F);margin-top:6px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:9.5px;color:var(--faint,var(--muted));margin-top:6px;
   }
   .zh-err{
     font-size:10.5px;line-height:1.4;margin-top:7px;padding-top:7px;
-    border-top:1px solid rgba(168,39,30,.18);color:#A8271E;
+    border-top:1px solid rgba(168,39,30,.18);color:var(--err);
   }
 
   @media (max-width:640px){
@@ -1237,69 +1237,69 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
      out, what to do. Severity carries a dot and a word, never
      colour alone. */
   .aa-card{
-    background:var(--surface,#fff);border:1px solid var(--line,#E4E7E4);
+    background:var(--surface,#fff);border:1px solid var(--line,var(--border));
     border-radius:14px;padding:16px 18px;margin:12px 0;
   }
   .aa-headline{
     font-size:15px;font-weight:600;line-height:1.35;letter-spacing:-.01em;
-    color:var(--ink,#0D1310);
+    color:var(--ink,var(--ink));
   }
-  .aa-assess{margin:8px 0 0;font-size:12.5px;line-height:1.55;color:var(--ink-2,#38443E);}
+  .aa-assess{margin:8px 0 0;font-size:12.5px;line-height:1.55;color:var(--ink-2,var(--ink));}
   .aa-outcome{
     margin-top:10px;padding:8px 11px;border-radius:9px;
-    background:#E8F6F1;color:#0B7A5E;font-size:11.5px;line-height:1.45;
+    background:var(--okl);color:var(--ok);font-size:11.5px;line-height:1.45;
     font-variant-numeric:tabular-nums;
   }
   .aa-section{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
     font-size:10px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;
-    color:var(--faint,#8B968F);margin:16px 0 8px;
+    color:var(--faint,var(--muted));margin:16px 0 8px;
   }
 
   .aa-finding{
-    border-left:2px solid var(--line-strong,#CBD5CF);
+    border-left:2px solid var(--line-strong,var(--border));
     padding:2px 0 2px 11px;margin-bottom:11px;
   }
-  .aa-high{border-left-color:#A8271E;}
-  .aa-med{border-left-color:#9A5B0F;}
+  .aa-high{border-left-color:var(--err);}
+  .aa-med{border-left-color:var(--warn);}
   .aa-low{border-left-color:#B6BEB9;}
   .aa-f-top{display:flex;align-items:center;gap:7px;}
   .aa-f-top b{font-size:12.5px;}
   .aa-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;}
-  .aa-high .aa-dot{background:#A8271E;} .aa-med .aa-dot{background:#9A5B0F;} .aa-low .aa-dot{background:#B6BEB9;}
+  .aa-high .aa-dot{background:var(--err);} .aa-med .aa-dot{background:var(--warn);} .aa-low .aa-dot{background:#B6BEB9;}
   .aa-sev{
-    margin-left:auto;font-family:'IBM Plex Mono',ui-monospace,monospace;
-    font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint,#8B968F);
+    margin-left:auto;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint,var(--muted));
   }
-  .aa-f-detail{font-size:12px;line-height:1.5;color:var(--ink-2,#38443E);margin-top:3px;}
+  .aa-f-detail{font-size:12px;line-height:1.5;color:var(--ink-2,var(--ink));margin-top:3px;}
   .aa-f-ev{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;
-    font-size:10.5px;color:var(--faint,#8B968F);margin-top:4px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:10.5px;color:var(--faint,var(--muted));margin-top:4px;
     font-variant-numeric:tabular-nums;line-height:1.45;
   }
 
-  .aa-rec{display:flex;gap:11px;padding:11px 0;border-bottom:1px solid var(--line,#EDEFEC);}
+  .aa-rec{display:flex;gap:11px;padding:11px 0;border-bottom:1px solid var(--line,var(--bg));}
   .aa-rec:last-child{border-bottom:0;}
   .aa-r-n{
     flex-shrink:0;width:21px;height:21px;border-radius:50%;
     display:flex;align-items:center;justify-content:center;
-    background:#0F4C45;color:#fff;
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;font-weight:600;
+    background:var(--p);color:#fff;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;font-weight:600;
   }
   .aa-rec b{font-size:12.5px;line-height:1.35;display:block;}
-  .aa-r-why{font-size:11.5px;line-height:1.5;color:var(--muted,#5E6B64);margin-top:3px;}
+  .aa-r-why{font-size:11.5px;line-height:1.5;color:var(--muted,var(--muted));margin-top:3px;}
   .aa-r-impact{
-    font-size:11.5px;font-weight:500;color:#0F4C45;margin-top:4px;
+    font-size:11.5px;font-weight:500;color:var(--p);margin-top:4px;
     font-variant-numeric:tabular-nums;
   }
   .aa-r-conf{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
     font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;
-    color:var(--faint,#8B968F);margin-top:4px;
+    color:var(--faint,var(--muted));margin-top:4px;
   }
   .aa-blind{
-    margin-top:14px;padding:9px 11px;border:1px dashed var(--line-strong,#CBD5CF);
-    border-radius:9px;font-size:11px;line-height:1.5;color:var(--muted,#5E6B64);
+    margin-top:14px;padding:9px 11px;border:1px dashed var(--line-strong,var(--border));
+    border-radius:9px;font-size:11px;line-height:1.5;color:var(--muted,var(--muted));
   }
   @media (max-width:640px){ .aa-card{padding:14px;} }
 </style>
@@ -1310,13 +1310,13 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
      arrives. Letters rather than colour alone. */
   .ch-tag{
     display:inline-block;margin-right:5px;padding:1px 5px;border-radius:4px;
-    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
     font-size:8.5px;font-weight:600;letter-spacing:.04em;vertical-align:1px;
   }
-  .ch-wa{background:#E8F6F1;color:#0B7A5E;}
+  .ch-wa{background:var(--okl);color:var(--ok);}
   .ch-ig{background:#F5EBF6;color:#8B3FA0;}
   /* Came from an ad - the ones where the loop back to Meta matters. */
-  .ch-ad{background:#FDF3E7;color:#9A5B0F;}
+  .ch-ad{background:var(--warnl);color:var(--warn);}
 
   .ig-link{display:flex;gap:6px;margin-top:8px;}
   @media (max-width:640px){ .ig-link{flex-wrap:wrap;} .ig-link .btn{width:100%;} }
@@ -1329,41 +1329,41 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
      up. */
   .lead-summary{
     display:flex;gap:14px;flex-wrap:wrap;padding-bottom:10px;margin-bottom:10px;
-    border-bottom:1px solid var(--line,#E4E7E4);
-    font-size:11.5px;color:var(--muted,#5E6B64);
+    border-bottom:1px solid var(--line,var(--border));
+    font-size:11.5px;color:var(--muted,var(--muted));
   }
   .lead-summary b{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;
-    font-size:13px;color:var(--ink,#0D1310);margin-right:3px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:13px;color:var(--ink,var(--ink));margin-right:3px;
     font-variant-numeric:tabular-nums;
   }
 
   .lead-row{
     display:flex;align-items:flex-start;gap:12px;
-    padding:11px 0;border-bottom:1px solid var(--line,#EDEFEC);
+    padding:11px 0;border-bottom:1px solid var(--line,var(--bg));
   }
   .lead-row:last-child{border-bottom:0;}
-  .lead-won{border-left:2px solid #0B7A5E;padding-left:10px;margin-left:-12px;}
+  .lead-won{border-left:2px solid var(--ok);padding-left:10px;margin-left:-12px;}
   .lead-main{flex:1;min-width:0;}
   .lead-main b{font-size:12.5px;}
   .lead-meta{
-    font-size:11px;color:var(--muted,#5E6B64);margin-top:2px;
+    font-size:11px;color:var(--muted,var(--muted));margin-top:2px;
     font-variant-numeric:tabular-nums;
   }
-  .lead-visit{font-size:11.5px;color:#0B7A5E;margin-top:3px;font-weight:500;font-variant-numeric:tabular-nums;}
-  .lead-err{font-size:10.5px;color:#A8271E;margin-top:3px;}
+  .lead-visit{font-size:11.5px;color:var(--ok);margin-top:3px;font-weight:500;font-variant-numeric:tabular-nums;}
+  .lead-err{font-size:10.5px;color:var(--err);margin-top:3px;}
   .lead-actions{flex-shrink:0;}
 
   .lead-tag{
     display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;
-    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
     font-size:9px;font-weight:600;letter-spacing:.04em;vertical-align:1px;
   }
-  .lead-tag-won{background:#E8F6F1;color:#0B7A5E;}
+  .lead-tag-won{background:var(--okl);color:var(--ok);}
   /* Worth distinguishing: an existing customer filling a lead form is
      not a new customer the ad won. */
-  .lead-tag-old{background:#EEF1EF;color:#5E6B64;}
-  .lead-tag-warn{background:#FDF3E7;color:#9A5B0F;}
+  .lead-tag-old{background:var(--bg);color:var(--muted);}
+  .lead-tag-warn{background:var(--warnl);color:var(--warn);}
 
   @media (max-width:640px){
     .lead-row{flex-wrap:wrap;gap:8px;}
@@ -1375,52 +1375,52 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
   /* Per-ad table. The last two columns are the ones Meta can't produce,
      so they carry the emphasis. */
   .ap-card{
-    background:var(--surface,#fff);border:1px solid var(--line,#E4E7E4);
+    background:var(--surface,#fff);border:1px solid var(--line,var(--border));
     border-radius:14px;padding:16px 18px;margin:12px 0;
   }
   .ap-head{font-size:13px;font-weight:600;margin-bottom:10px;}
   .ap-totals{
     display:flex;gap:16px;flex-wrap:wrap;padding-bottom:11px;margin-bottom:11px;
-    border-bottom:1px solid var(--line,#EDEFEC);
-    font-size:11.5px;color:var(--muted,#5E6B64);
+    border-bottom:1px solid var(--line,var(--bg));
+    font-size:11.5px;color:var(--muted,var(--muted));
   }
   .ap-totals b{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:14px;
-    color:var(--ink,#0D1310);margin-right:4px;font-variant-numeric:tabular-nums;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;
+    color:var(--ink,var(--ink));margin-right:4px;font-variant-numeric:tabular-nums;
   }
   .ap-note{
-    font-size:10.5px;line-height:1.45;color:var(--muted,#5E6B64);
-    padding:7px 9px;border:1px dashed var(--line-strong,#CBD5CF);
+    font-size:10.5px;line-height:1.45;color:var(--muted,var(--muted));
+    padding:7px 9px;border:1px dashed var(--line-strong,var(--border));
     border-radius:8px;margin-bottom:11px;
   }
   .ap-table{width:100%;border-collapse:collapse;font-size:11.5px;}
   .ap-table th{
-    text-align:right;padding:5px 8px;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    text-align:right;padding:5px 8px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
     font-size:9.5px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;
-    color:var(--faint,#8B968F);border-bottom:1px solid var(--line,#E4E7E4);vertical-align:bottom;
+    color:var(--faint,var(--muted));border-bottom:1px solid var(--line,var(--border));vertical-align:bottom;
   }
   .ap-table th:first-child{text-align:left;}
   .ap-table th span{font-size:8.5px;opacity:.75;letter-spacing:.03em;}
-  .ap-table td{padding:8px;border-bottom:1px solid var(--line,#F0F2F0);vertical-align:top;}
-  .ap-n{text-align:right;font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;}
-  .ap-win{color:#0B7A5E;font-weight:600;}
-  .ap-sub{font-size:10px;color:var(--muted,#5E6B64);margin-top:1px;}
+  .ap-table td{padding:8px;border-bottom:1px solid var(--line,var(--border));vertical-align:top;}
+  .ap-n{text-align:right;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums;}
+  .ap-win{color:var(--ok);font-weight:600;}
+  .ap-sub{font-size:10px;color:var(--muted,var(--muted));margin-top:1px;}
   /* Spend, no conversations. The row worth acting on today. */
   .ap-dead{background:rgba(168,39,30,.04);}
   .ap-dead td:first-child b::after{
     content:'no conversations';margin-left:7px;padding:1px 6px;border-radius:999px;
-    background:#FBEDEC;color:#A8271E;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    background:var(--errl);color:var(--err);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
     font-size:8.5px;font-weight:600;letter-spacing:.03em;
   }
 </style>
 
 <style id="zenAdAnalysisExtra">
   .aa-patterns{margin:0;padding-left:18px;}
-  .aa-patterns li{font-size:12px;line-height:1.55;color:var(--ink-2,#38443E);margin-bottom:5px;}
+  .aa-patterns li{font-size:12px;line-height:1.55;color:var(--ink-2,var(--ink));margin-bottom:5px;}
   .aa-meta{
-    margin-top:12px;padding-top:9px;border-top:1px solid var(--line,#EDEFEC);
-    font-family:'IBM Plex Mono',ui-monospace,monospace;
-    font-size:9.5px;line-height:1.5;color:var(--faint,#8B968F);
+    margin-top:12px;padding-top:9px;border-top:1px solid var(--line,var(--bg));
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:9.5px;line-height:1.5;color:var(--faint,var(--muted));
   }
 </style>
 
@@ -1430,52 +1430,52 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
   .up-table{width:100%;border-collapse:collapse;font-size:11.5px;margin-bottom:4px;}
   .up-table th{
     text-align:left;padding:5px 8px;
-    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
     font-size:9.5px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;
-    color:var(--faint,#8B968F);border-bottom:1px solid var(--line,#E4E7E4);
+    color:var(--faint,var(--muted));border-bottom:1px solid var(--line,var(--border));
   }
-  .up-table td{padding:9px 8px;border-bottom:1px solid var(--line,#F0F2F0);vertical-align:top;}
+  .up-table td{padding:9px 8px;border-bottom:1px solid var(--line,var(--border));vertical-align:top;}
   .up-table td:nth-child(2){text-align:right;}
-  .up-n{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;}
+  .up-n{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums;}
   .up-lvl{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
     font-size:9px;letter-spacing:.05em;text-transform:uppercase;
-    color:var(--faint,#8B968F);margin-top:1px;
+    color:var(--faint,var(--muted));margin-top:1px;
   }
-  .up-why{font-size:11px;line-height:1.45;color:var(--muted,#5E6B64);}
+  .up-why{font-size:11px;line-height:1.45;color:var(--muted,var(--muted));}
   .up-tag{
     display:inline-block;padding:2px 8px;border-radius:999px;
-    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
     font-size:9px;font-weight:600;letter-spacing:.04em;white-space:nowrap;
   }
   /* Stop is the strongest verdict and reads that way. */
-  .up-stop{background:#FBEDEC;color:#A8271E;}
-  .up-cut{background:#FDF3E7;color:#9A5B0F;}
-  .up-fix{background:#E9F2F7;color:#1A5C82;}
-  .up-watch{background:#EEF1EF;color:#5E6B64;}
+  .up-stop{background:var(--errl);color:var(--err);}
+  .up-cut{background:var(--warnl);color:var(--warn);}
+  .up-fix{background:color-mix(in srgb, var(--info) 10%, white);color:var(--info);}
+  .up-watch{background:var(--bg);color:var(--muted);}
   .up-frees{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;
-    font-size:9.5px;color:#0B7A5E;margin-top:3px;font-variant-numeric:tabular-nums;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:9.5px;color:var(--ok);margin-top:3px;font-variant-numeric:tabular-nums;
   }
 
   .re-total{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;
-    font-size:15px;font-weight:600;color:#0B7A5E;margin-bottom:8px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:15px;font-weight:600;color:var(--ok);margin-bottom:8px;
     font-variant-numeric:tabular-nums;
   }
   .re-move{
     display:flex;align-items:center;gap:8px;flex-wrap:wrap;
-    padding:8px 0;border-bottom:1px solid var(--line,#F0F2F0);font-size:11.5px;
+    padding:8px 0;border-bottom:1px solid var(--line,var(--border));font-size:11.5px;
   }
   .re-move:last-child{border-bottom:0;}
-  .re-from{color:#A8271E;font-weight:500;}
-  .re-arrow{color:var(--faint,#8B968F);}
-  .re-to{color:#0B7A5E;font-weight:600;}
+  .re-from{color:var(--err);font-weight:500;}
+  .re-arrow{color:var(--faint,var(--muted));}
+  .re-to{color:var(--ok);font-weight:600;}
   .re-amt{
-    margin-left:auto;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    margin-left:auto;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
     font-weight:600;font-variant-numeric:tabular-nums;
   }
-  .re-why{width:100%;font-size:10.5px;color:var(--muted,#5E6B64);line-height:1.45;}
+  .re-why{width:100%;font-size:10.5px;color:var(--muted,var(--muted));line-height:1.45;}
   @media (max-width:640px){
     .up-table th:nth-child(3),.up-table td:nth-child(3){display:none;}
   }
@@ -1484,7 +1484,7 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
 <style id="zenAnalysisTrunc">
   .aa-trunc{
     margin-top:12px;padding:8px 11px;border-radius:9px;
-    background:#FDF3E7;color:#9A5B0F;font-size:11px;line-height:1.45;
+    background:var(--warnl);color:var(--warn);font-size:11px;line-height:1.45;
   }
 </style>
 
@@ -1525,19 +1525,19 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
   .zc-input{display:flex;gap:8px;align-items:center;}
   .zc-suggest{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
   .zc-chip{
-    background:var(--surface-2,#FAFBFA);border:1px solid var(--line,#E4E7E4);
+    background:var(--surface-2,var(--bg));border:1px solid var(--line,var(--border));
     border-radius:999px;padding:6px 12px;font-family:inherit;font-size:11.5px;
-    color:var(--muted,#5E6B64);cursor:pointer;text-align:left;
+    color:var(--muted,var(--muted));cursor:pointer;text-align:left;
     transition:background .13s,border-color .13s,color .13s;
   }
-  .zc-chip:hover{background:rgba(15,76,69,.06);border-color:#0F4C45;color:#0F4C45;}
-  .zc-thinking{font-size:12px;color:var(--muted,#5E6B64);padding:8px 0;}
-  .zc-answer{border-top:1px solid var(--line,#EDEFEC);padding-top:12px;}
+  .zc-chip:hover{background:rgba(15,76,69,.06);border-color:var(--p);color:var(--p);}
+  .zc-thinking{font-size:12px;color:var(--muted,var(--muted));padding:8px 0;}
+  .zc-answer{border-top:1px solid var(--line,var(--bg));padding-top:12px;}
   .zc-q{
-    font-size:11.5px;color:var(--muted,#5E6B64);margin-bottom:8px;
-    padding-left:9px;border-left:2px solid var(--line-strong,#CBD5CF);
+    font-size:11.5px;color:var(--muted,var(--muted));margin-bottom:8px;
+    padding-left:9px;border-left:2px solid var(--line-strong,var(--border));
   }
-  .zc-a{font-size:13px;line-height:1.6;color:var(--ink,#0D1310);}
+  .zc-a{font-size:13px;line-height:1.6;color:var(--ink,var(--ink));}
   @media (max-width:640px){
     .zc-input{flex-wrap:wrap;}
     .zc-input .btn{width:100%;}
@@ -1546,7 +1546,7 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
 
 <style id="zenApExplain">
   .ap-explain{
-    font-size:11px;line-height:1.5;color:var(--muted,#5E6B64);
+    font-size:11px;line-height:1.5;color:var(--muted,var(--muted));
     margin:-4px 0 11px;
   }
 </style>
@@ -1556,77 +1556,77 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
      The calendar strip is the point: a list of phases is unreadable
      once overlaps and hourly rules interact, but thirty coloured days
      show the plan at a glance. */
-  .ac-set{border:1px solid var(--line,#E4E7E4);border-radius:11px;padding:12px 13px;margin-bottom:10px;}
+  .ac-set{border:1px solid var(--line,var(--border));border-radius:11px;padding:12px 13px;margin-bottom:10px;}
   .ac-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
   .ac-head b{font-size:12.5px;}
-  .ac-sub{font-size:10.5px;color:var(--muted,#5E6B64);margin-top:1px;font-variant-numeric:tabular-nums;}
+  .ac-sub{font-size:10.5px;color:var(--muted,var(--muted));margin-top:1px;font-variant-numeric:tabular-nums;}
   .ac-status{
-    margin-left:auto;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    margin-left:auto;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
     font-size:9px;font-weight:600;letter-spacing:.04em;padding:2px 8px;border-radius:999px;
   }
-  .ac-live{background:#E8F6F1;color:#0B7A5E;}
-  .ac-off{background:#EEF1EF;color:#5E6B64;}
+  .ac-live{background:var(--okl);color:var(--ok);}
+  .ac-off{background:var(--bg);color:var(--muted);}
 
   .ac-strip{display:flex;gap:2px;margin:10px 0 4px;flex-wrap:wrap;}
-  .ac-day{width:9px;height:20px;border-radius:2px;background:#E4E7E4;}
-  .ac-on{background:#0B7A5E;}
+  .ac-day{width:9px;height:20px;border-radius:2px;background:var(--border);}
+  .ac-on{background:var(--ok);}
   /* Partial = running, but only during set hours. Distinct from full
      days so a heavily restricted schedule is visible at a glance. */
-  .ac-partial{background:#7FC4AE;}
-  .ac-paused{background:#E8B4AF;}
-  .ac-unmanaged{background:#E4E7E4;}
+  .ac-partial{background:var(--ok);}
+  .ac-paused{background:var(--err);}
+  .ac-unmanaged{background:var(--border);}
   .ac-wknd{box-shadow:inset 0 -3px 0 rgba(15,76,69,.35);}
-  .ac-strip-meta{font-size:10.5px;color:var(--muted,#5E6B64);font-variant-numeric:tabular-nums;}
-  .ac-strip-meta b{color:var(--ink,#0D1310);font-family:'IBM Plex Mono',ui-monospace,monospace;}
+  .ac-strip-meta{font-size:10.5px;color:var(--muted,var(--muted));font-variant-numeric:tabular-nums;}
+  .ac-strip-meta b{color:var(--ink,var(--ink));font-family:ui-monospace,SFMono-Regular,Menlo,monospace;}
 
-  .ac-editor{margin-top:8px;border-top:1px solid var(--line,#EDEFEC);padding-top:8px;}
-  .ac-editor > summary{cursor:pointer;font-size:11.5px;font-weight:600;color:var(--muted,#5E6B64);}
-  .ac-editor > summary:hover{color:var(--ink,#0D1310);}
+  .ac-editor{margin-top:8px;border-top:1px solid var(--line,var(--bg));padding-top:8px;}
+  .ac-editor > summary{cursor:pointer;font-size:11.5px;font-weight:600;color:var(--muted,var(--muted));}
+  .ac-editor > summary:hover{color:var(--ink,var(--ink));}
   .ac-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:10px 0 4px;}
-  .ac-grid label{display:block;font-size:10.5px;color:var(--muted,#5E6B64);}
+  .ac-grid label{display:block;font-size:10.5px;color:var(--muted,var(--muted));}
   .ac-grid .fi{margin-top:3px;margin-bottom:0;font-size:12px;min-height:34px;}
 
   .ac-phases{margin-top:10px;}
   .ac-phase{
     display:flex;align-items:center;gap:8px;flex-wrap:wrap;
-    padding:7px 0;border-top:1px solid var(--line,#F0F2F0);
+    padding:7px 0;border-top:1px solid var(--line,var(--border));
     font-size:11.5px;font-variant-numeric:tabular-nums;
   }
   .ac-ph-mode{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9px;font-weight:600;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9px;font-weight:600;
     padding:2px 7px;border-radius:999px;letter-spacing:.04em;
   }
-  .ac-ph-run{background:#E8F6F1;color:#0B7A5E;}
-  .ac-ph-pause{background:#FBEDEC;color:#A8271E;}
-  .ac-ph-label{width:100%;font-size:10.5px;color:var(--muted,#5E6B64);}
+  .ac-ph-run{background:var(--okl);color:var(--ok);}
+  .ac-ph-pause{background:var(--errl);color:var(--err);}
+  .ac-ph-label{width:100%;font-size:10.5px;color:var(--muted,var(--muted));}
 
   /* Preview is the gate before anything real happens, so it reads as a
      decision rather than a status line. */
-  .ac-preview{border:1px solid #9A5B0F;border-radius:11px;padding:11px 13px;background:#FDF8F0;}
-  .ac-pv-head{font-size:12px;font-weight:600;color:#9A5B0F;margin-bottom:8px;}
+  .ac-preview{border:1px solid var(--warn);border-radius:11px;padding:11px 13px;background:var(--warnl);}
+  .ac-pv-head{font-size:12px;font-weight:600;color:var(--warn);margin-bottom:8px;}
   .ac-pv-row{padding:6px 0;border-top:1px solid rgba(154,91,15,.15);font-size:11.5px;}
   .ac-pv-row:first-of-type{border-top:0;}
   .ac-pv-change{
-    margin-left:8px;font-family:'IBM Plex Mono',ui-monospace,monospace;
-    font-size:11px;color:#0F4C45;
+    margin-left:8px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:11px;color:var(--p);
   }
-  .ac-pv-why{font-size:10.5px;color:var(--muted,#5E6B64);margin-top:2px;}
+  .ac-pv-why{font-size:10.5px;color:var(--muted,var(--muted));margin-top:2px;}
 
-  .ac-log{border-top:1px solid var(--line,#E4E7E4);padding-top:10px;}
+  .ac-log{border-top:1px solid var(--line,var(--border));padding-top:10px;}
   .ac-log-head{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;
-    letter-spacing:.07em;text-transform:uppercase;color:var(--faint,#8B968F);margin-bottom:6px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;
+    letter-spacing:.07em;text-transform:uppercase;color:var(--faint,var(--muted));margin-bottom:6px;
   }
-  .ac-log-row{padding:7px 0;border-bottom:1px solid var(--line,#F0F2F0);font-size:11.5px;
+  .ac-log-row{padding:7px 0;border-bottom:1px solid var(--line,var(--border));font-size:11.5px;
     display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;}
   .ac-log-fail{background:rgba(168,39,30,.04);}
-  .ac-log-when{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;color:var(--faint,#8B968F);}
+  .ac-log-when{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;color:var(--faint,var(--muted));}
   .ac-log-what{flex:1;min-width:0;}
   .ac-log-src{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9px;
-    color:var(--faint,#8B968F);letter-spacing:.04em;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9px;
+    color:var(--faint,var(--muted));letter-spacing:.04em;
   }
-  .ac-log-why{width:100%;font-size:10.5px;color:var(--muted,#5E6B64);}
+  .ac-log-why{width:100%;font-size:10.5px;color:var(--muted,var(--muted));}
 
   @media (max-width:640px){
     .ac-day{width:7px;height:18px;}
@@ -1643,43 +1643,43 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
   /* ── Agent recommendations ────────────────────────────────────
      The primary view. Each row is a decision with its evidence and a
      button, not a setting to configure. */
-  .ar-card{border:1px solid var(--line,#E4E7E4);border-radius:12px;padding:14px 16px;background:var(--surface,#fff);}
+  .ar-card{border:1px solid var(--line,var(--border));border-radius:12px;padding:14px 16px;background:var(--surface,#fff);}
   .ar-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
   .ar-head b{font-size:13px;}
   .ar-meta{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;
-    color:var(--faint,#8B968F);font-variant-numeric:tabular-nums;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;
+    color:var(--faint,var(--muted));font-variant-numeric:tabular-nums;
   }
   .ar-caveat{
-    font-size:11px;line-height:1.5;color:#9A5B0F;background:#FDF8F0;
+    font-size:11px;line-height:1.5;color:var(--warn);background:var(--warnl);
     border-radius:8px;padding:8px 10px;margin-bottom:11px;
   }
-  .ar-row{padding:11px 0;border-top:1px solid var(--line,#F0F2F0);}
+  .ar-row{padding:11px 0;border-top:1px solid var(--line,var(--border));}
   .ar-row:first-of-type{border-top:0;}
   .ar-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
   .ar-top b{font-size:12.5px;}
   .ar-tag{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9px;font-weight:600;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9px;font-weight:600;
     letter-spacing:.04em;padding:3px 8px;border-radius:999px;white-space:nowrap;
   }
-  .ar-stop{background:#FBEDEC;color:#A8271E;}
-  .ar-cut{background:#FDF3E7;color:#9A5B0F;}
-  .ar-up{background:#E8F6F1;color:#0B7A5E;}
-  .ar-fix{background:#E9F2F7;color:#1A5C82;}
-  .ar-info{background:#EEF1EF;color:#5E6B64;}
+  .ar-stop{background:var(--errl);color:var(--err);}
+  .ar-cut{background:var(--warnl);color:var(--warn);}
+  .ar-up{background:var(--okl);color:var(--ok);}
+  .ar-fix{background:color-mix(in srgb, var(--info) 10%, white);color:var(--info);}
+  .ar-info{background:var(--bg);color:var(--muted);}
   .ar-state{
-    margin-left:auto;font-family:'IBM Plex Mono',ui-monospace,monospace;
-    font-size:9px;color:var(--faint,#8B968F);letter-spacing:.04em;
+    margin-left:auto;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:9px;color:var(--faint,var(--muted));letter-spacing:.04em;
   }
-  .ar-why{font-size:12px;line-height:1.5;margin-top:4px;color:var(--ink-2,#38443E);}
+  .ar-why{font-size:12px;line-height:1.5;margin-top:4px;color:var(--ink-2,var(--ink));}
   .ar-nums{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;
-    color:var(--faint,#8B968F);margin-top:4px;font-variant-numeric:tabular-nums;line-height:1.45;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;
+    color:var(--faint,var(--muted));margin-top:4px;font-variant-numeric:tabular-nums;line-height:1.45;
   }
   .ar-act{display:flex;align-items:center;gap:7px;margin-top:8px;flex-wrap:wrap;}
   .ar-manual{
-    font-size:11px;color:var(--muted,#5E6B64);margin-top:7px;
-    padding-left:9px;border-left:2px solid var(--line-strong,#CBD5CF);
+    font-size:11px;color:var(--muted,var(--muted));margin-top:7px;
+    padding-left:9px;border-left:2px solid var(--line-strong,var(--border));
   }
   @media (max-width:640px){
     .ar-state{margin-left:0;}
@@ -1690,51 +1690,51 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
 <style id="zenArTypes">
   .ar-types{width:100%;border-collapse:collapse;font-size:11px;margin-top:4px;}
   .ar-types th{
-    text-align:left;padding:4px 6px;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    text-align:left;padding:4px 6px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
     font-size:9px;letter-spacing:.05em;text-transform:uppercase;
-    color:var(--faint,#8B968F);border-bottom:1px solid var(--line,#E4E7E4);
+    color:var(--faint,var(--muted));border-bottom:1px solid var(--line,var(--border));
   }
   .ar-types td{
-    padding:4px 6px;border-bottom:1px solid var(--line,#F0F2F0);
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;
+    padding:4px 6px;border-bottom:1px solid var(--line,var(--border));
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums;
   }
   .ar-types td:last-child{text-align:right;}
   /* The rows that answer the question. */
-  .ar-type-rel td{background:#E8F6F1;color:#0B7A5E;font-weight:600;}
+  .ar-type-rel td{background:var(--okl);color:var(--ok);font-weight:600;}
 </style>
 
 <style id="zenAdTable">
   /* One table, sorted by what is spending now. */
   .at-totals{
     display:flex;gap:16px;flex-wrap:wrap;padding-bottom:10px;margin-bottom:10px;
-    border-bottom:1px solid var(--line,#E4E7E4);font-size:11.5px;color:var(--muted,#5E6B64);
+    border-bottom:1px solid var(--line,var(--border));font-size:11.5px;color:var(--muted,var(--muted));
   }
   .at-totals b{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:14px;
-    color:var(--ink,#0D1310);margin-right:4px;font-variant-numeric:tabular-nums;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;
+    color:var(--ink,var(--ink));margin-right:4px;font-variant-numeric:tabular-nums;
   }
-  .at-note{font-size:10.5px;line-height:1.5;color:var(--muted,#5E6B64);margin-bottom:10px;}
+  .at-note{font-size:10.5px;line-height:1.5;color:var(--muted,var(--muted));margin-bottom:10px;}
   .at-table{width:100%;border-collapse:collapse;font-size:11.5px;}
   .at-table th{
-    text-align:right;padding:5px 7px;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    text-align:right;padding:5px 7px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
     font-size:9px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;
-    color:var(--faint,#8B968F);border-bottom:1px solid var(--line,#E4E7E4);vertical-align:bottom;
+    color:var(--faint,var(--muted));border-bottom:1px solid var(--line,var(--border));vertical-align:bottom;
   }
   .at-table th:first-child{text-align:left;}
   .at-table th span{font-size:8px;opacity:.75;}
-  .at-table td{padding:8px 7px;border-bottom:1px solid var(--line,#F0F2F0);vertical-align:top;}
+  .at-table td{padding:8px 7px;border-bottom:1px solid var(--line,var(--border));vertical-align:top;}
   .at-table td:first-child b{font-size:12px;}
-  .at-n{text-align:right;font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;}
-  .at-sub{font-size:10px;color:var(--muted,#5E6B64);margin-top:1px;}
+  .at-n{text-align:right;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums;}
+  .at-sub{font-size:10px;color:var(--muted,var(--muted));margin-top:1px;}
   .at-unit{
-    font-size:8.5px;letter-spacing:.03em;color:var(--faint,#8B968F);
+    font-size:8.5px;letter-spacing:.03em;color:var(--faint,var(--muted));
     text-transform:uppercase;margin-top:1px;
   }
   /* Paused rows recede rather than disappear - still worth reading. */
   .at-off{opacity:.55;}
   .at-off td:first-child b::after{
     content:'paused';margin-left:6px;padding:1px 6px;border-radius:999px;
-    background:#EEF1EF;color:#5E6B64;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    background:var(--bg);color:var(--muted);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
     font-size:8px;font-weight:600;letter-spacing:.03em;
   }
   .at-act{white-space:nowrap;}
@@ -1749,32 +1749,32 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
 <style id="zenProposalQueue">
   /* Approval queue. Nothing pre-ticked, and anything that can't be
      applied says why rather than sitting greyed out. */
-  .pq{border:1px solid var(--line,#E4E7E4);border-radius:10px;overflow:hidden;}
+  .pq{border:1px solid var(--line,var(--border));border-radius:10px;overflow:hidden;}
   .pq-row{
     display:flex;gap:10px;align-items:flex-start;
-    padding:10px 12px;border-bottom:1px solid var(--line,#F0F2F0);
+    padding:10px 12px;border-bottom:1px solid var(--line,var(--border));
     cursor:pointer;transition:background .12s;
   }
-  .pq-row:hover{background:var(--surface-2,#FAFBFA);}
+  .pq-row:hover{background:var(--surface-2,var(--bg));}
   .pq-row:last-of-type{border-bottom:0;}
-  .pq-check{margin-top:2px;width:15px;height:15px;flex-shrink:0;cursor:pointer;accent-color:#0F4C45;}
+  .pq-check{margin-top:2px;width:15px;height:15px;flex-shrink:0;cursor:pointer;accent-color:var(--p);}
   .pq-x{color:var(--faint,#B6BEB9);font-size:15px;line-height:1;margin-top:1px;flex-shrink:0;width:15px;text-align:center;}
   .pq-body{display:block;flex:1;min-width:0;}
   .pq-what{display:block;font-size:12.5px;line-height:1.4;}
-  .pq-why{display:block;font-size:11px;color:var(--muted,#5E6B64);margin-top:2px;line-height:1.45;}
+  .pq-why{display:block;font-size:11px;color:var(--muted,var(--muted));margin-top:2px;line-height:1.45;}
   .pq-now{
-    display:block;font-family:'IBM Plex Mono',ui-monospace,monospace;
-    font-size:10px;color:var(--faint,#8B968F);margin-top:3px;font-variant-numeric:tabular-nums;
+    display:block;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:10px;color:var(--faint,var(--muted));margin-top:3px;font-variant-numeric:tabular-nums;
   }
   .pq-blocked{cursor:default;opacity:.7;}
   .pq-blocked:hover{background:transparent;}
   .pq-blocked-why{
-    display:block;font-size:10.5px;color:#9A5B0F;margin-top:3px;
+    display:block;font-size:10.5px;color:var(--warn);margin-top:3px;
   }
   .pq-foot{
     display:flex;align-items:center;gap:8px;flex-wrap:wrap;
-    padding:10px 12px;background:var(--surface-2,#FAFBFA);
-    border-top:1px solid var(--line,#E4E7E4);
+    padding:10px 12px;background:var(--surface-2,var(--bg));
+    border-top:1px solid var(--line,var(--border));
   }
   @media (max-width:640px){ .pq-foot .btn{flex:1;} }
 </style>
@@ -1783,39 +1783,39 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
   /* Draft reply. Sits between the thread and the send box, because that
      is where the decision happens. */
   .dr-box{
-    border:1px solid var(--line-strong,#CBD5CF);border-radius:10px;
-    padding:10px 12px;margin-top:8px;background:var(--surface-2,#FAFBFA);
+    border:1px solid var(--line-strong,var(--border));border-radius:10px;
+    padding:10px 12px;margin-top:8px;background:var(--surface-2,var(--bg));
   }
   .dr-label{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9px;
-    letter-spacing:.06em;text-transform:uppercase;color:var(--faint,#8B968F);margin-bottom:5px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9px;
+    letter-spacing:.06em;text-transform:uppercase;color:var(--faint,var(--muted));margin-bottom:5px;
   }
   .dr-text{width:100%;margin:0;font-size:12.5px;line-height:1.5;resize:vertical;}
   .dr-gaps{
-    font-size:10.5px;line-height:1.45;color:#9A5B0F;
-    background:#FDF8F0;border-radius:7px;padding:6px 9px;margin-top:7px;
+    font-size:10.5px;line-height:1.45;color:var(--warn);
+    background:var(--warnl);border-radius:7px;padding:6px 9px;margin-top:7px;
   }
   .dr-warn{
-    font-size:10.5px;line-height:1.45;color:#9A5B0F;
-    background:#FDF8F0;border-radius:7px;padding:6px 9px;margin-bottom:8px;
+    font-size:10.5px;line-height:1.45;color:var(--warn);
+    background:var(--warnl);border-radius:7px;padding:6px 9px;margin-bottom:8px;
   }
   .dr-act{display:flex;gap:6px;margin-top:8px;}
 
   .fact-row{
     display:flex;gap:10px;align-items:flex-start;
-    padding:8px 0;border-bottom:1px solid var(--line,#F0F2F0);
+    padding:8px 0;border-bottom:1px solid var(--line,var(--border));
   }
   .fact-cat{
-    flex-shrink:0;width:70px;font-family:'IBM Plex Mono',ui-monospace,monospace;
-    font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint,#8B968F);padding-top:2px;
+    flex-shrink:0;width:70px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint,var(--muted));padding-top:2px;
   }
   .fact-body{flex:1;min-width:0;}
   .fact-body b{font-size:12px;}
-  .fact-ans{font-size:11.5px;color:var(--muted,#5E6B64);margin-top:2px;line-height:1.45;}
+  .fact-ans{font-size:11.5px;color:var(--muted,var(--muted));margin-top:2px;line-height:1.45;}
   /* A placeholder answer would be sent as though true. */
   .fact-stub{background:rgba(154,91,15,.05);}
-  .fact-stub .fact-ans{color:#9A5B0F;}
-  .fact-add{margin-top:12px;padding-top:12px;border-top:1px solid var(--line,#E4E7E4);}
+  .fact-stub .fact-ans{color:var(--warn);}
+  .fact-add{margin-top:12px;padding-top:12px;border-top:1px solid var(--line,var(--border));}
   .fact-add .fi{margin-bottom:6px;}
 </style>
 
@@ -1828,55 +1828,55 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
 <style id="zenAdState">
   .at-state{
     display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;
-    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
     font-size:8px;font-weight:600;letter-spacing:.04em;vertical-align:1px;
   }
-  .at-state-running{background:#E8F6F1;color:#0B7A5E;}
-  .at-state-paused{background:#EEF1EF;color:#5E6B64;}
+  .at-state-running{background:var(--okl);color:var(--ok);}
+  .at-state-paused{background:var(--bg);color:var(--muted);}
   /* Finished is different from paused: nothing you do restarts it. */
-  .at-state-finished{background:#F2EEF6;color:#6B5B8A;}
-  .at-state-scheduled{background:#E9F2F7;color:#1A5C82;}
+  .at-state-finished{background:var(--bg);color:var(--muted);}
+  .at-state-scheduled{background:color-mix(in srgb, var(--info) 10%, white);color:var(--info);}
   .at-running{opacity:1;}
   .at-paused,.at-scheduled{opacity:.7;}
   .at-finished{opacity:.5;}
   .at-nocontrol{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;
-    font-size:9px;color:var(--faint,#8B968F);letter-spacing:.04em;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:9px;color:var(--faint,var(--muted));letter-spacing:.04em;
   }
 </style>
 
 <style id="zenIgTrends">
-  .ig-card{border:1px solid var(--line,#E4E7E4);border-radius:12px;padding:14px 16px;background:var(--surface,#fff);}
+  .ig-card{border:1px solid var(--line,var(--border));border-radius:12px;padding:14px 16px;background:var(--surface,#fff);}
   .ig-headline{font-size:14px;font-weight:600;line-height:1.35;margin-bottom:11px;}
   .ig-table{width:100%;border-collapse:collapse;font-size:11.5px;margin-bottom:12px;}
   .ig-table th{
-    text-align:right;padding:4px 7px;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    text-align:right;padding:4px 7px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
     font-size:9px;letter-spacing:.05em;text-transform:uppercase;
-    color:var(--faint,#8B968F);border-bottom:1px solid var(--line,#E4E7E4);
+    color:var(--faint,var(--muted));border-bottom:1px solid var(--line,var(--border));
   }
   .ig-table th:first-child{text-align:left;}
-  .ig-table td{padding:6px 7px;border-bottom:1px solid var(--line,#F0F2F0);}
-  .ig-n{text-align:right;font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;}
+  .ig-table td{padding:6px 7px;border-bottom:1px solid var(--line,var(--border));}
+  .ig-n{text-align:right;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums;}
   /* Your own row anchored - everything else is read relative to it. */
-  .ig-self{background:#E8F6F1;}
+  .ig-self{background:var(--okl);}
   .ig-sec{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;
-    letter-spacing:.07em;text-transform:uppercase;color:var(--faint,#8B968F);margin:14px 0 7px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;
+    letter-spacing:.07em;text-transform:uppercase;color:var(--faint,var(--muted));margin:14px 0 7px;
   }
-  .ig-item{padding:8px 0;border-bottom:1px solid var(--line,#F0F2F0);}
+  .ig-item{padding:8px 0;border-bottom:1px solid var(--line,var(--border));}
   .ig-item:last-child{border-bottom:0;}
   .ig-item b{font-size:12.5px;}
   .ig-ev{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;
-    color:var(--faint,#8B968F);margin-top:3px;font-variant-numeric:tabular-nums;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;
+    color:var(--faint,var(--muted));margin-top:3px;font-variant-numeric:tabular-nums;
   }
-  .ig-so{font-size:11.5px;line-height:1.5;color:var(--ink-2,#38443E);margin-top:4px;}
-  .ig-lead{font-size:12px;line-height:1.5;color:#0B7A5E;}
-  .ig-gap{font-size:12px;line-height:1.5;padding:6px 0 6px 10px;border-left:2px solid #0F4C45;margin-bottom:5px;}
-  .ig-avoid b{color:#A8271E;}
+  .ig-so{font-size:11.5px;line-height:1.5;color:var(--ink-2,var(--ink));margin-top:4px;}
+  .ig-lead{font-size:12px;line-height:1.5;color:var(--ok);}
+  .ig-gap{font-size:12px;line-height:1.5;padding:6px 0 6px 10px;border-left:2px solid var(--p);margin-bottom:5px;}
+  .ig-avoid b{color:var(--err);}
   .ig-caveat{
-    margin-top:14px;padding:8px 10px;border-radius:8px;background:var(--surface-2,#FAFBFA);
-    font-size:10.5px;line-height:1.5;color:var(--muted,#5E6B64);
+    margin-top:14px;padding:8px 10px;border-radius:8px;background:var(--surface-2,var(--bg));
+    font-size:10.5px;line-height:1.5;color:var(--muted,var(--muted));
   }
 </style>
 
@@ -1885,90 +1885,90 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
      in the same way - the customer just wasn't there. */
   .bk-tabs .btn{padding:5px 11px;min-height:30px;font-size:11.5px;}
   .bk-n{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
     font-size:10px;opacity:.75;margin-left:3px;
   }
   .bk-intro{
-    font-size:11.5px;line-height:1.5;color:var(--muted,#5E6B64);
-    padding:9px 11px;background:var(--surface-2,#FAFBFA);
+    font-size:11.5px;line-height:1.5;color:var(--muted,var(--muted));
+    padding:9px 11px;background:var(--surface-2,var(--bg));
     border-radius:9px;margin-bottom:11px;
   }
   .bk-row{
     display:flex;gap:9px;align-items:flex-start;
-    padding:9px 0;border-bottom:1px solid var(--line,#F0F2F0);cursor:pointer;
+    padding:9px 0;border-bottom:1px solid var(--line,var(--border));cursor:pointer;
   }
   .bk-row:last-child{border-bottom:0;}
-  .bk-check{margin-top:2px;width:15px;height:15px;flex-shrink:0;accent-color:#0F4C45;cursor:pointer;}
+  .bk-check{margin-top:2px;width:15px;height:15px;flex-shrink:0;accent-color:var(--p);cursor:pointer;}
   .bk-body{flex:1;min-width:0;}
   .bk-body b{font-size:12.5px;}
   .bk-tag{
     margin-left:7px;padding:1px 7px;border-radius:999px;
-    background:var(--surface-2,#F0F2F0);color:var(--muted,#5E6B64);
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:8.5px;
+    background:var(--surface-2,var(--border));color:var(--muted,var(--muted));
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:8.5px;
     font-weight:600;letter-spacing:.03em;vertical-align:1px;
   }
   .bk-why{
     display:block;font-size:11px;line-height:1.45;
-    color:var(--muted,#5E6B64);margin-top:3px;
+    color:var(--muted,var(--muted));margin-top:3px;
     font-variant-numeric:tabular-nums;
   }
 </style>
 
 <style id="zenSanityCheck">
   .sc-box{
-    border:1px solid var(--line,#E4E7E4);border-radius:10px;
-    padding:11px 13px;font-size:12px;background:var(--surface-2,#FAFBFA);
+    border:1px solid var(--line,var(--border));border-radius:10px;
+    padding:11px 13px;font-size:12px;background:var(--surface-2,var(--bg));
   }
-  .sc-found{border-color:#E4C79A;background:#FDF8F0;}
+  .sc-found{border-color:#E4C79A;background:var(--warnl);}
   .sc-head{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
-  .sc-meta{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;color:var(--faint,#8B968F);}
+  .sc-meta{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9.5px;color:var(--faint,var(--muted));}
   /* Always shown, so what it costs to ask is never a surprise. */
   .sc-cost{
-    margin-left:auto;font-family:'IBM Plex Mono',ui-monospace,monospace;
-    font-size:9.5px;color:var(--faint,#8B968F);
+    margin-left:auto;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:9.5px;color:var(--faint,var(--muted));
   }
   .sc-row{
     display:flex;gap:9px;align-items:flex-start;padding:7px 0;
     border-top:1px solid rgba(154,91,15,.15);cursor:pointer;
   }
-  .sc-check{margin-top:2px;width:15px;height:15px;flex-shrink:0;accent-color:#9A5B0F;cursor:pointer;}
+  .sc-check{margin-top:2px;width:15px;height:15px;flex-shrink:0;accent-color:var(--warn);cursor:pointer;}
   .sc-src{
-    margin-left:6px;font-family:'IBM Plex Mono',ui-monospace,monospace;
-    font-size:8.5px;letter-spacing:.04em;color:var(--faint,#8B968F);
+    margin-left:6px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:8.5px;letter-spacing:.04em;color:var(--faint,var(--muted));
   }
-  .sc-issue{display:block;font-size:11.5px;line-height:1.45;color:#9A5B0F;margin-top:3px;}
+  .sc-issue{display:block;font-size:11.5px;line-height:1.45;color:var(--warn);margin-top:3px;}
 </style>
 
 <style id="zenSanitySuggest">
   /* Where the campaign is wrong rather than the contact itself. */
-  .sc-arrow{margin:0 4px;color:var(--faint,#8B968F);font-size:11px;}
-  .sc-suggest{background:#E8F6F1;color:#0B7A5E;}
+  .sc-arrow{margin:0 4px;color:var(--faint,var(--muted));font-size:11px;}
+  .sc-suggest{background:var(--okl);color:var(--ok);}
   .sc-note{
     margin-top:11px;padding:8px 10px;border-radius:8px;
     background:rgba(255,255,255,.6);border:1px solid rgba(154,91,15,.2);
-    font-size:11px;line-height:1.5;color:var(--muted,#5E6B64);
+    font-size:11px;line-height:1.5;color:var(--muted,var(--muted));
   }
 </style>
 
 <style id="zenOpportunityNote">
   .zen-op-note{
-    font-size:11.5px;line-height:1.5;color:var(--muted,#5E6B64);
-    margin:10px 0 0;padding-left:9px;border-left:2px solid var(--line-strong,#CBD5CF);
+    font-size:11.5px;line-height:1.5;color:var(--muted,var(--muted));
+    margin:10px 0 0;padding-left:9px;border-left:2px solid var(--line-strong,var(--border));
   }
   .zen-action-alt{
-    background:transparent;border:1px solid var(--line-strong,#CBD5CF);
-    color:var(--muted,#5E6B64);
+    background:transparent;border:1px solid var(--line-strong,var(--border));
+    color:var(--muted,var(--muted));
   }
-  .zen-action-alt:hover{border-color:#0F4C45;color:#0F4C45;}
+  .zen-action-alt:hover{border-color:var(--p);color:var(--p);}
 </style>
 
 <style id="zenAdPlain">
   /* Plain English before the numbers. The table answers "what"; this
      answers "so what" without anyone having to read columns. */
   .at-plain{
-    font-size:12.5px;line-height:1.6;color:var(--ink,#0D1310);
-    padding:11px 13px;background:var(--surface-2,#FAFBFA);
-    border-left:2px solid #0F4C45;border-radius:0 9px 9px 0;
+    font-size:12.5px;line-height:1.6;color:var(--ink,var(--ink));
+    padding:11px 13px;background:var(--surface-2,var(--bg));
+    border-left:2px solid var(--p);border-radius:0 9px 9px 0;
     margin-bottom:12px;
   }
 </style>
@@ -2020,27 +2020,27 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
 
 <style id="zenMarketingDiagnosis">
   /* ── Marketing diagnosis ──────────────────────────────────────
-     Reads top to bottom as a verdict: what happened, how much of it
-     can be trusted, what it means, what to do.
+     Reads as a verdict: what happened, how much of it can be
+     trusted, what it means, what to do.
 
-     Uses the theme variables rather than its own palette. An earlier
-     version was written in sage greens and warm neutrals against a
-     blue-slate console, so the card looked like it came from a
-     different product. */
+     Severity is carried by a thin accent bar and a small dot, not by
+     filling the whole block with a pastel tint. Three large pink and
+     yellow panels stacked up read as an error page rather than an
+     analysis, and once everything is coloured nothing stands out. */
   .md-top{
-    padding:16px 18px 13px;display:flex;justify-content:space-between;
-    gap:14px;align-items:flex-start;border-bottom:1px solid var(--border);
+    padding:18px 20px 15px;display:flex;justify-content:space-between;
+    gap:16px;align-items:flex-start;border-bottom:1px solid var(--border);
   }
   .md-eyebrow{
     font-size:10px;letter-spacing:.08em;text-transform:uppercase;
-    color:var(--muted);margin-bottom:5px;font-weight:600;
+    color:var(--muted);margin-bottom:6px;font-weight:600;
   }
   .md-headline{
-    margin:0;font-size:16px;line-height:1.38;letter-spacing:-.015em;
-    font-weight:700;color:var(--ink);
+    margin:0;font-size:16px;line-height:1.4;letter-spacing:-.015em;
+    font-weight:700;color:var(--ink);max-width:62ch;
   }
   .md-status{
-    white-space:nowrap;border-radius:999px;padding:5px 11px;flex-shrink:0;
+    white-space:nowrap;border-radius:999px;padding:5px 12px;flex-shrink:0;
     font-size:11px;font-weight:700;
   }
   .md-danger{background:var(--errl);color:var(--err);}
@@ -2052,72 +2052,98 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     display:grid;grid-template-columns:repeat(5,1fr);
     border-bottom:1px solid var(--border);
   }
-  .md-metric{padding:13px 15px;border-right:1px solid var(--border);}
+  .md-metric{padding:14px 16px;border-right:1px solid var(--border);}
   .md-metric:last-child{border-right:0;}
   .md-label{font-size:11px;color:var(--muted);}
   .md-value{
-    font-size:21px;font-weight:800;margin-top:3px;color:var(--ink);
-    font-variant-numeric:tabular-nums;letter-spacing:-.02em;
+    font-size:22px;font-weight:800;margin-top:4px;color:var(--ink);
+    font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1.1;
   }
-  .md-sub{font-size:10.5px;color:var(--muted);margin-top:2px;}
+  .md-sub{font-size:10.5px;color:var(--muted);margin-top:3px;}
 
-  /* The gap between what Meta claims and what can be traced. Given a
-     band of its own because it governs how much the row above means. */
+  /* The attribution gap. A single tinted band, because it governs how
+     much everything above it means - the one place a wash of colour
+     earns its place. */
   .md-warnband{
-    padding:9px 18px;background:var(--warnl);color:var(--warn);
+    padding:10px 20px;background:var(--warnl);color:var(--warn);
     font-size:12px;line-height:1.5;border-bottom:1px solid var(--border);
   }
 
-  .md-body{display:grid;grid-template-columns:1.1fr .9fr;}
-  .md-left,.md-right{padding:16px 18px;}
+  .md-body{display:grid;grid-template-columns:1fr 1fr;}
+  .md-left,.md-right{padding:18px 20px;min-width:0;}
   .md-left{border-right:1px solid var(--border);}
-  .md-sec{font-size:12px;font-weight:700;margin-bottom:9px;color:var(--ink);}
+  .md-sec{
+    font-size:11px;font-weight:700;margin-bottom:12px;color:var(--muted);
+    letter-spacing:.06em;text-transform:uppercase;
+  }
 
-  .md-finding{border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;}
-  .md-finding strong{display:block;font-size:13px;margin-bottom:3px;color:var(--ink);}
-  .md-finding p{margin:0;font-size:12px;color:var(--muted);line-height:1.45;}
-  .md-f-danger{background:var(--errl);border-color:#FECACA;}
-  .md-f-warn{background:var(--warnl);border-color:#FDE68A;}
-  .md-f-info{background:var(--pl);border-color:#C7D7F5;}
+  /* Findings: neutral card, thin accent on the left, small dot. */
+  .md-finding{
+    position:relative;background:var(--surface,#fff);
+    border:1px solid var(--border);border-left-width:3px;
+    border-radius:8px;padding:11px 13px;margin-bottom:9px;
+  }
+  .md-finding:last-child{margin-bottom:0;}
+  .md-finding strong{
+    display:block;font-size:13px;margin-bottom:4px;color:var(--ink);
+    line-height:1.4;padding-left:14px;
+  }
+  .md-finding strong:before{
+    content:'';position:absolute;left:13px;top:15px;
+    width:7px;height:7px;border-radius:50%;
+  }
+  .md-finding p{margin:0;font-size:12px;color:var(--muted);line-height:1.5;padding-left:14px;}
+  .md-f-danger{border-left-color:var(--err);}
+  .md-f-danger strong:before{background:var(--err);}
+  .md-f-warn{border-left-color:var(--warn);}
+  .md-f-warn strong:before{background:var(--warn);}
+  .md-f-info{border-left-color:var(--border);}
+  .md-f-info strong:before{background:var(--muted);}
 
-  .md-plan{display:grid;gap:8px;}
+  /* Steps: the number carries the emphasis, the card stays quiet. */
+  .md-plan-list{display:grid;gap:9px;}
   .md-step{
-    border:1px solid var(--border);border-radius:10px;padding:11px 12px;
-    display:grid;grid-template-columns:26px 1fr;gap:10px;align-items:start;
+    border:1px solid var(--border);border-radius:8px;padding:12px 13px;
+    display:grid;grid-template-columns:24px 1fr;gap:11px;align-items:start;
   }
   .md-step-body{min-width:0;}
   .md-num{
-    width:26px;height:26px;border-radius:8px;display:grid;place-items:center;
-    background:var(--p);color:#fff;flex-shrink:0;font-size:12px;font-weight:700;
+    width:24px;height:24px;border-radius:7px;display:grid;place-items:center;
+    background:var(--p);color:#fff;flex-shrink:0;font-size:11.5px;font-weight:700;
   }
-  .md-step strong{display:block;font-size:13px;margin-bottom:4px;line-height:1.4;color:var(--ink);}
+  .md-step strong{display:block;font-size:13px;margin-bottom:5px;line-height:1.42;color:var(--ink);}
   .md-step p{margin:0;font-size:12px;color:var(--muted);line-height:1.5;}
+
+  /* The expected effect. A left rule rather than a filled panel - it
+     is a footnote to the step, not a second message. */
   .md-impact{
-    margin-top:7px;padding:6px 10px;border-radius:7px;
-    background:var(--okl);color:var(--ok);font-size:11.5px;line-height:1.45;
+    margin-top:8px;padding:2px 0 2px 10px;
+    border-left:2px solid var(--ok);
+    color:var(--ok);font-size:11.5px;line-height:1.45;
   }
 
   .md-footer{
-    padding:12px 18px;border-top:1px solid var(--border);
-    display:flex;justify-content:space-between;align-items:center;gap:12px;
+    padding:13px 20px;border-top:1px solid var(--border);
+    display:flex;justify-content:space-between;align-items:center;gap:14px;
     background:var(--bg);
   }
   .md-note{font-size:11.5px;color:var(--muted);line-height:1.45;}
-  .md-actions{display:flex;gap:6px;flex-shrink:0;}
+  .md-actions{display:flex;gap:7px;flex-shrink:0;}
 
   .md-when{color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400;}
-  /* Older than a day. Ad figures move daily, so this is worth noticing
-     before acting on anything below it. */
   .md-stale{color:var(--warn);font-weight:600;}
   .md-refresh{
-    color:var(--p);text-decoration:none;border-bottom:1px solid rgba(30,58,138,.3);
+    color:var(--p);text-decoration:none;border-bottom:1px solid transparent;
     text-transform:none;letter-spacing:0;font-weight:400;
   }
   .md-refresh:hover{border-bottom-color:var(--p);}
 
-  @media(max-width:900px){
-    .md-metrics{grid-template-columns:1fr 1fr;}
+  @media(max-width:980px){
+    .md-metrics{grid-template-columns:1fr 1fr 1fr;}
     .md-metric{border-bottom:1px solid var(--border);}
+  }
+  @media(max-width:760px){
+    .md-metrics{grid-template-columns:1fr 1fr;}
     .md-body{grid-template-columns:1fr;}
     .md-left{border-right:0;border-bottom:1px solid var(--border);}
     .md-top,.md-footer{flex-direction:column;align-items:flex-start;}
@@ -2130,62 +2156,62 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
 
 <style id="zenAutoReply">
   .ar-toggle{
-    border:1px solid var(--line,#E4E7E4);border-radius:10px;
-    padding:11px 13px;margin-bottom:14px;background:var(--surface-2,#FAFBFA);
+    border:1px solid var(--line,var(--border));border-radius:10px;
+    padding:11px 13px;margin-bottom:14px;background:var(--surface-2,var(--bg));
   }
   .ar-tg-head{display:flex;align-items:center;gap:10px;}
   .ar-switch{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px;font-weight:600;}
-  .ar-switch input{width:16px;height:16px;accent-color:#0F4C45;cursor:pointer;}
+  .ar-switch input{width:16px;height:16px;accent-color:var(--p);cursor:pointer;}
   .ar-tg-state{
-    margin-left:auto;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    margin-left:auto;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
     font-size:9px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
     padding:2px 8px;border-radius:999px;
   }
-  .ar-on{background:#E8F6F1;color:#0B7A5E;}
-  .ar-off{background:#EEF1EF;color:#5E6B64;}
-  .ar-tg-body{display:flex;gap:14px;flex-wrap:wrap;margin:9px 0 7px;font-size:11.5px;color:var(--muted,#5E6B64);}
+  .ar-on{background:var(--okl);color:var(--ok);}
+  .ar-off{background:var(--bg);color:var(--muted);}
+  .ar-tg-body{display:flex;gap:14px;flex-wrap:wrap;margin:9px 0 7px;font-size:11.5px;color:var(--muted,var(--muted));}
   .ar-tg-body label{display:flex;align-items:center;gap:6px;}
-  .ar-tg-note{font-size:10.5px;line-height:1.5;color:var(--muted,#5E6B64);}
+  .ar-tg-note{font-size:10.5px;line-height:1.5;color:var(--muted,var(--muted));}
 
   .arl-counts{
     display:flex;gap:14px;flex-wrap:wrap;padding-bottom:9px;margin-bottom:9px;
-    border-bottom:1px solid var(--line,#E4E7E4);font-size:11.5px;color:var(--muted,#5E6B64);
+    border-bottom:1px solid var(--line,var(--border));font-size:11.5px;color:var(--muted,var(--muted));
   }
-  .arl-counts b{font-family:'IBM Plex Mono',ui-monospace,monospace;color:var(--ink,#0D1310);margin-right:3px;}
-  .arl-row{padding:9px 0 9px 10px;border-left:2px solid var(--line-strong,#CBD5CF);margin-bottom:8px;}
-  .arl-sent{border-left-color:#0B7A5E;}
-  .arl-held{border-left-color:#9A5B0F;}
-  .arl-blocked{border-left-color:#A8271E;}
+  .arl-counts b{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--ink,var(--ink));margin-right:3px;}
+  .arl-row{padding:9px 0 9px 10px;border-left:2px solid var(--line-strong,var(--border));margin-bottom:8px;}
+  .arl-sent{border-left-color:var(--ok);}
+  .arl-held{border-left-color:var(--warn);}
+  .arl-blocked{border-left-color:var(--err);}
   .arl-top{display:flex;align-items:baseline;gap:8px;}
   .arl-tag{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:8.5px;font-weight:600;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:8.5px;font-weight:600;
     letter-spacing:.05em;text-transform:uppercase;
   }
-  .arl-sent .arl-tag{color:#0B7A5E;} .arl-held .arl-tag{color:#9A5B0F;} .arl-blocked .arl-tag{color:#A8271E;}
-  .arl-when{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;color:var(--faint,#8B968F);}
-  .arl-in{font-size:11.5px;color:var(--ink-2,#38443E);margin-top:4px;font-style:italic;}
-  .arl-out{font-size:11.5px;color:var(--ink,#0D1310);margin-top:4px;}
-  .arl-why{font-size:10.5px;color:var(--muted,#5E6B64);margin-top:3px;}
+  .arl-sent .arl-tag{color:var(--ok);} .arl-held .arl-tag{color:var(--warn);} .arl-blocked .arl-tag{color:var(--err);}
+  .arl-when{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9.5px;color:var(--faint,var(--muted));}
+  .arl-in{font-size:11.5px;color:var(--ink-2,var(--ink));margin-top:4px;font-style:italic;}
+  .arl-out{font-size:11.5px;color:var(--ink,var(--ink));margin-top:4px;}
+  .arl-why{font-size:10.5px;color:var(--muted,var(--muted));margin-top:3px;}
 </style>
 
 <style id="zenMfa">
   .mfa-enrol{
-    border:1px solid var(--line,#E4E7E4);border-radius:10px;
-    padding:13px;background:var(--surface-2,#FAFBFA);
+    border:1px solid var(--line,var(--border));border-radius:10px;
+    padding:13px;background:var(--surface-2,var(--bg));
   }
   .mfa-step{font-size:12px;margin-bottom:9px;}
   .mfa-step b{margin-right:5px;}
   .mfa-qr{
     display:inline-block;padding:9px;background:#fff;border-radius:9px;
-    border:1px solid var(--line,#E4E7E4);margin-bottom:10px;
+    border:1px solid var(--line,var(--border));margin-bottom:10px;
   }
   .mfa-qr svg, .mfa-qr img{display:block;width:168px;height:168px;}
   /* A phone that cannot scan still needs a way in. */
-  .mfa-secret{font-size:10.5px;color:var(--muted,#5E6B64);margin-bottom:11px;}
+  .mfa-secret{font-size:10.5px;color:var(--muted,var(--muted));margin-bottom:11px;}
   .mfa-secret code{
     display:inline-block;margin-left:6px;padding:3px 7px;border-radius:6px;
-    background:#fff;border:1px solid var(--line,#E4E7E4);
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.04em;
+    background:#fff;border:1px solid var(--line,var(--border));
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;letter-spacing:.04em;
     user-select:all;
   }
 </style>
@@ -2197,9 +2223,9 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
   .fact-actions .btn{padding:3px 8px;min-height:26px;font-size:10.5px;}
   .fact-safe{
     display:inline-flex;align-items:center;gap:5px;margin-top:5px;
-    font-size:10.5px;color:var(--muted,#5E6B64);cursor:pointer;
+    font-size:10.5px;color:var(--muted,var(--muted));cursor:pointer;
   }
-  .fact-safe input{width:13px;height:13px;accent-color:#0F4C45;cursor:pointer;}
+  .fact-safe input{width:13px;height:13px;accent-color:var(--p);cursor:pointer;}
   .fact-editing{background:rgba(15,76,69,.04);border-radius:8px;padding:9px;}
   @media (max-width:640px){
     .fact-row{flex-wrap:wrap;}
@@ -2208,56 +2234,56 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
 </style>
 
 <style id="zenCampaigns">
-  .camp{border:1px solid var(--line,#E4E7E4);border-radius:11px;padding:12px 14px;margin-bottom:9px;}
+  .camp{border:1px solid var(--line,var(--border));border-radius:11px;padding:12px 14px;margin-bottom:9px;}
   /* A held campaign should look paused, not broken. */
-  .camp-held{background:var(--surface-2,#FAFBFA);opacity:.8;}
+  .camp-held{background:var(--surface-2,var(--bg));opacity:.8;}
   .camp-head{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;}
   .camp-ref{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;font-weight:600;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;font-weight:600;
     letter-spacing:.04em;padding:2px 7px;border-radius:5px;
-    background:#0F4C45;color:#fff;
+    background:var(--p);color:#fff;
   }
   .camp-head b{font-size:13px;}
   .camp-tag{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:8.5px;font-weight:600;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:8.5px;font-weight:600;
     letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:999px;
-    background:#EEF1EF;color:#5E6B64;
+    background:var(--bg);color:var(--muted);
   }
-  .camp-tag-held{background:#FDF3E7;color:#9A5B0F;}
+  .camp-tag-held{background:var(--warnl);color:var(--warn);}
   .camp-date{
-    margin-left:auto;font-family:'IBM Plex Mono',ui-monospace,monospace;
-    font-size:9.5px;color:var(--faint,#8B968F);
+    margin-left:auto;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:9.5px;color:var(--faint,var(--muted));
   }
-  .camp-meta{font-size:11px;color:var(--muted,#5E6B64);margin-top:5px;}
+  .camp-meta{font-size:11px;color:var(--muted,var(--muted));margin-top:5px;}
   .camp-items{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px;}
   .camp-item{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;
-    padding:2px 7px;border-radius:5px;border:1px solid var(--line,#E4E7E4);
-    color:var(--muted,#5E6B64);cursor:default;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9.5px;
+    padding:2px 7px;border-radius:5px;border:1px solid var(--line,var(--border));
+    color:var(--muted,var(--muted));cursor:default;
   }
-  .camp-item-done{background:#E8F6F1;border-color:#BFE3D6;color:#0B7A5E;}
+  .camp-item-done{background:var(--okl);border-color:var(--ok);color:var(--ok);}
   .camp-actions{display:flex;gap:5px;margin-top:10px;flex-wrap:wrap;}
   .camp-actions .btn{padding:3px 9px;min-height:26px;font-size:10.5px;}
 </style>
 
 <style id="zenConvSections">
   .conv-sec{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;
-    letter-spacing:.07em;text-transform:uppercase;color:var(--faint,#8B968F);
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;
+    letter-spacing:.07em;text-transform:uppercase;color:var(--faint,var(--muted));
     margin:14px 0 6px;
   }
   .conv-sec:first-child{margin-top:0;}
   .conv-total{
     margin-top:12px;padding:9px 11px;border-radius:8px;
-    background:var(--surface-2,#FAFBFA);font-size:12px;line-height:1.5;
+    background:var(--surface-2,var(--bg));font-size:12px;line-height:1.5;
   }
 </style>
 
 <style id="zenConvNote">
   .conv-note{
     margin-top:11px;padding:9px 11px;border-radius:8px;
-    background:#FDF8F0;border:1px solid #EBDCC2;
-    font-size:11px;line-height:1.5;color:#9A5B0F;
+    background:var(--warnl);border:1px solid var(--warn);
+    font-size:11px;line-height:1.5;color:var(--warn);
   }
 </style>
 
@@ -2265,161 +2291,161 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
   /* The raw counts behind each rate, small - a percentage without them
      hides whether it rests on 3 people or 300. */
   .conv-n{
-    display:block;font-family:'IBM Plex Mono',ui-monospace,monospace;
-    font-size:9px;color:var(--faint,#8B968F);font-weight:400;
+    display:block;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:9px;color:var(--faint,var(--muted));font-weight:400;
   }
 </style>
 
 <style id="zenCampItems">
-  .camp-item-sched{background:#E9F2F7;border-color:#C5DCE8;color:#1A5C82;}
-  .camp-item[onclick]:hover{border-color:#0F4C45;color:#0F4C45;}
+  .camp-item-sched{background:color-mix(in srgb, var(--info) 10%, white);border-color:#C5DCE8;color:var(--info);}
+  .camp-item[onclick]:hover{border-color:var(--p);color:var(--p);}
   .camp-hint{
-    font-size:10px;color:var(--faint,#8B968F);margin-top:6px;
-    font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:10px;color:var(--faint,var(--muted));margin-top:6px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
   }
 </style>
 
 <style id="zenCommandUX">
   .zen-cmd-result{margin-top:12px;}
   .zen-cmd-card{
-    border:1px solid var(--line,#E4E7E4);border-radius:10px;padding:11px 13px;
+    border:1px solid var(--line,var(--border));border-radius:10px;padding:11px 13px;
     font-size:12.5px;line-height:1.5;background:var(--surface,#fff);
   }
   /* Anything that writes gets a different colour, so a confirmation
      never looks like a result. */
-  .zen-cmd-confirm{border-color:#BFE3D6;background:#F4FBF8;}
+  .zen-cmd-confirm{border-color:var(--ok);background:var(--pl);}
   .zen-cmd-effect{font-size:13px;}
   .zen-cmd-low{
-    margin-top:6px;font-size:11px;color:#9A5B0F;
+    margin-top:6px;font-size:11px;color:var(--warn);
   }
 </style>
 
 <style id="zenAutoSend">
   .auto-send-toggle{
     display:flex;align-items:center;gap:6px;margin-top:6px;
-    font-size:11.5px;color:var(--muted,#5E6B64);cursor:pointer;flex-wrap:wrap;
+    font-size:11.5px;color:var(--muted,var(--muted));cursor:pointer;flex-wrap:wrap;
   }
-  .auto-send-toggle input[type=checkbox]{width:14px;height:14px;accent-color:#0F4C45;cursor:pointer;}
+  .auto-send-toggle input[type=checkbox]{width:14px;height:14px;accent-color:var(--p);cursor:pointer;}
   .auto-send-cap{display:flex;align-items:center;gap:4px;margin-left:4px;font-size:10.5px;}
   .auto-send-cap input{
-    width:52px;padding:2px 5px;border:1px solid var(--line,#E4E7E4);border-radius:5px;
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;
+    width:52px;padding:2px 5px;border:1px solid var(--line,var(--border));border-radius:5px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;
   }
   .auto-tag{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:8.5px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:8.5px;
     letter-spacing:.04em;padding:2px 7px;border-radius:999px;
-    background:#E8F6F1;color:#0B7A5E;
+    background:var(--okl);color:var(--ok);
   }
   /* Waiting for you is the safe default, so it reads as neutral
      rather than as a warning. */
-  .auto-tag-off{background:#EEF1EF;color:#5E6B64;}
+  .auto-tag-off{background:var(--bg);color:var(--muted);}
 </style>
 
 <style id="zenAutoSendBox">
   .auto-send-box{
     margin-top:8px;padding:9px 11px;border-radius:9px;
-    border:1px solid var(--line,#E4E7E4);background:var(--surface-2,#FAFBFA);
+    border:1px solid var(--line,var(--border));background:var(--surface-2,var(--bg));
   }
   /* Visibly different when armed - this is the one setting that lets
      messages reach customers without anyone looking. */
-  .auto-send-on{border-color:#BFE3D6;background:#F4FBF8;}
+  .auto-send-on{border-color:var(--ok);background:var(--pl);}
   .auto-send-toggle{display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer;}
-  .auto-send-toggle input{width:15px;height:15px;accent-color:#0F4C45;cursor:pointer;}
-  .auto-send-what{font-size:11px;color:var(--muted,#5E6B64);margin:5px 0 6px 22px;line-height:1.45;}
+  .auto-send-toggle input{width:15px;height:15px;accent-color:var(--p);cursor:pointer;}
+  .auto-send-what{font-size:11px;color:var(--muted,var(--muted));margin:5px 0 6px 22px;line-height:1.45;}
   .auto-send-cap{
-    display:block;margin-left:22px;font-size:11px;color:var(--muted,#5E6B64);cursor:pointer;
+    display:block;margin-left:22px;font-size:11px;color:var(--muted,var(--muted));cursor:pointer;
   }
   .auto-send-cap input{
-    width:56px;padding:2px 6px;margin:0 4px;border:1px solid var(--line,#E4E7E4);border-radius:5px;
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;
+    width:56px;padding:2px 6px;margin:0 4px;border:1px solid var(--line,var(--border));border-radius:5px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;
   }
 </style>
 
 <style id="zenDnd">
   .dnd-count{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;
-    letter-spacing:.06em;text-transform:uppercase;color:var(--faint,#8B968F);
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;
+    letter-spacing:.06em;text-transform:uppercase;color:var(--faint,var(--muted));
     margin-bottom:8px;
   }
   .dnd-row{
     display:flex;align-items:center;justify-content:space-between;gap:10px;
-    padding:7px 0;border-bottom:1px solid var(--line,#F0F2F0);font-size:12px;
+    padding:7px 0;border-bottom:1px solid var(--line,var(--border));font-size:12px;
   }
   .dnd-row:last-child{border-bottom:0;}
   .dnd-src{
     margin-left:7px;padding:2px 7px;border-radius:999px;
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:8.5px;
-    background:#EEF1EF;color:#5E6B64;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:8.5px;
+    background:var(--bg);color:var(--muted);
   }
   /* Someone who told us directly - the one that matters most. */
-  .dnd-src-asked{background:#FBEDEC;color:#A8271E;}
+  .dnd-src-asked{background:var(--errl);color:var(--err);}
   .dnd-when{
-    margin-left:7px;font-family:'IBM Plex Mono',ui-monospace,monospace;
-    font-size:9.5px;color:var(--faint,#8B968F);
+    margin-left:7px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:9.5px;color:var(--faint,var(--muted));
   }
 </style>
 
 <style id="zenOptOut">
   .oo-box{
-    border:1px solid #EBDCC2;background:#FDF8F0;border-radius:10px;
+    border:1px solid var(--warn);background:var(--warnl);border-radius:10px;
     padding:11px 13px;margin-bottom:12px;font-size:12px;
   }
-  .oo-ok{border-color:#BFE3D6;background:#F4FBF8;color:#0B7A5E;}
-  .oo-head{font-weight:600;font-size:12.5px;margin-bottom:7px;color:#9A5B0F;}
+  .oo-ok{border-color:var(--ok);background:var(--pl);color:var(--ok);}
+  .oo-head{font-weight:600;font-size:12.5px;margin-bottom:7px;color:var(--warn);}
   .oo-list{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;}
   .oo-tpl{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;
-    padding:2px 8px;border-radius:5px;background:#fff;border:1px solid #EBDCC2;color:#9A5B0F;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;
+    padding:2px 8px;border-radius:5px;background:#fff;border:1px solid var(--warn);color:var(--warn);
   }
-  .oo-why{font-size:11px;line-height:1.5;color:var(--muted,#5E6B64);margin-bottom:8px;}
-  .oo-fix{font-size:11px;line-height:1.6;color:var(--muted,#5E6B64);}
+  .oo-why{font-size:11px;line-height:1.5;color:var(--muted,var(--muted));margin-bottom:8px;}
+  .oo-fix{font-size:11px;line-height:1.6;color:var(--muted,var(--muted));}
   .oo-fix code{
     display:block;margin-top:5px;padding:6px 9px;border-radius:6px;
-    background:#fff;border:1px solid var(--line,#E4E7E4);
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;
-    color:var(--ink,#0D1310);user-select:all;
+    background:#fff;border:1px solid var(--line,var(--border));
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;
+    color:var(--ink,var(--ink));user-select:all;
   }
 </style>
 
 <style id="zenPkgPerf">
   .pkg-seg{
     margin-left:6px;padding:1px 6px;border-radius:999px;
-    background:var(--surface-2,#EEF1EF);color:var(--muted,#5E6B64);
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:8.5px;
+    background:var(--surface-2,var(--bg));color:var(--muted,var(--muted));
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:8.5px;
   }
   .pkg-note{
     margin-top:9px;padding:8px 10px;border-radius:8px;
-    background:var(--surface-2,#FAFBFA);
-    font-size:10.5px;line-height:1.5;color:var(--muted,#5E6B64);
+    background:var(--surface-2,var(--bg));
+    font-size:10.5px;line-height:1.5;color:var(--muted,var(--muted));
   }
 </style>
 
 <style id="zenPkgPriority">
   .pp-legend{
-    font-size:10.5px;color:var(--muted,#5E6B64);line-height:1.5;
-    padding:8px 10px;border-radius:8px;background:var(--surface-2,#FAFBFA);margin-bottom:10px;
+    font-size:10.5px;color:var(--muted,var(--muted));line-height:1.5;
+    padding:8px 10px;border-radius:8px;background:var(--surface-2,var(--bg));margin-bottom:10px;
   }
   .pp-row{
     display:flex;align-items:center;justify-content:space-between;gap:12px;
-    padding:6px 0;border-bottom:1px solid var(--line,#F0F2F0);
+    padding:6px 0;border-bottom:1px solid var(--line,var(--border));
   }
   .pp-row:last-child{border-bottom:0;}
   .pp-name{font-size:12px;flex:1;min-width:0;}
   .pp-price{
-    margin-left:7px;font-family:'IBM Plex Mono',ui-monospace,monospace;
-    font-size:10px;color:var(--faint,#8B968F);
+    margin-left:7px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:10px;color:var(--faint,var(--muted));
   }
   .pp-choices{display:flex;gap:3px;flex-shrink:0;}
   .pp-choice{
     font-size:10px;padding:3px 9px;border-radius:999px;cursor:pointer;
-    border:1px solid var(--line,#E4E7E4);color:var(--muted,#5E6B64);
+    border:1px solid var(--line,var(--border));color:var(--muted,var(--muted));
   }
   .pp-choice input{display:none;}
-  .pp-on.pp-push{background:#E8F6F1;border-color:#BFE3D6;color:#0B7A5E;font-weight:600;}
-  .pp-on.pp-normal{background:var(--surface-2,#EEF1EF);color:var(--ink-2,#38443E);}
+  .pp-on.pp-push{background:var(--okl);border-color:var(--ok);color:var(--ok);font-weight:600;}
+  .pp-on.pp-normal{background:var(--surface-2,var(--bg));color:var(--ink-2,var(--ink));}
   /* Deliberately muted rather than alarming - not selling something is
      an ordinary decision, not a warning. */
-  .pp-on.pp-never{background:#F2EEF6;border-color:#DDD3E8;color:#6B5B8A;}
+  .pp-on.pp-never{background:var(--bg);border-color:var(--border);color:var(--muted);}
 </style>
 
 <style id="zenCommandInsight">
@@ -2468,7 +2494,7 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
   .md-plan-btn:hover{border-color:var(--p);background:var(--pl);}
   .md-plan:empty{display:none;}
   .md-plan{
-    margin-top:9px;padding:10px 11px;border-radius:9px;
+    margin-top:10px;padding:11px 12px;border-radius:8px;
     background:var(--bg);border:1px solid var(--border);
   }
   .md-plan-step{display:grid;grid-template-columns:20px 1fr;gap:8px;margin-bottom:9px;}
@@ -2482,9 +2508,11 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
   .md-plan-exp{color:var(--ok)!important;}
   /* When the plan cannot be followed, that goes first and looks
      different - it is the most useful thing on the card. */
+  /* Consistent with the findings: an accent rule, not a filled box. */
   .md-blocker{
-    padding:8px 10px;border-radius:8px;margin-bottom:10px;
-    background:var(--warnl);color:var(--warn);font-size:11.5px;line-height:1.5;
+    padding:2px 0 2px 10px;margin-bottom:11px;
+    border-left:2px solid var(--warn);
+    color:var(--warn);font-size:11.5px;line-height:1.5;
   }
   .md-first{
     margin-top:10px;padding-top:9px;border-top:1px solid var(--border);
@@ -2502,6 +2530,26 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     display:block;font-size:9.5px;font-weight:700;letter-spacing:.06em;
     text-transform:uppercase;opacity:.75;margin-bottom:3px;
   }
+</style>
+
+<style id="zenVoice">
+  .zen-mic{
+    border:1px solid var(--border);background:transparent;cursor:pointer;
+    width:36px;height:36px;border-radius:9px;font-size:15px;line-height:1;
+    display:grid;place-items:center;flex-shrink:0;transition:all .12s;
+  }
+  .zen-mic:hover{border-color:var(--p);background:var(--pl);}
+  /* Visibly live while listening - a microphone that might be on is
+     worse than one that clearly is. */
+  .zen-mic-on{
+    background:var(--err);border-color:var(--err);color:#fff;
+    animation:zenMicPulse 1.3s ease-in-out infinite;
+  }
+  @keyframes zenMicPulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.4);}
+    50%{box-shadow:0 0 0 6px rgba(220,38,38,0);}
+  }
+  @media(prefers-reduced-motion:reduce){ .zen-mic-on{animation:none;} }
 </style>
 </head>
 <body>
@@ -4363,6 +4411,10 @@ async function loadCommandCenter(){
       '<div class="zen-command">'+
         '<span class="spark">&#10022;</span>'+
         '<input id="zenCommandInput" placeholder="e.g. Bring back customers likely to lapse next week..." onkeydown="if(event.key===\'Enter\')zenCommand()">'+
+        // Only rendered where the browser can actually do it. A mic
+        // button that does nothing is worse than no mic button.
+        (voiceSupported()?'<button class="zen-mic" id="zenMic" onclick="toggleVoice()" '+
+          'title="Speak instead of typing">&#127908;</button>':'')+
         '<button onclick="zenCommand()">Delegate</button>'+
       '</div>'+
       '<div class="zen-suggestions">'+
@@ -4597,6 +4649,80 @@ async function zcAsk(preset){
   out.innerHTML='<div class="zc-answer"><div class="zc-q">'+esc(q)+'</div>'+
     '<div class="zc-a">'+esc(j.answer||'').replace(/\n/g,'<br>')+'</div></div>';
 }
+// Voice input.
+//
+// The browser does the recognition, so there is no backend and no cost
+// - it just fills the box that already works. Chrome and Edge support
+// it; Firefox does not, and Safari only partly, so the button is only
+// drawn where it will function.
+function voiceSupported(){
+  return !!(window.SpeechRecognition||window.webkitSpeechRecognition);
+}
+
+let ZEN_REC=null, ZEN_LISTENING=false;
+
+function toggleVoice(){
+  const btn=document.getElementById('zenMic');
+  const input=document.getElementById('zenCommandInput');
+  if(!btn||!input) return;
+
+  if(ZEN_LISTENING){ stopVoice(); return; }
+
+  const Rec=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!Rec) return;
+  ZEN_REC=new Rec();
+  // Dubai: most owners will speak English but some will switch to
+  // Arabic mid-sentence. en-AE handles the accent better than en-US.
+  ZEN_REC.lang='en-AE';
+  ZEN_REC.interimResults=true;
+  ZEN_REC.continuous=false;
+
+  ZEN_REC.onstart=function(){
+    ZEN_LISTENING=true;
+    btn.classList.add('zen-mic-on');
+    btn.title='Listening - click to stop';
+    input.placeholder='Listening...';
+  };
+  ZEN_REC.onresult=function(e){
+    // Interim results shown as they come, so it is obvious the mic is
+    // working rather than leaving a blank box for three seconds.
+    let text='';
+    for(let i=0;i<e.results.length;i++) text+=e.results[i][0].transcript;
+    input.value=text;
+    if(e.results[e.results.length-1].isFinal){
+      stopVoice();
+      // Sent automatically. Having spoken it, being made to click is
+      // an odd second step - and nothing happens without confirming
+      // anyway, so there is no risk in interpreting it early.
+      if(text.trim()) zenCommand(text.trim());
+    }
+  };
+  ZEN_REC.onerror=function(e){
+    stopVoice();
+    const out=document.getElementById('zenCommandResult');
+    if(out&&e.error!=='aborted'){
+      out.innerHTML='<div class="zen-cmd-card">'+
+        (e.error==='not-allowed'
+          ? 'The microphone is blocked. Allow it in your browser settings for this site.'
+          : e.error==='no-speech' ? "I didn't catch that - try again."
+          : 'The microphone stopped working ('+esc(e.error)+').')+'</div>';
+    }
+  };
+  ZEN_REC.onend=function(){ stopVoice(); };
+
+  try{ ZEN_REC.start(); }
+  catch(e){ stopVoice(); }
+}
+
+function stopVoice(){
+  ZEN_LISTENING=false;
+  const btn=document.getElementById('zenMic');
+  const input=document.getElementById('zenCommandInput');
+  if(btn){ btn.classList.remove('zen-mic-on'); btn.title='Speak instead of typing'; }
+  if(input) input.placeholder='e.g. Bring back customers likely to lapse next week...';
+  if(ZEN_REC){ try{ ZEN_REC.stop(); }catch(e){} ZEN_REC=null; }
+}
+
 async function zenCommand(text){
   const q=(text||document.getElementById('zenCommandInput')?.value||'').trim();
   if(!q) return;
@@ -5794,7 +5920,7 @@ async function loadMessageConversion(){
   // columns answer that at a glance where two rows make you hunt.
   const pct=function(sub){
     if(!sub||!sub.people) return '<span class="muted">&mdash;</span>';
-    return '<span'+(sub.rate>=20?' style="color:#0B7A5E;font-weight:600;"':'')+'>'+
+    return '<span'+(sub.rate>=20?' style="color:var(--ok);font-weight:600;"':'')+'>'+
       (sub.rate!=null?(sub.rate+'%'):'&mdash;')+'</span>'+
       '<span class="conv-n">'+sub.came_back+'/'+sub.people+'</span>'+
       (sub.thin?'<span class="muted" style="font-size:9px;"> thin</span>':'');
@@ -5803,7 +5929,7 @@ async function loadMessageConversion(){
     return '<tr>'+
       '<td><b>'+esc(g.label)+'</b></td>'+
       '<td>'+g.people+'</td>'+
-      '<td'+(g.rate>=20?' style="color:#0B7A5E;font-weight:600;"':'')+'>'+
+      '<td'+(g.rate>=20?' style="color:var(--ok);font-weight:600;"':'')+'>'+
         (g.rate!=null?(g.rate+'%'):'&mdash;')+
         (g.thin?'<span class="muted" style="font-size:9px;"> thin</span>':'')+'</td>'+
       '<td>'+pct(g.girls)+'</td>'+
@@ -5901,7 +6027,7 @@ async function loadPackagePerformance(){
           '<td>'+esc(g.package)+'</td>'+
           '<td>'+g.suggested+'</td>'+
           '<td>'+g.came_in+'</td>'+
-          '<td'+(g.rate>=25?' style="color:#0B7A5E;font-weight:600;"':'')+'>'+
+          '<td'+(g.rate>=25?' style="color:var(--ok);font-weight:600;"':'')+'>'+
             (g.rate!=null?(g.rate+'%'):'&mdash;')+
             (g.thin?'<span class="muted" style="font-size:9px;"> thin</span>':'')+'</td>'+
           '<td>'+(g.revenue?('AED '+g.revenue.toLocaleString()):'&mdash;')+'</td>'+
@@ -6210,7 +6336,7 @@ async function loadAutoReplySettings(){
   // that never comes.
   const note=document.querySelector('#autoReplyBox .ar-tg-note');
   if(note && j.enabled && !j.safe_facts){
-    note.innerHTML='<b style="color:#9A5B0F;">Nothing below is marked safe to send unsupervised, so it can only greet people.</b> '+note.innerHTML;
+    note.innerHTML='<b style="color:var(--warn);">Nothing below is marked safe to send unsupervised, so it can only greet people.</b> '+note.innerHTML;
   }
 }
 
@@ -8275,7 +8401,7 @@ async function loadDiagnosis(){
       '</div>'+
       '<div class="md-right">'+
         '<div class="md-sec">What Zen recommends next</div>'+
-        (steps?'<div class="md-plan">'+steps+'</div>':'<div class="muted" style="font-size:12px;">Recommendations appear once an analysis has run.</div>')+
+        (steps?'<div class="md-plan-list">'+steps+'</div>':'<div class="muted" style="font-size:12px;">Recommendations appear once an analysis has run.</div>')+
       '</div>'+
     '</div>'+
 
@@ -9137,10 +9263,10 @@ async function analyseAdSpend(force){
               '<td>'+(a.cpc||0)+'</td>'+
               // Above about 3 the same people are seeing it repeatedly,
               // which is worth noticing at a glance.
-              '<td'+(a.frequency>=3.5?' style="color:#9A5B0F;font-weight:600;"':'')+'>'+(a.frequency||0)+'</td>'+
+              '<td'+(a.frequency>=3.5?' style="color:var(--warn);font-weight:600;"':'')+'>'+(a.frequency||0)+'</td>'+
               '<td>'+(a.conversations||0)+'</td>'+
               '<td>'+(a.cost_per_conversation!=null?a.cost_per_conversation:'&mdash;')+'</td>'+
-              '<td'+(a.roas>=1?' style="color:#0B7A5E;font-weight:600;"':'')+'>'+
+              '<td'+(a.roas>=1?' style="color:var(--ok);font-weight:600;"':'')+'>'+
                 (a.roas!=null?a.roas:'&mdash;')+'</td>'+
             '</tr>';
           }).join('')+
