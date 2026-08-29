@@ -2382,6 +2382,47 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     color:var(--ink,#0D1310);user-select:all;
   }
 </style>
+
+<style id="zenPkgPerf">
+  .pkg-seg{
+    margin-left:6px;padding:1px 6px;border-radius:999px;
+    background:var(--surface-2,#EEF1EF);color:var(--muted,#5E6B64);
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:8.5px;
+  }
+  .pkg-note{
+    margin-top:9px;padding:8px 10px;border-radius:8px;
+    background:var(--surface-2,#FAFBFA);
+    font-size:10.5px;line-height:1.5;color:var(--muted,#5E6B64);
+  }
+</style>
+
+<style id="zenPkgPriority">
+  .pp-legend{
+    font-size:10.5px;color:var(--muted,#5E6B64);line-height:1.5;
+    padding:8px 10px;border-radius:8px;background:var(--surface-2,#FAFBFA);margin-bottom:10px;
+  }
+  .pp-row{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:6px 0;border-bottom:1px solid var(--line,#F0F2F0);
+  }
+  .pp-row:last-child{border-bottom:0;}
+  .pp-name{font-size:12px;flex:1;min-width:0;}
+  .pp-price{
+    margin-left:7px;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:10px;color:var(--faint,#8B968F);
+  }
+  .pp-choices{display:flex;gap:3px;flex-shrink:0;}
+  .pp-choice{
+    font-size:10px;padding:3px 9px;border-radius:999px;cursor:pointer;
+    border:1px solid var(--line,#E4E7E4);color:var(--muted,#5E6B64);
+  }
+  .pp-choice input{display:none;}
+  .pp-on.pp-push{background:#E8F6F1;border-color:#BFE3D6;color:#0B7A5E;font-weight:600;}
+  .pp-on.pp-normal{background:var(--surface-2,#EEF1EF);color:var(--ink-2,#38443E);}
+  /* Deliberately muted rather than alarming - not selling something is
+     an ordinary decision, not a warning. */
+  .pp-on.pp-never{background:#F2EEF6;border-color:#DDD3E8;color:#6B5B8A;}
+</style>
 </head>
 <body>
 
@@ -3029,6 +3070,18 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
             </details>
 
 
+
+                  <div class="card">
+                    <h2>What to sell</h2>
+                    <p class="muted" style="font-size:11.5px;">You know things the numbers don&rsquo;t &mdash; margin, what the salon does well, what you&rsquo;re promoting. Mark those here and the assistant leans that way.</p>
+                    <div id="pkgPriority" class="muted" style="font-size:12px;">Loading...</div>
+                  </div>
+
+                  <div class="card">
+                    <h2>What the assistant suggests</h2>
+                    <p class="muted" style="font-size:11.5px;">Packages it recommended in conversation, and whether those customers came in. Counting, not predicting &mdash; it takes a few hundred before the numbers mean anything.</p>
+                    <div id="pkgPerformance" class="muted" style="font-size:12px;">Loading...</div>
+                  </div>
 
                   <div class="card">
                     <h2>Do not message</h2>
@@ -5540,6 +5593,77 @@ async function loadMessageConversion(){
 // Zen recognises "STOP" regardless, but a customer who can't see a way
 // out blocks you instead - and a block costs your number's quality
 // rating far more than an opt-out does.
+async function loadPackagePriority(){
+  const el=document.getElementById('pkgPriority');
+  if(!el) return;
+  const j=await call('list_package_priority',{});
+  if(!j.ok){el.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
+  if(!j.packages.length){el.innerHTML='<span class="muted">No packages in the price list yet.</span>';return;}
+
+  const group=function(g){ return j.packages.filter(function(p){return p.gender===g;}); };
+  const rows=function(list){
+    return list.map(function(p){
+      return '<div class="pp-row">'+
+        '<span class="pp-name">'+esc(p.name)+
+          '<span class="pp-price">AED '+(p.price||'?')+'</span></span>'+
+        '<span class="pp-choices">'+
+          ['push','normal','never'].map(function(v){
+            return '<label class="pp-choice'+(p.priority===v?' pp-on pp-'+v:'')+'">'+
+              '<input type="radio" name="pp_'+esc(p.name)+'" value="'+v+'"'+
+                (p.priority===v?' checked':'')+
+                ' onchange="setPackagePriority(\''+esc(p.name).replace(/'/g,"\\'")+'\',\''+v+'\')">'+
+              (v==='push'?'push it':v==='never'?'never':'normal')+'</label>';
+          }).join('')+
+        '</span>'+
+      '</div>';
+    }).join('');
+  };
+
+  const boys=group('boys'), girls=group('girls'), either=group('either');
+  el.innerHTML=
+    '<div class="pp-legend"><b>push it</b> &mdash; raise it wherever it fits &middot; '+
+      '<b>normal</b> &mdash; only when it&rsquo;s clearly right &middot; '+
+      '<b>never</b> &mdash; answer if asked, never bring it up</div>'+
+    (girls.length?'<div class="conv-sec">For girls</div>'+rows(girls):'')+
+    (boys.length?'<div class="conv-sec">For boys</div>'+rows(boys):'')+
+    (either.length?'<div class="conv-sec">For anyone</div>'+rows(either):'');
+}
+
+async function setPackagePriority(name,priority){
+  const j=await call('set_package_priority',{package_name:name,priority:priority});
+  if(!j.ok){alert(j.error);loadPackagePriority();return;}
+  loadPackagePriority();
+}
+
+async function loadPackagePerformance(){
+  const el=document.getElementById('pkgPerformance');
+  if(!el) return;
+  const j=await call('get_package_performance',{window_days:30});
+  if(!j.ok){el.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
+  if(!j.groups.length){
+    el.innerHTML='<span class="muted">'+esc(j.note||'Nothing suggested yet.')+'</span>';
+    return;
+  }
+  el.innerHTML=
+    '<div style="overflow-x:auto;"><table class="at-table">'+
+      '<tr><th>when</th><th>package</th><th>suggested</th><th>came in</th><th>rate</th><th>revenue</th></tr>'+
+      j.groups.map(function(g){
+        return '<tr>'+
+          '<td><b>'+esc(g.occasion.replace(/_/g,' '))+'</b>'+
+            (g.gender!=='unknown'?'<span class="pkg-seg">'+esc(g.gender)+'</span>':'')+'</td>'+
+          '<td>'+esc(g.package)+'</td>'+
+          '<td>'+g.suggested+'</td>'+
+          '<td>'+g.came_in+'</td>'+
+          '<td'+(g.rate>=25?' style="color:#0B7A5E;font-weight:600;"':'')+'>'+
+            (g.rate!=null?(g.rate+'%'):'&mdash;')+
+            (g.thin?'<span class="muted" style="font-size:9px;"> thin</span>':'')+'</td>'+
+          '<td>'+(g.revenue?('AED '+g.revenue.toLocaleString()):'&mdash;')+'</td>'+
+        '</tr>';
+      }).join('')+
+    '</table></div>'+
+    (j.note?'<div class="pkg-note">'+esc(j.note)+'</div>':'');
+}
+
 async function loadOptOutReadiness(){
   const el=document.getElementById('optOutReadiness');
   if(!el) return;
@@ -5566,6 +5690,8 @@ async function loadOptOutReadiness(){
 
 async function loadDoNotDisturb(){
   loadOptOutReadiness();
+  loadPackagePerformance();
+  loadPackagePriority();
   const el=document.getElementById('dndList');
   if(!el) return;
   const j=await call('list_do_not_disturb',{});
