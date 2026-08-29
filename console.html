@@ -2551,6 +2551,25 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
   }
   @media(prefers-reduced-motion:reduce){ .zen-mic-on{animation:none;} }
 </style>
+
+<style id="zenCmdAnswer">
+  .zen-cmd-answer{border-color:var(--p);}
+  .zen-ans-q{
+    font-size:11px;color:var(--muted);margin-bottom:7px;
+    padding-bottom:7px;border-bottom:1px solid var(--border);
+  }
+  .zen-ans-a{font-size:13px;line-height:1.6;color:var(--ink);}
+  .zen-ans-sql{margin-top:9px;}
+  .zen-ans-sql summary{
+    font-size:10.5px;color:var(--muted);cursor:pointer;list-style:none;
+  }
+  .zen-ans-sql pre{
+    margin:6px 0 0;padding:8px 10px;border-radius:7px;overflow-x:auto;
+    background:var(--bg);border:1px solid var(--border);
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:10.5px;line-height:1.5;color:var(--muted);
+  }
+</style>
 </head>
 <body>
 
@@ -4413,8 +4432,15 @@ async function loadCommandCenter(){
         '<input id="zenCommandInput" placeholder="e.g. Bring back customers likely to lapse next week..." onkeydown="if(event.key===\'Enter\')zenCommand()">'+
         // Only rendered where the browser can actually do it. A mic
         // button that does nothing is worse than no mic button.
+        // A plain glyph rather than the emoji, which rendered at a
+        // different weight from everything around it.
         (voiceSupported()?'<button class="zen-mic" id="zenMic" onclick="toggleVoice()" '+
-          'title="Speak instead of typing">&#127908;</button>':'')+
+          'title="Speak instead of typing" aria-label="Speak instead of typing">'+
+          '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" '+
+            'stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">'+
+            '<rect x="9" y="2" width="6" height="11" rx="3"/>'+
+            '<path d="M5 10v1a7 7 0 0 0 14 0v-1"/><path d="M12 18v4"/>'+
+          '</svg></button>':'')+
         '<button onclick="zenCommand()">Delegate</button>'+
       '</div>'+
       '<div class="zen-suggestions">'+
@@ -4781,13 +4807,21 @@ async function runZenAction(p,q){
   const say=function(t,good){ out.innerHTML='<div class="zen-cmd-card">'+t+'</div>'; };
 
   if(p.action==='ask_question'){
-    zenGoAgent('intelligence');
-    setTimeout(function(){
-      const ask=document.getElementById('askInput');
-      if(ask) ask.value=p.question||q;
-      if(typeof askQuestion==='function') askQuestion();
-    },80);
-    say('Asked in Intelligence.');
+    // Answered here, not on another page.
+    //
+    // It used to navigate to Intelligence and run the question there,
+    // which meant you asked in one place, were moved somewhere else,
+    // and the answer appeared behind whatever had followed you. You
+    // asked in this box; the answer belongs in this box.
+    out.innerHTML='<div class="zen-cmd-card"><span class="mw-spinner"></span>Checking your data...</div>';
+    const a=await call('ask_question',{question:p.question||q});
+    if(!a.ok){ say(esc(a.error)); return; }
+    out.innerHTML='<div class="zen-cmd-card zen-cmd-answer">'+
+      '<div class="zen-ans-q">'+esc(p.question||q)+'</div>'+
+      '<div class="zen-ans-a">'+esc(a.answer||'').replace(/\n/g,'<br>')+'</div>'+
+      (a.sql?'<details class="zen-ans-sql"><summary>How this was worked out</summary><pre>'+esc(a.sql)+'</pre></details>':'')+
+      '<button class="btn btn-s btn-sm" style="margin-top:9px;" onclick="zenGoAgent(\'intelligence\')">Ask a follow-up in Intelligence</button>'+
+    '</div>';
     return;
   }
   if(p.action==='open_page'){
