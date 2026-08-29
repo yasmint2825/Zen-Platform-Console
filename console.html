@@ -2336,6 +2336,30 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;
   }
 </style>
+
+<style id="zenDnd">
+  .dnd-count{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;
+    letter-spacing:.06em;text-transform:uppercase;color:var(--faint,#8B968F);
+    margin-bottom:8px;
+  }
+  .dnd-row{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:7px 0;border-bottom:1px solid var(--line,#F0F2F0);font-size:12px;
+  }
+  .dnd-row:last-child{border-bottom:0;}
+  .dnd-src{
+    margin-left:7px;padding:2px 7px;border-radius:999px;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:8.5px;
+    background:#EEF1EF;color:#5E6B64;
+  }
+  /* Someone who told us directly - the one that matters most. */
+  .dnd-src-asked{background:#FBEDEC;color:#A8271E;}
+  .dnd-when{
+    margin-left:7px;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:9.5px;color:var(--faint,#8B968F);
+  }
+</style>
 </head>
 <body>
 
@@ -2983,6 +3007,12 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
             </details>
 
 
+
+                  <div class="card">
+                    <h2>Do not message</h2>
+                    <p class="muted" style="font-size:11.5px;">People excluded from every campaign &mdash; either marked in the salon system or because they asked us over WhatsApp.</p>
+                    <div id="dndList" class="muted" style="font-size:12px;">Loading...</div>
+                  </div>
 
                   <div class="card">
               <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
@@ -3822,7 +3852,7 @@ function showAgentDetail(agent){
   window.scrollTo({top:0,behavior:'smooth'});
   if(agent==='marketing'){
     if(typeof loadPlanStrategyPicker==='function') loadPlanStrategyPicker();loadSocialContent();loadCompetitors();loadMetaAdsStatus();loadLeadsStatus();}
-  if(agent==='engagement'){loadAtRiskActions();loadAtRiskQueue();loadConversations();loadMessageConversion();}
+  if(agent==='engagement'){loadAtRiskActions();loadAtRiskQueue();loadConversations();loadMessageConversion();loadDoNotDisturb();}
   if(agent==='intelligence'){loadDailyIntelligence();loadPredictive();renderQuickQuestions();}
 }
 // ── Campaigns ────────────────────────────────────────────────────
@@ -5480,6 +5510,40 @@ async function loadMessageConversion(){
       (j.totals.revenue?(', worth <b>AED '+j.totals.revenue.toLocaleString()+'</b>'):'')+
       '</div>':'')+
     '<div class="muted" style="font-size:10.5px;margin-top:8px;line-height:1.5;">'+esc(j.caveat||'')+'</div>';
+}
+
+async function loadDoNotDisturb(){
+  const el=document.getElementById('dndList');
+  if(!el) return;
+  const j=await call('list_do_not_disturb',{});
+  if(!j.ok){el.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
+  if(!j.people.length){
+    el.innerHTML='<span class="muted">Nobody has asked to be left alone.</span>';
+    return;
+  }
+  el.innerHTML='<div class="dnd-count">'+j.people.length+' excluded from all campaigns</div>'+
+    j.people.map(function(p){
+      const asked=p.source==='asked us';
+      return '<div class="dnd-row">'+
+        '<span><b>'+esc(p.name||p.mobile)+'</b>'+
+          '<span class="dnd-src'+(asked?' dnd-src-asked':'')+'">'+esc(p.source)+'</span>'+
+          (p.since?'<span class="dnd-when">'+formatDubai(p.since)+'</span>':'')+
+        '</span>'+
+        // Only what we set can be undone here. The salon's own flag
+        // would come straight back on the next sync.
+        (asked
+          ? '<button class="btn btn-s btn-sm" onclick="setDnd(\''+esc(p.key)+'\',false,\''+esc(p.name||p.mobile)+'\')">Allow again</button>'
+          : '<span class="muted" style="font-size:10px;">change it in the salon system</span>')+
+      '</div>';
+    }).join('');
+}
+
+async function setDnd(key,on,who){
+  if(!on && !confirm('Start messaging '+who+' again?\n\nOnly do this if they have told you it is fine.')) return;
+  const j=await call('set_do_not_disturb',{customer_key:key,on:on});
+  if(!j.ok){alert(j.error);return;}
+  if(j.note) alert(j.note);
+  loadDoNotDisturb();
 }
 
 async function loadConversations(force){
