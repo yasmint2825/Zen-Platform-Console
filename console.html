@@ -2618,6 +2618,40 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     font-size:11px;color:var(--muted);line-height:1.5;
   }
 </style>
+
+<style id="zenSalonPhotos">
+  .ph-upload{display:grid;gap:8px;margin:10px 0;}
+  .ph-upload input[type=file]{font-size:12px;}
+  .ph-check{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);cursor:pointer;}
+  .ph-check input{width:15px;height:15px;accent-color:var(--p);cursor:pointer;}
+  #phConsent{display:grid;gap:6px;}
+  .ph-blocked{
+    padding:8px 11px;border-radius:8px;margin-bottom:10px;
+    background:var(--warnl);color:var(--warn);font-size:11.5px;line-height:1.5;
+  }
+  .ph-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
+  .ph-item{
+    position:relative;border:1px solid var(--border);border-radius:9px;
+    overflow:hidden;background:var(--bg);
+  }
+  .ph-item img{width:100%;height:120px;object-fit:cover;display:block;}
+  /* Unusable photos stay visible but obviously so - hiding them would
+     make it look as though the upload failed. */
+  .ph-unusable img{opacity:.45;filter:grayscale(1);}
+  .ph-tag{
+    position:absolute;top:6px;left:6px;padding:2px 7px;border-radius:999px;
+    font-size:9px;font-weight:700;
+  }
+  .ph-enh{background:var(--okl);color:var(--ok);}
+  .ph-no{background:var(--errl);color:var(--err);}
+  .ph-desc{padding:7px 9px;font-size:10.5px;line-height:1.4;color:var(--muted);}
+  .ph-btn{
+    width:100%;border:0;border-top:1px solid var(--border);background:transparent;
+    padding:6px;font-size:10.5px;color:var(--p);cursor:pointer;
+  }
+  .ph-btn:hover{background:var(--pl);}
+  .ph-actions{display:flex;gap:7px;align-items:center;margin-top:12px;flex-wrap:wrap;}
+</style>
 </head>
 <body>
 
@@ -2971,6 +3005,27 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
                   <div style="font-weight:700;font-size:13px;margin-bottom:6px;">All strategies <span id="msStrategyCount" class="muted" style="font-weight:400;font-size:11.5px;"></span></div>
                   <div class="muted" style="font-size:11px;margin-bottom:8px;">Only the 2 most recent stay active automatically - older ones are archived, not deleted. Your content, videos, and campaign details are still here if a strategy you want is archived - just click View.</div>
                   <div id="msStrategyHistory"></div>
+                </div>
+              </details>
+
+              <details class="card">
+                <summary><h2 style="display:inline;">Photos from the salon</h2></summary>
+                <p class="muted" style="font-size:11.5px;">Real photos make better posts than generated ones &mdash; parents recognise the place. Anything with a child in it needs a parent&rsquo;s consent before it can be used.</p>
+                <div class="ph-upload">
+                  <input type="file" id="phFile" accept="image/*" multiple>
+                  <label class="ph-check"><input type="checkbox" id="phNoPeople"> Nobody in these photos (the salon, products, an empty chair)</label>
+                  <div id="phConsent">
+                    <input class="fi" id="phConsentFrom" placeholder="Who gave consent? A parent&rsquo;s name is enough" style="font-size:12px;">
+                    <input class="fi" id="phConsentNote" placeholder="Note, optional &mdash; e.g. asked in the salon, 29 Aug" style="font-size:12px;">
+                  </div>
+                  <button class="btn btn-p btn-sm" onclick="uploadSalonPhotos()">Upload</button>
+                  <span id="phResult" style="font-size:11.5px;"></span>
+                </div>
+                <div id="photoLibrary" class="muted" style="font-size:12px;margin-top:12px;">Loading...</div>
+                <div class="ph-actions">
+                  <button class="btn btn-s btn-sm" onclick="describeAllPhotos()">What&rsquo;s in these?</button>
+                  <button class="btn btn-p btn-sm" onclick="planFromPhotos()">Build posts from these photos</button>
+                  <span id="phPlanResult" style="font-size:11.5px;"></span>
                 </div>
               </details>
 
@@ -3440,6 +3495,12 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
             </div>
 
 <details class="card">
+                <summary><h2 style="display:inline;">Canva connection</h2></summary>
+                <p class="muted" style="font-size:11.5px;">Scaffolding only. The connection can be made and stored, but no call to Canva has been verified &mdash; creating and exporting designs is not built.</p>
+                <div id="canvaStatus" class="muted" style="font-size:12px;">Loading...</div>
+              </details>
+
+              <details class="card">
                 <summary><h2 style="display:inline;">Instagram connection</h2></summary>
                 <div id="instagramStatus" class="muted" style="margin-bottom:10px;margin-top:10px;">Checking...</div>
                 <div class="row" style="margin-bottom:8px;flex-wrap:wrap;">
@@ -4125,7 +4186,8 @@ function showAgentDetail(agent){
   document.getElementById('intelligenceAgentDetail').style.display=agent==='intelligence'?'block':'none';
   window.scrollTo({top:0,behavior:'smooth'});
   if(agent==='marketing'){
-    if(typeof loadPlanStrategyPicker==='function') loadPlanStrategyPicker();loadSocialContent();loadCompetitors();loadMetaAdsStatus();loadLeadsStatus();}
+    if(typeof loadPlanStrategyPicker==='function') loadPlanStrategyPicker();
+    if(typeof loadPhotoLibrary==='function') loadPhotoLibrary();loadSocialContent();loadCompetitors();loadMetaAdsStatus();loadLeadsStatus();}
   if(agent==='engagement'){loadAtRiskActions();loadAtRiskQueue();loadConversations();loadMessageConversion();loadDoNotDisturb();}
   if(agent==='intelligence'){loadDailyIntelligence();loadPredictive();renderQuickQuestions();}
 }
@@ -4307,6 +4369,7 @@ function showMarketingTab(tab){
   } else if(tab==='strategy'){
     if(typeof loadGenerationHistory==='function') loadGenerationHistory();
     if(typeof loadPlanStrategyPicker==='function') loadPlanStrategyPicker();
+    if(typeof loadPhotoLibrary==='function') loadPhotoLibrary();
   }
   // Publishing plan and history are marketing tabs. This was wired to
   // the settings tab handler by mistake, so neither ever loaded and
@@ -4326,6 +4389,7 @@ function showSettingsTab(tab){
   // directly so it populates even if Reports was never visited first.
   if(tab==='team') loadReports();
   if(tab==='billing' && typeof loadModelJobs==='function') loadModelJobs();
+  if(tab==='channels' && typeof loadCanvaStatus==='function') loadCanvaStatus();
 }
 function showPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -4628,6 +4692,7 @@ function showMarketingTab(tab){
   } else if(tab==='strategy'){
     if(typeof loadGenerationHistory==='function') loadGenerationHistory();
     if(typeof loadPlanStrategyPicker==='function') loadPlanStrategyPicker();
+    if(typeof loadPhotoLibrary==='function') loadPhotoLibrary();
   }
   // Publishing plan and history are marketing tabs. This was wired to
   // the settings tab handler by mistake, so neither ever loaded and
@@ -4647,6 +4712,7 @@ function showSettingsTab(tab){
   // directly so it populates even if Reports was never visited first.
   if(tab==='team') loadReports();
   if(tab==='billing' && typeof loadModelJobs==='function') loadModelJobs();
+  if(tab==='channels' && typeof loadCanvaStatus==='function') loadCanvaStatus();
 }
 function showPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -7459,6 +7525,134 @@ async function approveMonthlyStrategyNow(){
 // ── Content plan ──
 let contentPlanState={};
 // Fills the strategy selector on the content plan card.
+// ── Salon photos ─────────────────────────────────────────────────
+let PHOTOS=[];
+
+async function loadCanvaStatus(){
+  const el=document.getElementById('canvaStatus');
+  if(!el) return;
+  const j=await call('canva_status',{});
+  if(!j.ok){el.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
+  el.innerHTML=
+    '<div class="cv-state '+(j.connected?'cv-on':'cv-off')+'">'+
+      (j.connected
+        ? 'Connected'+(j.connected_at?(' &middot; '+formatDubai(j.connected_at)):'')
+        : (j.configured?'Not connected':'Not set up'))+
+    '</div>'+
+    // The caveat is the most useful thing on this card, so it is not
+    // hidden behind a button that looks like it works.
+    '<div class="cv-note">'+esc(j.note||'')+'</div>'+
+    (j.last_error?'<div class="cv-err">Last error: '+esc(String(j.last_error).slice(0,200))+'</div>':'')+
+    '<div class="row" style="gap:6px;margin-top:10px;">'+
+      (j.configured&&!j.connected
+        ? '<button class="btn btn-p btn-sm" onclick="connectCanva()">Connect Canva</button>' : '')+
+      (j.connected
+        ? '<button class="btn btn-s btn-sm" onclick="disconnectCanva()">Disconnect</button>' : '')+
+    '</div>';
+}
+
+async function connectCanva(){
+  const j=await call('canva_auth_url',{redirect_uri:location.origin+location.pathname});
+  if(!j.ok){alert(j.error);return;}
+  // Opened rather than redirected, so a failure leaves the console
+  // where it was instead of stranding you on a Canva error page.
+  window.open(j.url,'_blank','noopener');
+}
+
+async function disconnectCanva(){
+  if(!confirm('Disconnect Canva?')) return;
+  const j=await call('canva_disconnect',{});
+  if(!j.ok){alert(j.error);return;}
+  loadCanvaStatus();
+}
+
+async function loadPhotoLibrary(){
+  const el=document.getElementById('photoLibrary');
+  if(!el) return;
+  const j=await call('list_salon_photos',{});
+  if(!j.ok){el.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
+  PHOTOS=j.photos;
+  if(!PHOTOS.length){el.innerHTML='<span class="muted">No photos yet.</span>';return;}
+
+  const blocked=PHOTOS.filter(function(p){return !p.usable;}).length;
+  el.innerHTML=
+    (blocked?'<div class="ph-blocked">'+blocked+' photo'+(blocked===1?'':'s')+
+      ' can&rsquo;t be used until consent is recorded.</div>':'')+
+    '<div class="ph-grid">'+PHOTOS.map(function(p){
+      return '<div class="ph-item'+(p.usable?'':' ph-unusable')+'">'+
+        '<img src="'+esc(p.enhanced_url||p.url)+'" alt="">'+
+        (p.enhanced_url?'<span class="ph-tag ph-enh">enhanced</span>':'')+
+        (p.usable?'':'<span class="ph-tag ph-no">needs consent</span>')+
+        (p.description?'<div class="ph-desc">'+esc(p.description)+'</div>':'')+
+        (p.usable?'<button class="ph-btn" onclick="enhancePhoto(\''+p.id+'\')">Tidy it up</button>':'')+
+      '</div>';
+    }).join('')+'</div>';
+}
+
+async function uploadSalonPhotos(){
+  const input=document.getElementById('phFile');
+  const out=document.getElementById('phResult');
+  const noPeople=document.getElementById('phNoPeople').checked;
+  const from=document.getElementById('phConsentFrom').value.trim();
+  const note=document.getElementById('phConsentNote').value.trim();
+  if(!input.files.length){out.textContent='Choose some photos first.';out.style.color='var(--err)';return;}
+  // Checked here as well as on the server, so the answer is immediate
+  // rather than arriving after every file has uploaded.
+  if(!noPeople&&!from){
+    out.textContent='Say who gave consent, or tick that nobody is in them.';
+    out.style.color='var(--err)';return;
+  }
+  out.innerHTML='<span class="mw-spinner"></span>Uploading...';
+  let done=0,failed=0;
+  for(const f of input.files){
+    const path=currentTenant+'/photos/'+Date.now()+'-'+f.name.replace(/[^\w.-]/g,'_');
+    const up=await sb.storage.from('marketing-assets').upload(path,f,{upsert:true});
+    if(up.error){failed++;continue;}
+    const j=await call('register_salon_photo',{storage_path:path,original_name:f.name,
+      has_people:!noPeople,consent_from:noPeople?null:from,consent_note:note||null});
+    j.ok?done++:failed++;
+  }
+  out.textContent=done+' uploaded'+(failed?(', '+failed+' failed'):'')+'.';
+  out.style.color=failed?'var(--warn)':'var(--ok)';
+  input.value='';
+  loadPhotoLibrary();
+}
+
+async function enhancePhoto(id){
+  const j=await call('enhance_salon_photo',{photo_id:id});
+  if(!j.ok){alert(j.error);return;}
+  loadPhotoLibrary();
+}
+
+async function describeAllPhotos(){
+  const out=document.getElementById('phPlanResult');
+  const todo=PHOTOS.filter(function(p){return p.usable&&!p.description;});
+  if(!todo.length){out.textContent='All of them have been looked at already.';out.style.color='var(--muted)';return;}
+  out.innerHTML='<span class="mw-spinner"></span>Looking at '+todo.length+'...';
+  let n=0;
+  for(const p of todo){
+    const j=await call('describe_salon_photo',{photo_id:p.id});
+    if(j.ok) n++;
+  }
+  out.textContent=n+' looked at.';out.style.color='var(--ok)';
+  loadPhotoLibrary();
+}
+
+async function planFromPhotos(){
+  const out=document.getElementById('phPlanResult');
+  const sel=document.getElementById('planStrategyPicker');
+  const id=sel&&sel.value;
+  if(!id){out.textContent='Pick a strategy in Content plan first.';out.style.color='var(--err)';return;}
+  out.innerHTML='<span class="mw-spinner"></span>Writing posts from your photos...';
+  const j=await call('generate_plan_from_photos',{strategy_id:id});
+  if(!j.ok){out.textContent=j.error;out.style.color='var(--err)';return;}
+  out.textContent=(j.items?j.items.length:0)+' posts'+
+    (j.carousel_slides?(', one a carousel of '+j.carousel_slides+' slides'):'')+
+    (j.skipped_for_consent?(' · '+j.skipped_for_consent+' skipped for consent'):'')+'.';
+  out.style.color='var(--ok)';
+  if(typeof loadContentPlan==='function') loadContentPlan();
+}
+
 async function loadPlanStrategyPicker(){
   const sel=document.getElementById('planStrategyPicker');
   if(!sel) return;
