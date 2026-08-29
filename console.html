@@ -2021,114 +2021,112 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
 <style id="zenMarketingDiagnosis">
   /* ── Marketing diagnosis ──────────────────────────────────────
      Reads top to bottom as a verdict: what happened, how much of it
-     can be trusted, what it means, what to do. */
+     can be trusted, what it means, what to do.
+
+     Uses the theme variables rather than its own palette. An earlier
+     version was written in sage greens and warm neutrals against a
+     blue-slate console, so the card looked like it came from a
+     different product. */
   .md-top{
     padding:16px 18px 13px;display:flex;justify-content:space-between;
-    gap:14px;align-items:flex-start;border-bottom:1px solid var(--line,#E4E7E4);
+    gap:14px;align-items:flex-start;border-bottom:1px solid var(--border);
   }
   .md-eyebrow{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;
-    font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;
-    color:var(--faint,#8B968F);margin-bottom:5px;
+    font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--muted);margin-bottom:5px;font-weight:600;
   }
   .md-headline{
-    margin:0;font-size:16px;line-height:1.38;letter-spacing:-.015em;font-weight:600;
+    margin:0;font-size:16px;line-height:1.38;letter-spacing:-.015em;
+    font-weight:700;color:var(--ink);
   }
   .md-status{
-    white-space:nowrap;border-radius:999px;padding:5px 10px;flex-shrink:0;
-    font-family:'IBM Plex Mono',ui-monospace,monospace;
-    font-size:9.5px;font-weight:600;letter-spacing:.03em;
+    white-space:nowrap;border-radius:999px;padding:5px 11px;flex-shrink:0;
+    font-size:11px;font-weight:700;
   }
-  .md-danger{background:#FBEDEC;color:#A8271E;}
-  .md-warn{background:#FDF3E7;color:#9A5B0F;}
-  .md-good{background:#E8F6F1;color:#0B7A5E;}
-  .md-muted{background:#EEF1EF;color:#5E6B64;}
+  .md-danger{background:var(--errl);color:var(--err);}
+  .md-warn{background:var(--warnl);color:var(--warn);}
+  .md-good{background:var(--okl);color:var(--ok);}
+  .md-muted{background:var(--bg);color:var(--muted);}
 
   .md-metrics{
     display:grid;grid-template-columns:repeat(5,1fr);
-    border-bottom:1px solid var(--line,#E4E7E4);
+    border-bottom:1px solid var(--border);
   }
-  .md-metric{padding:13px 15px;border-right:1px solid var(--line,#EDEFEC);}
+  .md-metric{padding:13px 15px;border-right:1px solid var(--border);}
   .md-metric:last-child{border-right:0;}
-  .md-label{font-size:10.5px;color:var(--muted,#5E6B64);}
+  .md-label{font-size:11px;color:var(--muted);}
   .md-value{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;
-    font-size:19px;font-weight:600;margin-top:3px;
-    font-variant-numeric:tabular-nums;letter-spacing:-.01em;
+    font-size:21px;font-weight:800;margin-top:3px;color:var(--ink);
+    font-variant-numeric:tabular-nums;letter-spacing:-.02em;
   }
-  .md-sub{font-size:10px;color:var(--faint,#8B968F);margin-top:2px;}
+  .md-sub{font-size:10.5px;color:var(--muted);margin-top:2px;}
 
   /* The gap between what Meta claims and what can be traced. Given a
      band of its own because it governs how much the row above means. */
   .md-warnband{
-    padding:9px 18px;background:#FDF8F0;color:#9A5B0F;
-    font-size:11.5px;line-height:1.5;border-bottom:1px solid var(--line,#E4E7E4);
+    padding:9px 18px;background:var(--warnl);color:var(--warn);
+    font-size:12px;line-height:1.5;border-bottom:1px solid var(--border);
   }
 
   .md-body{display:grid;grid-template-columns:1.1fr .9fr;}
   .md-left,.md-right{padding:16px 18px;}
-  .md-left{border-right:1px solid var(--line,#EDEFEC);}
-  .md-sec{font-size:11.5px;font-weight:600;margin-bottom:9px;}
+  .md-left{border-right:1px solid var(--border);}
+  .md-sec{font-size:12px;font-weight:700;margin-bottom:9px;color:var(--ink);}
 
-  .md-finding{border:1px solid var(--line,#E4E7E4);border-radius:10px;padding:10px 11px;margin-bottom:7px;}
-  .md-finding strong{display:block;font-size:12.5px;margin-bottom:3px;}
-  .md-finding p{margin:0;font-size:11.5px;color:var(--muted,#5E6B64);line-height:1.45;}
-  .md-f-danger{background:#FBEDEC;border-color:#F0D4D1;}
-  .md-f-warn{background:#FDF8F0;border-color:#EBDCC2;}
-  .md-f-info{background:#F2F6F9;border-color:#DAE4EC;}
+  .md-finding{border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;}
+  .md-finding strong{display:block;font-size:13px;margin-bottom:3px;color:var(--ink);}
+  .md-finding p{margin:0;font-size:12px;color:var(--muted);line-height:1.45;}
+  .md-f-danger{background:var(--errl);border-color:#FECACA;}
+  .md-f-warn{background:var(--warnl);border-color:#FDE68A;}
+  .md-f-info{background:var(--pl);border-color:#C7D7F5;}
 
   .md-plan{display:grid;gap:8px;}
   .md-step{
-    border:1px solid var(--line,#E4E7E4);border-radius:10px;padding:11px 12px;
-    /* Two columns, not three. The impact line is prose and belongs
-       under the text - as a third column its `auto` width grew to fit
-       a full sentence and squeezed the description into a strip. */
+    border:1px solid var(--border);border-radius:10px;padding:11px 12px;
     display:grid;grid-template-columns:26px 1fr;gap:10px;align-items:start;
   }
   .md-step-body{min-width:0;}
   .md-num{
     width:26px;height:26px;border-radius:8px;display:grid;place-items:center;
-    background:#0F4C45;color:#fff;flex-shrink:0;
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;font-weight:600;
+    background:var(--p);color:#fff;flex-shrink:0;font-size:12px;font-weight:700;
   }
-  .md-step strong{display:block;font-size:12.5px;margin-bottom:4px;line-height:1.4;}
-  .md-step p{margin:0;font-size:11.5px;color:var(--muted,#5E6B64);line-height:1.5;}
+  .md-step strong{display:block;font-size:13px;margin-bottom:4px;line-height:1.4;color:var(--ink);}
+  .md-step p{margin:0;font-size:12px;color:var(--muted);line-height:1.5;}
   .md-impact{
-    margin-top:7px;padding:6px 9px;border-radius:7px;
-    background:#E8F6F1;color:#0B7A5E;
-    font-size:11px;line-height:1.45;
+    margin-top:7px;padding:6px 10px;border-radius:7px;
+    background:var(--okl);color:var(--ok);font-size:11.5px;line-height:1.45;
   }
 
   .md-footer{
-    padding:12px 18px;border-top:1px solid var(--line,#E4E7E4);
+    padding:12px 18px;border-top:1px solid var(--border);
     display:flex;justify-content:space-between;align-items:center;gap:12px;
-    background:var(--surface-2,#FAFBFA);
+    background:var(--bg);
   }
-  .md-note{font-size:11px;color:var(--muted,#5E6B64);line-height:1.45;}
+  .md-note{font-size:11.5px;color:var(--muted);line-height:1.45;}
   .md-actions{display:flex;gap:6px;flex-shrink:0;}
+
+  .md-when{color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400;}
+  /* Older than a day. Ad figures move daily, so this is worth noticing
+     before acting on anything below it. */
+  .md-stale{color:var(--warn);font-weight:600;}
+  .md-refresh{
+    color:var(--p);text-decoration:none;border-bottom:1px solid rgba(30,58,138,.3);
+    text-transform:none;letter-spacing:0;font-weight:400;
+  }
+  .md-refresh:hover{border-bottom-color:var(--p);}
 
   @media(max-width:900px){
     .md-metrics{grid-template-columns:1fr 1fr;}
-    .md-metric{border-bottom:1px solid var(--line,#EDEFEC);}
+    .md-metric{border-bottom:1px solid var(--border);}
     .md-body{grid-template-columns:1fr;}
-    .md-left{border-right:0;border-bottom:1px solid var(--line,#EDEFEC);}
+    .md-left{border-right:0;border-bottom:1px solid var(--border);}
     .md-top,.md-footer{flex-direction:column;align-items:flex-start;}
     .md-actions{width:100%;}
     .md-actions .btn{flex:1;}
   }
 </style>
 
-<style id="zenDiagnosisFreshness">
-  .md-when{color:var(--faint,#8B968F);text-transform:none;letter-spacing:0;}
-  /* Older than a day. Ad figures move daily, so this is worth noticing
-     before acting on anything below it. */
-  .md-stale{color:#9A5B0F;}
-  .md-refresh{
-    color:#0F4C45;text-decoration:none;border-bottom:1px solid rgba(15,76,69,.35);
-    text-transform:none;letter-spacing:0;
-  }
-  .md-refresh:hover{border-bottom-color:#0F4C45;}
-</style>
+
 
 <style id="zenAutoReply">
   .ar-toggle{
@@ -2422,6 +2420,43 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
   /* Deliberately muted rather than alarming - not selling something is
      an ordinary decision, not a warning. */
   .pp-on.pp-never{background:#F2EEF6;border-color:#DDD3E8;color:#6B5B8A;}
+</style>
+
+<style id="zenCommandInsight">
+  /* What the agents worked out, distinct from what they are waiting
+     on. Clickable, because the point is to route you there. */
+  .cc-insight{
+    margin-top:12px;padding:11px 13px;border-radius:10px;cursor:pointer;
+    background:var(--pl);border:1px solid var(--border);transition:border-color .12s;
+  }
+  .cc-insight:hover{border-color:var(--p);}
+  .cc-stale{background:var(--warnl);}
+  .cc-ins-head{display:flex;align-items:baseline;gap:9px;margin-bottom:5px;}
+  .cc-ins-agent{
+    font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--p);
+  }
+  .cc-stale .cc-ins-agent{color:var(--warn);}
+  .cc-ins-when{margin-left:auto;font-size:10px;color:var(--muted);}
+  .cc-ins-sum{font-size:12.5px;line-height:1.5;color:var(--ink);}
+  .cc-ins-top{
+    margin-top:6px;padding-left:9px;border-left:2px solid var(--p);
+    font-size:12px;line-height:1.45;color:var(--muted);
+  }
+  .cc-ins-more{margin-top:5px;font-size:10.5px;color:var(--p);font-weight:600;}
+
+  .cc-findings{margin-top:12px;}
+  .cc-find-label{
+    font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--muted);margin-bottom:6px;
+  }
+  .cc-find{
+    padding:8px 11px;border-radius:9px;background:var(--bg);
+    border:1px solid var(--border);margin-bottom:5px;cursor:pointer;
+    font-size:12px;line-height:1.45;transition:border-color .12s;
+  }
+  .cc-find:hover{border-color:var(--p);}
+  .cc-find b{display:block;color:var(--ink);}
+  .cc-find span{color:var(--muted);font-size:11.5px;}
 </style>
 </head>
 <body>
@@ -3012,6 +3047,67 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
           </div>
 
           <div id="marketingTab-zenwhatsapp" class="marketing-tab-content" style="display:none;">
+            
+
+
+
+                  
+
+                  
+
+                  
+
+                  <div class="card">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+                <h2 style="margin:0;">WhatsApp chat</h2>
+                <div id="waStatus" style="font-size:12px;padding:5px 12px;border-radius:20px;"></div>
+              </div>
+              <div class="wa-tabs" style="display:flex;gap:2px;margin:14px 0 12px;border-bottom:1px solid var(--border);flex-wrap:wrap;">
+                <button class="wa-tab active" data-watab="conversations" onclick="showWaTab('conversations')">Conversations <span id="inboxBadge"></span></button>
+                <button class="wa-tab" data-watab="intel" onclick="showWaTab('intel')">Performance</button>
+                <button class="wa-tab" data-watab="logs" onclick="showWaTab('logs')">Message log</button>
+              </div>
+<div class="wa-panel" data-wapanel="conversations">
+<div style="margin-top:10px;">
+                  <button class="btn btn-s btn-sm" onclick="loadConversations(true)" style="margin-bottom:8px;">Refresh</button>
+                  <div style="display:flex;gap:10px;align-items:stretch;min-height:260px;flex-wrap:wrap;">
+                    <div id="conversationList" style="flex:1 1 200px;max-width:280px;max-height:420px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:4px;">Loading...</div>
+                    <div id="conversationThread" style="flex:2 1 300px;border:1px solid var(--border);border-radius:8px;padding:10px;display:flex;flex-direction:column;">
+                      <div class="muted" style="margin:auto;font-size:11.5px;">Pick a conversation on the left.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+<div class="wa-panel" data-wapanel="intel" style="display:none;">
+<div style="margin-top:10px;">
+                  <div class="row" style="gap:6px;margin-bottom:8px;align-items:center;">
+                    <select class="fi" id="engIntelDays" style="width:auto;margin:0;font-size:11.5px;" onchange="loadEngagementIntelligence(true)">
+                      <option value="today">Today</option>
+                      <option value="7">Last 7 days</option>
+                      <option value="30" selected>Last 30 days</option>
+                      <option value="90">Last 90 days</option>
+                    </select>
+                    <button class="btn btn-s btn-sm" onclick="loadEngagementIntelligence(true)">Refresh</button>
+                  </div>
+                  <div id="engIntel" class="muted" style="font-size:11.5px;">Loading...</div>
+                </div>
+              </div>
+<div class="wa-panel" data-wapanel="logs" style="display:none;">
+<div style="margin-top:10px;">
+                  <div class="row" style="gap:6px;margin-bottom:8px;">
+                    <button class="btn btn-s btn-sm" onclick="loadWhatsappMessages(true)">Refresh</button>
+                    <select class="fi" id="waLogRange" style="width:auto;margin:0;font-size:11.5px;" onchange="loadWhatsappMessages(true)">
+                      <option value="today">Today</option>
+                      <option value="today">Today</option>
+                      <option value="7">Last 7 days</option>
+                      <option value="all">Everything recent</option>
+                    </select>
+                  </div>
+                  <div id="waMessageLog" class="muted" style="font-size:11.5px;">Loading...</div>
+                </div>
+              </div>
+            </div>
+
             <details class="card">
               <summary><h2 style="display:inline;">Reply assistant &mdash; what it knows</h2></summary>
               <p class="muted" style="font-size:11.5px;">The assistant may only say what is listed here. Anything missing, it flags for you rather than guessing &mdash; a wrong price sent over WhatsApp is a promise you have to honour or retract.</p>
@@ -3069,83 +3165,32 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
               </div>
             </details>
 
+                  <details class="card">
+                    <summary><h2 style="display:inline;">What conversations turn into</h2></summary>
+                    <p class="muted" style="font-size:11.5px;">Campaigns we sent and people who came to us, and whether either led to a visit within 30 days.</p>
+                    <div id="msgConversion" class="muted" style="font-size:12px;">Loading...</div>
+                  </details>
 
-
-                  <div class="card">
-                    <h2>What to sell</h2>
+                  <details class="card">
+                    <summary><h2 style="display:inline;">What to sell</h2></summary>
                     <p class="muted" style="font-size:11.5px;">You know things the numbers don&rsquo;t &mdash; margin, what the salon does well, what you&rsquo;re promoting. Mark those here and the assistant leans that way.</p>
                     <div id="pkgPriority" class="muted" style="font-size:12px;">Loading...</div>
-                  </div>
+                  </details>
 
-                  <div class="card">
-                    <h2>What the assistant suggests</h2>
+                  <details class="card">
+                    <summary><h2 style="display:inline;">What the assistant suggests</h2></summary>
                     <p class="muted" style="font-size:11.5px;">Packages it recommended in conversation, and whether those customers came in. Counting, not predicting &mdash; it takes a few hundred before the numbers mean anything.</p>
                     <div id="pkgPerformance" class="muted" style="font-size:12px;">Loading...</div>
-                  </div>
+                  </details>
 
-                  <div class="card">
-                    <h2>Do not message</h2>
+                  <details class="card">
+                    <summary><h2 style="display:inline;">Do not message</h2></summary>
                     <p class="muted" style="font-size:11.5px;">People excluded from every campaign &mdash; either marked in the salon system or because they asked us over WhatsApp.</p>
                     <div id="optOutReadiness"></div>
                     <div id="dndList" class="muted" style="font-size:12px;">Loading...</div>
-                  </div>
+                  </details>
 
-                  <div class="card">
-              <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
-                <h2 style="margin:0;">WhatsApp chat</h2>
-                <div id="waStatus" style="font-size:12px;padding:5px 12px;border-radius:20px;"></div>
-              </div>
-              <div class="wa-tabs" style="display:flex;gap:2px;margin:14px 0 12px;border-bottom:1px solid var(--border);flex-wrap:wrap;">
-                <button class="wa-tab active" data-watab="conversations" onclick="showWaTab('conversations')">Conversations <span id="inboxBadge"></span></button>
-                <button class="wa-tab" data-watab="intel" onclick="showWaTab('intel')">Performance</button>
-                <button class="wa-tab" data-watab="logs" onclick="showWaTab('logs')">Message log</button>
-              </div>
-<div class="wa-panel" data-wapanel="conversations">
-<div style="margin-top:10px;">
-                  <button class="btn btn-s btn-sm" onclick="loadConversations(true)" style="margin-bottom:8px;">Refresh</button>
-                  <div style="display:flex;gap:10px;align-items:stretch;min-height:260px;flex-wrap:wrap;">
-                    <div id="conversationList" style="flex:1 1 200px;max-width:280px;max-height:420px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:4px;">Loading...</div>
-                    <div id="conversationThread" style="flex:2 1 300px;border:1px solid var(--border);border-radius:8px;padding:10px;display:flex;flex-direction:column;">
-                      <div class="muted" style="margin:auto;font-size:11.5px;">Pick a conversation on the left.</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-<div class="wa-panel" data-wapanel="intel" style="display:none;">
-<div style="margin-top:10px;">
-                  <div class="row" style="gap:6px;margin-bottom:8px;align-items:center;">
-                    <select class="fi" id="engIntelDays" style="width:auto;margin:0;font-size:11.5px;" onchange="loadEngagementIntelligence(true)">
-                      <option value="today">Today</option>
-                      <option value="7">Last 7 days</option>
-                      <option value="30" selected>Last 30 days</option>
-                      <option value="90">Last 90 days</option>
-                    </select>
-                    <button class="btn btn-s btn-sm" onclick="loadEngagementIntelligence(true)">Refresh</button>
-                  </div>
-                  <div id="engIntel" class="muted" style="font-size:11.5px;">Loading...</div>
-                </div>
-              </div>
-<div class="wa-panel" data-wapanel="logs" style="display:none;">
-<div style="margin-top:10px;">
-                  <div class="row" style="gap:6px;margin-bottom:8px;">
-                    <button class="btn btn-s btn-sm" onclick="loadWhatsappMessages(true)">Refresh</button>
-                    <select class="fi" id="waLogRange" style="width:auto;margin:0;font-size:11.5px;" onchange="loadWhatsappMessages(true)">
-                      <option value="today">Today</option>
-                      <option value="today">Today</option>
-                      <option value="7">Last 7 days</option>
-                      <option value="all">Everything recent</option>
-                    </select>
-                  </div>
-                  <div id="waMessageLog" class="muted" style="font-size:11.5px;">Loading...</div>
-                </div>
-              </div>
-            </div>
-
-                  <div class="card">
-                    <h2>What conversations turn into</h2>
-                    <p class="muted" style="font-size:11.5px;">Campaigns we sent and people who came to us, and whether either led to a visit within 30 days.</p>
-                    <div id="msgConversion" class="muted" style="font-size:12px;">Loading...</div>
-                  </div>
+                  
 
                   
           </div>
@@ -4187,6 +4232,36 @@ async function loadCommandCenter(){
     return '<div class="zen-feed-row"><time>'+new Date(a.at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})+'</time><div class="zen-mini-avatar">&#8226;</div><div><b>'+a.agent+'</b><p>'+a.text+'</p></div></div>';
   }).join(''):'<div class="muted" style="font-size:12px;padding:8px 0;">No recent activity yet.</div>';
 
+  // What the agents worked out, and who worked it out. Separate from
+  // what they are waiting on: one is a to-do list, the other is a
+  // finding, and mixing them buries both.
+  const insightHtml=j.insight?(
+    '<div class="cc-insight'+(j.insight.stale?' cc-stale':'')+'" '+
+      'onclick="zenGoAgent(\'intelligence\')" title="Open the Intelligence agent">'+
+      '<div class="cc-ins-head">'+
+        '<span class="cc-ins-agent">Intelligence agent</span>'+
+        '<span class="cc-ins-when">'+formatDubai(j.insight.at)+
+          (j.insight.stale?' &middot; may be out of date':'')+'</span>'+
+      '</div>'+
+      '<div class="cc-ins-sum">'+esc(j.insight.summary||'')+'</div>'+
+      (j.insight.top?'<div class="cc-ins-top">'+esc(
+        typeof j.insight.top==='string'?j.insight.top:(j.insight.top.action||j.insight.top.title||''))+'</div>':'')+
+      (j.insight.count>1?'<div class="cc-ins-more">'+(j.insight.count-1)+' more &rarr;</div>':'')+
+    '</div>'
+  ):'';
+
+  const findingsHtml=(j.findings&&j.findings.length)?(
+    '<div class="cc-findings">'+
+      '<div class="cc-find-label">Noticed today</div>'+
+      j.findings.map(function(f){
+        return '<div class="cc-find" onclick="zenGoAgent(\'intelligence\')">'+
+          '<b>'+esc(f.title)+'</b>'+
+          (f.detail?'<span>'+esc(String(f.detail).slice(0,120))+'</span>':'')+
+        '</div>';
+      }).join('')+
+    '</div>'
+  ):'';
+
   const atRisk=j.at_risk;
   const opportunityHtml=atRisk.count?(
     '<aside class="zen-opportunity">'+
@@ -4209,6 +4284,235 @@ async function loadCommandCenter(){
       // messages are drafted and waiting on approval, and saying so
       // turns an alarm into a decision.
       (atRisk.note?'<p class="zen-op-note">'+esc(atRisk.note)+'</p>':'')+
+      '<button class="zen-action" onclick="zenGoAgent(\'engagement\')">Review the messages</button>'+
+      '<button class="zen-action zen-action-alt" onclick="zenGoAgent(\'intelligence\')">Explore in Intelligence</button>'+
+    '</aside>'
+  ):'';
+}
+
+async function scheduleItem(id,ref){
+  const today=new Date(Date.now()+4*3600000).toISOString().slice(0,10);
+  const when=prompt('Schedule '+ref+' for which date?\n\nYYYY-MM-DD', today);
+  if(!when) return;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(when)){alert('Use the format YYYY-MM-DD.');return;}
+  const j=await call('schedule_content_plan_item',{id:id,scheduled_date:when});
+  if(!j.ok){alert(j.error);return;}
+  CAMPAIGNS=null;
+  loadCampaigns();
+}
+
+async function setCampaign(id,status){
+  if(status==='archived' && !confirm('Archive this campaign?\n\nIt moves to Publishing history and stops appearing in the plan. Nothing is deleted.')) return;
+  const j=await call('set_campaign_status',{strategy_id:id,status:status});
+  if(!j.ok){alert(j.error);return;}
+  CAMPAIGNS=null;
+  loadCampaigns();
+}
+
+async function deleteCampaign(id,ref){
+  if(!confirm('Delete campaign '+ref+' and everything in it?\n\nThis cannot be undone. If you might want it later, archive it instead.')) return;
+  const j=await call('delete_campaign',{strategy_id:id});
+  if(!j.ok){alert(j.error);return;}
+  CAMPAIGNS=null;
+  loadCampaigns();
+}
+
+function showMarketingTab(tab){
+  document.querySelectorAll('.marketing-tab-content').forEach(el=>el.style.display='none');
+  document.getElementById('marketingTab-'+tab).style.display='block';
+  document.querySelectorAll('.marketing-tab-btn').forEach(function(btn){
+    const active=btn.getAttribute('data-tab')===tab;
+    btn.className='btn btn-sm marketing-tab-btn '+(active?'btn-p':'btn-s');
+  });
+  // Bring the tab row into view on every switch. Choosing a tab from
+  // halfway down a long page otherwise changes content you cannot see.
+  const bar=document.querySelector('.mkt-tabs');
+  if(bar){
+    const y=bar.getBoundingClientRect().top;
+    // Only if it has actually scrolled out of comfortable view - moving
+    // the page when the tabs are already visible is disorienting.
+    if(y<0||y>window.innerHeight*0.5){
+      window.scrollTo({top:Math.max(0,bar.getBoundingClientRect().top+window.pageYOffset-72),behavior:'smooth'});
+    }
+  }
+  // Each panel loads when it is first opened rather than on arrival -
+  // six tabs all fetching at once would make the page slower for the
+  // sake of five panels nobody is looking at.
+  if(tab==='zenwhatsapp'){
+    if(typeof loadConversations==='function') loadConversations();
+    if(typeof loadWhatsappStatus==='function') loadWhatsappStatus();
+    if(typeof loadFacts==='function') loadFacts();
+    if(typeof loadAutoReplySettings==='function') loadAutoReplySettings();
+  } else if(tab==='performance'){
+    if(typeof loadDiagnosis==='function') loadDiagnosis();
+    if(typeof loadAdTable==='function') loadAdTable();
+    if(typeof loadMetaAdsStatus==='function') loadMetaAdsStatus();
+    if(typeof loadLeadsStatus==='function') loadLeadsStatus();
+    if(typeof loadCompetitors==='function') loadCompetitors();
+  } else if(tab==='meta'){
+    if(typeof loadWhatsappStatus==='function') loadWhatsappStatus();
+    if(typeof loadInstagramStatus==='function') loadInstagramStatus();
+    if(typeof loadMetaAdsStatus==='function') loadMetaAdsStatus();
+    if(typeof loadLeadsStatus==='function') loadLeadsStatus();
+  } else if(tab==='setup'){
+    if(typeof loadBrandDna==='function') loadBrandDna();
+    if(typeof loadAssetLibrary==='function') loadAssetLibrary();
+  } else if(tab==='strategy'){
+    if(typeof loadGenerationHistory==='function') loadGenerationHistory();
+    if(typeof loadPlanStrategyPicker==='function') loadPlanStrategyPicker();
+  }
+  // Publishing plan and history are marketing tabs. This was wired to
+  // the settings tab handler by mistake, so neither ever loaded and
+  // both sat on "Loading..." indefinitely.
+  if(tab==='history'||tab==='scheduling'){
+    if(typeof loadCampaigns==='function') loadCampaigns();
+  }
+}
+function showSettingsTab(tab){
+  document.querySelectorAll('.settings-tab-content').forEach(el=>el.style.display='none');
+  document.getElementById('settingsTab-'+tab).style.display='block';
+  document.querySelectorAll('.settings-tab-btn').forEach(function(btn){
+    const active=btn.getAttribute('data-tab')===tab;
+    btn.className='btn btn-sm settings-tab-btn '+(active?'btn-p':'btn-s');
+  });
+  // Stylist performance now lives here, not just on Reports - load it
+  // directly so it populates even if Reports was never visited first.
+  if(tab==='team') loadReports();
+}
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const pg=document.getElementById('page-'+id);
+  if(pg) pg.classList.add('active');
+  const nav=document.querySelector('.nav-item[data-page="'+id+'"]');
+  if(nav) nav.classList.add('active');
+  if(id==='intelligence'){loadPredictive();renderQuickQuestions();}
+  if(id==='agents'){showAgentDetail('engagement');loadSocialContent();loadBrandDna();loadGenerationHistory();loadAssetLibrary();loadBusinessStrategy();loadMonthlyStrategy();}
+  if(id==='approvals') loadApprovals();
+  if(id==='content') loadCalendar();
+  if(id==='zenchat') zcRenderSuggestions();
+  if(id==='reports') loadReports();
+  if(id==='overview') loadCommandCenter();
+}
+
+// Real, live data for the Command Center - fetched fresh every time
+// this page is shown, not injected once with static content. Every
+// number here comes from get_command_center_data; nothing is invented.
+async function loadCommandCenter(){
+  const page=document.getElementById('page-overview');
+  if(!page) return;
+  const j=await call('get_command_center_data',{});
+  // Nested fields the shared guard in call() cannot reach.
+  j.attention_items=j.attention_items||[];j.activity=j.activity||[];
+  j.agents=Object.assign({engagement:{},marketing:{},intelligence:{}},j.agents||{});
+  j.at_risk=j.at_risk||{count:0,by_campaign:{},revenue_estimate:null};
+  if(!j.ok) return;
+
+  const old=document.getElementById('zenHero');
+  if(old) old.remove();
+  const header=page.querySelector('.page-header');
+  if(header) header.style.display='none';
+
+  const attentionCount=j.attention_items.length;
+  const attentionRows=attentionCount?j.attention_items.map(function(a){
+    const clickHandler=a.agent?('zenGoAgent(\''+a.agent+'\')'):('showPage(\''+a.page+'\')');
+    // Pull the leading count out of the title so it can be set as a
+    // figure rather than read as prose. "320 new customer offer
+    // messages" scans far slower than a number beside a label.
+    const m=String(a.title).match(/^(\d[\d,]*)\s+(.*)$/);
+    const n=m?m[1]:'', rest=m?m[2]:a.title;
+    return '<button class="zq-row" onclick="'+clickHandler+'">'+
+             (n?'<span class="zq-n">'+n+'</span>':'<span class="zq-dot"></span>')+
+             '<span class="zq-txt"><span class="zq-title">'+rest+'</span>'+
+             '<span class="zq-sub">'+a.detail+'</span></span>'+
+             '<span class="zq-go">Review &rarr;</span>'+
+           '</button>';
+  }).join(''):'<div class="muted" style="font-size:12px;padding:8px 0;">Nothing needs your attention right now.</div>';
+
+  const statusLabel={monitoring:'Monitoring',waiting:'Waiting for you',working:'Working'};
+  const workingCount=[j.agents.engagement,j.agents.marketing,j.agents.intelligence].filter(a=>a.status==='working').length;
+  const waitingCount=[j.agents.engagement,j.agents.marketing,j.agents.intelligence].filter(a=>a.status==='waiting').length;
+  const monitoringCount=[j.agents.engagement,j.agents.marketing,j.agents.intelligence].filter(a=>a.status==='monitoring').length;
+
+  const activityRows=j.activity.length?j.activity.map(function(a){
+    return '<div class="zen-feed-row"><time>'+new Date(a.at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})+'</time><div class="zen-mini-avatar">&#8226;</div><div><b>'+a.agent+'</b><p>'+a.text+'</p></div></div>';
+  }).join(''):'<div class="muted" style="font-size:12px;padding:8px 0;">No recent activity yet.</div>';
+
+  // What the agents worked out, and who worked it out. Separate from
+  // what they are waiting on: one is a to-do list, the other is a
+  // finding, and mixing them buries both.
+  const insightHtml=j.insight?(
+    '<div class="cc-insight'+(j.insight.stale?' cc-stale':'')+'" '+
+      'onclick="zenGoAgent(\'intelligence\')" title="Open the Intelligence agent">'+
+      '<div class="cc-ins-head">'+
+        '<span class="cc-ins-agent">Intelligence agent</span>'+
+        '<span class="cc-ins-when">'+formatDubai(j.insight.at)+
+          (j.insight.stale?' &middot; may be out of date':'')+'</span>'+
+      '</div>'+
+      '<div class="cc-ins-sum">'+esc(j.insight.summary||'')+'</div>'+
+      (j.insight.top?'<div class="cc-ins-top">'+esc(
+        typeof j.insight.top==='string'?j.insight.top:(j.insight.top.action||j.insight.top.title||''))+'</div>':'')+
+      (j.insight.count>1?'<div class="cc-ins-more">'+(j.insight.count-1)+' more &rarr;</div>':'')+
+    '</div>'
+  ):'';
+
+  const findingsHtml=(j.findings&&j.findings.length)?(
+    '<div class="cc-findings">'+
+      '<div class="cc-find-label">Noticed today</div>'+
+      j.findings.map(function(f){
+        return '<div class="cc-find" onclick="zenGoAgent(\'intelligence\')">'+
+          '<b>'+esc(f.title)+'</b>'+
+          (f.detail?'<span>'+esc(String(f.detail).slice(0,120))+'</span>':'')+
+        '</div>';
+      }).join('')+
+    '</div>'
+  ):'';
+
+  const atRisk=j.at_risk;
+  const opportunityHtml=atRisk.count?(
+    '<aside class="zen-opportunity">'+
+      '<div class="eyebrow">Opportunity detected</div>'+
+      '<h3>'+atRisk.count+' customer'+(atRisk.count===1?'':'s')+' at risk of not returning</h3>'+
+      // Which campaigns, so it connects to what is actually queued
+      // rather than being an abstract count.
+      ((atRisk.by_campaign&&Object.keys(atRisk.by_campaign).length)
+        ? '<p class="muted" style="font-size:12px;">'+
+          Object.entries(atRisk.by_campaign).map(function(e){
+            return e[1]+' '+e[0].replace(/_/g,' ');
+          }).join(' &middot; ')+'</p>'
+        : '<p class="muted" style="font-size:12px;">Based on real visit patterns and prediction data.</p>')+
+      (atRisk.revenue_estimate
+        ? '<div class="zen-money">~AED '+atRisk.revenue_estimate.toLocaleString()+
+          ' <small>one visit each, at their own average of AED '+(atRisk.avg_ticket||0)+
+          '. Not their lifetime value &mdash; what a single returned visit is worth.</small></div>'
+        : '')+
+      // The count read as an unattended problem. It isn't - the
+      // messages are drafted and waiting on approval, and saying so
+      // turns an alarm into a decision.
+      (atRisk.note?'<p class="zen-op-note">'+esc(atRisk.note)+'</p>':'')+
+      // What the agents have worked out, and who worked it out. An
+      // insight nobody reads is the same as one nobody generated.
+      (j.insight?'<div class="cc-insight'+(j.insight.stale?' cc-stale':'')+'" '+
+        'onclick="zenGoAgent(\'intelligence\')" title="Open the Intelligence agent">'+
+        '<div class="cc-ins-head">'+
+          '<span class="cc-ins-agent">Intelligence agent</span>'+
+          '<span class="cc-ins-when">'+formatDubai(j.insight.at)+
+            (j.insight.stale?' &middot; may be out of date':'')+'</span>'+
+        '</div>'+
+        '<div class="cc-ins-sum">'+esc(j.insight.summary||'')+'</div>'+
+        (j.insight.top?'<div class="cc-ins-top">'+esc(
+          typeof j.insight.top==='string'?j.insight.top:(j.insight.top.action||j.insight.top.title||''))+'</div>':'')+
+        (j.insight.count>1?'<div class="cc-ins-more">'+(j.insight.count-1)+' more &rarr;</div>':'')+
+      '</div>':'')+
+      ((j.findings&&j.findings.length)?'<div class="cc-findings">'+
+        '<div class="cc-find-label">Noticed today</div>'+
+        j.findings.map(function(f){
+          return '<div class="cc-find" onclick="zenGoAgent(\'intelligence\')">'+
+            '<b>'+esc(f.title)+'</b>'+
+            (f.detail?'<span>'+esc(String(f.detail).slice(0,120))+'</span>':'')+
+          '</div>';
+        }).join('')+
+      '</div>':'')+
       '<button class="zen-action" onclick="zenGoAgent(\'engagement\')">Review the messages</button>'+
       '<button class="zen-action zen-action-alt" onclick="zenGoAgent(\'intelligence\')">Explore in Intelligence</button>'+
     '</aside>'
@@ -4240,7 +4544,10 @@ async function loadCommandCenter(){
       '<div class="zen-attention-card">'+
         '<div class="zq-head"><div><h2>Needs your attention</h2><p>Only decisions that require a human.</p></div>'+
         (attentionCount?('<span class="zq-count">'+attentionCount+'</span>'):'')+'</div>'+
-        attentionRows+
+    
+    attentionRows+
+        insightHtml+
+        findingsHtml+
       '</div>'+
       '<aside class="zen-today-summary">'+
         '<div class="label">Workforce summary</div>'+
