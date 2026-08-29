@@ -2580,6 +2580,44 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
   }
   .zen-followup input:focus{outline:none;border-color:var(--p);}
 </style>
+
+<style id="zenModelJobs">
+  .mj-summary{
+    display:flex;gap:16px;flex-wrap:wrap;align-items:baseline;
+    padding:10px 12px;border-radius:9px;background:var(--bg);
+    border:1px solid var(--border);margin-bottom:12px;font-size:12px;
+  }
+  .mj-row{
+    border:1px solid var(--border);border-radius:9px;
+    padding:11px 13px;margin-bottom:9px;
+  }
+  /* Anything moved off the recommendation, so a deliberate change is
+     visible later when you have forgotten making it. */
+  .mj-changed{border-left:3px solid var(--warn);}
+  .mj-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
+  .mj-head b{font-size:13px;color:var(--ink);}
+  .mj-cost{
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:11px;color:var(--muted);
+  }
+  .mj-what{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.45;}
+  .mj-controls{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap;}
+  .mj-controls select{
+    padding:5px 9px;border-radius:7px;border:1px solid var(--border);
+    background:var(--surface,#fff);font-size:11.5px;color:var(--ink);
+    font-family:inherit;cursor:pointer;
+  }
+  .mj-ok{font-size:10.5px;color:var(--ok);font-weight:600;}
+  .mj-revert{
+    border:1px solid var(--border);background:transparent;cursor:pointer;
+    border-radius:7px;padding:4px 9px;font-size:10.5px;color:var(--p);
+  }
+  .mj-revert:hover{border-color:var(--p);background:var(--pl);}
+  .mj-why{
+    margin-top:7px;padding-left:9px;border-left:2px solid var(--border);
+    font-size:11px;color:var(--muted);line-height:1.5;
+  }
+</style>
 </head>
 <body>
 
@@ -3859,6 +3897,12 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
           </div>
 
           <div id="settingsTab-billing" class="settings-tab-content" style="display:none;">
+              <div class="card">
+                <h2>Which model does which job</h2>
+                <p class="muted" style="font-size:11.5px;">Each job below calls a model. Bigger models reason better and cost more &mdash; the recommendation says which trade is worth making where.</p>
+                <div id="modelJobs" class="muted" style="font-size:12px;">Loading...</div>
+              </div>
+
             <div class="card" style="opacity:0.6;">
               <h2>Billing</h2>
               <p class="muted">Coming soon - no billing infrastructure exists yet, this is a placeholder for when it does.</p>
@@ -4294,6 +4338,7 @@ function showSettingsTab(tab){
   // Stylist performance now lives here, not just on Reports - load it
   // directly so it populates even if Reports was never visited first.
   if(tab==='team') loadReports();
+  if(tab==='billing' && typeof loadModelJobs==='function') loadModelJobs();
 }
 function showPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -4615,6 +4660,7 @@ function showSettingsTab(tab){
   // Stylist performance now lives here, not just on Reports - load it
   // directly so it populates even if Reports was never visited first.
   if(tab==='team') loadReports();
+  if(tab==='billing' && typeof loadModelJobs==='function') loadModelJobs();
 }
 function showPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -10342,6 +10388,52 @@ async function inviteTeammate(){
 }
 
 // API keys
+async function loadModelJobs(){
+  const el=document.getElementById('modelJobs');
+  if(!el) return;
+  const j=await call('list_model_jobs',{});
+  if(!j.ok){el.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
+
+  const total=j.jobs.reduce(function(t,x){return t+(x.monthly_estimate||0);},0);
+  const ideal=j.jobs.reduce(function(t,x){return t+(x.recommended_estimate||0);},0);
+  const actual=j.jobs.reduce(function(t,x){return t+(x.actual_last_30d||0);},0);
+
+  el.innerHTML=
+    '<div class="mj-summary">'+
+      '<span><b>$'+total.toFixed(2)+'</b> a month at current settings</span>'+
+      (Math.abs(total-ideal)>0.05?'<span class="muted">$'+ideal.toFixed(2)+' if you took every recommendation</span>':'')+
+      '<span class="muted">$'+actual.toFixed(2)+' actually spent in the last 30 days</span>'+
+    '</div>'+
+    j.jobs.map(function(job){
+      return '<div class="mj-row'+(job.is_recommended?'':' mj-changed')+'">'+
+        '<div class="mj-head">'+
+          '<b>'+esc(job.label)+'</b>'+
+          '<span class="mj-cost">~$'+(job.monthly_estimate||0).toFixed(2)+'/mo</span>'+
+        '</div>'+
+        '<div class="mj-what">'+esc(job.what)+'</div>'+
+        '<div class="mj-controls">'+
+          '<select onchange="setModelForJob(\''+job.purpose+'\',this.value)">'+
+            j.models.map(function(m){
+              return '<option value="'+m.id+'"'+(m.id===job.current?' selected':'')+'>'+
+                esc(m.name)+' &middot; $'+m['in']+'/$'+m.out+' per million</option>';
+            }).join('')+
+          '</select>'+
+          (job.is_recommended
+            ? '<span class="mj-ok">recommended</span>'
+            : '<button class="mj-revert" onclick="setModelForJob(\''+job.purpose+'\',\''+job.recommended+'\')">use the recommendation</button>')+
+        '</div>'+
+        // The reasoning, so it can be argued with rather than followed.
+        '<div class="mj-why">'+esc(job.why)+'</div>'+
+      '</div>';
+    }).join('');
+}
+
+async function setModelForJob(purpose,model){
+  const j=await call('set_model_for_job',{purpose:purpose,model:model});
+  if(!j.ok){alert(j.error);}
+  loadModelJobs();
+}
+
 async function loadApiKeys(){
   const j=await call('list_api_keys',{});
   document.getElementById('apiKeyList').innerHTML=(j.keys||[]).map(function(k){
