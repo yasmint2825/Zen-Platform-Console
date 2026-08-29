@@ -2280,6 +2280,62 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     font-family:'IBM Plex Mono',ui-monospace,monospace;
   }
 </style>
+
+<style id="zenCommandUX">
+  .zen-cmd-result{margin-top:12px;}
+  .zen-cmd-card{
+    border:1px solid var(--line,#E4E7E4);border-radius:10px;padding:11px 13px;
+    font-size:12.5px;line-height:1.5;background:var(--surface,#fff);
+  }
+  /* Anything that writes gets a different colour, so a confirmation
+     never looks like a result. */
+  .zen-cmd-confirm{border-color:#BFE3D6;background:#F4FBF8;}
+  .zen-cmd-effect{font-size:13px;}
+  .zen-cmd-low{
+    margin-top:6px;font-size:11px;color:#9A5B0F;
+  }
+</style>
+
+<style id="zenAutoSend">
+  .auto-send-toggle{
+    display:flex;align-items:center;gap:6px;margin-top:6px;
+    font-size:11.5px;color:var(--muted,#5E6B64);cursor:pointer;flex-wrap:wrap;
+  }
+  .auto-send-toggle input[type=checkbox]{width:14px;height:14px;accent-color:#0F4C45;cursor:pointer;}
+  .auto-send-cap{display:flex;align-items:center;gap:4px;margin-left:4px;font-size:10.5px;}
+  .auto-send-cap input{
+    width:52px;padding:2px 5px;border:1px solid var(--line,#E4E7E4);border-radius:5px;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;
+  }
+  .auto-tag{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:8.5px;
+    letter-spacing:.04em;padding:2px 7px;border-radius:999px;
+    background:#E8F6F1;color:#0B7A5E;
+  }
+  /* Waiting for you is the safe default, so it reads as neutral
+     rather than as a warning. */
+  .auto-tag-off{background:#EEF1EF;color:#5E6B64;}
+</style>
+
+<style id="zenAutoSendBox">
+  .auto-send-box{
+    margin-top:8px;padding:9px 11px;border-radius:9px;
+    border:1px solid var(--line,#E4E7E4);background:var(--surface-2,#FAFBFA);
+  }
+  /* Visibly different when armed - this is the one setting that lets
+     messages reach customers without anyone looking. */
+  .auto-send-on{border-color:#BFE3D6;background:#F4FBF8;}
+  .auto-send-toggle{display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer;}
+  .auto-send-toggle input{width:15px;height:15px;accent-color:#0F4C45;cursor:pointer;}
+  .auto-send-what{font-size:11px;color:var(--muted,#5E6B64);margin:5px 0 6px 22px;line-height:1.45;}
+  .auto-send-cap{
+    display:block;margin-left:22px;font-size:11px;color:var(--muted,#5E6B64);cursor:pointer;
+  }
+  .auto-send-cap input{
+    width:56px;padding:2px 6px;margin:0 4px;border:1px solid var(--line,#E4E7E4);border-radius:5px;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;
+  }
+</style>
 </head>
 <body>
 
@@ -3770,7 +3826,7 @@ function showAgentDetail(agent){
   if(agent==='intelligence'){loadDailyIntelligence();loadPredictive();renderQuickQuestions();}
 }
 // ── Campaigns ────────────────────────────────────────────────────
-let CAMPAIGNS=null, STRATEGIES=[], PLAN_STRATEGIES=[];
+let CAMPAIGNS=null, STRATEGIES=[], PLAN_STRATEGIES=[], ZEN_PENDING=null;
 
 async function loadStrategyPicker(){
   const sel=document.getElementById('strategyPicker');
@@ -4188,31 +4244,111 @@ async function zcAsk(preset){
   out.innerHTML='<div class="zc-answer"><div class="zc-q">'+esc(q)+'</div>'+
     '<div class="zc-a">'+esc(j.answer||'').replace(/\n/g,'<br>')+'</div></div>';
 }
-function zenCommand(text){
+async function zenCommand(text){
   const q=(text||document.getElementById('zenCommandInput')?.value||'').trim();
   if(!q) return;
-  const low=q.toLowerCase();
-  if(low.includes('customer')||low.includes('revenue')||low.includes('retention')||low.includes('why')){
-    zenGoAgent('intelligence');
-    setTimeout(function(){
-      const ask=document.getElementById('askInput');
-      if(ask){ask.value=q;}
-      if(typeof askQuestion==='function') askQuestion();
-    },80);
-  } else if(low.includes('instagram')||low.includes('content')||low.includes('marketing')||low.includes('campaign')){
-    zenGoAgent('marketing');
-  } else if(low.includes('whatsapp')||low.includes('lapsed')||low.includes('nudge')||low.includes('birthday')){
-    zenGoAgent('engagement');
-  } else {
-    zenGoAgent('intelligence');
-    setTimeout(function(){
-      const ask=document.getElementById('askInput');
-      if(ask){ask.value=q;}
-      if(typeof askQuestion==='function') askQuestion();
-    },80);
+  const out=document.getElementById('zenCommandResult')||(function(){
+    const d=document.createElement('div');
+    d.id='zenCommandResult';
+    d.className='zen-cmd-result';
+    const inp=document.getElementById('zenCommandInput');
+    if(inp&&inp.parentElement) inp.parentElement.parentElement.appendChild(d);
+    return d;
+  })();
+  out.innerHTML='<span class="mw-spinner"></span>Working out what you meant...';
+
+  const j=await call('interpret_command',{text:q});
+  if(!j.ok){out.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
+  const p=j.plan||{};
+
+  if(p.action==='unclear'){
+    out.innerHTML='<div class="zen-cmd-card">'+esc(p.effect||"I couldn't tell what you meant.")+'</div>';
+    return;
   }
-  const input=document.getElementById('zenCommandInput');
-  if(input) input.value='';
+
+  // Reading something changes nothing, so it just happens. Anything
+  // that writes waits for a yes.
+  if(!p.needs_confirm){
+    out.innerHTML='<div class="zen-cmd-card">'+esc(p.effect||'')+'</div>';
+    ZEN_PENDING=null;
+    runZenAction(p,q);
+    return;
+  }
+
+  ZEN_PENDING={plan:p,text:q};
+  out.innerHTML='<div class="zen-cmd-card zen-cmd-confirm">'+
+    '<div class="zen-cmd-effect">'+esc(p.effect||'')+'</div>'+
+    (p.confidence==='low'?'<div class="zen-cmd-low">I am not certain that is what you meant.</div>':'')+
+    '<div class="row" style="gap:6px;margin-top:9px;">'+
+      '<button class="btn btn-p btn-sm" onclick="confirmZenAction()">Yes, do it</button>'+
+      '<button class="btn btn-s btn-sm" onclick="document.getElementById(\'zenCommandResult\').innerHTML=\'\';">Cancel</button>'+
+    '</div>'+
+  '</div>';
+}
+
+async function confirmZenAction(){
+  if(!ZEN_PENDING) return;
+  const {plan,text}=ZEN_PENDING;
+  ZEN_PENDING=null;
+  const out=document.getElementById('zenCommandResult');
+  out.innerHTML='<span class="mw-spinner"></span>Working...';
+  runZenAction(plan,text);
+}
+
+// Each branch calls something the platform already does. Nothing here
+// is new capability - the model only chose which one.
+async function runZenAction(p,q){
+  const out=document.getElementById('zenCommandResult');
+  const say=function(t,good){ out.innerHTML='<div class="zen-cmd-card">'+t+'</div>'; };
+
+  if(p.action==='ask_question'){
+    zenGoAgent('intelligence');
+    setTimeout(function(){
+      const ask=document.getElementById('askInput');
+      if(ask) ask.value=p.question||q;
+      if(typeof askQuestion==='function') askQuestion();
+    },80);
+    say('Asked in Intelligence.');
+    return;
+  }
+  if(p.action==='open_page'){
+    const map={engagement:'engagement',marketing:'marketing',intelligence:'intelligence'};
+    if(p.page==='customers'){ showPage('customers'); }
+    else zenGoAgent(map[p.page]||'engagement');
+    say('Opened.');
+    return;
+  }
+  if(p.action==='check_message_queue'){
+    const j=await call('get_decision_buckets',{days:30});
+    if(!j.ok){say(esc(j.error));return;}
+    const c=j.counts||{};
+    say('<b>'+(c.pending||0)+'</b> waiting for review, <b>'+(c.cooldown||0)+'</b> in cooldown, <b>'+(c.holdout||0)+'</b> held back. '+
+      '<a href="#" onclick="zenGoAgent(\'engagement\');return false;">Open the queue</a>');
+    return;
+  }
+  if(p.action==='run_engagement_agent'){
+    const j=await call('run_now',{});
+    if(!j.ok){say(esc(j.error));return;}
+    const r=(j.results&&j.results[0])||{};
+    say((r.decisions||0)+' decision(s) ready for review from '+(r.candidates||0)+' candidate(s). '+
+      '<a href="#" onclick="zenGoAgent(\'engagement\');return false;">Review them</a> &mdash; nothing has been sent.');
+    return;
+  }
+  if(p.action==='analyse_ad_spend'){
+    zenGoAgent('marketing');
+    setTimeout(function(){ if(typeof analyseAdSpend==='function') analyseAdSpend(); },120);
+    say('Looking at the ad spend in Marketing.');
+    return;
+  }
+  if(p.action==='generate_content_plan'){
+    zenGoAgent('marketing');
+    setTimeout(function(){
+      if(typeof showMarketingTab==='function') showMarketingTab('strategy');
+      say('Opened the content plan &mdash; pick the strategy to build from, then generate.');
+    },120);
+    return;
+  }
+  say('Nothing to do.');
 }
 
 const MW_ML_URL=SB_URL+'/functions/v1/mw-ml';
@@ -4815,6 +4951,27 @@ async function loadSettings(){
     return '<div class="item">'+
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'+
         '<label style="display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px;"><input type="checkbox" '+(s.enabled?'checked':'')+' id="en_'+s.campaign_key+'"> '+s.campaign_key+'</label>'+
+        // Whether this one may send without you. Per campaign, because
+        // a birthday reminder loses its point waiting two days in a
+        // queue while a win-back to 180 people deserves a look first.
+        // Presented as a choice with its consequence stated, not a
+        // checkbox someone ticks without noticing what it means.
+        '<div class="auto-send-box'+(s.auto_send?' auto-send-on':'')+'">'+
+          '<label class="auto-send-toggle">'+
+            '<input type="checkbox" '+(s.auto_send?'checked':'')+' id="as_'+s.campaign_key+'"'+
+              ' onchange="autoSendPreview(\''+s.campaign_key+'\')">'+
+            '<b>Let this one send without me</b>'+
+          '</label>'+
+          '<div class="auto-send-what" id="asw_'+s.campaign_key+'">'+
+            (s.auto_send
+              ? 'These go out on their own, within five minutes of the agent running.'
+              : 'These wait in the review queue until you approve them.')+
+          '</div>'+
+          '<label class="auto-send-cap">Stop after '+
+            '<input type="number" min="1" max="200" value="'+(s.auto_send_max_per_run||25)+
+              '" id="asm_'+s.campaign_key+'"> in one run, and hold the rest for review'+
+          '</label>'+
+        '</div>'+
         '<span class="muted" style="font-size:11px;">cooldown</span><input class="fi" type="number" style="width:60px;padding:5px;margin:0;" id="cd_'+s.campaign_key+'" value="'+s.min_cooldown_days+'"><span class="muted" style="font-size:11px;">days</span>'+
       '</div>'+
       (s.campaign_key==='birthday'?('<div style="margin-bottom:8px;"><span class="muted" style="font-size:11px;">send starting</span> <input class="fi" type="number" style="width:60px;padding:5px;display:inline-block;margin:0 4px;" id="td_'+s.campaign_key+'" value="'+(s.trigger_days==null?3:s.trigger_days)+'"> <span class="muted" style="font-size:11px;">days before the birthday</span></div>'):'')+
@@ -4853,7 +5010,10 @@ function renderRuleBook(strategy){
   el.innerHTML=strategy.map(function(s){
     const label=CAMPAIGN_LABELS[s.campaign_key]||s.campaign_key;
     if(!s.enabled) return '<div style="font-size:12.5px;padding:4px 0;color:var(--muted);">Off: <b>'+label+'</b> - the agent never sends this.</div>';
-    let line='On: <b>'+label+'</b>';
+    let line='On: <b>'+label+'</b>'+
+      (s.auto_send
+        ? ' <span class="auto-tag">sends on its own, up to '+(s.auto_send_max_per_run||25)+' a run</span>'
+        : ' <span class="auto-tag auto-tag-off">waits for you</span>');
     if(s.campaign_key==='birthday'&&s.trigger_days!=null) line+=', sent starting '+s.trigger_days+' day(s) before the birthday';
     if(s.applies_at_visit_counts&&s.applies_at_visit_counts.length) line+=', only for customers currently on visit '+s.applies_at_visit_counts.join(' or ')+' (nudging toward the next visit)';
     if(s.threshold_value!=null&&s.threshold_value_max!=null) line+=', valid '+s.threshold_value+' to '+s.threshold_value_max+' days after their last visit';
@@ -4864,6 +5024,18 @@ function renderRuleBook(strategy){
     return '<div style="font-size:12.5px;padding:4px 0;">'+line+'.</div>';
   }).join('');
 }
+// Says what the tick means as soon as it is ticked, rather than after
+// the next agent run.
+function autoSendPreview(key){
+  const on=(document.getElementById('as_'+key)||{}).checked;
+  const el=document.getElementById('asw_'+key);
+  if(el) el.textContent=on
+    ? 'These go out on their own, within five minutes of the agent running.'
+    : 'These wait in the review queue until you approve them.';
+  const box=el&&el.closest('.auto-send-box');
+  if(box) box.classList.toggle('auto-send-on', !!on);
+}
+
 async function saveStrategy(key){
   const tdEl=document.getElementById('td_'+key);
   const tvEl=document.getElementById('tv_'+key), tvmEl=document.getElementById('tvm_'+key), vcEl=document.getElementById('vc_'+key), dpEl=document.getElementById('dp_'+key);
@@ -4876,6 +5048,8 @@ async function saveStrategy(key){
     threshold_value_max:tvmEl&&tvmEl.value!==''?parseInt(tvmEl.value):null,
     applies_at_visit_counts:visitCounts,
     discount_percent:dpEl&&dpEl.value!==''?parseFloat(dpEl.value):null,
+    auto_send:!!(document.getElementById('as_'+key)||{}).checked,
+    auto_send_max_per_run:parseInt((document.getElementById('asm_'+key)||{}).value)||25,
   });
   if(j.ok) loadSettings(); else alert('Error: '+j.error);
 }
