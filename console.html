@@ -2458,6 +2458,51 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
   .cc-find b{display:block;color:var(--ink);}
   .cc-find span{color:var(--muted);font-size:11.5px;}
 </style>
+
+<style id="zenPlanFor">
+  .md-plan-btn{
+    margin-top:8px;padding:4px 10px;border-radius:7px;cursor:pointer;
+    border:1px solid var(--border);background:transparent;
+    font-size:11px;font-weight:600;color:var(--p);
+  }
+  .md-plan-btn:hover{border-color:var(--p);background:var(--pl);}
+  .md-plan:empty{display:none;}
+  .md-plan{
+    margin-top:9px;padding:10px 11px;border-radius:9px;
+    background:var(--bg);border:1px solid var(--border);
+  }
+  .md-plan-step{display:grid;grid-template-columns:20px 1fr;gap:8px;margin-bottom:9px;}
+  .md-plan-step:last-child{margin-bottom:0;}
+  .md-plan-n{
+    width:20px;height:20px;border-radius:6px;display:grid;place-items:center;
+    background:var(--p);color:#fff;font-size:10.5px;font-weight:700;
+  }
+  .md-plan-step b{font-size:12px;color:var(--ink);}
+  .md-plan-step p{margin:3px 0 0;font-size:11.5px;color:var(--muted);line-height:1.45;}
+  .md-plan-exp{color:var(--ok)!important;}
+  /* When the plan cannot be followed, that goes first and looks
+     different - it is the most useful thing on the card. */
+  .md-blocker{
+    padding:8px 10px;border-radius:8px;margin-bottom:10px;
+    background:var(--warnl);color:var(--warn);font-size:11.5px;line-height:1.5;
+  }
+  .md-first{
+    margin-top:10px;padding-top:9px;border-top:1px solid var(--border);
+    font-size:11.5px;color:var(--ink);line-height:1.5;
+  }
+</style>
+
+<style id="zenOpDo">
+  /* The recommendation, attached to the number it is about. */
+  .zen-op-do{
+    margin-top:10px;padding:9px 11px;border-radius:9px;
+    background:rgba(255,255,255,.14);font-size:12px;line-height:1.5;
+  }
+  .zen-op-do span{
+    display:block;font-size:9.5px;font-weight:700;letter-spacing:.06em;
+    text-transform:uppercase;opacity:.75;margin-bottom:3px;
+  }
+</style>
 </head>
 <body>
 
@@ -4235,7 +4280,15 @@ async function loadCommandCenter(){
   // What the agents worked out, and who worked it out. Separate from
   // what they are waiting on: one is a to-do list, the other is a
   // finding, and mixing them buries both.
-  const insightHtml=j.insight?(
+  // The opportunity block already states the at-risk count and what it
+  // is worth. An insight about the same customers is not a second
+  // finding - it is the "so what" for the first. Shown inside that
+  // block rather than beside it, and skipped entirely when it would
+  // just restate the number.
+  const insightSaysSame=j.insight && j.at_risk && j.at_risk.count &&
+    /at risk|lapsed|not return|drift|win.?back/i.test(String(j.insight.summary||''));
+
+  const insightHtml=(j.insight && !insightSaysSame)?(
     '<div class="cc-insight'+(j.insight.stale?' cc-stale':'')+'" '+
       'onclick="zenGoAgent(\'intelligence\')" title="Open the Intelligence agent">'+
       '<div class="cc-ins-head">'+
@@ -4284,10 +4337,106 @@ async function loadCommandCenter(){
       // messages are drafted and waiting on approval, and saying so
       // turns an alarm into a decision.
       (atRisk.note?'<p class="zen-op-note">'+esc(atRisk.note)+'</p>':'')+
+      // The recommendation belongs here, attached to the number it is
+      // about, rather than repeated in a box of its own.
+      ((insightSaysSame&&j.insight&&j.insight.top)
+        ? '<div class="zen-op-do"><span>Intelligence agent</span>'+esc(
+            typeof j.insight.top==='string'?j.insight.top:(j.insight.top.action||j.insight.top.title||''))+'</div>'
+        : '')+
+
       '<button class="zen-action" onclick="zenGoAgent(\'engagement\')">Review the messages</button>'+
       '<button class="zen-action zen-action-alt" onclick="zenGoAgent(\'intelligence\')">Explore in Intelligence</button>'+
     '</aside>'
   ):'';
+
+  // Fetched after the hero renders rather than blocking it - pipeline
+  // health is useful but nobody is waiting on it to read the page.
+  setTimeout(loadScheduleHealth, 0);
+
+  const root=document.createElement('div');
+  root.id='zenHero';
+  root.innerHTML=
+    '<section class="zen-hero">'+
+      '<div class="zen-delegate-label"><span>&#10022;</span> Delegate to ZEN <span class="zen-command-mode">Command</span></div>'+
+      '<h1>Your AI team is working.</h1>'+
+      '<p>Ask, delegate, or change direction. ZEN routes the work to the right agent.</p>'+
+      '<div class="zen-command">'+
+        '<span class="spark">&#10022;</span>'+
+        '<input id="zenCommandInput" placeholder="e.g. Bring back customers likely to lapse next week..." onkeydown="if(event.key===\'Enter\')zenCommand()">'+
+        '<button onclick="zenCommand()">Delegate</button>'+
+      '</div>'+
+      '<div class="zen-suggestions">'+
+        '<button class="zen-chip" onclick="zenCommand(\'Who are we about to lose?\')">Who are we about to lose?</button>'+
+        '<button class="zen-chip" onclick="zenCommand(\'Plan next month campaign\')">Plan next campaign</button>'+
+        '<button class="zen-chip" onclick="zenCommand(\'Why did revenue change this month?\')">Explain revenue</button>'+
+      '</div>'+
+    '</section>'+
+    '<section class="zen-v2-attention">'+
+      '<div class="zen-attention-card">'+
+        '<div class="zq-head"><div><h2>Needs your attention</h2><p>Only decisions that require a human.</p></div>'+
+        (attentionCount?('<span class="zq-count">'+attentionCount+'</span>'):'')+'</div>'+
+    
+    attentionRows+
+        insightHtml+
+        findingsHtml+
+      '</div>'+
+      '<aside class="zen-today-summary">'+
+        '<div class="label">Workforce summary</div>'+
+        '<div class="big">'+(workingCount+waitingCount+monitoringCount)+' active roles</div>'+
+        '<p>'+[workingCount&&(workingCount+' working'),waitingCount&&(waitingCount+' waiting on you'),monitoringCount&&(monitoringCount+' monitoring')].filter(Boolean).join(', ')+'.</p>'+
+      '</aside>'+
+    '</section>'+
+    '<section class="zh-wrap"><div class="zh-card">'+
+      '<div class="zh-head"><div><h2>Scheduled work</h2><p>The platform\'s own jobs, and whether they ran.</p></div>'+
+        '<span class="zh-status" id="zhStatus"></span></div>'+
+      '<div id="zhBody" class="muted" style="font-size:12px;padding:10px 0;">Checking...</div>'+
+    '</div></section>'+
+    '<section class="zen-workforce-section">'+
+      '<div class="zen-workforce-header"><div><h2>Your AI Team</h2><p>Specialist agents working across your business.</p></div></div>'+
+      '<div class="zen-workforce-grid">'+
+        '<article class="zen-worker'+(j.agents.engagement.status==='waiting'?' needs-attention':'')+'" onclick="zenGoAgent(\'engagement\')">'+
+          '<div class="zen-worker-top"><div class="zen-worker-title"><div class="avatar">&#128172;</div><div><h3>Engagement Agent</h3><small>Retention &amp; WhatsApp</small></div></div>'+
+          '<span class="zen-agent-state '+j.agents.engagement.status+'"><i class="pulse"></i>'+statusLabel[j.agents.engagement.status]+'</span></div>'+
+          '<p>'+j.agents.engagement.message+'</p>'+
+          '<div class="worker-footer">Open workspace &rarr;</div>'+
+        '</article>'+
+        '<article class="zen-worker'+(j.agents.marketing.status==='waiting'?' needs-attention':'')+'" onclick="zenGoAgent(\'marketing\')">'+
+          '<div class="zen-worker-top"><div class="zen-worker-title"><div class="avatar">&#10022;</div><div><h3>Marketing Agent</h3><small>Strategy &amp; content</small></div></div>'+
+          '<span class="zen-agent-state '+j.agents.marketing.status+'"><i class="pulse"></i>'+statusLabel[j.agents.marketing.status]+'</span></div>'+
+          '<p>'+j.agents.marketing.message+'</p>'+
+          '<div class="worker-footer">Open workspace &rarr;</div>'+
+        '</article>'+
+        '<article class="zen-worker" onclick="showPage(\'intelligence\')">'+
+          '<div class="zen-worker-top"><div class="zen-worker-title"><div class="avatar">&#9670;</div><div><h3>Intelligence</h3><small>Prediction &amp; analysis</small></div></div>'+
+          '<span class="zen-agent-state '+j.agents.intelligence.status+'"><i class="pulse"></i>'+statusLabel[j.agents.intelligence.status]+'</span></div>'+
+          '<p>'+j.agents.intelligence.message+'</p>'+
+          '<div class="worker-footer">Ask your business &rarr;</div>'+
+        '</article>'+
+        '<article class="zen-worker" style="opacity:0.65;cursor:default;">'+
+          '<div class="zen-worker-top"><div class="zen-worker-title"><div class="avatar">&#9742;</div><div><h3>Call Agent</h3><small>Missed calls &amp; booking</small></div></div>'+
+          '<span class="badge" style="background:var(--border);color:var(--muted);">Coming soon</span></div>'+
+          '<p>Designed to recover missed calls and turn them into bookings automatically.</p>'+
+        '</article>'+
+      '</div>'+
+    '</section>'+
+    '<section class="zen-two-col">'+
+      '<div class="zen-feed">'+
+        '<div class="zen-section-head" style="margin:0 0 4px;"><div><h2>Activity</h2><span>What your agents actually did</span></div></div>'+
+        activityRows+
+      '</div>'+
+      opportunityHtml+
+    '</section>';
+
+  page.insertBefore(root,page.firstChild);
+  const ao=document.getElementById('agentOverview'), os=document.getElementById('overviewStats');
+  if(ao) ao.style.display='none';
+  if(os) os.style.display='none';
+  // Also hide the legacy "By agent" / "Platform" headings sitting
+  // directly above those now-empty divs - otherwise they're left
+  // orphaned, floating below the new Command Center content.
+  [...page.querySelectorAll('h3')].forEach(function(x){
+    if(['By agent','Platform'].includes(x.textContent.trim())) x.style.display='none';
+  });
 }
 
 async function scheduleItem(id,ref){
@@ -4398,215 +4547,6 @@ function showPage(id){
 // Real, live data for the Command Center - fetched fresh every time
 // this page is shown, not injected once with static content. Every
 // number here comes from get_command_center_data; nothing is invented.
-async function loadCommandCenter(){
-  const page=document.getElementById('page-overview');
-  if(!page) return;
-  const j=await call('get_command_center_data',{});
-  // Nested fields the shared guard in call() cannot reach.
-  j.attention_items=j.attention_items||[];j.activity=j.activity||[];
-  j.agents=Object.assign({engagement:{},marketing:{},intelligence:{}},j.agents||{});
-  j.at_risk=j.at_risk||{count:0,by_campaign:{},revenue_estimate:null};
-  if(!j.ok) return;
-
-  const old=document.getElementById('zenHero');
-  if(old) old.remove();
-  const header=page.querySelector('.page-header');
-  if(header) header.style.display='none';
-
-  const attentionCount=j.attention_items.length;
-  const attentionRows=attentionCount?j.attention_items.map(function(a){
-    const clickHandler=a.agent?('zenGoAgent(\''+a.agent+'\')'):('showPage(\''+a.page+'\')');
-    // Pull the leading count out of the title so it can be set as a
-    // figure rather than read as prose. "320 new customer offer
-    // messages" scans far slower than a number beside a label.
-    const m=String(a.title).match(/^(\d[\d,]*)\s+(.*)$/);
-    const n=m?m[1]:'', rest=m?m[2]:a.title;
-    return '<button class="zq-row" onclick="'+clickHandler+'">'+
-             (n?'<span class="zq-n">'+n+'</span>':'<span class="zq-dot"></span>')+
-             '<span class="zq-txt"><span class="zq-title">'+rest+'</span>'+
-             '<span class="zq-sub">'+a.detail+'</span></span>'+
-             '<span class="zq-go">Review &rarr;</span>'+
-           '</button>';
-  }).join(''):'<div class="muted" style="font-size:12px;padding:8px 0;">Nothing needs your attention right now.</div>';
-
-  const statusLabel={monitoring:'Monitoring',waiting:'Waiting for you',working:'Working'};
-  const workingCount=[j.agents.engagement,j.agents.marketing,j.agents.intelligence].filter(a=>a.status==='working').length;
-  const waitingCount=[j.agents.engagement,j.agents.marketing,j.agents.intelligence].filter(a=>a.status==='waiting').length;
-  const monitoringCount=[j.agents.engagement,j.agents.marketing,j.agents.intelligence].filter(a=>a.status==='monitoring').length;
-
-  const activityRows=j.activity.length?j.activity.map(function(a){
-    return '<div class="zen-feed-row"><time>'+new Date(a.at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})+'</time><div class="zen-mini-avatar">&#8226;</div><div><b>'+a.agent+'</b><p>'+a.text+'</p></div></div>';
-  }).join(''):'<div class="muted" style="font-size:12px;padding:8px 0;">No recent activity yet.</div>';
-
-  // What the agents worked out, and who worked it out. Separate from
-  // what they are waiting on: one is a to-do list, the other is a
-  // finding, and mixing them buries both.
-  const insightHtml=j.insight?(
-    '<div class="cc-insight'+(j.insight.stale?' cc-stale':'')+'" '+
-      'onclick="zenGoAgent(\'intelligence\')" title="Open the Intelligence agent">'+
-      '<div class="cc-ins-head">'+
-        '<span class="cc-ins-agent">Intelligence agent</span>'+
-        '<span class="cc-ins-when">'+formatDubai(j.insight.at)+
-          (j.insight.stale?' &middot; may be out of date':'')+'</span>'+
-      '</div>'+
-      '<div class="cc-ins-sum">'+esc(j.insight.summary||'')+'</div>'+
-      (j.insight.top?'<div class="cc-ins-top">'+esc(
-        typeof j.insight.top==='string'?j.insight.top:(j.insight.top.action||j.insight.top.title||''))+'</div>':'')+
-      (j.insight.count>1?'<div class="cc-ins-more">'+(j.insight.count-1)+' more &rarr;</div>':'')+
-    '</div>'
-  ):'';
-
-  const findingsHtml=(j.findings&&j.findings.length)?(
-    '<div class="cc-findings">'+
-      '<div class="cc-find-label">Noticed today</div>'+
-      j.findings.map(function(f){
-        return '<div class="cc-find" onclick="zenGoAgent(\'intelligence\')">'+
-          '<b>'+esc(f.title)+'</b>'+
-          (f.detail?'<span>'+esc(String(f.detail).slice(0,120))+'</span>':'')+
-        '</div>';
-      }).join('')+
-    '</div>'
-  ):'';
-
-  const atRisk=j.at_risk;
-  const opportunityHtml=atRisk.count?(
-    '<aside class="zen-opportunity">'+
-      '<div class="eyebrow">Opportunity detected</div>'+
-      '<h3>'+atRisk.count+' customer'+(atRisk.count===1?'':'s')+' at risk of not returning</h3>'+
-      // Which campaigns, so it connects to what is actually queued
-      // rather than being an abstract count.
-      ((atRisk.by_campaign&&Object.keys(atRisk.by_campaign).length)
-        ? '<p class="muted" style="font-size:12px;">'+
-          Object.entries(atRisk.by_campaign).map(function(e){
-            return e[1]+' '+e[0].replace(/_/g,' ');
-          }).join(' &middot; ')+'</p>'
-        : '<p class="muted" style="font-size:12px;">Based on real visit patterns and prediction data.</p>')+
-      (atRisk.revenue_estimate
-        ? '<div class="zen-money">~AED '+atRisk.revenue_estimate.toLocaleString()+
-          ' <small>one visit each, at their own average of AED '+(atRisk.avg_ticket||0)+
-          '. Not their lifetime value &mdash; what a single returned visit is worth.</small></div>'
-        : '')+
-      // The count read as an unattended problem. It isn't - the
-      // messages are drafted and waiting on approval, and saying so
-      // turns an alarm into a decision.
-      (atRisk.note?'<p class="zen-op-note">'+esc(atRisk.note)+'</p>':'')+
-      // What the agents have worked out, and who worked it out. An
-      // insight nobody reads is the same as one nobody generated.
-      (j.insight?'<div class="cc-insight'+(j.insight.stale?' cc-stale':'')+'" '+
-        'onclick="zenGoAgent(\'intelligence\')" title="Open the Intelligence agent">'+
-        '<div class="cc-ins-head">'+
-          '<span class="cc-ins-agent">Intelligence agent</span>'+
-          '<span class="cc-ins-when">'+formatDubai(j.insight.at)+
-            (j.insight.stale?' &middot; may be out of date':'')+'</span>'+
-        '</div>'+
-        '<div class="cc-ins-sum">'+esc(j.insight.summary||'')+'</div>'+
-        (j.insight.top?'<div class="cc-ins-top">'+esc(
-          typeof j.insight.top==='string'?j.insight.top:(j.insight.top.action||j.insight.top.title||''))+'</div>':'')+
-        (j.insight.count>1?'<div class="cc-ins-more">'+(j.insight.count-1)+' more &rarr;</div>':'')+
-      '</div>':'')+
-      ((j.findings&&j.findings.length)?'<div class="cc-findings">'+
-        '<div class="cc-find-label">Noticed today</div>'+
-        j.findings.map(function(f){
-          return '<div class="cc-find" onclick="zenGoAgent(\'intelligence\')">'+
-            '<b>'+esc(f.title)+'</b>'+
-            (f.detail?'<span>'+esc(String(f.detail).slice(0,120))+'</span>':'')+
-          '</div>';
-        }).join('')+
-      '</div>':'')+
-      '<button class="zen-action" onclick="zenGoAgent(\'engagement\')">Review the messages</button>'+
-      '<button class="zen-action zen-action-alt" onclick="zenGoAgent(\'intelligence\')">Explore in Intelligence</button>'+
-    '</aside>'
-  ):'';
-
-  // Fetched after the hero renders rather than blocking it - pipeline
-  // health is useful but nobody is waiting on it to read the page.
-  setTimeout(loadScheduleHealth, 0);
-
-  const root=document.createElement('div');
-  root.id='zenHero';
-  root.innerHTML=
-    '<section class="zen-hero">'+
-      '<div class="zen-delegate-label"><span>&#10022;</span> Delegate to ZEN <span class="zen-command-mode">Command</span></div>'+
-      '<h1>Your AI team is working.</h1>'+
-      '<p>Ask, delegate, or change direction. ZEN routes the work to the right agent.</p>'+
-      '<div class="zen-command">'+
-        '<span class="spark">&#10022;</span>'+
-        '<input id="zenCommandInput" placeholder="e.g. Bring back customers likely to lapse next week..." onkeydown="if(event.key===\'Enter\')zenCommand()">'+
-        '<button onclick="zenCommand()">Delegate</button>'+
-      '</div>'+
-      '<div class="zen-suggestions">'+
-        '<button class="zen-chip" onclick="zenCommand(\'Who are we about to lose?\')">Who are we about to lose?</button>'+
-        '<button class="zen-chip" onclick="zenCommand(\'Plan next month campaign\')">Plan next campaign</button>'+
-        '<button class="zen-chip" onclick="zenCommand(\'Why did revenue change this month?\')">Explain revenue</button>'+
-      '</div>'+
-    '</section>'+
-    '<section class="zen-v2-attention">'+
-      '<div class="zen-attention-card">'+
-        '<div class="zq-head"><div><h2>Needs your attention</h2><p>Only decisions that require a human.</p></div>'+
-        (attentionCount?('<span class="zq-count">'+attentionCount+'</span>'):'')+'</div>'+
-    
-    attentionRows+
-        insightHtml+
-        findingsHtml+
-      '</div>'+
-      '<aside class="zen-today-summary">'+
-        '<div class="label">Workforce summary</div>'+
-        '<div class="big">'+(workingCount+waitingCount+monitoringCount)+' active roles</div>'+
-        '<p>'+[workingCount&&(workingCount+' working'),waitingCount&&(waitingCount+' waiting on you'),monitoringCount&&(monitoringCount+' monitoring')].filter(Boolean).join(', ')+'.</p>'+
-      '</aside>'+
-    '</section>'+
-    '<section class="zh-wrap"><div class="zh-card">'+
-      '<div class="zh-head"><div><h2>Scheduled work</h2><p>The platform\'s own jobs, and whether they ran.</p></div>'+
-        '<span class="zh-status" id="zhStatus"></span></div>'+
-      '<div id="zhBody" class="muted" style="font-size:12px;padding:10px 0;">Checking...</div>'+
-    '</div></section>'+
-    '<section class="zen-workforce-section">'+
-      '<div class="zen-workforce-header"><div><h2>Your AI Team</h2><p>Specialist agents working across your business.</p></div></div>'+
-      '<div class="zen-workforce-grid">'+
-        '<article class="zen-worker'+(j.agents.engagement.status==='waiting'?' needs-attention':'')+'" onclick="zenGoAgent(\'engagement\')">'+
-          '<div class="zen-worker-top"><div class="zen-worker-title"><div class="avatar">&#128172;</div><div><h3>Engagement Agent</h3><small>Retention &amp; WhatsApp</small></div></div>'+
-          '<span class="zen-agent-state '+j.agents.engagement.status+'"><i class="pulse"></i>'+statusLabel[j.agents.engagement.status]+'</span></div>'+
-          '<p>'+j.agents.engagement.message+'</p>'+
-          '<div class="worker-footer">Open workspace &rarr;</div>'+
-        '</article>'+
-        '<article class="zen-worker'+(j.agents.marketing.status==='waiting'?' needs-attention':'')+'" onclick="zenGoAgent(\'marketing\')">'+
-          '<div class="zen-worker-top"><div class="zen-worker-title"><div class="avatar">&#10022;</div><div><h3>Marketing Agent</h3><small>Strategy &amp; content</small></div></div>'+
-          '<span class="zen-agent-state '+j.agents.marketing.status+'"><i class="pulse"></i>'+statusLabel[j.agents.marketing.status]+'</span></div>'+
-          '<p>'+j.agents.marketing.message+'</p>'+
-          '<div class="worker-footer">Open workspace &rarr;</div>'+
-        '</article>'+
-        '<article class="zen-worker" onclick="showPage(\'intelligence\')">'+
-          '<div class="zen-worker-top"><div class="zen-worker-title"><div class="avatar">&#9670;</div><div><h3>Intelligence</h3><small>Prediction &amp; analysis</small></div></div>'+
-          '<span class="zen-agent-state '+j.agents.intelligence.status+'"><i class="pulse"></i>'+statusLabel[j.agents.intelligence.status]+'</span></div>'+
-          '<p>'+j.agents.intelligence.message+'</p>'+
-          '<div class="worker-footer">Ask your business &rarr;</div>'+
-        '</article>'+
-        '<article class="zen-worker" style="opacity:0.65;cursor:default;">'+
-          '<div class="zen-worker-top"><div class="zen-worker-title"><div class="avatar">&#9742;</div><div><h3>Call Agent</h3><small>Missed calls &amp; booking</small></div></div>'+
-          '<span class="badge" style="background:var(--border);color:var(--muted);">Coming soon</span></div>'+
-          '<p>Designed to recover missed calls and turn them into bookings automatically.</p>'+
-        '</article>'+
-      '</div>'+
-    '</section>'+
-    '<section class="zen-two-col">'+
-      '<div class="zen-feed">'+
-        '<div class="zen-section-head" style="margin:0 0 4px;"><div><h2>Activity</h2><span>What your agents actually did</span></div></div>'+
-        activityRows+
-      '</div>'+
-      opportunityHtml+
-    '</section>';
-
-  page.insertBefore(root,page.firstChild);
-  const ao=document.getElementById('agentOverview'), os=document.getElementById('overviewStats');
-  if(ao) ao.style.display='none';
-  if(os) os.style.display='none';
-  // Also hide the legacy "By agent" / "Platform" headings sitting
-  // directly above those now-empty divs - otherwise they're left
-  // orphaned, floating below the new Command Center content.
-  [...page.querySelectorAll('h3')].forEach(function(x){
-    if(['By agent','Platform'].includes(x.textContent.trim())) x.style.display='none';
-  });
-}
 function zenGoAgent(agent){
   showPage('agents');
   if(typeof showAgentDetail==='function') showAgentDetail(agent);
@@ -8219,6 +8159,37 @@ function mdIsStale(iso){
   return (Date.now()-new Date(iso).getTime()) > 24*3600000;
 }
 
+let MD_RECS=[];
+
+async function planFor(btn,i){
+  const rec=MD_RECS[i];
+  const box=document.getElementById('mdPlan_'+i);
+  if(!rec||!box) return;
+  if(box.innerHTML){ box.innerHTML=''; btn.textContent='How would I do this?'; return; }
+  box.innerHTML='<span class="mw-spinner"></span>Working out what this would take...';
+  const text=[rec.action,rec.rationale,rec.impact].filter(Boolean).join(' — ');
+  const j=await call('plan_for_recommendation',{suggestion:text});
+  if(!j.ok){box.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
+  const p=j.plan||{};
+  btn.textContent='Hide the plan';
+  box.innerHTML=
+    // Said first when it applies. A plan that quietly assumes a
+    // capability the platform lacks is worse than saying so.
+    (p.feasible===false&&p.blocker
+      ? '<div class="md-blocker"><b>Can&rsquo;t be done as written.</b> '+esc(p.blocker)+'</div>'
+      : '')+
+    (p.steps||[]).map(function(st,n){
+      return '<div class="md-plan-step">'+
+        '<span class="md-plan-n">'+(n+1)+'</span>'+
+        '<div><b>'+esc(st.do||'')+'</b>'+
+          (st.why?'<p>'+esc(st.why)+'</p>':'')+
+          (st.expect?'<p class="md-plan-exp">'+esc(st.expect)+'</p>':'')+
+        '</div>'+
+      '</div>';
+    }).join('')+
+    (p.first_thing?'<div class="md-first"><b>Start with:</b> '+esc(p.first_thing)+'</div>':'');
+}
+
 async function loadDiagnosis(){
   const el=document.getElementById('mdCard');
   if(!el) return;
@@ -8255,9 +8226,17 @@ async function loadDiagnosis(){
         // sentence here, not a two-word label, and a sentence in a
         // third column takes the width the text needed.
         (r.impact?'<div class="md-impact">'+esc(r.impact)+'</div>':'')+
+        // A recommendation is not a plan. "Target the uncertain group
+        // first" needs to become who, how many, and what happens next
+        // before anyone can act on it.
+        '<button class="md-plan-btn" onclick="planFor(this,'+i+')">How would I do this?</button>'+
+        '<div class="md-plan" id="mdPlan_'+i+'"></div>'+
       '</div>'+
     '</div>';
   }).join('');
+  // Kept so the button can send the full text rather than re-reading
+  // it out of the DOM.
+  MD_RECS=(a&&a.recommendations||[]).slice(0,3);
 
   el.innerHTML=
     // When this was worked out, at the top rather than buried in the
