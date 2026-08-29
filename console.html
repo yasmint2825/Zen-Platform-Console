@@ -2570,6 +2570,16 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     font-size:10.5px;line-height:1.5;color:var(--muted);
   }
 </style>
+
+<style id="zenFollowUp">
+  .zen-followup{display:flex;gap:6px;margin-top:11px;padding-top:10px;border-top:1px solid var(--border);}
+  .zen-followup input{
+    flex:1;min-width:0;padding:6px 10px;border-radius:7px;
+    border:1px solid var(--border);background:var(--surface,#fff);
+    font-size:12px;color:var(--ink);font-family:inherit;
+  }
+  .zen-followup input:focus{outline:none;border-color:var(--p);}
+</style>
 </head>
 <body>
 
@@ -4791,6 +4801,30 @@ async function zenCommand(text){
   '</div>';
 }
 
+// A follow-up, answered in the same place as the first question.
+async function askFollowUp(){
+  const inp=document.getElementById('zenFollowUp');
+  const q=inp&&inp.value.trim();
+  if(!q) return;
+  const out=document.getElementById('zenCommandResult');
+  out.innerHTML='<div class="zen-cmd-card"><span class="mw-spinner"></span>Checking your data...</div>';
+  // Straight to the question - no interpretation step, because a
+  // follow-up to an answer is always a question.
+  const a=await call('ask_question',{question:q});
+  if(!a.ok){ out.innerHTML='<div class="zen-cmd-card"><span style="color:var(--err);">'+esc(a.error)+'</span></div>'; return; }
+  out.innerHTML='<div class="zen-cmd-card zen-cmd-answer">'+
+    '<div class="zen-ans-q">'+esc(q)+'</div>'+
+    '<div class="zen-ans-a">'+esc(a.answer||'').replace(/\n/g,'<br>')+'</div>'+
+    (a.sql?'<details class="zen-ans-sql"><summary>How this was worked out</summary><pre>'+esc(a.sql)+'</pre></details>':'')+
+    '<div class="zen-followup">'+
+      '<input id="zenFollowUp" placeholder="Ask a follow-up..." onkeydown="if(event.key===\'Enter\')askFollowUp()">'+
+      '<button class="btn btn-s btn-sm" onclick="askFollowUp()">Ask</button>'+
+    '</div>'+
+  '</div>';
+  const next=document.getElementById('zenFollowUp');
+  if(next) next.focus();
+}
+
 async function confirmZenAction(){
   if(!ZEN_PENDING) return;
   const {plan,text}=ZEN_PENDING;
@@ -4820,7 +4854,15 @@ async function runZenAction(p,q){
       '<div class="zen-ans-q">'+esc(p.question||q)+'</div>'+
       '<div class="zen-ans-a">'+esc(a.answer||'').replace(/\n/g,'<br>')+'</div>'+
       (a.sql?'<details class="zen-ans-sql"><summary>How this was worked out</summary><pre>'+esc(a.sql)+'</pre></details>':'')+
-      '<button class="btn btn-s btn-sm" style="margin-top:9px;" onclick="zenGoAgent(\'intelligence\')">Ask a follow-up in Intelligence</button>'+
+      // A follow-up asked in place. The button used to open the
+      // Intelligence page, which is the same jump that was confusing
+      // in the first place - you are already having the conversation
+      // here.
+      '<div class="zen-followup">'+
+        '<input id="zenFollowUp" placeholder="Ask a follow-up..." '+
+          'onkeydown="if(event.key===\'Enter\')askFollowUp()">'+
+        '<button class="btn btn-s btn-sm" onclick="askFollowUp()">Ask</button>'+
+      '</div>'+
     '</div>';
     return;
   }
