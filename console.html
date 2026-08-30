@@ -2709,6 +2709,21 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     font-size:11.5px;line-height:1.55;color:var(--warn);
   }
 </style>
+
+<style id="zenLearning">
+  .ls-ok{
+    font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;
+    background:var(--okl);color:var(--ok);
+  }
+  .ls-some{
+    font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;
+    background:var(--warnl);color:var(--warn);
+  }
+  .ls-note{
+    margin-top:9px;padding:8px 10px;border-radius:8px;background:var(--bg);
+    font-size:10.5px;line-height:1.5;color:var(--muted);
+  }
+</style>
 </head>
 <body>
 
@@ -3455,6 +3470,12 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
                   </details>
 
                   <details class="card">
+                <summary><h2 style="display:inline;">What the platform is learning</h2></summary>
+                <p class="muted" style="font-size:11.5px;">Every message sent has an outcome &mdash; did they come back within 30 days. These accumulate on their own and become the training data for anything that learns.</p>
+                <div id="learningState" class="muted" style="font-size:12px;">Loading...</div>
+              </details>
+
+              <details class="card">
                 <summary><h2 style="display:inline;">Messages that didn&rsquo;t arrive</h2></summary>
                 <p class="muted" style="font-size:11.5px;">Grouped by why they failed, because not all of them are worth trying again &mdash; a number that can&rsquo;t receive WhatsApp will fail identically forever.</p>
                 <div id="failedSends" class="muted" style="font-size:12px;">Loading...</div>
@@ -6306,6 +6327,40 @@ async function loadOptOutReadiness(){
   '</div>';
 }
 
+async function loadLearningState(){
+  const el=document.getElementById('learningState');
+  if(!el) return;
+  const j=await call('get_learning_state',{});
+  if(!j.ok){el.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
+  if(!j.groups.length){
+    el.innerHTML='<span class="muted">Nothing recorded yet. This fills in as messages go out.</span>';
+    return;
+  }
+  el.innerHTML=
+    '<div style="overflow-x:auto;"><table class="at-table">'+
+      '<tr><th>what</th><th>sent</th><th>waiting</th><th>worked</th><th>rate</th><th>after</th><th>enough?</th></tr>'+
+      j.groups.map(function(g){
+        return '<tr>'+
+          '<td><b>'+esc(g.campaign)+'</b></td>'+
+          '<td>'+g.total+'</td>'+
+          '<td>'+(g.waiting||'&mdash;')+'</td>'+
+          '<td>'+g.worked+'</td>'+
+          // A rate is only shown once there is enough behind it to
+          // mean anything. Showing 100% from two outcomes invites
+          // exactly the wrong conclusion.
+          '<td>'+(g.enough_to_compare&&g.rate!=null?(g.rate+'%'):'<span class="muted">too few</span>')+'</td>'+
+          '<td>'+(g.median_days!=null?(g.median_days+'d'):'&mdash;')+'</td>'+
+          '<td>'+(g.enough_to_train
+            ? '<span class="ls-ok">can train</span>'
+            : g.enough_to_compare
+              ? '<span class="ls-some">can compare</span>'
+              : '<span class="muted">not yet</span>')+'</td>'+
+        '</tr>';
+      }).join('')+
+    '</table></div>'+
+    '<div class="ls-note">'+esc(j.note||'')+'</div>';
+}
+
 async function loadFailedSends(){
   const el=document.getElementById('failedSends');
   if(!el) return;
@@ -6389,6 +6444,7 @@ async function loadDoNotDisturb(){
   loadPackagePerformance();
   loadPackagePriority();
   loadFailedSends();
+  loadLearningState();
   const el=document.getElementById('dndList');
   if(!el) return;
   const j=await call('list_do_not_disturb',{});
