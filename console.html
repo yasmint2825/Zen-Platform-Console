@@ -2678,6 +2678,24 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     font-size:10px;color:var(--muted);word-break:break-word;
   }
 </style>
+
+<style id="zenFailedByCampaign">
+  .fs-camp{
+    border:1px solid var(--border);border-radius:10px;
+    padding:11px 13px;margin-bottom:10px;
+  }
+  .fs-reasons{display:grid;gap:7px;margin-top:8px;}
+  .fs-reason{
+    border-left:3px solid var(--warn);padding:7px 0 7px 10px;
+  }
+  /* Nothing to be done reads as settled rather than as a fault. */
+  .fs-no{border-left-color:var(--border);}
+  .fs-rhead{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--ink);}
+  .fs-rhead b{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted);}
+  .fs-none{
+    margin-top:9px;font-size:11px;color:var(--muted);font-style:italic;
+  }
+</style>
 </head>
 <body>
 
@@ -6286,33 +6304,45 @@ async function loadFailedSends(){
   el.innerHTML=
     '<div class="fs-room">'+j.sent_last_24h+' of '+j.daily_limit+' sent in the last 24 hours &middot; '+
       '<b>'+j.room_left+'</b> left today</div>'+
-    j.groups.map(function(g){
-      return '<div class="fs-group'+(g.retryable?'':' fs-no')+'">'+
+    // By campaign, because that is how the salon thinks about them.
+    // The reasons sit inside, since they matter once you have decided
+    // which campaign you are looking at.
+    j.campaigns.map(function(c){
+      return '<div class="fs-camp">'+
         '<div class="fs-head">'+
-          '<b>'+esc(g.name)+'</b>'+
-          '<span class="fs-count">'+g.count+'</span>'+
+          '<b>'+esc(c.campaign)+'</b>'+
+          '<span class="fs-count">'+c.count+' failed</span>'+
         '</div>'+
-        '<div class="fs-note">'+esc(g.note)+'</div>'+
-        (g.example?'<div class="fs-eg">'+esc(g.example)+'</div>':'')+
-        // Only offered where retrying could actually work. A button
-        // that resends into the same failure is worse than none.
-        (g.retryable
-          ? '<button class="btn btn-s btn-sm" style="margin-top:8px;" '+
-            'onclick="retryFailed(\''+esc(g.name)+'\')">Try these again</button>'
-          : '')+
+        '<div class="fs-reasons">'+
+          c.reasons.map(function(r){
+            return '<div class="fs-reason'+(r.retryable?'':' fs-no')+'">'+
+              '<div class="fs-rhead"><span>'+esc(r.name)+'</span><b>'+r.count+'</b></div>'+
+              '<div class="fs-note">'+esc(r.note)+'</div>'+
+              (r.example?'<div class="fs-eg">'+esc(r.example)+'</div>':'')+
+            '</div>';
+          }).join('')+
+        '</div>'+
+        // One button per campaign, retrying only the ones worth
+        // retrying within it. Offering it per reason would mean four
+        // buttons on a campaign and no obvious one to press.
+        (c.retryable
+          ? '<button class="btn btn-s btn-sm" style="margin-top:9px;" '+
+            'onclick="retryFailed(\''+esc(c.campaign).replace(/'/g,"\\'")+'\')">'+
+            'Try '+c.retryable+' of these again</button>'
+          : '<div class="fs-none">None of these are worth retrying as they are.</div>')+
       '</div>';
     }).join('');
 }
 
-async function retryFailed(groupName){
-  const g=(FAILED&&FAILED.groups||[]).find(function(x){return x.name===groupName;});
-  if(!g) return;
+async function retryFailed(campaign){
+  const c=(FAILED&&FAILED.campaigns||[]).find(function(x){return x.campaign===campaign;});
+  if(!c||!c.ids.length) return;
   const room=FAILED.room_left||0;
-  const n=Math.min(g.ids.length, room);
-  if(!n){ alert("Today's messaging limit is used up. These will go through tomorrow."); return; }
-  if(!confirm('Try '+n+' message'+(n===1?'':'s')+' again?'+
-     (g.ids.length>n?('\n\n'+(g.ids.length-n)+' will wait for tomorrow \u2014 only '+room+' fit in today\'s limit.'):''))) return;
-  const j=await call('retry_failed_sends',{message_ids:g.ids});
+  const n=Math.min(c.ids.length, room);
+  if(!n){ alert("Today's messaging limit is used up. These will go through once the 24-hour window rolls."); return; }
+  if(!confirm('Try '+n+' '+campaign+' message'+(n===1?'':'s')+' again?'+
+     (c.ids.length>n?('\n\n'+(c.ids.length-n)+' will wait for tomorrow \u2014 only '+room+" fit in today's limit."):''))) return;
+  const j=await call('retry_failed_sends',{message_ids:c.ids});
   if(!j.ok){alert(j.error);return;}
   alert(j.queued+' queued.'+(j.note?('\n\n'+j.note):''));
   loadFailedSends();
