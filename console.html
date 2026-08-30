@@ -2652,6 +2652,32 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
   .ph-btn:hover{background:var(--pl);}
   .ph-actions{display:flex;gap:7px;align-items:center;margin-top:12px;flex-wrap:wrap;}
 </style>
+
+<style id="zenFailedSends">
+  .fs-room{
+    padding:8px 11px;border-radius:8px;background:var(--bg);
+    border:1px solid var(--border);font-size:11.5px;margin-bottom:11px;
+  }
+  .fs-group{
+    border:1px solid var(--border);border-left-width:3px;border-left-color:var(--warn);
+    border-radius:9px;padding:10px 12px;margin-bottom:9px;
+  }
+  /* Not worth retrying reads as settled, not as an error - there is
+     nothing to fix in the moment. */
+  .fs-no{border-left-color:var(--border);}
+  .fs-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
+  .fs-head b{font-size:12.5px;color:var(--ink);}
+  .fs-count{
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:13px;font-weight:700;color:var(--muted);
+  }
+  .fs-note{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.5;}
+  .fs-eg{
+    margin-top:6px;padding:5px 8px;border-radius:6px;background:var(--bg);
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:10px;color:var(--muted);word-break:break-word;
+  }
+</style>
 </head>
 <body>
 
@@ -3398,6 +3424,12 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
                   </details>
 
                   <details class="card">
+                <summary><h2 style="display:inline;">Messages that didn&rsquo;t arrive</h2></summary>
+                <p class="muted" style="font-size:11.5px;">Grouped by why they failed, because not all of them are worth trying again &mdash; a number that can&rsquo;t receive WhatsApp will fail identically forever.</p>
+                <div id="failedSends" class="muted" style="font-size:12px;">Loading...</div>
+              </details>
+
+              <details class="card">
                     <summary><h2 style="display:inline;">Do not message</h2></summary>
                     <p class="muted" style="font-size:11.5px;">People excluded from every campaign &mdash; either marked in the salon system or because they asked us over WhatsApp.</p>
                     <div id="optOutReadiness"></div>
@@ -4192,7 +4224,7 @@ function showAgentDetail(agent){
   if(agent==='intelligence'){loadDailyIntelligence();loadPredictive();renderQuickQuestions();}
 }
 // ── Campaigns ────────────────────────────────────────────────────
-let CAMPAIGNS=null, STRATEGIES=[], PLAN_STRATEGIES=[], ZEN_PENDING=null;
+let CAMPAIGNS=null, STRATEGIES=[], PLAN_STRATEGIES=[], ZEN_PENDING=null, FAILED=null;
 
 async function loadStrategyPicker(){
   const sel=document.getElementById('strategyPicker');
@@ -6243,10 +6275,54 @@ async function loadOptOutReadiness(){
   '</div>';
 }
 
+async function loadFailedSends(){
+  const el=document.getElementById('failedSends');
+  if(!el) return;
+  const j=await call('list_failed_sends',{days:7});
+  if(!j.ok){el.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
+  if(!j.total){el.innerHTML='<span class="muted">Nothing failed in the last 7 days.</span>';return;}
+
+  FAILED=j;
+  el.innerHTML=
+    '<div class="fs-room">'+j.sent_last_24h+' of '+j.daily_limit+' sent in the last 24 hours &middot; '+
+      '<b>'+j.room_left+'</b> left today</div>'+
+    j.groups.map(function(g){
+      return '<div class="fs-group'+(g.retryable?'':' fs-no')+'">'+
+        '<div class="fs-head">'+
+          '<b>'+esc(g.name)+'</b>'+
+          '<span class="fs-count">'+g.count+'</span>'+
+        '</div>'+
+        '<div class="fs-note">'+esc(g.note)+'</div>'+
+        (g.example?'<div class="fs-eg">'+esc(g.example)+'</div>':'')+
+        // Only offered where retrying could actually work. A button
+        // that resends into the same failure is worse than none.
+        (g.retryable
+          ? '<button class="btn btn-s btn-sm" style="margin-top:8px;" '+
+            'onclick="retryFailed(\''+esc(g.name)+'\')">Try these again</button>'
+          : '')+
+      '</div>';
+    }).join('');
+}
+
+async function retryFailed(groupName){
+  const g=(FAILED&&FAILED.groups||[]).find(function(x){return x.name===groupName;});
+  if(!g) return;
+  const room=FAILED.room_left||0;
+  const n=Math.min(g.ids.length, room);
+  if(!n){ alert("Today's messaging limit is used up. These will go through tomorrow."); return; }
+  if(!confirm('Try '+n+' message'+(n===1?'':'s')+' again?'+
+     (g.ids.length>n?('\n\n'+(g.ids.length-n)+' will wait for tomorrow \u2014 only '+room+' fit in today\'s limit.'):''))) return;
+  const j=await call('retry_failed_sends',{message_ids:g.ids});
+  if(!j.ok){alert(j.error);return;}
+  alert(j.queued+' queued.'+(j.note?('\n\n'+j.note):''));
+  loadFailedSends();
+}
+
 async function loadDoNotDisturb(){
   loadOptOutReadiness();
   loadPackagePerformance();
   loadPackagePriority();
+  loadFailedSends();
   const el=document.getElementById('dndList');
   if(!el) return;
   const j=await call('list_do_not_disturb',{});
