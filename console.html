@@ -2571,7 +2571,7 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
   }
 </style>
 
-<style id="zenFollowUp">
+<style id="zenFollowUpStyles">
   .zen-followup{display:flex;gap:6px;margin-top:11px;padding-top:10px;border-top:1px solid var(--border);}
   .zen-followup input{
     flex:1;min-width:0;padding:6px 10px;border-radius:7px;
@@ -4982,6 +4982,14 @@ async function zenCommand(text){
   '</div>';
 }
 
+// Named rather than inline. The handler used to be a JavaScript
+// string inside an HTML attribute containing another JavaScript
+// string, which is three levels of quoting and was quietly broken -
+// the button worked and Enter did nothing.
+function zenFollowUpKey(e){
+  if(e && e.key === 'Enter') askFollowUp();
+}
+
 // A follow-up, answered in the same place as the first question.
 async function askFollowUp(){
   const inp=document.getElementById('zenFollowUp');
@@ -4998,7 +5006,7 @@ async function askFollowUp(){
     '<div class="zen-ans-a">'+esc(a.answer||'').replace(/\n/g,'<br>')+'</div>'+
     (a.sql?'<details class="zen-ans-sql"><summary>How this was worked out</summary><pre>'+esc(a.sql)+'</pre></details>':'')+
     '<div class="zen-followup">'+
-      '<input id="zenFollowUp" placeholder="Ask a follow-up..." onkeydown="if(event.key===\'Enter\')askFollowUp()">'+
+      '<input id="zenFollowUp" placeholder="Ask a follow-up..." onkeydown="zenFollowUpKey(event)">'+
       '<button class="btn btn-s btn-sm" onclick="askFollowUp()">Ask</button>'+
     '</div>'+
   '</div>';
@@ -5041,7 +5049,7 @@ async function runZenAction(p,q){
       // here.
       '<div class="zen-followup">'+
         '<input id="zenFollowUp" placeholder="Ask a follow-up..." '+
-          'onkeydown="if(event.key===\'Enter\')askFollowUp()">'+
+          'onkeydown="zenFollowUpKey(event)">'+
         '<button class="btn btn-s btn-sm" onclick="askFollowUp()">Ask</button>'+
       '</div>'+
     '</div>';
