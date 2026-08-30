@@ -9172,11 +9172,23 @@ function showMoreAds(){
 
 async function quickToggle(i){
   const r=AD_TABLE[i], out=document.getElementById('atR_'+i);
-  const to=r.status==='ACTIVE'?'PAUSED':'ACTIVE';
+  if(!r||!out) return;
+  // From state, which the table already computed and displayed, rather
+  // than a raw status field. If the button says Pause, the target is
+  // PAUSED - anything else means the button and the action disagree.
+  const running=(r.state||'')==='running'||r.status==='ACTIVE';
+  const to=running?'PAUSED':'ACTIVE';
   if(!confirm((to==='PAUSED'?'Pause "':'Resume "')+r.name+'"?\n\nThis changes your live ads.')) return;
   out.innerHTML='<span class="mw-spinner"></span>';
   const j=await call('set_ad_status',{entity_id:r.budget_owner_id||r.id,entity_name:r.name,status:to});
-  if(j.ok){out.textContent='Done';out.style.color='var(--ok)';loadAdTable();}
+  if(j.ok){
+    // Meta takes a moment to reflect the change, so an immediate
+    // reload often shows the old state and looks like nothing
+    // happened. Say what was done, then refresh.
+    out.textContent = to==='PAUSED' ? 'Paused' : 'Resumed';
+    out.style.color='var(--ok)';
+    setTimeout(loadAdTable, 2500);
+  }
   else{out.textContent=j.error;out.style.color='var(--err)';}
 }
 
@@ -9195,7 +9207,14 @@ async function quickBudget(i){
     entity_id:r.budget_owner_id, entity_name:r.adset_name||r.name,
     verdict:'increase', new_budget:n, reason:'Changed by hand from the ads table',
   });
-  if(j.ok){out.textContent='Done';out.style.color='var(--ok)';loadAdTable();}
+  if(j.ok){
+    // Meta takes a moment to reflect the change, so an immediate
+    // reload often shows the old state and looks like nothing
+    // happened. Say what was done, then refresh.
+    out.textContent = to==='PAUSED' ? 'Paused' : 'Resumed';
+    out.style.color='var(--ok)';
+    setTimeout(loadAdTable, 2500);
+  }
   else{out.textContent=j.error;out.style.color='var(--err)';}
 }
 
