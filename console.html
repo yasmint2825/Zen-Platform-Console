@@ -2696,6 +2696,19 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     margin-top:9px;font-size:11px;color:var(--muted);font-style:italic;
   }
 </style>
+
+<style id="zenFailedWait">
+  .fs-wait{
+    margin-top:5px;font-size:10.5px;color:var(--muted);
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  /* The finding, not a warning about something to fix now. */
+  .fs-signal{
+    padding:10px 12px;border-radius:9px;margin-bottom:11px;
+    background:var(--warnl);border:1px solid var(--border);
+    font-size:11.5px;line-height:1.55;color:var(--warn);
+  }
+</style>
 </head>
 <body>
 
@@ -6301,9 +6314,25 @@ async function loadFailedSends(){
   if(!j.total){el.innerHTML='<span class="muted">Nothing failed in the last 7 days.</span>';return;}
 
   FAILED=j;
+  // How much of the failure is Meta protecting recipients rather than
+  // anything wrong with the send. Above a third, that is the finding -
+  // retrying is treating a symptom.
+  let blocked=0;
+  j.campaigns.forEach(function(c){
+    c.reasons.forEach(function(r){ if(r.name==='Blocked to protect the recipient') blocked+=r.count; });
+  });
+  const blockedShare=j.total?Math.round(blocked/j.total*100):0;
+
   el.innerHTML=
     '<div class="fs-room">'+j.sent_last_24h+' of '+j.daily_limit+' sent in the last 24 hours &middot; '+
       '<b>'+j.room_left+'</b> left today</div>'+
+    (blockedShare>=33
+      ? '<div class="fs-signal">'+
+          '<b>'+blockedShare+'% of these were blocked to protect the recipient.</b> '+
+          'That is Meta saying those customers are getting too many marketing messages &mdash; from every business, not just yours. '+
+          'Retrying works after 24 hours, but the number itself is the finding: fewer, better-timed messages will land where more will not.'+
+        '</div>'
+      : '')+
     // By campaign, because that is how the salon thinks about them.
     // The reasons sit inside, since they matter once you have decided
     // which campaign you are looking at.
@@ -6318,6 +6347,13 @@ async function loadFailedSends(){
             return '<div class="fs-reason'+(r.retryable?'':' fs-no')+'">'+
               '<div class="fs-rhead"><span>'+esc(r.name)+'</span><b>'+r.count+'</b></div>'+
               '<div class="fs-note">'+esc(r.note)+'</div>'+
+              // Ready now against still cooling down. Offering all 81
+              // when only 12 have cleared their window would fail 69
+              // of them and make the next attempt worse.
+              (r.retryable&&r.waiting
+                ? '<div class="fs-wait">'+r.ready+' ready now &middot; '+r.waiting+
+                  ' still inside the '+r.wait_hours+'-hour wait</div>'
+                : '')+
               (r.example?'<div class="fs-eg">'+esc(r.example)+'</div>':'')+
             '</div>';
           }).join('')+
