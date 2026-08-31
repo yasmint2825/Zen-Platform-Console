@@ -2724,6 +2724,71 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     font-size:10.5px;line-height:1.5;color:var(--muted);
   }
 </style>
+
+<style id="zenPostDetail">
+  #postDetail:empty{display:none;}
+  #postDetail{
+    border:1px solid var(--border);border-radius:10px;
+    padding:12px 14px;margin-bottom:14px;background:var(--bg);
+  }
+  .pd-head{display:flex;align-items:baseline;gap:9px;}
+  .pd-kind{
+    font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;
+    background:var(--pl);color:var(--p);
+  }
+  .pd-slide{
+    display:grid;grid-template-columns:26px 1fr;gap:10px;
+    padding:10px 0;border-top:1px solid var(--border);
+  }
+  .pd-slide-n{
+    width:26px;height:26px;border-radius:8px;display:grid;place-items:center;
+    background:var(--p);color:#fff;font-size:12px;font-weight:700;
+  }
+  .pd-slide-body{min-width:0;display:grid;gap:5px;}
+  .pd-slide-body .fi{width:100%;font-size:12px;}
+  /* What the slide is meant to show, from whoever planned it. */
+  .pd-concept{font-size:10.5px;color:var(--muted);font-style:italic;}
+</style>
+
+<style id="zenWaves">
+  .wv-summary{
+    padding:9px 11px;border-radius:9px;background:var(--pl);
+    font-size:12.5px;line-height:1.5;
+  }
+  .wv-tiers{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;}
+  .wv-tier{
+    font-size:10px;padding:2px 8px;border-radius:999px;
+    background:var(--bg);border:1px solid var(--border);color:var(--muted);
+  }
+  .wv-why{
+    margin-top:9px;padding-left:9px;border-left:2px solid var(--border);
+    font-size:11px;line-height:1.5;color:var(--muted);
+  }
+  .wv-note{margin-top:7px;font-size:11px;color:var(--muted);line-height:1.5;}
+
+  .oo-row{
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+    padding:7px 0;border-bottom:1px solid var(--border);font-size:12px;
+  }
+  .oo-row:last-child{border-bottom:0;}
+  .oo-blocked{opacity:.6;}
+  .oo-tag{
+    font-size:10px;padding:2px 8px;border-radius:999px;
+    background:var(--bg);color:var(--muted);white-space:nowrap;
+  }
+  .oo-no{background:var(--errl);color:var(--err);}
+  .oo-chosen{display:flex;gap:5px;flex-wrap:wrap;margin-top:9px;}
+  .oo-chosen:empty{display:none;}
+  .oo-chip{
+    display:inline-flex;align-items:center;gap:5px;
+    padding:3px 8px;border-radius:999px;background:var(--pl);
+    color:var(--p);font-size:11px;font-weight:600;
+  }
+  .oo-chip button{
+    border:0;background:none;cursor:pointer;color:var(--p);
+    font-size:14px;line-height:1;padding:0;
+  }
+</style>
 </head>
 <body>
 
@@ -3145,6 +3210,7 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
                           style="width:auto;min-width:260px;margin:0;font-size:12px;min-height:32px;"></select>
                 </div>
                 <div id="campaignPlan" class="muted" style="font-size:12px;margin-bottom:14px;">Loading...</div>
+                <div id="postDetail" data-item=""></div>
                 <p class="muted">Everything approved and on its way out - pick a date, publish now, or review the image and caption one more time before it goes live.</p>
                 <div id="schedulingEmpty" class="muted" style="padding:12px 0;">Nothing here yet - approve something in Content plan and it'll show up here.</div>
                 <div id="schedulingBlocks"></div>
@@ -3473,6 +3539,43 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
                 <summary><h2 style="display:inline;">What the platform is learning</h2></summary>
                 <p class="muted" style="font-size:11.5px;">Every message sent has an outcome &mdash; did they come back within 30 days. These accumulate on their own and become the training data for anything that learns.</p>
                 <div id="learningState" class="muted" style="font-size:12px;">Loading...</div>
+              </details>
+
+              <details class="card">
+                <summary><h2 style="display:inline;">Send in waves</h2></summary>
+                <p class="muted" style="font-size:11.5px;">Sending everything at once costs a week of your allowance and teaches you nothing, because everything changed together. A wave is a slice, ordered by who a message could actually move.</p>
+                <div class="row" style="gap:8px;align-items:center;margin:10px 0;flex-wrap:wrap;">
+                  <label class="fl" style="margin:0;">Campaign</label>
+                  <select class="fi" id="waveCampaign" style="width:auto;min-width:150px;margin:0;font-size:12px;min-height:32px;">
+                    <option value="lapsed">Lapsed</option>
+                    <option value="nudge">Nudge</option>
+                    <option value="new_customer_offer">New customer offer</option>
+                    <option value="birthday">Birthday</option>
+                    <option value="expiry">Expiry</option>
+                  </select>
+                  <label class="fl" style="margin:0;">Size</label>
+                  <input class="fi" id="waveSize" type="number" value="200" min="10" max="250" style="width:80px;margin:0;font-size:12px;min-height:32px;">
+                  <label class="fl" style="margin:0;">Hold back</label>
+                  <input class="fi" id="waveControl" type="number" value="20" min="0" max="50" style="width:64px;margin:0;font-size:12px;min-height:32px;">
+                  <span class="muted" style="font-size:11px;">%</span>
+                  <button class="btn btn-s btn-sm" onclick="planWave()">Plan it</button>
+                </div>
+                <div id="wavePlan" class="muted" style="font-size:12px;"></div>
+              </details>
+
+              <details class="card">
+                <summary><h2 style="display:inline;">Send a one-off message</h2></summary>
+                <p class="muted" style="font-size:11.5px;">For anything no campaign covers &mdash; someone cancelled, the salon is closed tomorrow. Free text only, so it reaches people who messaged you in the last 24 hours.</p>
+                <div class="row" style="gap:8px;margin:10px 0;">
+                  <input class="fi" id="oneOffSearch" placeholder="Search by name or number" style="font-size:12px;" oninput="searchToMessage()">
+                </div>
+                <div id="oneOffResults" style="font-size:12px;"></div>
+                <div id="oneOffChosen" class="oo-chosen"></div>
+                <textarea class="fi" id="oneOffMessage" rows="3" placeholder="Your message. Use {name} and it becomes the child&rsquo;s name." style="font-size:12px;margin-top:8px;"></textarea>
+                <div class="row" style="gap:8px;align-items:center;margin-top:8px;">
+                  <button class="btn btn-p btn-sm" onclick="sendOneOff()">Send it</button>
+                  <span id="oneOffResult" style="font-size:11.5px;"></span>
+                </div>
               </details>
 
               <details class="card">
@@ -4287,10 +4390,13 @@ async function loadStrategyPicker(){
     console.warn('list_strategies failed:', j.error);
     return;
   }
-  if(!j.strategies.length){
+  // Guarded even though call() defaults it - a throw here takes the
+  // whole page down, and this runs on every campaign refresh.
+  if(!(j.strategies||[]).length){
     sel.innerHTML='<option value="">No strategies yet</option>';
     return;
   }
+  j.strategies=j.strategies||[];
   const keep=sel.value;
   sel.innerHTML='<option value="">All strategies</option>'+
     j.strategies.map(function(st){
@@ -4334,6 +4440,9 @@ async function loadCampaigns(){
 function renderCampaigns(elId, list, isPlan){
   const el=document.getElementById(elId);
   if(!el) return;
+  // Defaulted here as well as in call(). This runs on every refresh,
+  // and a throw takes the whole console down rather than one card.
+  list = list || [];
   if(!list.length){
     el.innerHTML='<span class="muted">'+(isPlan
       ? 'No campaigns waiting. Generate a plan from Strategy &amp; content.'
@@ -4362,11 +4471,14 @@ function renderCampaigns(elId, list, isPlan){
           // Each post carries its own reference and can be scheduled
           // from here - previously the chips were decoration, and
           // scheduling meant finding the item on another screen.
+          // Clicking opens the post rather than jumping straight to
+          // scheduling - from there you can schedule it, or make it a
+          // carousel, which was previously only possible automatically.
           return '<span class="camp-item'+(done?' camp-item-done':sched?' camp-item-sched':'')+'" '+
             'title="'+esc(i.ref||'')+' - '+esc(i.title||'')+
               (done?' (published)':sched?(' (scheduled '+esc(i.scheduled_date)+')'):'')+'" '+
-            (isPlan&&!done?'onclick="scheduleItem(\''+i.id+'\',\''+esc(i.ref||'')+'\')" style="cursor:pointer;"':'')+'>'+
-            (i.type==='video'?'&#9654;':'&#9632;')+' '+i.number+
+            (isPlan&&!done?'onclick="openPostItem(\''+i.id+'\',\''+esc(i.ref||'')+'\','+(i.is_carousel?'true':'false')+')" style="cursor:pointer;"':'')+'>'+
+            (i.is_carousel?'&#9636;':i.type==='video'?'&#9654;':'&#9632;')+' '+i.number+
             (done?' &check;':sched?' &#9201;':'')+'</span>';
         }).join('')+
       '</div>'+
@@ -4381,6 +4493,81 @@ function renderCampaigns(elId, list, isPlan){
       '</div>':'')+
     '</div>';
   }).join('');
+}
+
+// One post, opened in place under the campaign.
+async function openPostItem(id,ref,isCarousel){
+  const box=document.getElementById('postDetail');
+  if(!box) return;
+  if(box.dataset.item===id){ box.innerHTML=''; box.dataset.item=''; return; }
+  box.dataset.item=id;
+  box.innerHTML='<span class="mw-spinner"></span>Opening '+esc(ref)+'...';
+
+  const j=isCarousel ? await call('get_carousel_slides',{item_id:id}) : {ok:true,slides:[]};
+  if(!j.ok){box.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
+
+  box.innerHTML=
+    '<div class="pd-head"><b>'+esc(ref)+'</b>'+
+      '<span class="pd-kind">'+(isCarousel?'carousel':'single post')+'</span></div>'+
+    '<div class="row" style="gap:6px;margin:9px 0;flex-wrap:wrap;">'+
+      '<button class="btn btn-s btn-sm" onclick="scheduleItem(\''+id+'\',\''+esc(ref)+'\')">Schedule it</button>'+
+      '<button class="btn btn-s btn-sm" onclick="toggleCarousel(\''+id+'\',\''+esc(ref)+'\','+(!isCarousel)+')">'+
+        (isCarousel?'Make it a single post':'Make it a carousel')+'</button>'+
+    '</div>'+
+    (isCarousel
+      ? (j.slides||[]).map(function(sl,n){
+          return '<div class="pd-slide">'+
+            '<div class="pd-slide-n">'+(n+1)+'</div>'+
+            '<div class="pd-slide-body">'+
+              '<input class="fi" id="sl_h_'+sl.id+'" value="'+esc(sl.headline||'')+'" placeholder="Headline">'+
+              '<textarea class="fi" id="sl_b_'+sl.id+'" rows="2" placeholder="What this slide says">'+esc(sl.body||'')+'</textarea>'+
+              (sl.concept?'<div class="pd-concept">'+esc(sl.concept)+'</div>':'')+
+              '<div class="row" style="gap:5px;margin-top:5px;">'+
+                '<button class="btn btn-s btn-sm" onclick="saveSlide(\''+sl.id+'\')">Save</button>'+
+                '<button class="btn btn-s btn-sm" onclick="deleteSlide(\''+sl.id+'\',\''+id+'\',\''+esc(ref)+'\')">Remove</button>'+
+              '</div>'+
+            '</div>'+
+          '</div>';
+        }).join('')+
+        '<button class="btn btn-s btn-sm" style="margin-top:8px;" onclick="addSlide(\''+id+'\',\''+esc(ref)+'\')">Add a slide</button>'
+      : '<div class="muted" style="font-size:11.5px;">A carousel works where a sequence helps &mdash; a before and after, a step by step, several angles of the same thing.</div>')+
+    '<div id="pdResult" style="font-size:11.5px;margin-top:7px;"></div>';
+}
+
+async function toggleCarousel(id,ref,makeCarousel){
+  if(!makeCarousel && !confirm('Make '+ref+' a single post again?\n\nIts slides will be removed.')) return;
+  const j=await call('set_carousel',{item_id:id,is_carousel:makeCarousel});
+  if(!j.ok){alert(j.error);return;}
+  document.getElementById('postDetail').dataset.item='';
+  openPostItem(id,ref,makeCarousel);
+  loadCampaigns();
+}
+
+async function saveSlide(slideId){
+  const out=document.getElementById('pdResult');
+  const j=await call('save_carousel_slide',{
+    slide_id:slideId,
+    headline:document.getElementById('sl_h_'+slideId).value.trim(),
+    body:document.getElementById('sl_b_'+slideId).value.trim(),
+  });
+  out.textContent=j.ok?'Saved.':j.error;
+  out.style.color=j.ok?'var(--ok)':'var(--err)';
+}
+
+async function addSlide(id,ref){
+  const j=await call('add_carousel_slide',{item_id:id});
+  if(!j.ok){alert(j.error);return;}
+  document.getElementById('postDetail').dataset.item='';
+  openPostItem(id,ref,true);
+}
+
+async function deleteSlide(slideId,id,ref){
+  if(!confirm('Remove this slide?')) return;
+  const j=await call('delete_carousel_slide',{slide_id:slideId,item_id:id});
+  if(!j.ok){alert(j.error);return;}
+  document.getElementById('postDetail').dataset.item='';
+  openPostItem(id,ref,(j.remaining||0)>0);
+  loadCampaigns();
 }
 
 async function scheduleItem(id,ref){
@@ -4704,6 +4891,81 @@ async function loadCommandCenter(){
   [...page.querySelectorAll('h3')].forEach(function(x){
     if(['By agent','Platform'].includes(x.textContent.trim())) x.style.display='none';
   });
+}
+
+// One post, opened in place under the campaign.
+async function openPostItem(id,ref,isCarousel){
+  const box=document.getElementById('postDetail');
+  if(!box) return;
+  if(box.dataset.item===id){ box.innerHTML=''; box.dataset.item=''; return; }
+  box.dataset.item=id;
+  box.innerHTML='<span class="mw-spinner"></span>Opening '+esc(ref)+'...';
+
+  const j=isCarousel ? await call('get_carousel_slides',{item_id:id}) : {ok:true,slides:[]};
+  if(!j.ok){box.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
+
+  box.innerHTML=
+    '<div class="pd-head"><b>'+esc(ref)+'</b>'+
+      '<span class="pd-kind">'+(isCarousel?'carousel':'single post')+'</span></div>'+
+    '<div class="row" style="gap:6px;margin:9px 0;flex-wrap:wrap;">'+
+      '<button class="btn btn-s btn-sm" onclick="scheduleItem(\''+id+'\',\''+esc(ref)+'\')">Schedule it</button>'+
+      '<button class="btn btn-s btn-sm" onclick="toggleCarousel(\''+id+'\',\''+esc(ref)+'\','+(!isCarousel)+')">'+
+        (isCarousel?'Make it a single post':'Make it a carousel')+'</button>'+
+    '</div>'+
+    (isCarousel
+      ? (j.slides||[]).map(function(sl,n){
+          return '<div class="pd-slide">'+
+            '<div class="pd-slide-n">'+(n+1)+'</div>'+
+            '<div class="pd-slide-body">'+
+              '<input class="fi" id="sl_h_'+sl.id+'" value="'+esc(sl.headline||'')+'" placeholder="Headline">'+
+              '<textarea class="fi" id="sl_b_'+sl.id+'" rows="2" placeholder="What this slide says">'+esc(sl.body||'')+'</textarea>'+
+              (sl.concept?'<div class="pd-concept">'+esc(sl.concept)+'</div>':'')+
+              '<div class="row" style="gap:5px;margin-top:5px;">'+
+                '<button class="btn btn-s btn-sm" onclick="saveSlide(\''+sl.id+'\')">Save</button>'+
+                '<button class="btn btn-s btn-sm" onclick="deleteSlide(\''+sl.id+'\',\''+id+'\',\''+esc(ref)+'\')">Remove</button>'+
+              '</div>'+
+            '</div>'+
+          '</div>';
+        }).join('')+
+        '<button class="btn btn-s btn-sm" style="margin-top:8px;" onclick="addSlide(\''+id+'\',\''+esc(ref)+'\')">Add a slide</button>'
+      : '<div class="muted" style="font-size:11.5px;">A carousel works where a sequence helps &mdash; a before and after, a step by step, several angles of the same thing.</div>')+
+    '<div id="pdResult" style="font-size:11.5px;margin-top:7px;"></div>';
+}
+
+async function toggleCarousel(id,ref,makeCarousel){
+  if(!makeCarousel && !confirm('Make '+ref+' a single post again?\n\nIts slides will be removed.')) return;
+  const j=await call('set_carousel',{item_id:id,is_carousel:makeCarousel});
+  if(!j.ok){alert(j.error);return;}
+  document.getElementById('postDetail').dataset.item='';
+  openPostItem(id,ref,makeCarousel);
+  loadCampaigns();
+}
+
+async function saveSlide(slideId){
+  const out=document.getElementById('pdResult');
+  const j=await call('save_carousel_slide',{
+    slide_id:slideId,
+    headline:document.getElementById('sl_h_'+slideId).value.trim(),
+    body:document.getElementById('sl_b_'+slideId).value.trim(),
+  });
+  out.textContent=j.ok?'Saved.':j.error;
+  out.style.color=j.ok?'var(--ok)':'var(--err)';
+}
+
+async function addSlide(id,ref){
+  const j=await call('add_carousel_slide',{item_id:id});
+  if(!j.ok){alert(j.error);return;}
+  document.getElementById('postDetail').dataset.item='';
+  openPostItem(id,ref,true);
+}
+
+async function deleteSlide(slideId,id,ref){
+  if(!confirm('Remove this slide?')) return;
+  const j=await call('delete_carousel_slide',{slide_id:slideId,item_id:id});
+  if(!j.ok){alert(j.error);return;}
+  document.getElementById('postDetail').dataset.item='';
+  openPostItem(id,ref,(j.remaining||0)>0);
+  loadCampaigns();
 }
 
 async function scheduleItem(id,ref){
@@ -6367,6 +6629,112 @@ async function loadLearningState(){
       }).join('')+
     '</table></div>'+
     '<div class="ls-note">'+esc(j.note||'')+'</div>';
+}
+
+// ── Waves ────────────────────────────────────────────────────────
+let WAVE=null;
+
+async function planWave(){
+  const out=document.getElementById('wavePlan');
+  out.innerHTML='<span class="mw-spinner"></span>Working out the wave...';
+  const j=await call('plan_wave',{
+    campaign_key:document.getElementById('waveCampaign').value,
+    size:parseInt(document.getElementById('waveSize').value)||200,
+    control_percent:parseInt(document.getElementById('waveControl').value)||0,
+  });
+  if(!j.ok){out.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
+  if(!j.wave.length){out.innerHTML='<span class="muted">'+esc(j.note||'Nothing waiting.')+'</span>';return;}
+  WAVE=j;
+
+  const tiers=Object.entries(j.by_tier||{}).sort(function(a,b){return b[1]-a[1];});
+  out.innerHTML=
+    '<div class="wv-summary">'+
+      '<b>'+j.send_count+'</b> will be messaged &middot; '+
+      '<b>'+j.control_count+'</b> held back &middot; '+
+      j.remaining_after+' left for later'+
+    '</div>'+
+    '<div class="wv-tiers">'+tiers.map(function(t){
+      return '<span class="wv-tier">'+esc(t[0])+' '+t[1]+'</span>';
+    }).join('')+'</div>'+
+    // The reasoning, because "uncertain first" is counter-intuitive
+    // and someone will otherwise change it to "likely first".
+    '<div class="wv-why">Ordered by who a message could actually change. The uncertain middle comes first &mdash; customers the model thinks will return anyway would mostly have come without being asked.</div>'+
+    '<div class="wv-note">'+esc(j.note||'')+'</div>'+
+    '<button class="btn btn-p btn-sm" style="margin-top:10px;" onclick="commitWave()">Send this wave</button>';
+}
+
+async function commitWave(){
+  if(!WAVE) return;
+  const send=WAVE.wave.filter(function(w){return !w.control;}).map(function(w){return w.id;});
+  const held=WAVE.wave.filter(function(w){return w.control;}).map(function(w){return w.id;});
+  if(!confirm('Send '+send.length+' messages?\n\n'+held.length+' will be held back as a control and never messaged.\n\nThis goes to real customers.')) return;
+  const out=document.getElementById('wavePlan');
+  out.innerHTML='<span class="mw-spinner"></span>Queueing...';
+  const j=await call('commit_wave',{send_ids:send,control_ids:held});
+  if(!j.ok){out.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
+  out.innerHTML='<div class="wv-summary"><b>'+j.queued+'</b> queued, '+j.held_back+' held back. '+esc(j.note||'')+'</div>';
+  WAVE=null;
+}
+
+// ── One-off ──────────────────────────────────────────────────────
+let ONE_OFF=[];
+
+async function searchToMessage(){
+  const q=document.getElementById('oneOffSearch').value.trim();
+  const out=document.getElementById('oneOffResults');
+  if(q.length<2){out.innerHTML='';return;}
+  const j=await call('search_customers_to_message',{query:q});
+  if(!j.ok){out.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
+  if(!j.customers.length){out.innerHTML='<span class="muted">Nobody found.</span>';return;}
+  out.innerHTML=j.customers.map(function(c){
+    return '<div class="oo-row'+(c.blocked?' oo-blocked':'')+'">'+
+      '<span><b>'+esc(c.name||c.mobile)+'</b> <span class="muted">'+esc(c.mobile)+'</span></span>'+
+      // Said per person, because free text only works inside 24 hours
+      // and picking someone outside it just fails.
+      (c.blocked
+        ? '<span class="oo-tag oo-no">'+esc(c.blocked_reason)+'</span>'
+        : c.window_open
+          ? '<button class="btn btn-s btn-sm" onclick="pickCustomer(\''+esc(c.mobile)+'\',\''+esc(c.name||'')+'\')">Add &middot; '+c.hours_left+'h left</button>'
+          : '<span class="oo-tag">outside the 24-hour window</span>')+
+    '</div>';
+  }).join('');
+}
+
+function pickCustomer(mobile,name){
+  if(ONE_OFF.some(function(c){return c.mobile===mobile;})) return;
+  ONE_OFF.push({mobile:mobile,name:name});
+  renderChosen();
+}
+
+function dropCustomer(mobile){
+  ONE_OFF=ONE_OFF.filter(function(c){return c.mobile!==mobile;});
+  renderChosen();
+}
+
+function renderChosen(){
+  const el=document.getElementById('oneOffChosen');
+  el.innerHTML=ONE_OFF.length
+    ? ONE_OFF.map(function(c){
+        return '<span class="oo-chip">'+esc(c.name||c.mobile)+
+          '<button onclick="dropCustomer(\''+esc(c.mobile)+'\')">&times;</button></span>';
+      }).join('')
+    : '';
+}
+
+async function sendOneOff(){
+  const out=document.getElementById('oneOffResult');
+  const msg=document.getElementById('oneOffMessage').value.trim();
+  if(!ONE_OFF.length){out.textContent='Choose who to message first.';out.style.color='var(--err)';return;}
+  if(!msg){out.textContent='Write a message first.';out.style.color='var(--err)';return;}
+  if(!confirm('Send this to '+ONE_OFF.length+' customer'+(ONE_OFF.length===1?'':'s')+'?\n\nThis goes out immediately.')) return;
+  out.innerHTML='<span class="mw-spinner"></span>Sending...';
+  const j=await call('send_one_off',{recipients:ONE_OFF,message:msg});
+  if(!j.ok){out.textContent=j.error;out.style.color='var(--err)';return;}
+  out.textContent=j.sent+' sent'+(j.failed?(', '+j.failed+' failed'):'')+
+    (j.skipped?(', '+j.skipped+' skipped'):'')+'. '+(j.note||'');
+  out.style.color=j.failed?'var(--warn)':'var(--ok)';
+  ONE_OFF=[]; renderChosen();
+  document.getElementById('oneOffMessage').value='';
 }
 
 async function loadFailedSends(){
