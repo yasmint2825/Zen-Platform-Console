@@ -2823,6 +2823,29 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     color:var(--muted);margin-bottom:6px;
   }
 </style>
+
+<style id="zenQueueFilter">
+  .qf{
+    display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+    padding:9px 11px;border-radius:9px;background:var(--bg);
+    border:1px solid var(--border);margin-bottom:11px;font-size:11.5px;
+  }
+  .qf label{color:var(--muted);font-size:11px;}
+  .qf select,.qf input{
+    padding:4px 8px;border-radius:7px;border:1px solid var(--border);
+    background:var(--surface,#fff);font-size:11.5px;color:var(--ink);font-family:inherit;
+  }
+  .qf input{width:70px;}
+  .qf-n{
+    margin-left:auto;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:11px;color:var(--muted);
+  }
+  .qf-warn{font-size:10.5px;color:var(--warn);}
+  .qf-note{
+    margin-bottom:10px;padding-left:9px;border-left:2px solid var(--p);
+    font-size:11px;line-height:1.5;color:var(--muted);
+  }
+</style>
 </head>
 <body>
 
@@ -10815,6 +10838,13 @@ async function loadPending(){
 async function loadAtRiskQueue(){
   return renderDecisionQueue({containerId:'atRiskQueue',badgeId:'atRiskQueueBadge',source:'at_risk_outreach',emptyText:'No at-risk outreach raised yet. Use the button above to create some.'});
 }
+let QUEUE_FILTER={tier:'',campaign:'',limit:0};
+
+function setQueueFilter(k,v){
+  QUEUE_FILTER[k]= k==='limit' ? (parseInt(v)||0) : v;
+  loadPending();
+}
+
 async function renderDecisionQueue(opts){
   const res=await call('pending_review',{});
   const el=document.getElementById(opts.containerId);
@@ -10826,6 +10856,53 @@ async function renderDecisionQueue(opts){
   })};
   if(badge) badge.innerHTML=j.decisions.length?('<span class="count-badge">'+j.decisions.length+'</span>'):'';
   if(!j.decisions.length){el.innerHTML=opts.emptyText;return;}
+
+  // Filter and cap, in place.
+  //
+  // A queue of 1,600 with only "approve all" or one-by-one is
+  // unusable, and a separate wave planner was a second screen to
+  // learn for what is really a filter on this one.
+  const scored=j.decisions.filter(function(d){return d.probability!=null;}).length;
+  const f=QUEUE_FILTER;
+  let shown=j.decisions.slice();
+  if(f.tier) shown=shown.filter(function(d){return d.tier===f.tier;});
+  if(f.campaign) shown=shown.filter(function(d){return d.campaign_key===f.campaign;});
+  // Highest score first - the ones closest to returning need least
+  // persuading, so a message there is likeliest to tip them.
+  shown.sort(function(a,b){return (b.probability||0)-(a.probability||0);});
+  const total=shown.length;
+  if(f.limit) shown=shown.slice(0,f.limit);
+
+  const campaigns=[...new Set(j.decisions.map(function(d){return d.campaign_key;}))];
+  const filterBar=
+    '<div class="qf">'+
+      '<label>Who</label>'+
+      '<select onchange="setQueueFilter(\'tier\',this.value)">'+
+        ['','uncertain','at_risk','likely'].map(function(t){
+          return '<option value="'+t+'"'+(f.tier===t?' selected':'')+'>'+
+            (t===''?'Everyone':t==='uncertain'?'Uncertain - a message can move these'
+             :t==='at_risk'?'At risk - furthest gone':'Likely - would probably return anyway')+
+            '</option>';
+        }).join('')+
+      '</select>'+
+      '<label>Campaign</label>'+
+      '<select onchange="setQueueFilter(\'campaign\',this.value)">'+
+        ['<option value="">All</option>'].concat(campaigns.map(function(c){
+          return '<option value="'+esc(c)+'"'+(f.campaign===c?' selected':'')+'>'+esc(c)+'</option>';
+        })).join('')+
+      '</select>'+
+      '<label>How many</label>'+
+      '<input type="number" min="0" max="250" value="'+(f.limit||'')+'" placeholder="all" '+
+        'onchange="setQueueFilter(\'limit\',this.value)">'+
+      '<span class="qf-n">'+shown.length+' of '+total+'</span>'+
+      (scored<j.decisions.length
+        ? '<span class="qf-warn">'+(j.decisions.length-scored)+' have no score yet</span>' : '')+
+    '</div>'+
+    (shown.length&&f.limit
+      ? '<div class="qf-note">Showing the '+shown.length+' most likely to return, of '+total+' matching. Approving below sends only these.</div>'
+      : '');
+  j.decisions=shown;
+  if(!shown.length){ el.innerHTML=filterBar+'<span class="muted" style="font-size:12px;">Nothing matches those filters.</span>'; return; }
   // Grouped by campaign type (nudge/birthday/lapsed/etc.) rather than
   // one flat list - each group is collapsible with a brief note on
   // what actually triggers it, plus its own "Approve & send all" so a
@@ -10849,7 +10926,10 @@ async function renderDecisionQueue(opts){
   j.decisions.forEach(function(d){const k=d.customer_id||d.mobile;countByCustomer[k]=(countByCustomer[k]||0)+1;});
   const duplicateKeys=new Set(Object.keys(countByCustomer).filter(function(k){return countByCustomer[k]>1;}));
 
-  el.innerHTML=Object.keys(groups).sort().map(function(key){
+  // The bar goes in front of whatever the grouped renderer produces -
+  // this assignment writes innerHTML wholesale, so anything drawn
+  // before it was wiped.
+  el.innerHTML=filterBar+Object.keys(groups).sort().map(function(key){
     const items=groups[key];
     const info=campaignInfo[key]||{label:key,desc:''};
     const ids=items.map(function(d){return d.id;});
