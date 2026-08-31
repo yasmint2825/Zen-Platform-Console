@@ -2856,6 +2856,32 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     white-space:pre-wrap;word-break:break-word;
   }
 </style>
+
+<style id="zenCustomerGroups">
+  .cg-top{
+    font-size:11.5px;color:var(--muted);margin-bottom:11px;
+    padding-bottom:9px;border-bottom:1px solid var(--border);
+  }
+  .cg{
+    border:1px solid var(--border);border-left:3px solid var(--p);
+    border-radius:9px;padding:10px 12px;margin-bottom:9px;
+  }
+  /* Groups with nothing to do read as settled, not as a problem. */
+  .cg-noact{border-left-color:var(--border);opacity:.75;}
+  .cg-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
+  .cg-head b{font-size:13px;color:var(--ink);}
+  .cg-n{
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:15px;font-weight:700;color:var(--ink);
+  }
+  .cg-why{font-size:11.5px;line-height:1.55;color:var(--muted);margin-top:5px;}
+  .cg-foot{
+    display:flex;justify-content:space-between;align-items:center;
+    gap:10px;margin-top:9px;flex-wrap:wrap;
+  }
+  .cg-worth{font-size:11px;color:var(--muted);}
+  .cg-none{font-size:10.5px;color:var(--muted);font-style:italic;}
+</style>
 </head>
 <body>
 
@@ -4072,7 +4098,11 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
 
         <!-- CUSTOMERS -->
         <div class="page" id="page-customers">
-          <div class="page-header"><h1>Customers</h1><p class="muted">Search a customer to see their whole picture - visits, prediction, campaign history - in one place.</p></div>
+          <div class="page-header"><h1>Customers</h1><p class="muted">Everyone on record, grouped by what could be done about them. Search below for one person.</p></div>
+          <div class="card">
+            <h2>Who they are</h2>
+            <div id="customerOverview" class="muted" style="font-size:12px;">Loading...</div>
+          </div>
           <div class="card">
             <div class="row" style="margin-bottom:10px;">
               <input class="fi" type="text" id="customerSearchInput" placeholder="Search by name or phone..." style="flex:1;" onkeyup="if(event.key==='Enter')searchCustomers()">
@@ -4757,6 +4787,7 @@ function showPage(id){
   if(id==='content') loadCalendar();
   if(id==='zenchat') zcRenderSuggestions();
   if(id==='overview') loadCommandCenter();
+  if(id==='customers' && typeof loadCustomerOverview==='function') loadCustomerOverview();
 }
 
 // Real, live data for the Command Center - fetched fresh every time
@@ -7726,6 +7757,48 @@ async function loadReports(){
     return '<div class="item" style="display:flex;justify-content:space-between;"><span>'+s.stylist+' - '+s.total_customers+' customers</span><span class="mono-num badge '+(s.at_risk_percent>30?'b-err':'b-ok')+'">'+s.at_risk_percent+'% at-risk</span></div>';
   }).join(''):'No stylist data yet.';
 }
+async function loadCustomerOverview(){
+  const el=document.getElementById('customerOverview');
+  if(!el) return;
+  const j=await call('get_customer_overview',{});
+  if(!j.ok){el.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
+  CUSTOMER_GROUPS=j.groups;
+  el.innerHTML=
+    '<div class="cg-top">'+j.total+' customers &middot; '+j.scored+' scored by the model</div>'+
+    j.groups.map(function(g,i){
+      return '<div class="cg'+(g.action?'':' cg-noact')+'">'+
+        '<div class="cg-head">'+
+          '<b>'+esc(g.name)+'</b>'+
+          '<span class="cg-n">'+g.count+'</span>'+
+        '</div>'+
+        (g.why?'<div class="cg-why">'+esc(g.why)+'</div>':'')+
+        '<div class="cg-foot">'+
+          (g.worth?'<span class="cg-worth">about AED '+g.worth.toLocaleString()+' if they all came back once</span>':'<span></span>')+
+          // Every group either does something or says why it does not.
+          // A number with no action is just trivia.
+          (g.action
+            ? '<button class="btn btn-s btn-sm" onclick="queueGroup('+i+')">'+esc(g.action)+'</button>'
+            : '<span class="cg-none">nothing to do here</span>')+
+        '</div>'+
+      '</div>';
+    }).join('');
+}
+
+async function queueGroup(i){
+  const g=CUSTOMER_GROUPS[i];
+  if(!g||!g.campaign) return;
+  const n=prompt('How many of these '+g.count+'?\n\nThey go to the review queue - nothing sends until you approve.', Math.min(g.count,200));
+  if(n===null) return;
+  const limit=parseInt(n)||0;
+  if(!limit) return;
+  const j=await call('queue_customer_group',{keys:g.keys,campaign_key:g.campaign,limit:limit});
+  if(!j.ok){alert(j.error);return;}
+  alert(j.queued+' added to the review queue.'+
+    (j.skipped?('\n\n'+j.skipped+' skipped - already queued, contacted recently, or opted out.'):'')+
+    (j.note?('\n\n'+j.note):''));
+  loadCustomerOverview();
+}
+
 async function searchCustomers(){
   const q=document.getElementById('customerSearchInput').value.trim();
   const el=document.getElementById('customerSearchResults');
