@@ -2907,6 +2907,18 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     font-size:11px;line-height:1.55;color:var(--muted);
   }
 </style>
+
+<style id="zenIntelSections">
+  /* Three groups, so six cards read as an order of business rather
+     than a pile: what you came to ask, what changed, what is true. */
+  .int-sec{margin:26px 0 12px;}
+  .int-sec:first-of-type{margin-top:14px;}
+  .int-sec h3{
+    font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--p);margin:0 0 3px;
+  }
+  .int-sec p{font-size:11.5px;color:var(--muted);margin:0;line-height:1.5;}
+</style>
 </head>
 <body>
 
@@ -4022,33 +4034,22 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
           </div>
 
           <div id="intelligenceAgentDetail" style="display:none;">
-              <details class="card" ontoggle="if(this.open&&typeof loadServicePatterns==='function')loadServicePatterns()">
-                <summary><h2 style="display:inline;">What people actually buy</h2></summary>
-                <p class="muted" style="font-size:11.5px;">Patterns in 18 months of visits, with no assumptions built in &mdash; which services go together, what follows what, and which first visit leads to a second. Nothing else in Zen looks at this.</p>
-                <div id="servicePatterns" class="muted" style="font-size:12px;">Open to run the analysis.</div>
-              </details>
+          <div class="page-header"><h1>Intelligence</h1><p class="muted">Ask a question, look someone up, or read what the numbers are doing. Nothing here sends a message - that lives in Engagement.</p></div>
+              
+          
+
+
+          
+
 
               <details class="card">
                 <summary><h2 style="display:inline;">Look up one customer</h2></summary>
                 <p class="muted" style="font-size:11.5px;">One child&rsquo;s whole picture &mdash; visits, prediction, every message sent.</p>
-                <div class="card">
-            <div class="row" style="margin-bottom:10px;">
-              <input class="fi" type="text" id="customerSearchInput" placeholder="Search by name or phone..." style="flex:1;" onkeyup="if(event.key==='Enter')searchCustomers()">
-              <button class="btn btn-p btn-sm" onclick="searchCustomers()">Search</button>
-            </div>
-            <div id="customerSearchResults"></div>
-          </div>
+                
           <div id="customerProfileArea"></div>
         
               </details>
 
-          <div class="page-header"><h1>Intelligence</h1><p class="muted">Shared analysis every agent draws from - predictions, patterns, and answers to whatever you ask.</p></div>
-
-          <div class="card">
-            <h2>Daily findings <span id="dailyIntelDate" class="muted" style="font-weight:400;font-size:11.5px;"></span></h2>
-            <p class="muted" style="margin-bottom:12px;">Computed fresh every day from your real transaction data - genuine deviations and shifts, not a generic checklist. Deliberately quiet when nothing's actually unusual, rather than manufacturing a finding to fill space.</p>
-            <div id="dailyIntelList" class="muted">Loading...</div>
-          </div>
 
           <div class="stat-grid" style="margin-bottom:20px;">
             <div class="agent-tile" onclick="document.getElementById('predictiveInsightsDetail').scrollIntoView({behavior:'smooth'})" style="cursor:pointer;">
@@ -4076,29 +4077,11 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
             </div>
           </div>
 
-          <div class="card" id="predictiveContent" style="display:none;">
-            <h2>Return likelihood</h2>
-            <p class="muted" id="modelMeta" style="margin-bottom:14px;"></p>
-            <div class="stat-grid" id="predictiveTiers" style="margin-bottom:18px;"></div>
-            <p class="muted" style="font-size:12px;">Want to act on the at-risk customers below? That lives in <a href="#" onclick="zenGoAgent('engagement');return false;">Engagement agent</a> now, alongside everything else it's already doing for them.</p>
-          </div>
+          
 
-          <div class="card" id="loadForecastCard" style="display:none;">
-            <h2>Expected load this week</h2>
-            <p class="muted" style="margin-bottom:14px;">A repeating weekly pattern from your visit history — not individual date predictions. Honest given ~15 months of data: enough Mondays to trust "what a typical Monday looks like," not enough distinct Decembers to claim real yearly seasonality.</p>
-            <div id="loadForecastToday" style="margin-bottom:14px;"></div>
-            <div id="loadForecastWeek"></div>
-          </div>
+          
 
-          <div class="card" id="insightsCard" style="display:none;">
-            <h2>Suggested actions</h2>
-            <p class="muted" style="margin-bottom:14px;">Generated from your actual model results and campaign state — every recommendation below is tied to a real number, not generic advice.</p>
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
-              <button class="btn btn-p btn-sm" onclick="generateInsights()">Generate new insights</button>
-              <select class="fi" id="insightsHistoryPicker" style="width:auto;margin:0;display:none;" onchange="showInsightsFromHistory(this.value)"></select>
-            </div>
-            <div id="insightsResult" style="margin-top:14px;"></div>
-          </div>
+          
           </div>
 
           <div id="askQuestionDetail">
@@ -4112,7 +4095,46 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
             <div id="askHistory" style="margin-top:18px;"></div>
           </div>
           </div>
-        </div>
+        
+              <div class="int-sec"><h3>Look something up</h3><p>One customer, or one question about the whole business.</p></div>
+<div class="card">
+            <div class="row" style="margin-bottom:10px;">
+              <input class="fi" type="text" id="customerSearchInput" placeholder="Search by name or phone..." style="flex:1;" onkeyup="if(event.key==='Enter')searchCustomers()">
+              <button class="btn btn-p btn-sm" onclick="searchCustomers()">Search</button>
+            </div>
+            <div id="customerSearchResults"></div>
+          </div>
+              <div class="int-sec"><h3>What changed</h3><p>Computed daily. Quiet when nothing is unusual, rather than filling space.</p></div>
+<div class="card">
+            <h2>Daily findings <span id="dailyIntelDate" class="muted" style="font-weight:400;font-size:11.5px;"></span></h2>
+            <p class="muted" style="margin-bottom:12px;">Computed fresh every day from your real transaction data - genuine deviations and shifts, not a generic checklist. Deliberately quiet when nothing's actually unusual, rather than manufacturing a finding to fill space.</p>
+            <div id="dailyIntelList" class="muted">Loading...</div>
+          </div>
+              <div class="int-sec"><h3>What the numbers say</h3><p>Slower-moving patterns. Worth reading occasionally, not daily.</p></div>
+<details class="card" ontoggle="if(this.open&&typeof loadServicePatterns==='function')loadServicePatterns()">
+                <summary><h2 style="display:inline;">What people actually buy</h2></summary>
+                <p class="muted" style="font-size:11.5px;">Patterns in 18 months of visits, with no assumptions built in &mdash; which services go together, what follows what, and which first visit leads to a second. Nothing else in Zen looks at this.</p>
+                <div id="servicePatterns" class="muted" style="font-size:12px;">Open to run the analysis.</div>
+              </details><div class="card" id="predictiveContent" style="display:none;">
+            <h2>Return likelihood</h2>
+            <p class="muted" id="modelMeta" style="margin-bottom:14px;"></p>
+            <div class="stat-grid" id="predictiveTiers" style="margin-bottom:18px;"></div>
+            <p class="muted" style="font-size:12px;">Want to act on the at-risk customers below? That lives in <a href="#" onclick="zenGoAgent('engagement');return false;">Engagement agent</a> now, alongside everything else it's already doing for them.</p>
+          </div><div class="card" id="loadForecastCard" style="display:none;">
+            <h2>Expected load this week</h2>
+            <p class="muted" style="margin-bottom:14px;">A repeating weekly pattern from your visit history — not individual date predictions. Honest given ~15 months of data: enough Mondays to trust "what a typical Monday looks like," not enough distinct Decembers to claim real yearly seasonality.</p>
+            <div id="loadForecastToday" style="margin-bottom:14px;"></div>
+            <div id="loadForecastWeek"></div>
+          </div><div class="card" id="insightsCard" style="display:none;">
+            <h2>Suggested actions</h2>
+            <p class="muted" style="margin-bottom:14px;">Generated from your actual model results and campaign state — every recommendation below is tied to a real number, not generic advice.</p>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+              <button class="btn btn-p btn-sm" onclick="generateInsights()">Generate new insights</button>
+              <select class="fi" id="insightsHistoryPicker" style="width:auto;margin:0;display:none;" onchange="showInsightsFromHistory(this.value)"></select>
+            </div>
+            <div id="insightsResult" style="margin-top:14px;"></div>
+          </div>
+          </div>
 
         </div>
 
