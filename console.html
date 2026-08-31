@@ -2846,6 +2846,16 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     font-size:11px;line-height:1.5;color:var(--muted);
   }
 </style>
+
+<style id="zenOneOffFail">
+  .oo-fail{
+    margin-top:7px;padding:7px 9px;border-radius:7px;
+    background:var(--bg);border:1px solid var(--border);
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:10.5px;line-height:1.6;color:var(--muted);
+    white-space:pre-wrap;word-break:break-word;
+  }
+</style>
 </head>
 <body>
 
@@ -6716,9 +6726,24 @@ async function sendOneOff(){
     template_lang:t?t.lang:null,
     template_params:params,
   });
-  if(!j.ok){out.textContent=j.error;out.style.color='var(--err)';return;}
-  out.textContent=j.sent+' sent'+(j.failed?(', '+j.failed+' failed'):'')+
-    (j.skipped?(', '+j.skipped+' skipped'):'')+'. '+(j.note||'');
+  if(!j.ok){
+    // The template's own text alongside the refusal, so the mismatch
+    // is visible rather than described.
+    out.innerHTML=esc(j.error)+
+      (j.template_body?'<div class="oo-fail">'+esc(j.template_body)+'</div>':'');
+    out.style.color='var(--err)';
+    return;
+  }
+  // Meta's actual reason, shown. "Check the parameters" told you to
+  // check something you had no way to see.
+  out.innerHTML=esc(j.sent+' sent'+(j.failed?(', '+j.failed+' failed'):'')+
+    (j.skipped?(', '+j.skipped+' skipped'):'')+'.')+
+    (j.note?' '+esc(j.note):'')+
+    ((j.failures&&j.failures.length)
+      ? '<div class="oo-fail">'+j.failures.map(function(f){
+          return esc(f.mobile)+' &mdash; '+esc(f.error);
+        }).join('<br>')+'</div>'
+      : '');
   out.style.color=j.failed?'var(--warn)':'var(--ok)';
   ONE_OFF=[]; renderChosen();
   document.getElementById('oneOffMessage').value='';
