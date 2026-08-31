@@ -2882,6 +2882,31 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
   .cg-worth{font-size:11px;color:var(--muted);}
   .cg-none{font-size:10.5px;color:var(--muted);font-style:italic;}
 </style>
+
+<style id="zenServicePatterns">
+  .sp-top{
+    font-size:11.5px;color:var(--muted);
+    padding-bottom:9px;border-bottom:1px solid var(--border);margin-bottom:11px;
+  }
+  .sp-sec{
+    font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--muted);margin:14px 0 7px;
+  }
+  .sp-row{
+    display:flex;justify-content:space-between;gap:12px;
+    padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;
+  }
+  .sp-row:last-of-type{border-bottom:0;}
+  .sp-n{
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:11px;color:var(--muted);white-space:nowrap;
+  }
+  /* What the number means, next to the number. */
+  .sp-why{
+    margin-top:8px;padding-left:9px;border-left:2px solid var(--border);
+    font-size:11px;line-height:1.55;color:var(--muted);
+  }
+</style>
 </head>
 <body>
 
@@ -2939,7 +2964,7 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
       <div class="nav-group-label">Workspace</div>
       <button class="nav-item active" data-page="overview" onclick="showPage('overview')"><span class="ic">&#9635;</span>Command Center</button>
       <button class="nav-item" data-page="agents" onclick="showPage('agents')"><span class="ic">&#9673;</span>Agents</button>
-      <button class="nav-item" data-page="customers" onclick="showPage('customers')"><span class="ic">&#128100;</span>Customers</button>
+      
       <button class="nav-item" data-page="zenchat" onclick="showPage('zenchat')"><span class="ic">&#128172;</span>ZenChat</button>
       <!-- Straight to the WhatsApp inbox rather than making someone find
            it through Marketing, since it is checked several times a day. -->
@@ -3997,6 +4022,26 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
           </div>
 
           <div id="intelligenceAgentDetail" style="display:none;">
+              <details class="card" ontoggle="if(this.open&&typeof loadServicePatterns==='function')loadServicePatterns()">
+                <summary><h2 style="display:inline;">What people actually buy</h2></summary>
+                <p class="muted" style="font-size:11.5px;">Patterns in 18 months of visits, with no assumptions built in &mdash; which services go together, what follows what, and which first visit leads to a second. Nothing else in Zen looks at this.</p>
+                <div id="servicePatterns" class="muted" style="font-size:12px;">Open to run the analysis.</div>
+              </details>
+
+              <details class="card">
+                <summary><h2 style="display:inline;">Look up one customer</h2></summary>
+                <p class="muted" style="font-size:11.5px;">One child&rsquo;s whole picture &mdash; visits, prediction, every message sent.</p>
+                <div class="card">
+            <div class="row" style="margin-bottom:10px;">
+              <input class="fi" type="text" id="customerSearchInput" placeholder="Search by name or phone..." style="flex:1;" onkeyup="if(event.key==='Enter')searchCustomers()">
+              <button class="btn btn-p btn-sm" onclick="searchCustomers()">Search</button>
+            </div>
+            <div id="customerSearchResults"></div>
+          </div>
+          <div id="customerProfileArea"></div>
+        
+              </details>
+
           <div class="page-header"><h1>Intelligence</h1><p class="muted">Shared analysis every agent draws from - predictions, patterns, and answers to whatever you ask.</p></div>
 
           <div class="card">
@@ -4097,21 +4142,7 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
         </div>
 
         <!-- CUSTOMERS -->
-        <div class="page" id="page-customers">
-          <div class="page-header"><h1>Customers</h1><p class="muted">Everyone on record, grouped by what could be done about them. Search below for one person.</p></div>
-          <div class="card">
-            <h2>Who they are</h2>
-            <div id="customerOverview" class="muted" style="font-size:12px;">Loading...</div>
-          </div>
-          <div class="card">
-            <div class="row" style="margin-bottom:10px;">
-              <input class="fi" type="text" id="customerSearchInput" placeholder="Search by name or phone..." style="flex:1;" onkeyup="if(event.key==='Enter')searchCustomers()">
-              <button class="btn btn-p btn-sm" onclick="searchCustomers()">Search</button>
-            </div>
-            <div id="customerSearchResults"></div>
-          </div>
-          <div id="customerProfileArea"></div>
-        </div>
+        
 
         <!-- REPORTS -->
         <!-- ZENCHAT -->
@@ -4787,7 +4818,6 @@ function showPage(id){
   if(id==='content') loadCalendar();
   if(id==='zenchat') zcRenderSuggestions();
   if(id==='overview') loadCommandCenter();
-  if(id==='customers' && typeof loadCustomerOverview==='function') loadCustomerOverview();
 }
 
 // Real, live data for the Command Center - fetched fresh every time
@@ -7757,46 +7787,45 @@ async function loadReports(){
     return '<div class="item" style="display:flex;justify-content:space-between;"><span>'+s.stylist+' - '+s.total_customers+' customers</span><span class="mono-num badge '+(s.at_risk_percent>30?'b-err':'b-ok')+'">'+s.at_risk_percent+'% at-risk</span></div>';
   }).join(''):'No stylist data yet.';
 }
-async function loadCustomerOverview(){
-  const el=document.getElementById('customerOverview');
+async function loadServicePatterns(){
+  const el=document.getElementById('servicePatterns');
   if(!el) return;
-  const j=await call('get_customer_overview',{});
+  el.innerHTML='<span class="mw-spinner"></span>Reading 18 months of visits...';
+  const j=await call('get_service_patterns',{});
   if(!j.ok){el.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
-  CUSTOMER_GROUPS=j.groups;
-  el.innerHTML=
-    '<div class="cg-top">'+j.total+' customers &middot; '+j.scored+' scored by the model</div>'+
-    j.groups.map(function(g,i){
-      return '<div class="cg'+(g.action?'':' cg-noact')+'">'+
-        '<div class="cg-head">'+
-          '<b>'+esc(g.name)+'</b>'+
-          '<span class="cg-n">'+g.count+'</span>'+
-        '</div>'+
-        (g.why?'<div class="cg-why">'+esc(g.why)+'</div>':'')+
-        '<div class="cg-foot">'+
-          (g.worth?'<span class="cg-worth">about AED '+g.worth.toLocaleString()+' if they all came back once</span>':'<span></span>')+
-          // Every group either does something or says why it does not.
-          // A number with no action is just trivia.
-          (g.action
-            ? '<button class="btn btn-s btn-sm" onclick="queueGroup('+i+')">'+esc(g.action)+'</button>'
-            : '<span class="cg-none">nothing to do here</span>')+
-        '</div>'+
-      '</div>';
-    }).join('');
-}
+  if(!j.pairs.length&&!j.journeys.length){el.innerHTML='<span class="muted">'+esc(j.note||'Not enough yet.')+'</span>';return;}
 
-async function queueGroup(i){
-  const g=CUSTOMER_GROUPS[i];
-  if(!g||!g.campaign) return;
-  const n=prompt('How many of these '+g.count+'?\n\nThey go to the review queue - nothing sends until you approve.', Math.min(g.count,200));
-  if(n===null) return;
-  const limit=parseInt(n)||0;
-  if(!limit) return;
-  const j=await call('queue_customer_group',{keys:g.keys,campaign_key:g.campaign,limit:limit});
-  if(!j.ok){alert(j.error);return;}
-  alert(j.queued+' added to the review queue.'+
-    (j.skipped?('\n\n'+j.skipped+' skipped - already queued, contacted recently, or opted out.'):'')+
-    (j.note?('\n\n'+j.note):''));
-  loadCustomerOverview();
+  el.innerHTML=
+    '<div class="sp-top">'+j.customers+' customers &middot; '+j.services+' different services</div>'+
+
+    // Which first visit leads to a second. The most directly useful of
+    // the three, because it says what to put in front of a new parent.
+    (j.first_visits&&j.first_visits.length
+      ? '<div class="sp-sec">Does a first visit lead to a second?</div>'+
+        '<table class="at-table"><tr><th>first service</th><th>tried it</th><th>came back</th><th>rate</th></tr>'+
+        j.first_visits.map(function(f){
+          return '<tr><td><b>'+esc(f.service)+'</b></td><td>'+f.first_time+'</td>'+
+            '<td>'+f.came_back+'</td><td><b>'+f.rate+'%</b></td></tr>';
+        }).join('')+'</table>'+
+        '<div class="sp-why">The gap between the top and bottom of this table is the most useful number here. If one first service brings people back far more often, that is the one to put in front of a new parent.</div>'
+      : '')+
+
+    (j.pairs.length
+      ? '<div class="sp-sec">Bought by the same parent</div>'+
+        j.pairs.map(function(p){
+          return '<div class="sp-row"><span>'+esc(p.pair)+'</span>'+
+            '<span class="sp-n">'+p.together+' &middot; '+p.lift+'&times;</span></div>';
+        }).join('')+
+        '<div class="sp-why">'+esc(j.note||'')+'</div>'
+      : '')+
+
+    (j.journeys.length
+      ? '<div class="sp-sec">What follows what</div>'+
+        j.journeys.map(function(p){
+          return '<div class="sp-row"><span>'+esc(p.path)+'</span><span class="sp-n">'+p.times+'</span></div>';
+        }).join('')+
+        '<div class="sp-why">A common path is a package waiting to be made, or a suggestion the reply assistant should be making at the right moment.</div>'
+      : '');
 }
 
 async function searchCustomers(){
