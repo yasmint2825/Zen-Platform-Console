@@ -2789,6 +2789,40 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
     font-size:14px;line-height:1;padding:0;
   }
 </style>
+
+<style id="zenWaveList">
+  .wv-list{margin-top:10px;}
+  .wv-list summary{font-size:11.5px;color:var(--p);cursor:pointer;}
+  .wv-list table{margin-top:8px;}
+  /* Held back rows are visibly not being sent to. */
+  .wv-held{opacity:.55;}
+  .wv-tag{
+    font-size:9.5px;padding:1px 7px;border-radius:999px;
+    background:var(--bg);color:var(--muted);
+  }
+</style>
+
+<style id="zenOneOffTpl">
+  .oo-tplnote:empty{display:none;}
+  .oo-tplnote{
+    margin-top:8px;padding:8px 10px;border-radius:8px;
+    background:var(--pl);font-size:11px;line-height:1.5;color:var(--p);
+  }
+</style>
+
+<style id="zenOneOffPreview">
+  .oo-preview:empty,.oo-vars:empty{display:none;}
+  .oo-preview{
+    margin-top:9px;padding:10px 12px;border-radius:9px;
+    background:var(--bg);border:1px solid var(--border);
+    font-size:12px;line-height:1.55;white-space:pre-wrap;color:var(--ink);
+  }
+  .oo-vars{margin-top:9px;}
+  .oo-prev-label{
+    font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--muted);margin-bottom:6px;
+  }
+</style>
 </head>
 <body>
 
@@ -3566,12 +3600,27 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
               <details class="card">
                 <summary><h2 style="display:inline;">Send a one-off message</h2></summary>
                 <p class="muted" style="font-size:11.5px;">For anything no campaign covers &mdash; someone cancelled, the salon is closed tomorrow. Free text only, so it reaches people who messaged you in the last 24 hours.</p>
-                <div class="row" style="gap:8px;margin:10px 0;">
-                  <input class="fi" id="oneOffSearch" placeholder="Search by name or number" style="font-size:12px;" oninput="searchToMessage()">
+                <div class="row" style="gap:8px;margin:10px 0;flex-wrap:wrap;">
+                  <input class="fi" id="oneOffSearch" placeholder="Search by name or number" style="font-size:12px;flex:1;min-width:180px;" oninput="searchToMessage()">
+                  <!-- For anyone not on record - a walk-in, someone who
+                       phoned. Search only finds existing customers. -->
+                  <input class="fi" id="oneOffManual" placeholder="Or type a number: 9715xxxxxxxx" style="font-size:12px;width:210px;">
+                  <button class="btn btn-s btn-sm" onclick="addManualNumber()">Add</button>
                 </div>
                 <div id="oneOffResults" style="font-size:12px;"></div>
                 <div id="oneOffChosen" class="oo-chosen"></div>
+                <div class="row" style="gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;">
+                  <label class="fl" style="margin:0;">Send as</label>
+                  <select class="fi" id="oneOffMode" onchange="oneOffModeChanged()"
+                          style="width:auto;min-width:260px;margin:0;font-size:12px;min-height:32px;">
+                    <option value="">Free text &mdash; only reaches recent repliers</option>
+                  </select>
+                  <button class="btn btn-s btn-sm" onclick="loadSendableTemplates(true)">Refresh from Meta</button>
+                </div>
+                <div id="oneOffPreview" class="oo-preview"></div>
+                <div id="oneOffVars" class="oo-vars"></div>
                 <textarea class="fi" id="oneOffMessage" rows="3" placeholder="Your message. Use {name} and it becomes the child&rsquo;s name." style="font-size:12px;margin-top:8px;"></textarea>
+                <div id="oneOffTemplateNote" class="oo-tplnote"></div>
                 <div class="row" style="gap:8px;align-items:center;margin-top:8px;">
                   <button class="btn btn-p btn-sm" onclick="sendOneOff()">Send it</button>
                   <span id="oneOffResult" style="font-size:11.5px;"></span>
@@ -6660,17 +6709,35 @@ async function planWave(){
     // and someone will otherwise change it to "likely first".
     '<div class="wv-why">Ordered by who a message could actually change. The uncertain middle comes first &mdash; customers the model thinks will return anyway would mostly have come without being asked.</div>'+
     '<div class="wv-note">'+esc(j.note||'')+'</div>'+
-    '<button class="btn btn-p btn-sm" style="margin-top:10px;" onclick="commitWave()">Send this wave</button>';
+    // Who is actually in it, with the score. A count is a decision you
+    // are asked to make blind; a list is one you can check.
+    '<details class="wv-list"><summary>Who is in this wave</summary>'+
+      '<table class="at-table"><tr><th>name</th><th>tier</th><th>score</th><th>last visit</th><th></th></tr>'+
+      j.wave.map(function(w){
+        return '<tr'+(w.control?' class="wv-held"':'')+'>'+
+          '<td>'+esc(w.name||w.mobile)+'</td>'+
+          '<td>'+esc(w.tier||'not scored')+'</td>'+
+          '<td>'+(w.probability!=null?Math.round(w.probability*100)+'%':'&mdash;')+'</td>'+
+          '<td>'+esc(w.last_visit||'&mdash;')+'</td>'+
+          '<td>'+(w.control?'<span class="wv-tag">held back</span>':'')+'</td>'+
+        '</tr>';
+      }).join('')+'</table></details>'+
+    '<div class="row" style="gap:6px;margin-top:10px;flex-wrap:wrap;">'+
+      '<button class="btn btn-s btn-sm" onclick="commitWave(true)">Put them in the review queue</button>'+
+      '<button class="btn btn-p btn-sm" onclick="commitWave(false)">Send now</button>'+
+    '</div>';
 }
 
-async function commitWave(){
+async function commitWave(reviewFirst){
   if(!WAVE) return;
   const send=WAVE.wave.filter(function(w){return !w.control;}).map(function(w){return w.id;});
   const held=WAVE.wave.filter(function(w){return w.control;}).map(function(w){return w.id;});
-  if(!confirm('Send '+send.length+' messages?\n\n'+held.length+' will be held back as a control and never messaged.\n\nThis goes to real customers.')) return;
+  if(!confirm(reviewFirst
+      ? ('Put '+send.length+' into the review queue?\n\n'+held.length+' held back as a control. Nothing sends until you approve them.')
+      : ('Send '+send.length+' messages now?\n\n'+held.length+' will be held back and never messaged.\n\nThis goes to real customers within five minutes.'))) return;
   const out=document.getElementById('wavePlan');
   out.innerHTML='<span class="mw-spinner"></span>Queueing...';
-  const j=await call('commit_wave',{send_ids:send,control_ids:held});
+  const j=await call('commit_wave',{send_ids:send,control_ids:held,review_first:reviewFirst===true});
   if(!j.ok){out.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
   out.innerHTML='<div class="wv-summary"><b>'+j.queued+'</b> queued, '+j.held_back+' held back. '+esc(j.note||'')+'</div>';
   WAVE=null;
@@ -6679,6 +6746,86 @@ async function commitWave(){
 // ── One-off ──────────────────────────────────────────────────────
 let ONE_OFF=[];
 
+let TEMPLATES=[];
+
+async function loadSendableTemplates(announce){
+  const sel=document.getElementById('oneOffMode');
+  if(!sel) return;
+  const j=await call('list_sendable_templates',{});
+  if(!j.ok){
+    if(announce) alert(j.error);
+    return;
+  }
+  TEMPLATES=j.templates||[];
+  sel.innerHTML='<option value="">Free text &mdash; only reaches recent repliers</option>'+
+    TEMPLATES.map(function(t){
+      return '<option value="'+esc(t.name)+'">'+esc(t.name)+' &mdash; reaches anyone</option>';
+    }).join('');
+  if(announce) alert(TEMPLATES.length+' approved template'+(TEMPLATES.length===1?'':'s')+' found at Meta.');
+}
+
+function currentTemplate(){
+  const name=document.getElementById('oneOffMode').value;
+  return TEMPLATES.find(function(t){return t.name===name;})||null;
+}
+
+function oneOffModeChanged(){
+  const t=currentTemplate();
+  const msg=document.getElementById('oneOffMessage');
+  const note=document.getElementById('oneOffTemplateNote');
+  const prev=document.getElementById('oneOffPreview');
+  const vars=document.getElementById('oneOffVars');
+
+  msg.style.display=t?'none':'';
+  note.innerHTML=t
+    ? 'The wording is fixed at Meta and can&rsquo;t be edited here.'
+    : '';
+  // The actual approved text, so nobody sends a template they have not
+  // read. The name alone tells you nothing about what it says.
+  prev.innerHTML=t ? '<div class="oo-prev-label">What this sends</div>'+esc(t.body) : '';
+
+  // One field per variable the template declares. Getting the count
+  // wrong is the "template does not exist" error, which names nothing.
+  vars.innerHTML = (t && t.body_vars)
+    ? '<div class="oo-prev-label">Fill in the blanks</div>'+
+      Array.from({length:t.body_vars}, function(_,i){
+        return '<input class="fi" id="tplVar_'+(i+1)+'" placeholder="'+
+          (i===0?'{{1}} - use {name} for the child&rsquo;s name':'{{'+(i+1)+'}}')+'" '+
+          'value="'+(i===0?'{name}':'')+'" style="font-size:12px;margin-bottom:5px;">';
+      }).join('')
+    : '';
+
+  if(document.getElementById('oneOffSearch').value.trim().length>=2) searchToMessage();
+}
+
+function addManualNumber(){
+  const el=document.getElementById('oneOffManual');
+  const raw=el.value.replace(/[^0-9]/g,'');
+  if(raw.length<9){alert('That does not look like a full number. Include the country code, e.g. 971551234567.');return;}
+  if(!currentTemplate()){
+    // A typed number has almost certainly not messaged in the last
+    // 24 hours, so free text would fail.
+    alert('Choose a template first - free text only reaches someone who messaged you in the last 24 hours, and a number typed in almost certainly has not.');
+    return;
+  }
+  pickCustomer(raw, raw, '');
+  el.value='';
+}
+
+function oneOffModeChanged(){
+  const key=document.getElementById('oneOffMode').value;
+  const msg=document.getElementById('oneOffMessage');
+  const note=document.getElementById('oneOffTemplateNote');
+  // A template's text is fixed at Meta, so the box would be misleading.
+  msg.style.display=key?'none':'';
+  note.innerHTML=key
+    ? 'The wording is whatever Meta approved for this template &mdash; it can&rsquo;t be edited here. The child&rsquo;s name is filled in automatically.'
+    : '';
+  // Re-run the search so the window warnings update: with a template
+  // everyone is reachable, without one only recent repliers are.
+  if(document.getElementById('oneOffSearch').value.trim().length>=2) searchToMessage();
+}
+
 async function searchToMessage(){
   const q=document.getElementById('oneOffSearch').value.trim();
   const out=document.getElementById('oneOffResults');
@@ -6686,23 +6833,25 @@ async function searchToMessage(){
   const j=await call('search_customers_to_message',{query:q});
   if(!j.ok){out.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
   if(!j.customers.length){out.innerHTML='<span class="muted">Nobody found.</span>';return;}
+  // With a template chosen, the 24-hour window no longer applies -
+  // everyone not opted out is reachable.
+  const usingTemplate=!!document.getElementById('oneOffMode').value;
   out.innerHTML=j.customers.map(function(c){
     return '<div class="oo-row'+(c.blocked?' oo-blocked':'')+'">'+
       '<span><b>'+esc(c.name||c.mobile)+'</b> <span class="muted">'+esc(c.mobile)+'</span></span>'+
-      // Said per person, because free text only works inside 24 hours
-      // and picking someone outside it just fails.
       (c.blocked
         ? '<span class="oo-tag oo-no">'+esc(c.blocked_reason)+'</span>'
-        : c.window_open
-          ? '<button class="btn btn-s btn-sm" onclick="pickCustomer(\''+esc(c.mobile)+'\',\''+esc(c.name||'')+'\')">Add &middot; '+c.hours_left+'h left</button>'
+        : (usingTemplate||c.window_open)
+          ? '<button class="btn btn-s btn-sm" onclick="pickCustomer(\''+esc(c.mobile)+'\',\''+esc(c.name||'')+'\',\''+esc(c.key||'')+'\')">Add'+
+            (!usingTemplate&&c.hours_left!=null?(' &middot; '+c.hours_left+'h left'):'')+'</button>'
           : '<span class="oo-tag">outside the 24-hour window</span>')+
     '</div>';
   }).join('');
 }
 
-function pickCustomer(mobile,name){
+function pickCustomer(mobile,name,key){
   if(ONE_OFF.some(function(c){return c.mobile===mobile;})) return;
-  ONE_OFF.push({mobile:mobile,name:name});
+  ONE_OFF.push({mobile:mobile,name:name,key:key||''});
   renderChosen();
 }
 
@@ -6724,11 +6873,25 @@ function renderChosen(){
 async function sendOneOff(){
   const out=document.getElementById('oneOffResult');
   const msg=document.getElementById('oneOffMessage').value.trim();
+  const tplKey=document.getElementById('oneOffMode').value;
   if(!ONE_OFF.length){out.textContent='Choose who to message first.';out.style.color='var(--err)';return;}
-  if(!msg){out.textContent='Write a message first.';out.style.color='var(--err)';return;}
-  if(!confirm('Send this to '+ONE_OFF.length+' customer'+(ONE_OFF.length===1?'':'s')+'?\n\nThis goes out immediately.')) return;
+  if(!tplKey&&!msg){out.textContent='Write a message, or choose a template.';out.style.color='var(--err)';return;}
+  if(!confirm('Send to '+ONE_OFF.length+' customer'+(ONE_OFF.length===1?'':'s')+'?'+
+     (tplKey?'\n\nUsing the approved template.':'')+'\n\nThis goes out immediately.')) return;
   out.innerHTML='<span class="mw-spinner"></span>Sending...';
-  const j=await call('send_one_off',{recipients:ONE_OFF,message:msg});
+  const t=currentTemplate();
+  const params=t&&t.body_vars
+    ? Array.from({length:t.body_vars}, function(_,i){
+        const f=document.getElementById('tplVar_'+(i+1));
+        return f?f.value:'';
+      })
+    : null;
+  const j=await call('send_one_off',{
+    recipients:ONE_OFF, message:msg,
+    template_key:tplKey||null,
+    template_lang:t?t.lang:null,
+    template_params:params,
+  });
   if(!j.ok){out.textContent=j.error;out.style.color='var(--err)';return;}
   out.textContent=j.sent+' sent'+(j.failed?(', '+j.failed+' failed'):'')+
     (j.skipped?(', '+j.skipped+' skipped'):'')+'. '+(j.note||'');
@@ -6821,6 +6984,7 @@ async function loadDoNotDisturb(){
   loadPackagePriority();
   loadFailedSends();
   loadLearningState();
+  loadSendableTemplates();
   const el=document.getElementById('dndList');
   if(!el) return;
   const j=await call('list_do_not_disturb',{});
