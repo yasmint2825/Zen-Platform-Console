@@ -2919,6 +2919,41 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
   }
   .int-sec p{font-size:11.5px;color:var(--muted);margin:0;line-height:1.5;}
 </style>
+
+<style id="zenCreativeIntel">
+  .ci-sec{
+    font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--muted);margin:14px 0 7px;
+  }
+  .ci-caveat{
+    padding:10px 12px;border-radius:9px;background:var(--warnl);
+    border:1px solid var(--border);font-size:11.5px;line-height:1.55;
+    color:var(--warn);margin-bottom:11px;
+  }
+  .ci-pat{
+    border:1px solid var(--border);border-left:3px solid var(--border);
+    border-radius:9px;padding:9px 11px;margin-bottom:8px;
+  }
+  .ci-ok{border-left-color:var(--ok);}
+  .ci-pat-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
+  .ci-conf{font-size:10px;color:var(--muted);}
+  .ci-row{display:flex;justify-content:space-between;gap:10px;padding:4px 0;font-size:11.5px;}
+  .ci-n{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;color:var(--muted);}
+  .ci-why{
+    margin-top:6px;padding-left:8px;border-left:2px solid var(--border);
+    font-size:10.5px;line-height:1.5;color:var(--muted);
+  }
+  .cp{
+    border:1px solid var(--border);border-left:3px solid var(--p);
+    border-radius:10px;padding:12px 14px;margin-top:10px;
+  }
+  .cp-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
+  .cp-head b{font-size:13.5px;}
+  .cp-fmt{font-size:10px;color:var(--muted);}
+  .cp-hook{margin-top:6px;font-size:15px;font-weight:600;color:var(--ink);line-height:1.35;}
+  .cp-test,.cp-why,.cp-learn{font-size:11.5px;line-height:1.55;margin-top:7px;color:var(--muted);}
+  .cp-test{color:var(--p);}
+</style>
 </head>
 <body>
 
@@ -3846,7 +3881,19 @@ pre,code{border-radius:8px}pre{max-width:100%;overflow:auto}
                 <div id="instagramTestResult" style="font-size:12px;margin-top:8px;"></div>
               </details>
 
-<details class="card">
+<details class="card" ontoggle="if(this.open&&typeof loadCreativeIntel==='function')loadCreativeIntel()">
+                <summary><h2 style="display:inline;">Creative intelligence</h2></summary>
+                <p class="muted" style="font-size:11.5px;">What each ad actually is, joined to what it did &mdash; so the lesson transfers to the next ad instead of dying with this one.</p>
+                <div class="row" style="gap:7px;margin:10px 0;flex-wrap:wrap;">
+                  <button class="btn btn-s btn-sm" onclick="classifyAllAds()">Classify the ads</button>
+                  <button class="btn btn-p btn-sm" onclick="proposeCreative()">What should I make next?</button>
+                  <span id="ciResult" style="font-size:11.5px;"></span>
+                </div>
+                <div id="creativeIntel" class="muted" style="font-size:12px;">Open to load.</div>
+                <div id="creativeProposals"></div>
+              </details>
+
+              <details class="card">
                 <summary><h2 style="display:inline;">Meta ads connection</h2></summary>
                 <div id="metaAdsStatus" class="muted" style="margin-bottom:10px;margin-top:10px;">Checking...</div>
                 <div class="row" style="margin-bottom:8px;flex-wrap:wrap;">
@@ -9576,6 +9623,89 @@ async function diagnoseAdActions(){
 // anything else. This shows whatever result each objective optimises
 // for, so it works the same for engagement, traffic or messages.
 let AD_TABLE=[], AD_TABLE_SHOWN=10;
+
+async function loadCreativeIntel(){
+  const el=document.getElementById('creativeIntel');
+  if(!el) return;
+  el.innerHTML='<span class="mw-spinner"></span>Loading...';
+  const j=await call('get_creative_intelligence',{});
+  if(!j.ok){el.innerHTML='<span style="color:var(--err);">'+esc(j.error)+'</span>';return;}
+  if(!(j.ads||[]).length){el.innerHTML='<span class="muted">'+esc(j.note||'No ads classified yet.')+'</span>';return;}
+  el.innerHTML=
+    // The caveat leads. At this spend almost nothing here is a finding,
+    // and a correlation shown without one invites acting on noise.
+    (j.note?'<div class="ci-caveat">'+esc(j.note)+'</div>':'')+
+    '<div class="ci-sec">What has run</div>'+
+    '<div style="overflow-x:auto;"><table class="at-table">'+
+      '<tr><th>ad</th><th>opening</th><th>hook</th><th>angle</th><th>spend</th><th>convs</th><th>CPA</th></tr>'+
+      j.ads.map(function(a){
+        const t=a.attributes||{};
+        return '<tr><td><b>'+esc(String(a.name).slice(0,26))+'</b></td>'+
+          '<td>'+esc(t.opening_shot||'-')+'</td><td>'+esc(t.hook_type||'-')+'</td>'+
+          '<td>'+esc(t.copy_angle||'-')+'</td><td>'+Math.round(a.spend||0)+'</td>'+
+          '<td>'+(a.conversations||0)+'</td><td>'+(a.cpa!=null?a.cpa:'-')+'</td></tr>';
+      }).join('')+
+    '</table></div>'+
+    ((j.patterns||[]).length
+      ? '<div class="ci-sec">What the characteristics suggest</div>'+
+        j.patterns.map(function(p){
+          return '<div class="ci-pat'+(p.confidence==='worth acting on'?' ci-ok':'')+'">'+
+            '<div class="ci-pat-head"><b>'+esc(p.attribute.replace(/_/g,' '))+'</b>'+
+              '<span class="ci-conf">'+esc(p.confidence)+'</span></div>'+
+            p.values.map(function(v){
+              return '<div class="ci-row"><span>'+esc(v.value)+'</span>'+
+                '<span class="ci-n">'+v.ads+' ads / '+v.conversations+' convs / CPA '+v.cpa+'</span></div>';
+            }).join('')+
+            (p.caveat?'<div class="ci-why">'+esc(p.caveat)+'</div>':'')+
+          '</div>';
+        }).join('')
+      : '');
+}
+
+async function classifyAllAds(){
+  const out=document.getElementById('ciResult');
+  out.innerHTML='<span class="mw-spinner"></span>Reading the ads...';
+  const t=await call('get_ad_table',{});
+  if(!t.ok){out.textContent=t.error;out.style.color='var(--err)';return;}
+  const rows=(t.rows||[]);
+  if(!rows.length){out.textContent='No ads to classify.';out.style.color='var(--muted)';return;}
+  let n=0;
+  for(const r of rows.slice(0,20)){
+    const j=await call('classify_ad_creative',{ad_id:r.id,ad_name:r.name,
+      ad_copy:r.body||null,image_url:r.thumbnail_url||null});
+    if(j.ok) n++;
+  }
+  out.textContent=n+' classified.';out.style.color='var(--ok)';
+  loadCreativeIntel();
+}
+
+async function proposeCreative(){
+  const out=document.getElementById('ciResult');
+  const box=document.getElementById('creativeProposals');
+  out.innerHTML='<span class="mw-spinner"></span>Working out what to make...';
+  const j=await call('propose_creative',{});
+  if(!j.ok){out.textContent=j.error;out.style.color='var(--err)';return;}
+  out.textContent='';
+  box.innerHTML=(j.note?'<div class="ci-caveat">'+esc(j.note)+'</div>':'')+
+    (j.proposals||[]).map(function(p){
+      return '<div class="cp">'+
+        '<div class="cp-head"><b>'+esc(p.angle||p.problem||'Concept')+'</b>'+
+          '<span class="cp-fmt">'+esc(p.format||'')+'</span></div>'+
+        '<div class="cp-hook">"'+esc(p.hook||'')+'"</div>'+
+        '<table class="at-table" style="margin-top:8px;">'+
+          [['service',p.service],['audience',p.audience],['pattern',p.creative_pattern],
+           ['proof',p.proof],['cta',p.cta],['offer',p.offer||'none']]
+          .filter(function(r){return r[1];})
+          .map(function(r){return '<tr><td>'+esc(r[0])+'</td><td>'+esc(String(r[1]))+'</td></tr>';}).join('')+
+        '</table>'+
+        // What it tests matters more than what it shows. An ad that
+        // teaches nothing is a wasted ad at this budget.
+        (p.testing?'<div class="cp-test"><b>Testing:</b> '+esc(p.testing)+'</div>':'')+
+        (p.why?'<div class="cp-why">'+esc(p.why)+'</div>':'')+
+        (p.expected_learning?'<div class="cp-learn"><b>Afterwards you will know:</b> '+esc(p.expected_learning)+'</div>':'')+
+      '</div>';
+    }).join('');
+}
 
 async function loadAdTable(){
   const el=document.getElementById('adTable');
