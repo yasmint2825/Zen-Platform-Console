@@ -1,0 +1,32 @@
+name: Metric learnings
+
+# Weekly, not daily.
+#
+# These patterns move slowly - a day-of-week effect does not change
+# overnight. Running nightly would mean re-testing 153 hypotheses every
+# day, which multiplies the chance of a spurious finding appearing at
+# least once and being acted on.
+on:
+  schedule:
+    - cron: '0 8 * * 1'   # Monday 08:00 UTC
+  workflow_dispatch: {}
+
+jobs:
+  learn:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: pip install psycopg2-binary==2.9.12
+      - name: Find patterns in the daily metrics
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
+          TENANT_ID: minicuts
+        run: python3 ml_pipeline/metric_learnings.py
+      - name: Report failure
+        if: failure()
+        run: echo "::error::Metric learnings failed. The existing learnings are unchanged."
