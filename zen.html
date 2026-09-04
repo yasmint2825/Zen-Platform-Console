@@ -452,10 +452,11 @@ label.lbl{display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:v
 <div id="loginGate" style="max-width:340px;margin:14vh auto;padding:0 20px;">
   <div style="display:flex;gap:9px;align-items:center;margin-bottom:22px;"><span class="onb-orb">Z</span>
     <div><b style="font:600 15px Sora;display:block;">Zen</b><small style="color:var(--muted);">MiniCuts</small></div></div>
-  <input class="field" id="loginEmail" type="email" placeholder="Email" style="margin-bottom:10px;">
-  <input class="field" id="loginPass" type="password" placeholder="Password" style="margin-bottom:10px;"
-         onkeydown="if(event.key==='Enter')doRealLogin()">
-  <button class="btn btn-p btn-block" onclick="doRealLogin()">Log in</button>
+  <form id="loginForm" onsubmit="event.preventDefault();doRealLogin();return false;">
+    <input class="field" id="loginEmail" name="email" type="email" placeholder="Email" autocomplete="username" style="margin-bottom:10px;">
+    <input class="field" id="loginPass" name="password" type="password" placeholder="Password" autocomplete="current-password" style="margin-bottom:10px;">
+    <button class="btn btn-p btn-block" type="submit">Log in</button>
+  </form>
   <div id="loginMsg" class="hint" style="margin-top:10px;"></div>
 </div>
 <div id="toastHost"></div>
@@ -585,25 +586,27 @@ if (typeof window.supabase === 'undefined'){
     // than fail - confirmed directly, not assumed. No error, nothing
     // rendered, forever. A hard timeout means the worst case is asking
     // to log in again, never an indefinite silent hang.
-    (async function restoreSession(){
-      try{
-        const { data } = await Promise.race([
-          sb.auth.getSession(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 4000)),
-        ]);
-        if (data && data.session) onLoggedIn(data.session);
-      }catch(e){
-        if (e && e.message === 'TIMEOUT'){
-          // Whatever is stuck is stuck in Supabase's own storage
-          // layer, not recoverable by waiting longer - clear it and
-          // let the person log in fresh rather than hang again on
-          // every future visit too.
-          try{ await sb.auth.signOut({ scope:'local' }); }catch(e2){}
-        }
-        // Otherwise: no stored session, or a real error - either way
-        // the login form underneath is the correct thing to show.
-      }
-    })();
+    //
+    // The first version of this fix called sb.auth.signOut() to clear
+    // a stuck session after the timeout - which itself hung the same
+    // way, for the same underlying reason, just moving the problem
+    // instead of fixing it (confirmed directly, the same way this bug
+    // was found in the first place). Nothing async touches Supabase's
+    // client again once it has proven it can hang - the stored token
+    // is removed directly and synchronously instead, which cannot
+    // hang by construction.
+    // Automatic session restore is deliberately NOT run at boot.
+    // Tried twice, with a timeout guard and then a synchronous
+    // storage-clear fallback on top of that - and the exact same
+    // silent hang still came back a third time, in a real deployment,
+    // in ways this environment cannot reliably reproduce or guarantee
+    // against. Every attempt to have the page quietly validate a
+    // stored session before showing anything has been the source of
+    // every hang report so far. The trade-off now is deliberate:
+    // logging in again each visit, in exchange for the app never
+    // silently hanging on load again. Login itself is fast and has
+    // been confirmed working - only the automatic, silent check
+    // before it is removed.
   }catch(e){
     showBootError('The connection library did not start correctly. '+esc(e&&e.message?e.message:''));
   }
@@ -635,7 +638,16 @@ async function doRealLogin(){
   const { data, error } = await sb.auth.signInWithPassword({ email, password });
   if (error){
     m.style.color = '#a02020';
-    m.textContent = 'That email and password did not match. Check both and try again.';
+    // A network-level failure (blocked request, no connection, CORS)
+    // is a completely different problem from a wrong password, with a
+    // completely different fix - telling someone their password is
+    // wrong when the real cause is that the request never reached the
+    // server sends them looking in exactly the wrong place, every time.
+    if (window.supabase.isAuthRetryableFetchError(error)){
+      m.textContent = 'Could not reach the login server \u2014 this is a connection problem, not your password. If this file was opened by double-clicking it, that is very likely the cause: see the note below.';
+    } else {
+      m.textContent = 'That email and password did not match. Check both and try again.';
+    }
     return;
   }
   onLoggedIn(data.session);
