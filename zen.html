@@ -452,7 +452,7 @@ label.lbl{display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:v
 <div id="loginGate" style="max-width:340px;margin:14vh auto;padding:0 20px;">
   <div style="display:flex;gap:9px;align-items:center;margin-bottom:22px;"><span class="onb-orb">Z</span>
     <div><b style="font:600 15px Sora;display:block;">Zen</b><small style="color:var(--muted);">MiniCuts</small></div></div>
-  <form id="loginForm" onsubmit="event.preventDefault();doRealLogin();return false;">
+  <form id="loginForm" novalidate onsubmit="event.preventDefault();doRealLogin();return false;">
     <input class="field" id="loginEmail" name="email" type="email" placeholder="Email" autocomplete="username" style="margin-bottom:10px;">
     <input class="field" id="loginPass" name="password" type="password" placeholder="Password" autocomplete="current-password" style="margin-bottom:10px;">
     <button class="btn btn-p btn-block" type="submit">Log in</button>
@@ -613,12 +613,20 @@ if (typeof window.supabase === 'undefined'){
 }
 
 async function call(action, args){
+  const controller = new AbortController();
+  // No call in this app should ever hang the page indefinitely - a
+  // few of these (ad diagnostics, ad spend) make a live round-trip to
+  // Meta's own API on top of the real database, and a slow or stalled
+  // external call previously left the page spinning forever with no
+  // way out and no error to explain why.
+  const timeoutId = setTimeout(() => controller.abort(), 20000);
   try{
     const r = await fetch(SB_URL + '/functions/v1/mw-admin', {
       method:'POST',
       headers:{ 'Content-Type':'application/json', 'apikey': SB_KEY,
         'Authorization': 'Bearer ' + (session ? session.access_token : SB_KEY) },
       body: JSON.stringify(Object.assign({ action, tenant_id: tenant }, args || {})),
+      signal: controller.signal,
     });
     const text = await r.text();
     let j; try { j = JSON.parse(text); }
@@ -626,7 +634,10 @@ async function call(action, args){
     if (j && typeof j === 'object'){ if (!('ok' in j)) j.ok = r.ok; return j; }
     return { ok:false, error:'Unexpected response.' };
   } catch(e){
+    if (e && e.name === 'AbortError') return { ok:false, error:'This took too long to respond and was stopped after 20 seconds.' };
     return { ok:false, error:'Could not reach the server. ' + (e && e.message ? e.message : '') };
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
@@ -1358,7 +1369,7 @@ function campRenderList(){
       '<div><div class="camp-count" style="background:#eef0ed;">\u25c8</div><b>'+t.name+'</b><p>'+t.why+'</p></div>' +
       '<div class="camp-foot" style="justify-content:flex-end;"><button class="btn btn-s btn-sm">Create</button></div></div>';
     return '<div class="camp-card">' +
-      '<div style="cursor:pointer;" onclick="'+(t.auto?'toast(\'Zen sends these on its own \\u2014 nothing to review.\')':'flow(()=>campaignFlow(\''+t.key+'\'))')+'">' +
+      '<div style="cursor:pointer;" onclick="'+(t.auto?'toast(\'Zen sends these on its own \u2014 nothing to review.\')':'flow(()=>campaignFlow(\''+t.key+'\'))')+'">' +
         '<div class="camp-count" style="background:'+(t.auto?'var(--green-soft)':'var(--warn-soft)')+';color:'+(t.auto?'var(--green)':'var(--warn)')+';">'+money(t.count)+'</div>' +
         '<b>'+t.name+'</b><p>'+t.why+'</p></div>' +
       '<div class="camp-foot">' +
@@ -1386,10 +1397,10 @@ async function zenwhatsapp(){
     '<p>Zen answers most of these itself. The ones it could not are at the top.</p></div></div>' +
     '<div class="subtabs" id="waTabs">' +
       '<button class="active" onclick="waSubTab(\'chat\')">Chat</button>' +
-      '<button onclick="waSubTab(\'setup\')">Setup</button>' +
+      '<button onclick="waSubTab(\'history\')">History</button>' +
     '</div>' +
     '<div id="waChatPane"><div class="loading-block"><span class="spin"></span>Loading conversations\u2026</div></div>' +
-    '<div id="waSetupPane" style="display:none;"></div>';
+    '<div id="waHistoryPane" style="display:none;"><div class="loading-block"><span class="spin"></span></div></div>';
 
   const j = await call('list_conversations', {limit:40});
   const badge = el('navWaBadge');
@@ -1408,7 +1419,11 @@ async function zenwhatsapp(){
       '<div class="wa-thread-pane" id="waThreadPane"></div>' +
     '</div>';
   el('waListPane').innerHTML = WA_CACHE.map(c => {
-    const last = c.messages[c.messages.length-1];
+    // Same backend ordering issue as the thread view - messages[]
+    // arrives newest-first, so the actual most recent message has to
+    // be found by timestamp rather than assumed to be the last array
+    // element.
+    const last = c.messages.reduce((newest, m) => (!newest || new Date(m.at||0) > new Date(newest.at||0)) ? m : newest, null);
     const name = c.customer_name || c.mobile;
     return '<button class="wa-convo'+(c.mobile===WA_ACTIVE?' active':'')+'" onclick="waSelect(\''+esc(c.mobile)+'\')">' +
       avatar(name,30) +
@@ -1422,8 +1437,28 @@ async function zenwhatsapp(){
 function waSubTab(name){
   document.querySelectorAll('#waTabs button').forEach((b,i)=>b.classList.toggle('active', (name==='chat'?0:1)===i));
   el('waChatPane').style.display = name==='chat' ? 'block' : 'none';
-  el('waSetupPane').style.display = name==='setup' ? 'block' : 'none';
-  if (name==='setup') whatsappSetupHTML(); // async - sets its own loading/final HTML
+  el('waHistoryPane').style.display = name==='history' ? 'block' : 'none';
+  if (name==='history') loadChatHistoryInline();
+}
+// Real per-message send history - its own tab, not folded into the
+// chat view, since "what was sent and what happened to it" is a
+// different question from "what's the live conversation right now".
+async function loadChatHistoryInline(){
+  const box = el('waHistoryPane');
+  if (!box) return;
+  box.innerHTML = '<div class="loading-block"><span class="spin"></span></div>';
+  const j = await call('list_whatsapp_messages', {limit:100});
+  if (!j.ok){ box.innerHTML = '<p class="note" style="color:#a02020;">'+esc(j.error)+'</p>'; return; }
+  const msgs = j.messages||[], counts = j.counts||{};
+  box.innerHTML =
+    (Object.keys(counts).length ? '<div class="mini-grid" style="max-width:420px;margin-bottom:8px;">' +
+      Object.keys(counts).map(k => '<div class="mini" style="border-top:0;"><b>'+counts[k]+'</b><span>'+esc(k)+'</span></div>').join('') + '</div>' : '') +
+    (msgs.length ? '<div class="list">' + msgs.slice(0,15).map(m => {
+      const failed = m.status==='failed';
+      return '<div class="list-row"><span><b>'+esc(m.customer_name||m.mobile||'')+'</b><div class="sub">'+esc(m.mobile||'')+' \u00b7 '+esc(m.msg_type||'')+' \u00b7 '+esc(m.template_name||'')+'</div>'+
+        (failed && m.error ? '<div class="sub" style="color:#B8564A;">'+esc(String(m.error).slice(0,200))+'</div>' : '') + '</span>' +
+        '<span class="badge '+(failed?'warn':'on')+'">'+esc(m.status||'')+'</span></div>';
+    }).join('') + '</div>' : '<p class="note">Nothing sent in this period.</p>');
 }
 function waSelect(mobile){
   WA_ACTIVE = mobile;
@@ -1435,10 +1470,18 @@ function waRenderThread(mobile){
   const pane = el('waThreadPane');
   if (!pane || !c) return;
   const name = c.customer_name || c.mobile;
+  // The real backend returns messages newest-first (it queries
+  // created_at descending, then pushes each row onto the array in
+  // that order) - rendered as-is, that puts the most recent message
+  // at the top of the thread and the oldest at the bottom, backwards
+  // from how every WhatsApp-style UI reads. Sorted here by actual
+  // timestamp rather than trusting array order, so this is correct
+  // regardless of which order the backend happens to send in.
+  const ordered = c.messages.slice().sort((a,b) => new Date(a.at||0) - new Date(b.at||0));
   pane.innerHTML =
     '<div class="wa-thread-head">' + avatar(name,32) +
       '<div><b style="font-size:12.5px;">'+esc(name)+'</b><div class="sub" style="font-size:10.5px;">'+esc(c.mobile)+'</div></div></div>' +
-    '<div class="wa-thread-body" id="waThreadBody">' + c.messages.slice(-20).map(m =>
+    '<div class="wa-thread-body" id="waThreadBody">' + ordered.slice(-20).map(m =>
       '<div class="wa-bubble" style="'+(m.direction==='out'?'margin-left:auto;background:#fff;border:1px solid var(--line);':'')+'margin-bottom:8px;">' +
       esc(String(m.body||'').slice(0,500)) +
       // Zen's own replies are marked, so it is visible which
@@ -1463,53 +1506,305 @@ async function waSendReply(mobile){
   waSubTab('chat');
 }
 
-// Shared with Settings, so both places show the same content from one
-// source rather than two copies that could drift apart.
+// Reply assistant - fully interactive, not a summary. Switching it on
+// asks for confirmation once, since it means messages go out without
+// anyone reading them first.
+function autoReplyToggleHTML(reply){
+  return '<div class="list" style="margin-bottom:8px;">' +
+    '<div class="list-row"><b>Reply automatically when it is safe to</b><label class="switch"><input type="checkbox" id="autoReplyOn" '+(reply.enabled?'checked':'')+' onchange="toggleAutoReply(this.checked)"><span class="track"></span></label></div>' +
+    '<div class="list-row"><span>Only when confidence is</span><select id="autoReplyConf" style="width:auto;font-size:12px;" onchange="saveAutoReplySettings()"><option value="high"'+(reply.min_confidence==='high'?' selected':'')+'>high</option><option value="medium"'+(reply.min_confidence==='medium'?' selected':'')+'>medium or better</option></select></div>' +
+    '<div class="list-row"><span>Stop after</span><span><input id="autoReplyMax" type="number" min="1" max="10" value="'+(reply.max_per_thread||3)+'" style="width:50px;text-align:right;" onchange="saveAutoReplySettings()"> replies in one conversation</span></div>' +
+  '</div>' +
+  '<p class="note" style="margin-top:0;">It never answers complaints, booking changes, requests for a person, or anything raising allergies or sensory needs \u2014 those always come to you.'+
+  (reply.enabled && !reply.safe_facts ? ' <b style="color:#B8564A;">Nothing below is marked safe to send unsupervised, so it can currently only greet people.</b>' : '')+'</p>';
+}
+async function toggleAutoReply(checked){
+  if (checked && !confirm('Let Zen reply on its own?\n\nIt will only send answers drawn from facts marked safe, and never for complaints, booking changes or care needs. Everything else still comes to you.')){
+    whatsappSettingsPanel(); return;
+  }
+  await saveAutoReplySettings(checked);
+}
+async function saveAutoReplySettings(enabledOverride){
+  const enabled = enabledOverride!=null ? enabledOverride : (el('autoReplyOn') ? el('autoReplyOn').checked : true);
+  const j = await call('set_auto_reply', {
+    enabled,
+    min_confidence: el('autoReplyConf') ? el('autoReplyConf').value : 'high',
+    max_per_thread: el('autoReplyMax') ? Number(el('autoReplyMax').value)||3 : 3,
+  });
+  toast(j.ok ? 'Saved' : j.error, j.ok?'ok':'err');
+  whatsappSettingsPanel();
+}
+
+const FACT_CATS = ['prices','hours','services','booking','location','general'];
+function factsListHTML(facts){
+  window.__whatsappFacts = facts;
+  if (!facts.length) return '<p class="note" style="color:#B8564A;">Nothing entered yet \u2014 the assistant can only greet people until prices, hours and services are added.</p>';
+  const stub = facts.filter(f => /\[ADD /.test(f.answer)).length;
+  return (stub ? '<p class="note" style="color:#B8564A;">'+stub+' answer(s) are still placeholders. Edit them before relying on the assistant.</p>' : '') +
+    '<div class="list" id="factsListBox">' + facts.map(f => factRowHTML(f)).join('') + '</div>';
+}
+function factRowHTML(f){
+  const isStub = /\[ADD /.test(f.answer);
+  return '<div class="list-row" style="flex-direction:column;align-items:stretch;'+(isStub?'background:#fff6f0;':'')+'" id="factRow_'+f.id+'">' +
+    '<div style="display:flex;justify-content:space-between;"><b>'+esc(f.question)+'</b><span class="badge">'+esc(f.category)+'</span></div>' +
+    '<div class="sub" style="margin:4px 0;cursor:pointer;" onclick="editFactInline(&apos;'+f.id+'&apos;)">'+esc(f.answer)+'</div>' +
+    '<label style="font-size:11px;color:var(--muted);"><input type="checkbox" '+(f.auto_send_ok?'checked':'')+' onchange="toggleFactSafeInline(&apos;'+f.id+'&apos;,this.checked)"> safe to send without review</label>' +
+    '<div style="margin-top:4px;"><button class="btn btn-ghost btn-sm" onclick="editFactInline(&apos;'+f.id+'&apos;)">Edit</button> <button class="btn btn-ghost btn-sm" onclick="deleteFactInline(&apos;'+f.id+'&apos;)">Remove</button></div>' +
+  '</div>';
+}
+function factAddFormHTML(){
+  return '<div style="margin-top:10px;">' +
+    '<input class="field" id="newFactQ" placeholder="A question in a customer\u2019s words, e.g. \u201chow much for a 4 year old?\u201d" style="margin-bottom:6px;">' +
+    '<textarea class="field" id="newFactA" rows="2" placeholder="The answer, in your voice" style="margin-bottom:6px;"></textarea>' +
+    '<select id="newFactCat" style="width:auto;font-size:12px;margin-right:6px;">' + FACT_CATS.map(c=>'<option value="'+c+'">'+c+'</option>').join('') + '</select>' +
+    '<button class="btn btn-p btn-sm" onclick="addFactInline()">Add</button>' +
+    '<div id="factAddResult" style="font-size:11.5px;margin-top:6px;"></div>' +
+  '</div>';
+}
+async function addFactInline(){
+  const q = el('newFactQ').value.trim(), a = el('newFactA').value.trim();
+  const out = el('factAddResult');
+  if (!q || !a){ out.textContent = 'Both a question and an answer are needed.'; out.style.color='#B8564A'; return; }
+  const j = await call('save_business_fact', {question:q, answer:a, category:el('newFactCat').value});
+  if (!j.ok){ out.textContent = j.error; out.style.color='#B8564A'; return; }
+  whatsappSettingsPanel();
+}
+function editFactInline(id){
+  const f = (window.__whatsappFacts||[]).find(x=>x.id===id);
+  if (!f) return;
+  const row = el('factRow_'+id);
+  if (!row) return;
+  row.innerHTML =
+    '<input class="field" id="efq_'+id+'" value="'+esc(f.question)+'" style="margin-bottom:6px;">' +
+    '<textarea class="field" id="efa_'+id+'" rows="3" style="margin-bottom:6px;">'+esc(f.answer)+'</textarea>' +
+    '<label style="font-size:11px;color:var(--muted);margin-bottom:6px;"><input type="checkbox" id="efs_'+id+'" '+(f.auto_send_ok?'checked':'')+'> safe to send without review</label>' +
+    '<div><button class="btn btn-p btn-sm" onclick="saveFactEditInline(&apos;'+id+'&apos;)">Save</button> <button class="btn btn-ghost btn-sm" onclick="whatsappSettingsPanel()">Cancel</button></div>';
+}
+async function saveFactEditInline(id){
+  const f = (window.__whatsappFacts||[]).find(x=>x.id===id);
+  const question = el('efq_'+id).value.trim(), answer = el('efa_'+id).value.trim();
+  if (!question || !answer){ toast('Both a question and an answer are needed.', 'err'); return; }
+  if (/\[ADD /.test(answer) && el('efs_'+id).checked){ toast('Replace the placeholder before marking it safe to send.', 'err'); return; }
+  const j = await call('save_business_fact', {id, question, answer, category:(f?f.category:'general'), auto_send_ok:el('efs_'+id).checked});
+  if (!j.ok){ toast(j.error, 'err'); return; }
+  whatsappSettingsPanel();
+}
+async function deleteFactInline(id){
+  if (!confirm('Remove this?')) return;
+  const j = await call('delete_business_fact', {id});
+  if (!j.ok){ toast(j.error, 'err'); return; }
+  whatsappSettingsPanel();
+}
+async function toggleFactSafeInline(id, checked){
+  const row = window.__whatsappFacts && window.__whatsappFacts.find(f=>f.id===id);
+  if (checked && row && /\[ADD /.test(row.answer)){
+    toast('Replace the placeholder answer before marking it safe to send.', 'err');
+    whatsappSettingsPanel(); return;
+  }
+  const j = await call('save_business_fact', {id, question:row?row.question:'', answer:row?row.answer:'', category:row?row.category:'general', auto_send_ok:checked});
+  toast(j.ok ? 'Saved' : j.error, j.ok?'ok':'err');
+  if (!j.ok) whatsappSettingsPanel();
+}
+async function loadAutoReplyLogInline(){
+  const box = el('replyLogBox');
+  box.innerHTML = '<span class="spin"></span>';
+  const j = await call('get_auto_reply_log', {});
+  if (!j.ok){ box.innerHTML = '<p class="note" style="color:#a02020;">'+esc(j.error)+'</p>'; return; }
+  if (!j.replies.length){ box.innerHTML = '<p class="note">Nothing yet. Once a customer messages, what it decided will show here \u2014 including the ones it chose not to answer.</p>'; return; }
+  const counts = j.counts||{};
+  box.innerHTML = '<div class="mini-grid" style="max-width:400px;margin-bottom:8px;">' +
+    Object.keys(counts).map(k => '<div class="mini"><b>'+counts[k]+'</b><span>'+esc(k)+'</span></div>').join('') + '</div>' +
+    '<div class="list">' + j.replies.slice(0,20).map(r => {
+      const badgeClass = r.outcome==='sent'?'on':r.outcome==='blocked'?'warn':'';
+      return '<div class="list-row" style="flex-direction:column;align-items:stretch;">' +
+        '<div style="display:flex;justify-content:space-between;"><span class="badge '+badgeClass+'">'+esc(r.outcome)+'</span><span class="sub">'+esc(r.created_at||'')+'</span></div>' +
+        (r.inbound_message ? '<div class="sub" style="margin-top:4px;">\u201c'+esc(r.inbound_message)+'\u201d</div>' : '') +
+        (r.reason ? '<div class="sub" style="font-size:10.5px;">'+esc(r.reason)+'</div>' : '') +
+      '</div>';
+    }).join('') + '</div>';
+}
+
+// "What to sell" - the price list's own priority, set by the owner,
+// not inferred. push/normal/never are the only real values the
+// backend accepts.
+function packagePriorityHTML(packages){
+  window.__packagePriorities = packages;
+  if (!packages.length) return '<p class="note">No packages in the price list yet.</p>';
+  return '<div class="list">' + packages.map((p,i) =>
+    '<div class="list-row"><span>'+esc(p.name)+'<span class="sub"> \u00b7 AED '+money(p.price||0)+'</span></span>' +
+    '<select style="width:auto;font-size:12px;" onchange="setPackagePriorityInline('+i+',this.value)">' +
+      ['push','normal','never'].map(pr => '<option value="'+pr+'"'+(p.priority===pr?' selected':'')+'>'+pr+'</option>').join('') +
+    '</select></div>').join('') + '</div>';
+}
+async function setPackagePriorityInline(index, priority){
+  const p = (window.__packagePriorities||[])[index];
+  if (!p) return;
+  const j = await call('set_package_priority', {package_name:p.name, priority});
+  toast(j.ok ? 'Saved' : j.error, j.ok?'ok':'err');
+}
+
+
 // Real settings, not descriptive copy. Every figure here is read
 // live: reply-assistant confidence and limits, today's real WhatsApp
 // usage, the actual cooldown this tenant runs, and the real approved
 // template list - nothing hardcoded.
-async function whatsappSetupHTML(){
-  el('waSetupPane').innerHTML = '<div class="loading-block"><span class="spin"></span>Reading your real settings\u2026</div>';
-  const [reply, room, templates] = await Promise.all([
+async function whatsappSettingsPanel(){
+  el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:21px;">WhatsApp settings</h1><div class="loading-block"><span class="spin"></span>Reading your real settings\u2026</div>';
+  const [reply, room, templates, facts, priorities, mappings, settings] = await Promise.all([
     call('get_auto_reply_settings', {}), call('list_failed_sends', {days:1}), call('list_whatsapp_templates', {}),
+    call('list_business_facts', {}), call('list_package_priority', {}), call('list_template_mappings', {}),
+    call('get_settings', {}),
   ]);
   const cooldown = (HOME_CACHE.buckets && HOME_CACHE.buckets.cooldown_days) || 21;
   const connected = templates.ok; // the call itself needs real credentials to succeed
 
-  el('waSetupPane').innerHTML =
-    '<div class="sechead" style="margin-top:6px;"><h2>Connection</h2></div>' +
-    '<div class="list"><div class="list-row"><b>'+(connected?'Connected':'Not connected')+'</b>' +
-      '<span class="badge'+(connected?' on':' warn')+'">'+(connected?'Working':'Check credentials')+'</span></div></div>' +
-    (connected ? '' : '<p class="note">'+esc(templates.error||'')+'</p>') +
-    '<button class="btn btn-s btn-sm" style="margin-top:8px;" onclick="reconnectWhatsAppFlow()">Reconnect</button>' +
+  function section(title, body, openByDefault){
+    return '<details'+(openByDefault?' open':'')+' style="margin-bottom:12px;border:1px solid var(--line);border-radius:12px;padding:2px 16px;">' +
+      '<summary style="cursor:pointer;padding:12px 0;font-weight:600;font-size:13.5px;color:var(--ink);">'+title+'</summary>' +
+      '<div style="padding-bottom:14px;">'+body+'</div></details>';
+  }
 
-    '<div class="sechead"><h2>Reply assistant</h2></div>' +
-    '<p class="note" style="margin-top:0;">'+(reply.ok && reply.enabled ? 'Zen answers customers on WhatsApp automatically, using only your real prices and facts.' : 'Currently switched off \u2014 Zen will not reply to customers on its own.')+'</p>' +
-    (reply.ok ? '<div class="list">' +
-      insLine('Confidence needed before replying', esc(reply.min_confidence)+tip('Below this, Zen holds the reply for a person rather than risk answering something it is not sure of.')) +
-      insLine('Facts marked safe to use automatically', money(reply.safe_facts)+(reply.safe_facts===0?' \u2014 with none marked, Zen can only greet':'')) +
-      insLine('Replies before handing to a person', money(reply.max_per_thread)+' per conversation') +
-    '</div>' : '<p class="note" style="color:#a02020;">'+esc(reply.error)+'</p>') +
+  el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:21px;">WhatsApp settings</h1>' +
 
-    '<div class="sechead"><h2>Sending limits'+tip('WhatsApp itself caps how many people one number can message a day. This is not a Zen setting \u2014 it protects your number\u2019s standing.')+'</h2></div>' +
-    (room.ok ? '<div class="list">' + insLine('Used today', money(250-room.room_left)+' of ~250') +
+    section('Connection',
+      '<div class="list"><div class="list-row"><b>'+(connected?'Connected':'Not connected')+'</b>' +
+        '<span class="badge'+(connected?' on':' warn')+'">'+(connected?'Working':'Check credentials')+'</span></div></div>' +
+      (connected ? '' : '<p class="note">'+esc(templates.error||'')+'</p>') +
+      '<button class="btn btn-s btn-sm" style="margin-top:8px;" onclick="reconnectWhatsAppFlow()">Reconnect</button>', true) +
+
+    section('Reply assistant \u2014 what it knows',
+      '<p class="note" style="margin-top:0;">The assistant may only say what is listed below. Anything missing, it flags for a person rather than guessing \u2014 a wrong price sent over WhatsApp is a promise that has to be honoured or retracted.</p>' +
+      (reply.ok ? autoReplyToggleHTML(reply) : '<p class="note" style="color:#a02020;">'+esc(reply.error)+'</p>') +
+      '<div class="sechead"><h2>Facts it can use</h2></div>' +
+      (facts.ok ? factsListHTML(facts.facts) : '<p class="note" style="color:#a02020;">'+esc(facts.error)+'</p>') +
+      factAddFormHTML() +
+      '<button class="btn btn-s btn-sm" style="margin-top:10px;" onclick="loadAutoReplyLogInline()">What has it replied to?</button>' +
+      '<div id="replyLogBox" style="margin-top:8px;"></div>') +
+
+    section('Sending limits'+tip('WhatsApp itself caps how many people one number can message a day. This is not a Zen setting \u2014 it protects your number\u2019s standing.'),
+      room.ok ? '<div class="list">' + insLine('Used today', money(250-room.room_left)+' of ~250') +
       insLine('Room left today', money(room.room_left)) +
       insLine('Cooldown between messages to the same person', cooldown+' days') + '</div>'
       : '<p class="note" style="color:#a02020;">'+esc(room.error)+'</p>') +
 
-    '<div class="sechead"><h2>Campaign types \u2014 automatic or manual</h2></div>' +
-    '<p class="note" style="margin-top:0;">The same switch as on the Campaigns page \u2014 change it in either place.</p>' +
-    '<div class="list">' + CAMPAIGN_TYPES.filter(t=>!t.custom).map(t =>
-      '<div class="list-row"><b>'+t.name+'</b>'+switchControl(t.auto, 'campToggleAuto(\''+t.key+'\',this.checked);whatsappSetupHTML();')+'</div>').join('') + '</div>' +
+    section('What to sell',
+      '<p class="note" style="margin-top:0;">You know things the numbers don\u2019t \u2014 margin, what the salon does well, what you\u2019re promoting. Mark those here and the assistant leans that way.</p>' +
+      (priorities.ok ? packagePriorityHTML(priorities.packages) : '<p class="note" style="color:#a02020;">'+esc(priorities.error)+'</p>')) +
 
-    '<div class="sechead"><h2>Templates</h2></div>' +
-    '<p class="note" style="margin-top:0;">Approved by WhatsApp in advance \u2014 Zen cannot edit these directly.</p>' +
-    (templates.ok
-      ? (templates.templates||[]).length
-        ? '<div class="list">' + templates.templates.slice(0,8).map(t => insLine(t.name, t.status||'Approved')).join('') + '</div>'
-        : '<p class="note">No templates found on this account yet.</p>'
-      : '');
+    section('Campaign rules',
+      '<p class="note" style="margin-top:0;">Automatic or manual, per campaign type \u2014 the same switch as on the Campaigns page.</p>' +
+      '<div class="list">' + (settings.ok ? (settings.strategy||[]) : []).map(s =>
+        '<div class="list-row"><b>'+esc(CAMPAIGN_LABELS[s.campaign_key]||s.campaign_key)+'</b>'+switchControl(!!s.auto_send, 'settingsToggleCampaignAuto(\''+s.campaign_key+'\',this.checked)')+'</div>').join('') + '</div>' +
+      '<p class="note" style="margin-top:12px;">Which approved template the agent sends for each campaign type.</p>' +
+      (mappings.ok
+        ? ((mappings.mappings||[]).length
+            ? '<div class="list">' + mappings.mappings.map(m => insLine(esc(m.type_key), esc(m.template_name)+' ('+esc(m.template_lang||'en')+')')).join('') + '</div>'
+            : '<p class="note">No mappings yet.</p>')
+        : '<p class="note" style="color:#a02020;">'+esc(mappings.error)+'</p>') +
+      '<p class="note" style="font-size:10.5px;">Adding a new mapping goes through the WhatsApp Templates tool directly \u2014 not available from this settings page.</p>') +
+
+    section('Rule book \u2014 what the agent currently does',
+      ruleBookHTML(settings.ok ? (settings.strategy||[]) : []) +
+      '<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line);">' +
+        '<label class="lbl">Tell the agent what you want</label>' +
+        '<textarea class="field" id="nlInstruction" rows="2" placeholder="e.g. Only send nudge and birthday messages. Birthday should go out 5 days before, not 3." style="margin-bottom:8px;"></textarea>' +
+        '<button class="btn btn-p btn-sm" onclick="proposeStrategyInline()">Preview changes</button>' +
+        '<div id="nlResult" style="font-size:12px;margin-top:8px;"></div>' +
+        '<div id="nlPreview" style="display:none;margin-top:10px;border:1px solid var(--line);border-radius:10px;padding:12px;background:#fafaf8;"></div>' +
+      '</div>') +
+
+    section('Templates',
+      '<p class="note" style="margin-top:0;">Approved by WhatsApp in advance \u2014 Zen cannot edit these directly.</p>' +
+      (templates.ok
+        ? (templates.templates||[]).length
+          ? '<div class="list">' + templates.templates.slice(0,8).map(t => insLine(t.name, t.status||'Approved')).join('') + '</div>'
+          : '<p class="note">No templates found on this account yet.</p>'
+        : ''));
+}
+
+// Plain-English rendering of the real strategy rows - the same
+// get_settings().strategy the Campaigns page already uses, just read
+// out loud rather than left as raw fields.
+const CAMPAIGN_LABELS = {nudge:'Nudge (gentle reminder)', lapsed:'Win-back (lapsed customer)', expiry:'Loyalty expiry reminder', ready:'Reward ready', birthday:'Birthday', after_service:'After-service thank you', new_customer_offer:'New customer incentive'};
+// Independent of the Campaigns page's own CAMPAIGN_TYPES cache (which
+// only lists types with a pending send today, and only exists after
+// that page has been visited first) - reads and writes the real
+// strategy row directly, so this section works standalone. Preserves
+// the campaign's current enabled/off state rather than assuming true,
+// since flipping auto/manual shouldn't silently turn a disabled
+// campaign back on.
+async function settingsToggleCampaignAuto(key, checked){
+  const s = await call('get_settings', {});
+  const current = (s.ok ? (s.strategy||[]) : []).find(x=>x.campaign_key===key);
+  const j = await call('save_strategy', { campaign_key:key, enabled: current ? !!current.enabled : true, auto_send:checked });
+  toast(j.ok ? 'Saved' : j.error, j.ok?'ok':'err');
+  if (!j.ok) whatsappSettingsPanel();
+}
+function ruleBookHTML(strategy){
+  if (!strategy.length) return '<p class="note">No rules configured yet.</p>';
+  return '<div class="list">' + strategy.map(s => {
+    const label = CAMPAIGN_LABELS[s.campaign_key] || s.campaign_key;
+    if (!s.enabled) return '<div class="list-row"><span style="color:var(--muted);">Off: <b>'+esc(label)+'</b> \u2014 the agent never sends this.</span></div>';
+    let line = 'On: <b>'+esc(label)+'</b>' +
+      (s.auto_send ? ' <span class="badge on">sends on its own, up to '+(s.auto_send_max_per_run||25)+' a run</span>' : ' <span class="badge">waits for you</span>');
+    if (s.campaign_key==='birthday' && s.trigger_days!=null) line += ', sent starting '+s.trigger_days+' day(s) before the birthday';
+    if (s.applies_at_visit_counts && s.applies_at_visit_counts.length) line += ', only for customers currently on visit '+s.applies_at_visit_counts.join(' or ')+' (nudging toward the next visit)';
+    if (s.threshold_value!=null && s.threshold_value_max!=null) line += ', valid '+s.threshold_value+' to '+s.threshold_value_max+' days after their last visit';
+    if (s.discount_percent!=null) line += ', discount: '+s.discount_percent+'%';
+    line += s.min_cooldown_days>0 ? (', won\u2019t re-contact the same person within '+s.min_cooldown_days+' day(s)') : ', no cooldown between messages';
+    if (s.offer_text) line += '. Offer: \u201c'+esc(s.offer_text)+'\u201d';
+    if (s.notes) line += '. Guidance for the agent: \u201c'+esc(s.notes)+'\u201d';
+    return '<div class="list-row" style="flex-direction:column;align-items:stretch;"><span style="font-size:12.5px;">'+line+'.</span></div>';
+  }).join('') + '</div>';
+}
+// Chat-driven rule editing - a plain-language instruction is turned
+// into the exact structured fields that would change, shown as a
+// diff for review, and nothing is written until explicitly applied.
+let NL_PROPOSED_STRATEGY = null, NL_LAST_INSTRUCTION = '', NL_LAST_SUMMARY = '';
+async function proposeStrategyInline(){
+  const instruction = el('nlInstruction').value.trim();
+  const r = el('nlResult');
+  el('nlPreview').style.display = 'none';
+  if (!instruction){ r.textContent = 'Type what you want first.'; r.style.color = '#B8564A'; return; }
+  r.innerHTML = '<span class="spin"></span>Reading your instruction and checking it against current settings\u2026'; r.style.color = 'var(--muted)';
+  const j = await call('propose_strategy_change', {instruction});
+  if (!j.ok){ r.textContent = j.error; r.style.color = '#B8564A'; return; }
+  r.textContent = '';
+  NL_PROPOSED_STRATEGY = j.strategy; NL_LAST_INSTRUCTION = instruction; NL_LAST_SUMMARY = j.summary||'';
+  const current = j.current||[];
+  const changed = j.strategy.filter(s => {
+    const before = current.find(c=>c.campaign_key===s.campaign_key) || {};
+    return before.enabled!==s.enabled || before.offer_text!==s.offer_text || before.min_cooldown_days!==s.min_cooldown_days ||
+      (before.trigger_days??null)!==(s.trigger_days??null) || before.notes!==s.notes;
+  });
+  el('nlPreview').innerHTML =
+    (j.summary ? '<p class="note" style="margin-top:0;">'+esc(j.summary)+'</p>' : '') +
+    (j.warnings && j.warnings.length ? j.warnings.map(w=>'<p class="note" style="color:#B8564A;">Warning: '+esc(w)+'</p>').join('') : '') +
+    (changed.length ? changed.map(s => {
+      const before = current.find(c=>c.campaign_key===s.campaign_key) || {};
+      const label = CAMPAIGN_LABELS[s.campaign_key] || s.campaign_key;
+      return '<div style="font-size:12px;padding:4px 0;"><b>'+esc(label)+'</b>: enabled '+before.enabled+' \u2192 '+s.enabled+
+        ', cooldown '+(before.min_cooldown_days??'\u2014')+' \u2192 '+(s.min_cooldown_days??'\u2014')+'d'+
+        (s.trigger_days!=null ? ', trigger '+(before.trigger_days??'none')+' \u2192 '+s.trigger_days+'d before' : '')+'</div>';
+    }).join('') : '<p class="note">No changes detected in the structured settings.</p>') +
+    '<div style="margin-top:10px;"><button class="btn btn-p btn-sm" onclick="applyStrategyInline()">Apply</button> <button class="btn btn-ghost btn-sm" onclick="cancelStrategyPreview()">Cancel</button></div>';
+  el('nlPreview').style.display = 'block';
+}
+async function applyStrategyInline(){
+  if (!NL_PROPOSED_STRATEGY){ toast('Nothing to apply.', 'err'); return; }
+  const j = await call('apply_strategy_change', {strategy:NL_PROPOSED_STRATEGY, instruction:NL_LAST_INSTRUCTION, summary:NL_LAST_SUMMARY});
+  if (!j.ok){ toast(j.error, 'err'); return; }
+  el('nlInstruction').value = '';
+  NL_PROPOSED_STRATEGY = null;
+  toast('Applied', 'ok');
+  whatsappSettingsPanel();
+}
+function cancelStrategyPreview(){
+  NL_PROPOSED_STRATEGY = null;
+  el('nlPreview').style.display = 'none';
+  el('nlResult').textContent = '';
 }
 
 const CAMP_STEPS = ['Audience','Message','Test','Schedule'];
@@ -1974,10 +2269,16 @@ async function insights(){
       insCat('💬','WhatsApp','What\u2019s working in your messages','whatsapp') +
       insCat('✦','Marketing','What content is performing','marketing') +
       insCat('⚡','Operations','How your salon is running day to day','operations') +
-    '</div>';
+    '</div>' +
+
+    '<details style="margin-top:16px;"><summary style="cursor:pointer;font-size:12.5px;font-weight:600;color:var(--ink);">More business analysis</summary>' +
+      '<div class="grid2" style="margin-top:10px;">' +
+        insCat('\u{1F6D2}','What people buy','Service combinations and return behaviour','buy') +
+        insCat('\u{1F4C8}','What Zen is learning','Which messages and suggestions actually work','learning') +
+      '</div></details>';
   el('custList').innerHTML = DATA.customers.map(c => custRow(c)).join('');
 }
-const INS_COLORS = {customers:'#4E5FC8',whatsapp:'#175E52',marketing:'#A96118',operations:'#B8564A'};
+const INS_COLORS = {customers:'#4E5FC8',whatsapp:'#175E52',marketing:'#A96118',operations:'#B8564A',buy:'#2D7A6B',learning:'#8A5A93'};
 function insCat(ic,name,why,key){
   const c = INS_COLORS[key];
   return '<button class="task" onclick="flow(()=>insightCategory(\''+key+'\'))">' +
@@ -1986,6 +2287,11 @@ function insCat(ic,name,why,key){
 }
 async function insightCategory(key){
   if (key === 'marketing') { marketingInsights(); return; }
+  if (key === 'whatsapp') { whatsappInsights(); return; }
+  if (key === 'operations') { operationsInsights(); return; }
+  if (key === 'customers') { customerInsights(); return; }
+  if (key === 'buy') { buyInsights(); return; }
+  if (key === 'learning') { learningInsights(); return; }
   const items = DATA.insights[key] || [];
   el('p-flow').innerHTML =
     '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
@@ -1994,48 +2300,721 @@ async function insightCategory(key){
       '<div class="attn"><div class="n">◎</div><div><b>'+esc(x.title)+'</b><p>'+esc(x.why)+'</p></div>' +
       '<button class="btn btn-s btn-sm" onclick="flow(()=>insightDetail(\''+key+'\','+i+'))">Details</button></div>').join('') + '</div>';
 }
-// Real ad spend and results, plus a real Zen-generated suggestion -
-// not the fake DATA.insights.marketing cards this used to show.
-async function marketingInsights(){
-  el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
-    '<h1 style="font-size:22px;">Marketing insights</h1><div class="loading-block"><span class="spin"></span>Reading your real ad account and drafting a suggestion\u2026</div>';
-  const [ads, suggest] = await Promise.all([ call('get_ad_table', {days:30}), call('propose_creative', {}) ]);
+// A single, reusable horizontal bar row - matches the prototype's own
+// visual language (same CSS variables as everywhere else) rather than
+// pulling in a separate charting library or a different design
+// system's classes.
+function barRow(label, value, max, fmt, warn){
+  const pct = max > 0 ? Math.max(2, Math.round((value/max)*100)) : 0;
+  return '<div style="display:flex;align-items:center;gap:10px;margin:8px 0;font-size:12px;">' +
+    '<span style="flex:0 0 110px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(label)+'</span>' +
+    '<span style="flex:1;height:8px;border-radius:99px;background:#eef0ec;overflow:hidden;display:block;">' +
+      '<span style="display:block;height:100%;border-radius:99px;background:'+(warn?'#B8564A':'var(--green)')+';width:'+pct+'%;"></span></span>' +
+    '<span style="flex:0 0 70px;text-align:right;font-weight:600;color:var(--ink);">'+esc(fmt!=null?fmt:value)+'</span></div>';
+}
+function chartCard(title, sub, body){
+  return '<div style="border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:12px;background:#fff;">' +
+    '<h3 style="margin:0 0 3px;font:600 15px Sora;color:var(--ink);display:flow-root;">'+title+'</h3>' +
+    (sub ? '<p style="margin:0 0 12px;font-size:11px;color:var(--muted);">'+sub+'</p>' : '') +
+    body + '</div>';
+}
 
-  let adsHTML;
-  if (!ads.ok){
-    adsHTML = '<p class="note">'+esc(ads.error)+'</p>';
-  } else {
-    const t = ads.totals||{};
-    adsHTML = (ads.plain_summary ? zen(esc(ads.plain_summary)) : '') +
-      '<div class="mini-grid" style="max-width:520px;">' +
-        '<div class="mini"><b>AED '+money(t.spend||0)+'</b><span>Ad spend, last '+ads.days+' days</span></div>' +
-        (ads.result_labels||[]).slice(0,2).map(lbl => '<div class="mini"><b>'+money(t[lbl]||0)+'</b><span>'+esc(lbl)+'</span></div>').join('') +
-      '</div>';
+// Real, from get_reports_data.engagement.campaigns - the same RPC and
+// field names verified against the live backend, not invented.
+// ── WhatsApp insights ────────────────────────────────────────────
+// Stylist performance and marketing output live here, not under
+// Operations - both are genuinely engagement/retention questions
+// (who's at risk of leaving, what messaging actually produced), not
+// day-to-day scheduling ones.
+// Real, from get_message_conversion - matches the actual reference
+// layout: campaigns sent and people who found their own way in, each
+// split into two tables, with a genuine girls/boys breakdown (from
+// the customer's own profile, not the template name), how many days
+// it typically took, and revenue per person reached - not just an
+// aggregate rate.
+function conversionTableHTML(conversion){
+  if (!conversion.ok) return chartCard('What conversations turn into', '', '<p class="note">'+esc(conversion.error)+'</p>');
+  if (!conversion.groups || !conversion.groups.length) return chartCard('What conversations turn into', '', '<p class="note">Not enough messages yet to measure this.</p>');
+  const sent = conversion.groups.filter(g=>g.outbound);
+  const inbound = conversion.groups.filter(g=>!g.outbound);
+  function genderCell(seg){
+    if (!seg || !seg.people) return '\u2014';
+    return (seg.rate!=null?seg.rate+'%':'\u2014') + '<div class="sub" style="font-size:10px;">'+seg.came_back+'/'+seg.people+(seg.thin?' thin':'')+'</div>';
   }
-  const proposals = suggest.ok ? (suggest.proposals||[]) : [];
+  function groupTable(groups){
+    return '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">' +
+      '<tr style="color:var(--muted);font-size:10px;text-align:left;">' +
+        '<th style="padding:4px 6px;"></th><th style="padding:4px 6px;text-align:right;">People</th><th style="padding:4px 6px;text-align:right;">Rate</th>' +
+        '<th style="padding:4px 6px;text-align:right;">Girls</th><th style="padding:4px 6px;text-align:right;">Boys</th>' +
+        '<th style="padding:4px 6px;text-align:right;">After</th><th style="padding:4px 6px;text-align:right;">Revenue</th><th style="padding:4px 6px;text-align:right;">Each</th></tr>' +
+      groups.map(g => '<tr style="border-top:1px solid var(--line);">' +
+        '<td style="padding:5px 6px;"><b>'+esc(g.label)+'</b></td>' +
+        '<td style="padding:5px 6px;text-align:right;">'+money(g.people)+'</td>' +
+        '<td style="padding:5px 6px;text-align:right;">'+(g.rate!=null?g.rate+'%':'\u2014')+(g.thin?' <span style="color:#B8564A;font-size:10px;">thin</span>':'')+'</td>' +
+        '<td style="padding:5px 6px;text-align:right;">'+genderCell(g.girls)+'</td>' +
+        '<td style="padding:5px 6px;text-align:right;">'+genderCell(g.boys)+'</td>' +
+        '<td style="padding:5px 6px;text-align:right;">'+(g.median_days!=null?g.median_days+'d':'\u2014')+'</td>' +
+        '<td style="padding:5px 6px;text-align:right;">'+(g.revenue?'AED '+money(g.revenue):'\u2014')+'</td>' +
+        '<td style="padding:5px 6px;text-align:right;">'+(g.revenue_per_message?'AED '+money(g.revenue_per_message):'\u2014')+'</td></tr>').join('') +
+    '</table></div>';
+  }
+  const t = conversion.totals || {};
+  return chartCard('What conversations turn into', 'Campaigns we sent and people who came to us, and whether either led to a visit within 30 days.',
+    (sent.length ? '<div class="sechead" style="margin-top:0;"><h2>Campaigns we sent</h2></div>' + groupTable(sent) : '') +
+    (inbound.length ? '<div class="sechead"><h2>People who came to us</h2></div>' + groupTable(inbound) : '') +
+    '<p class="note" style="margin-top:10px;">'+money(t.came_back||0)+' of '+money(t.people||0)+' came in within 30 days ('+(t.rate!=null?t.rate+'%':'\u2014')+'), worth <b>AED '+money(t.revenue||0)+'</b>.</p>' +
+    (conversion.caveat ? '<p class="note">'+esc(conversion.caveat)+'</p>' : ''));
+}
 
-  el('p-flow').innerHTML =
-    '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
-    '<h1 style="font-size:22px;">Marketing insights</h1>' +
-    '<div class="sechead" style="margin-top:6px;"><h2>Ad performance</h2></div>' + adsHTML +
-    '<div class="sechead"><h2>Zen suggests</h2></div>' +
-    (proposals.length ? proposals.map(x =>
+async function whatsappInsights(){
+  el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:22px;">WhatsApp insights</h1><div class="loading-block"><span class="spin"></span></div>';
+  const [engage, conversion] = await Promise.all([
+    call('get_engagement_intelligence', {days:30}),
+    call('get_message_conversion', {days:90, window_days:30}),
+  ]);
+  let html = '';
+
+  // What conversations turn into, first - the real question ("did any
+  // of this lead anywhere") before the operational detail underneath
+  // it. Campaigns sent and people who found their own way in, each
+  // split by girls/boys, how quickly they came back, and what it was
+  // worth - not just an aggregate rate.
+  html += conversionTableHTML(conversion);
+
+  if (engage.ok && engage.totals){
+    const t = engage.totals, campaigns = engage.campaigns||[], lift = engage.lift, retention = engage.retention;
+    html += '<div class="mini-grid" style="max-width:600px;">' +
+      '<div class="mini" style="border-top:0;"><b>'+money(t.sent||0)+'</b><span>Sent, last '+engage.days+' days</span></div>' +
+      '<div class="mini" style="border-top:0;"><b>'+money(t.delivered||0)+'</b><span>Delivered</span></div>' +
+      '<div class="mini" style="border-top:0;"><b>'+money(t.read||0)+'</b><span>Read</span></div>' +
+      '<div class="mini" style="border-top:0;"><b>'+money(t.failed||0)+'</b><span>Failed</span></div>' +
+    '</div>';
+    if (engage.receipts_available===false) html += '<p class="note">Delivery and read receipts only exist for messages sent after the webhook went live \u2014 not shown as zero, since that would look like failure.</p>';
+    // The real answer to "does messaging actually work" - a holdout
+    // group was deliberately left out, so this compares like with
+    // like rather than assuming everyone who came back did so because
+    // of the message. Rendered defensively: this card must never be
+    // silently blank, whatever shape the real data comes back in.
+    if (lift && lift.readable){
+      html += chartCard('Did the messaging work?', 'Contacted customers compared against a group deliberately held back \u2014 the only honest way to know.',
+        '<div class="mini-grid" style="max-width:520px;">' +
+          '<div class="mini" style="border-top:0;"><b>'+(lift.contacted_rate!=null?lift.contacted_rate+'%':'\u2014')+'</b><span>Contacted, came back</span></div>' +
+          '<div class="mini" style="border-top:0;"><b>'+(lift.holdout_rate!=null?lift.holdout_rate+'%':'\u2014')+'</b><span>Held back, came back anyway</span></div>' +
+          '<div class="mini" style="border-top:0;"><b>'+(lift.lift_points!=null?(lift.lift_points>=0?'+':'')+lift.lift_points+' pts':'\u2014')+'</b><span>Real difference</span></div>' +
+        '</div>' +
+        (lift.extra_returns!=null ? '<p class="note" style="margin-top:8px;">About '+money(lift.extra_returns)+' extra visit(s) in this period are attributable to messaging, not chance.</p>' : ''));
+    } else if (lift && (lift.contacted!=null || lift.holdout!=null)){
+      html += chartCard('Did the messaging work?', '', '<p class="note">Not enough data yet in both groups to compare \u2014 needs at least '+(lift.min_arm!=null?lift.min_arm:30)+' in each. Contacted: '+(lift.contacted||0)+', held back: '+(lift.holdout||0)+'.</p>');
+    } else {
+      html += chartCard('Did the messaging work?', '', '<p class="note">No holdout comparison available yet \u2014 this needs some customers to have been deliberately held back from a send. Check the holdout percentage under Settings \u2192 Data.</p>');
+    }
+    // The full per-campaign breakdown - delivery/read rate alongside
+    // return rate, with a thin-sample caveat so a rate computed from a
+    // handful of sends doesn't read as a real finding.
+    html += chartCard('Campaign performance', 'Sent, delivered, read, and who came back \u2014 per campaign.',
+      campaigns.length ? '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">' +
+        '<tr style="color:var(--muted);font-size:10.5px;text-align:left;">' +
+          '<th style="padding:4px 6px;">Campaign</th><th style="padding:4px 6px;text-align:right;">Sent</th>' +
+          '<th style="padding:4px 6px;text-align:right;">Delivered</th><th style="padding:4px 6px;text-align:right;">Read</th>' +
+          '<th style="padding:4px 6px;text-align:right;">Failed</th><th style="padding:4px 6px;">Came back</th></tr>' +
+        campaigns.map(c => {
+          const del = engage.receipts_available && c.delivery_rate!=null ? c.delivery_rate+'%' : '\u2014';
+          const rd = engage.receipts_available && c.read_rate!=null ? c.read_rate+'%' : '\u2014';
+          const thin = (c.measurable||0) < 10;
+          const ret = c.return_rate!=null
+            ? c.return_rate+'% <span style="color:var(--muted);">('+(c.returned||0)+' of '+(c.measurable||0)+')</span>'+(thin?' <span style="color:#B8564A;">too few to read into</span>':'')
+            : '<span style="color:var(--muted);">not measurable yet</span>';
+          return '<tr style="border-top:1px solid var(--line);">' +
+            '<td style="padding:5px 6px;"><b>'+esc(c.campaign)+'</b></td>' +
+            '<td style="padding:5px 6px;text-align:right;">'+(c.sent||0)+'</td>' +
+            '<td style="padding:5px 6px;text-align:right;">'+del+'</td>' +
+            '<td style="padding:5px 6px;text-align:right;">'+rd+'</td>' +
+            '<td style="padding:5px 6px;text-align:right;'+(c.failed?'color:#B8564A;':'')+'">'+(c.failed||0)+'</td>' +
+            '<td style="padding:5px 6px;">'+ret+'</td></tr>';
+        }).join('') + '</table></div>'
+      : '<p class="note">No campaigns sent yet.</p>');
+
+    // Why messages failed - real breakdown, not a single opaque count.
+    const failures = engage.failure_reasons || [];
+    if (failures.length) html += chartCard('Why messages failed', '',
+      '<div class="list">' + failures.map(f => insLine(esc(f.reason), money(f.count))).join('') + '</div>');
+
+    // A human answering a customer isn't a campaign attempt, so it's
+    // shown separately rather than folded into the counts above.
+    if (engage.replies && (engage.replies.sent || engage.replies.failed)){
+      html += '<p class="note">Separately, '+money(engage.replies.sent||0)+' repl'+(engage.replies.sent===1?'y':'ies')+' were sent by hand from Conversations'+(engage.replies.failed?', '+money(engage.replies.failed)+' failed':'')+'. These aren\u2019t campaigns, so they\u2019re not counted above.</p>';
+    }
+
+    // Recent send activity, day by day.
+    const daily = (engage.daily||[]).slice(-10).reverse();
+    if (daily.length) html += chartCard('Recent days', '',
+      '<div class="list">' + daily.map(d => insLine(esc(d.date),
+        money(d.sent)+' sent'+(engage.receipts_available?' \u00b7 '+money(d.delivered)+' delivered \u00b7 '+money(d.read)+' read':'')+(d.failed?' \u00b7 '+money(d.failed)+' failed':''))).join('') + '</div>');
+
+    if (retention) html += chartCard('Retention', 'Share of contacted customers who returned within '+retention.return_window_days+' days.',
+      '<p class="note" style="margin-top:0;">'+money(retention.customers_returned)+' of '+money(retention.measured_messages)+' ('+(retention.return_rate!=null?retention.return_rate+'%':'\u2014')+') \u2014 evidence the message helped, not proof by itself; see the holdout comparison above for that.</p>');
+  } else {
+    html += '<p class="note">'+(engage.ok ? esc(engage.note||'No messages sent in this period.') : esc(engage.error))+'</p>';
+  }
+
+  el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:22px;">WhatsApp insights</h1>' + html;
+}
+
+// ── Marketing insights ───────────────────────────────────────────
+// Generates the AI half of the diagnosis on demand - the metrics
+// above are always real and available, but the findings/recommendations
+// cost a real model call, so they're only produced when asked for.
+async function runAdAnalysis(force){
+  const btn = event.target;
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Thinking\u2026';
+  const j = await call('analyse_ad_spend', {lookback_days:30, force:!!force});
+  if (!j.ok){ toast(j.error, 'err'); btn.disabled = false; btn.textContent = 'Regenerate insights'; return; }
+  marketingInsights();
+}
+async function marketingInsights(lookbackDays){
+  lookbackDays = lookbackDays || 30;
+  el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:22px;">Marketing insights</h1><div class="loading-block"><span class="spin"></span></div>';
+
+  // Split fast (pure database, always quick) from slow (a live
+  // round-trip to Meta's own API, or an LLM call) so a slow ad
+  // account never leaves the whole page looking like it never loaded -
+  // the fast half renders immediately and the rest fills in after.
+  const fast = call('get_reports_data', {});
+  const slowPromise = Promise.all([
+    call('list_creative_briefs', {}),
+    call('get_meta_ads_summary', {lookback_days:lookbackDays}), call('get_marketing_diagnosis', {days:30}),
+  ]);
+
+  const reports = await fast;
+  let fastHtml = '';
+  if (reports.ok){
+    const gc = (reports.marketing && reports.marketing.generation_counts) || {}, pc = (reports.marketing && reports.marketing.post_counts) || {};
+    const maxOut = Math.max(1, gc.succeeded||0, gc.failed||0, pc.published||0, pc.pending_review||0);
+    fastHtml += chartCard('Marketing output this period', 'What was generated and what actually got published.',
+      barRow('Generated', gc.succeeded||0, maxOut, gc.succeeded||0) +
+      barRow('Failed', gc.failed||0, maxOut, gc.failed||0, true) +
+      barRow('Published', pc.published||0, maxOut, pc.published||0) +
+      barRow('Awaiting review', pc.pending_review||0, maxOut, pc.pending_review||0));
+  }
+
+  el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:22px;">Marketing insights</h1>' + fastHtml +
+    '<div id="mktSlowBox"><div class="loading-block"><span class="spin"></span>Reading your real ad account and drafting a suggestion\u2026</div></div>';
+
+  const [suggest, adSpend, diag] = await slowPromise;
+  let html = '';
+
+  // 1. Ad spend by campaign - the account-wide view, first.
+  const campaigns = (adSpend.ok && adSpend.campaigns) || [];
+  const maxSpend = Math.max(1, ...campaigns.map(c=>c.spend||0));
+  html += chartCard(
+    'Ad spend by campaign' +
+      '<select onchange="marketingInsights(this.value)" style="float:right;font-size:10.5px;border:1px solid var(--line);border-radius:7px;padding:3px 6px;">' +
+        [7,30,60,90].map(d => '<option value="'+d+'"'+(d===lookbackDays?' selected':'')+'>'+d+' days</option>').join('') + '</select>',
+    'Meta ad spend in AED, per campaign, for the selected window.',
+    campaigns.length ? campaigns.map(c => barRow(c.name, c.spend||0, maxSpend, 'AED '+money(c.spend||0))).join('') : (adSpend.ok ? '<p class="note">No ad spend in this window.</p>' : '<p class="note">'+esc(adSpend.error)+'</p>'));
+
+  // 2. Marketing diagnosis - real diagnosis: what Zen can actually
+  // attribute (its own contact count) against what Meta reports, plus
+  // AI findings/recommendations if one has been generated - never
+  // invented if it hasn't, and always dated so it's clear how current
+  // the analysis is.
+  if (diag.ok){
+    const m = diag.metrics||{};
+    const confColor = {high:'var(--green)', medium:'#A96118', low:'#B8564A', none:'var(--muted)'}[diag.confidence] || 'var(--muted)';
+    html += chartCard('Marketing diagnosis',
+      '<span style="color:'+confColor+';">'+esc({high:'Attribution confidence: High',medium:'Attribution confidence: Medium',low:'Attribution confidence: Low',none:'No conversation tracking'}[diag.confidence]||'')+'</span>',
+      (diag.headline ? '<p class="note" style="margin-top:0;">'+esc(diag.headline)+'</p>' : '') +
+      '<div class="mini-grid" style="max-width:560px;">' +
+        '<div class="mini" style="border-top:0;"><b>AED '+money(m.spend||0)+'</b><span>Spend, last '+diag.days+' days</span></div>' +
+        '<div class="mini" style="border-top:0;"><b>'+money(m.meta_conversations||0)+'</b><span>Meta reports</span></div>' +
+        '<div class="mini" style="border-top:0;"><b>'+money(m.zen_contacts||0)+'</b><span>Zen can identify</span></div>' +
+        '<div class="mini" style="border-top:0;"><b>'+money(m.visits||0)+'</b><span>Turned into a visit</span></div>' +
+        '<div class="mini" style="border-top:0;"><b>'+(m.observed_roas!=null?m.observed_roas+'x':'\u2014')+'</b><span>Observed ROAS</span></div>' +
+      '</div>' +
+      (diag.confidence_note ? '<p class="note" style="margin-top:8px;">'+esc(diag.confidence_note)+'</p>' : '') +
+      (diag.analysis && diag.analysis.findings && diag.analysis.findings.length ? '<div class="sechead" style="margin-top:12px;"><h2>Findings</h2></div><div class="list">' +
+        diag.analysis.findings.slice(0,3).map(f => findingRow(esc(f.title), esc(f.detail||''))).join('') + '</div>' : '') +
+      (diag.analysis && diag.analysis.recommendations && diag.analysis.recommendations.length ? '<div class="sechead" style="margin-top:10px;"><h2>Zen recommends</h2></div><div class="list">' +
+        diag.analysis.recommendations.slice(0,3).map(r => findingRow(esc(r.action), esc(r.rationale||''))).join('') + '</div>' : '') +
+      (diag.analysis_at ? '<p class="note" style="margin-top:6px;">Generated on '+esc(diag.analysis_at.slice(0,16).replace('T',' '))+'.</p>' : '') +
+      '<button class="btn btn-s btn-sm" style="margin-top:4px;" onclick="runAdAnalysis(true)">Regenerate insights</button><div id="adAnalysisResult"></div>');
+  } else {
+    html += chartCard('Marketing diagnosis', '', '<p class="note">'+esc(diag.error)+'</p>');
+  }
+
+  // 3. Ads - a real, independently-refreshable table (own day/level
+  // selectors), with real pause/resume and budget controls per row,
+  // and a real history of what's been changed and why. Its own spend
+  // total (rendered by loadAdsTable, below) is computed from these
+  // exact same rows rather than a second, separate account-wide call -
+  // two different fetches both labelled "last 30 days" could legitimately
+  // return different numbers and that mismatch is what looked wrong.
+  html += chartCard(
+    'Ads' +
+      '<div style="float:right;display:flex;gap:6px;">' +
+        '<select id="adTableDays" style="font-size:10.5px;border:1px solid var(--line);border-radius:7px;padding:3px 6px;" onchange="loadAdsTable()">' +
+          [7,30,60,90].map(d=>'<option value="'+d+'"'+(d===30?' selected':'')+'>'+d+' days</option>').join('') + '</select>' +
+        '<select id="adTableLevel" style="font-size:10.5px;border:1px solid var(--line);border-radius:7px;padding:3px 6px;" onchange="loadAdsTable()">' +
+          '<option value="adset" selected>By ad set</option><option value="ad">By ad</option></select>' +
+        '<button class="btn btn-s btn-sm" onclick="loadAdActionsHistory()">History</button>' +
+      '</div>',
+    'What each ad set cost and what it produced. Pause, resume, or change budget from any row.',
+    '<div id="adsTableBox"><div class="loading-block"><span class="spin"></span></div></div>' +
+    '<div id="adActionsBox" style="margin-top:10px;"></div>');
+  ADS_TABLE_CACHE = [];
+
+  const briefs = suggest.ok ? (suggest.briefs||[]) : [];
+  html += '<div class="sechead" style="margin-top:6px;"><h2>Zen suggests</h2><button class="btn btn-p btn-sm" id="genSuggestBtn" onclick="generateNewSuggestions()">Generate suggestions</button></div>' +
+    '<div id="suggestionsBox">' +
+    (briefs.length ? briefs.map(x =>
       '<div style="border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;">' +
-        '<b style="font-size:13px;">'+esc(x.angle||x.problem||'Idea')+'</b>' +
+        '<div style="display:flex;justify-content:space-between;"><b style="font-size:13px;">'+esc(x.angle||x.problem||'Idea')+'</b><span class="sub" style="font-size:10.5px;">'+esc((x.created_at||'').slice(0,10))+'</span></div>' +
         '<div class="wa-bubble" style="margin:8px 0;max-width:100%;">\u201c'+esc(x.hook||'')+'\u201d</div>' +
         (x.why ? '<p class="note" style="margin-top:4px;">'+esc(x.why)+'</p>' : '') +
       '</div>').join('')
-      : '<p class="note">'+(suggest.ok ? 'Not enough recent content yet for a suggestion.' : esc(suggest.error))+'</p>');
+      : '<p class="note">'+(suggest.ok ? 'Nothing suggested yet \u2014 press Generate suggestions above.' : esc(suggest.error))+'</p>') +
+    '</div>';
+
+  const box = el('mktSlowBox');
+  if (box) box.innerHTML = html; // page may have navigated away while this was in flight
+  loadAdsTable(); // independent of everything above - its own selectors, its own refresh
 }
+let ADS_TABLE_CACHE = [];
+async function loadAdsTable(){
+  const box = el('adsTableBox');
+  if (!box) return; // navigated away before this fired
+  // Read the checkbox's state before wiping the box - it lives inside
+  // this same container, so clearing innerHTML first would destroy it
+  // before its value could ever be read, leaving showAll stuck false.
+  const showAll = !!(el('adTableShowAll') && el('adTableShowAll').checked);
+  box.innerHTML = '<div class="loading-block"><span class="spin"></span></div>';
+  const days = Number((el('adTableDays')||{}).value) || 30;
+  const level = (el('adTableLevel')||{}).value || 'adset';
+  const j = await call('get_ad_table', {days, level});
+  if (!j.ok){ box.innerHTML = '<p class="note">'+esc(j.error)+'</p>'; return; }
+  // Meta's own list includes anything it still calls ACTIVE or PAUSED,
+  // which is not the same as "had activity in the selected window" -
+  // a campaign that finished months ago stays listed with real spend
+  // history, just none inside these particular days, and would sit in
+  // the table showing zero for everything. Filtered by default to
+  // what the selected day range is actually meant to answer; the
+  // checkbox below brings back the full list, finished ones included.
+  const allRows = j.rows||[];
+  ADS_TABLE_CACHE = showAll ? allRows : allRows.filter(r => (r.spend||0) > 0 || (r.impressions||0) > 0);
+  if (!ADS_TABLE_CACHE.length){
+    box.innerHTML = '<p class="note">'+(allRows.length ? 'Nothing had real spend or impressions in this window.' : 'No ads in this window.')+'</p>' +
+      (allRows.length ? '<label style="font-size:11px;color:var(--muted);"><input type="checkbox" id="adTableShowAll" onchange="loadAdsTable()"> Show all '+allRows.length+', including ones with no activity in this window</label>' : '');
+    return;
+  }
+  // This total comes from the exact same response as the rows below
+  // it, for the exact days/level currently selected - not a separate
+  // account-wide call that could show a different "last N days" spend
+  // than the table underneath it.
+  const t = j.totals||{};
+  box.innerHTML =
+    (j.plain_summary ? zen(esc(j.plain_summary)) : '') +
+    '<div class="mini-grid" style="max-width:520px;margin-bottom:10px;">' +
+      '<div class="mini" style="border-top:0;"><b>AED '+money(t.spend||0)+'</b><span>Total spend, last '+j.days+' days</span></div>' +
+      (j.result_labels||[]).slice(0,2).map(lbl => '<div class="mini" style="border-top:0;"><b>'+money(t[lbl]||0)+'</b><span>'+esc(lbl)+'</span></div>').join('') +
+    '</div>' +
+    '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">' +
+    '<tr style="color:var(--muted);font-size:10.5px;text-align:left;">' +
+      '<th style="padding:4px 6px;">Name</th><th style="padding:4px 6px;text-align:right;">Spend</th>' +
+      '<th style="padding:4px 6px;text-align:right;">Impressions</th><th style="padding:4px 6px;text-align:right;">Clicks</th>' +
+      '<th style="padding:4px 6px;text-align:right;">Result</th><th style="padding:4px 6px;text-align:right;">Cost/result</th>' +
+      '<th style="padding:4px 6px;">Budget/day</th><th style="padding:4px 6px;"></th></tr>' +
+    ADS_TABLE_CACHE.map((r,i) => '<tr style="border-top:1px solid var(--line);" id="adRow_'+i+'">' +
+      '<td style="padding:5px 6px;"><b>'+esc(r.name)+'</b>'+(r.state==='finished'?' <span class="badge">finished</span>':'')+'</td>' +
+      '<td style="padding:5px 6px;text-align:right;">AED '+money(r.spend||0)+'</td>' +
+      '<td style="padding:5px 6px;text-align:right;">'+money(r.impressions||0)+'</td>' +
+      '<td style="padding:5px 6px;text-align:right;">'+money(r.clicks||0)+'</td>' +
+      '<td style="padding:5px 6px;text-align:right;">'+(r.result!=null?money(r.result)+' '+esc(r.result_label||''):'\u2014')+'</td>' +
+      '<td style="padding:5px 6px;text-align:right;">'+(r.cost_per_result!=null?'AED '+r.cost_per_result:'\u2014')+'</td>' +
+      '<td style="padding:5px 6px;">'+(r.daily_budget!=null?'AED '+money(r.daily_budget):'\u2014')+
+        (r.budget_owner_id ? ' <button class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:10.5px;" onclick="changeAdBudget('+i+')">Change</button>' : '') + '</td>' +
+      '<td style="padding:5px 6px;text-align:right;">' +
+        (r.state!=='finished' ? '<button class="btn btn-s btn-sm" style="padding:2px 8px;font-size:10.5px;" onclick="toggleAdStatus('+i+')">'+(r.raw_status==='ACTIVE'?'Pause':'Resume')+'</button>' : '') +
+      '</td></tr>').join('') +
+  '</table></div>' +
+  (allRows.length > ADS_TABLE_CACHE.length
+    ? '<label style="font-size:11px;color:var(--muted);display:block;margin-top:8px;"><input type="checkbox" id="adTableShowAll" '+(showAll?'checked':'')+' onchange="loadAdsTable()"> Show all '+allRows.length+', including '+(allRows.length-ADS_TABLE_CACHE.length)+' with no activity in this window</label>'
+    : '') +
+  // Honest, not invented. Neither the real backend this prototype is
+  // verified against, nor the reference console it was migrated from,
+  // has an action that creates a new ad in an ad set or deletes one
+  // from Meta - only pause/resume and budget exist as real controls.
+  '<p class="note" style="margin-top:10px;font-size:10.5px;">Starting and stopping an ad (above) is real. Removing an ad from its ad set, or adding a new one, isn\u2019t available yet \u2014 that would need a real Meta ad-creation/deletion action, which doesn\u2019t exist in the backend this is built against.</p>';
+}
+// Pause/resume lives on the row itself (an ad's ACTIVE/PAUSED state
+// is Meta's, read straight from the row) - budgets live on the ad
+// set, so a row viewed "by ad" changes its parent, said out loud so
+// nobody is surprised by it.
+async function toggleAdStatus(i){
+  const r = ADS_TABLE_CACHE[i];
+  if (!r) return;
+  const to = r.raw_status==='ACTIVE' ? 'PAUSED' : 'ACTIVE';
+  const row = el('adRow_'+i);
+  const btn = row.querySelector('button');
+  btn.disabled = true; btn.textContent = '\u2026';
+  const j = await call('set_ad_status', {entity_id:r.id, entity_name:r.name, status:to});
+  if (!j.ok){ toast(j.error, 'err'); btn.disabled = false; btn.textContent = r.raw_status==='ACTIVE'?'Pause':'Resume'; return; }
+  toast(to==='PAUSED' ? 'Paused' : 'Resumed', 'ok');
+  setTimeout(loadAdsTable, 2500); // Meta takes a moment to reflect the change
+}
+async function changeAdBudget(i){
+  const r = ADS_TABLE_CACHE[i];
+  if (!r) return;
+  const owner = r.level==='ad' ? ('its ad set ("'+(r.adset_name||'')+'")') : ('"'+r.name+'"');
+  const v = prompt('Daily budget for '+owner+'\n\nCurrently '+(r.daily_budget||'not set')+' AED/day.', r.daily_budget||'');
+  if (v===null) return;
+  const n = Number(v);
+  if (!n || n<=0){ toast('Enter a number above zero.', 'err'); return; }
+  const j = await call('apply_ad_recommendation', {
+    entity_id:r.budget_owner_id, entity_name:r.adset_name||r.name,
+    verdict: n > (r.daily_budget||0) ? 'increase' : 'reduce', new_budget:n,
+    reason:'Changed by hand from the ads table',
+  });
+  if (!j.ok){ toast(j.error, 'err'); return; }
+  toast('Budget updated', 'ok');
+  setTimeout(loadAdsTable, 2500);
+}
+async function loadAdActionsHistory(){
+  const box = el('adActionsBox');
+  box.innerHTML = '<span class="spin"></span>';
+  const j = await call('list_ad_actions', {limit:40});
+  if (!j.ok){ box.innerHTML = '<p class="note" style="color:#a02020;">'+esc(j.error)+'</p>'; return; }
+  if (!j.actions.length){ box.innerHTML = '<p class="note">Nothing has been changed yet.</p>'; return; }
+  box.innerHTML = '<div class="sechead" style="margin-top:0;"><h2>What has been changed</h2></div><div class="list">' +
+    j.actions.map(a => '<div class="list-row" style="flex-direction:column;align-items:stretch;">' +
+      '<div style="display:flex;justify-content:space-between;"><span><b>'+esc(a.entity_name||a.entity_id)+'</b> '+esc(a.action||'')+(a.new_value?' \u2192 '+esc(a.new_value):'')+'</span>' +
+      '<span class="sub">'+esc((a.created_at||'').slice(0,16).replace('T',' '))+'</span></div>' +
+      (a.reason||a.error ? '<div class="sub" style="font-size:10.5px;'+(a.error?'color:#B8564A;':'')+'">'+esc(a.reason||'')+(a.error?' \u2014 '+esc(a.error):'')+'</div>' : '') +
+    '</div>').join('') + '</div>';
+}
+// Generating is a deliberate, separate action from viewing what's
+// already been suggested - past suggestions load with the rest of
+// the page; this is the only thing that costs a real model call.
+async function generateNewSuggestions(){
+  const btn = el('genSuggestBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Thinking\u2026';
+  const j = await call('propose_creative', {});
+  if (!j.ok){ toast(j.error, 'err'); btn.disabled = false; btn.textContent = 'Generate suggestions'; return; }
+  const fresh = await call('list_creative_briefs', {});
+  const briefs = fresh.ok ? (fresh.briefs||[]) : [];
+  el('suggestionsBox').innerHTML = briefs.length ? briefs.map(x =>
+    '<div style="border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;">' +
+      '<div style="display:flex;justify-content:space-between;"><b style="font-size:13px;">'+esc(x.angle||x.problem||'Idea')+'</b><span class="sub" style="font-size:10.5px;">'+esc((x.created_at||'').slice(0,10))+'</span></div>' +
+      '<div class="wa-bubble" style="margin:8px 0;max-width:100%;">\u201c'+esc(x.hook||'')+'\u201d</div>' +
+      (x.why ? '<p class="note" style="margin-top:4px;">'+esc(x.why)+'</p>' : '') +
+    '</div>').join('') : '<p class="note">Nothing suggested yet.</p>';
+  btn.disabled = false; btn.textContent = 'Generate suggestions';
+}
+
+// ── Operations insights ──────────────────────────────────────────
+// Honest, not invented. Wait time, chair turnover and per-stylist
+// revenue would belong here, but that data lives in a table never
+// referenced anywhere in the real, confirmed backend - shown plainly
+// as missing rather than guessed at against an unverified schema.
+// Matches the reference exactly: label and value/percent on their own
+// row, colored progress bar directly beneath - not the inline
+// label-bar-value row barRow() uses elsewhere in this app.
+function demoBar(label, value, total, color, sub){
+  const pct = total > 0 ? Math.round((value/total)*1000)/10 : 0;
+  return '<div style="margin-bottom:14px;">' +
+    '<div style="display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;margin-bottom:5px;">' +
+      '<span style="color:var(--ink);">'+label+'</span>' +
+      '<span><b style="color:'+color+';">'+money(value)+'</b> <span style="color:var(--muted);font-size:11px;">('+pct+'%)</span></span>' +
+    '</div>' +
+    '<div style="height:8px;border-radius:99px;background:#eef0ec;overflow:hidden;">' +
+      '<div style="height:100%;border-radius:99px;background:'+color+';width:'+Math.max(pct,pct>0?2:0)+'%;"></div>' +
+    '</div>' +
+    (sub ? '<div style="font-size:10.5px;color:var(--muted);margin-top:3px;">'+sub+'</div>' : '') +
+  '</div>';
+}
+const DEMO_COLORS = ['#1565C0','#7C3AED','#16A34A','#D97706','#DC2626','#0891B2','#9333EA','#EA580C','#EC4899'];
+
+async function operationsInsights(){
+  STATE.opsTab = STATE.opsTab || 'overview';
+  el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:22px;">Operations insights</h1>' +
+    '<div class="subtabs" id="opsTabs">' +
+      [['overview','Overview'],['revenue','Revenue'],['demographics','Demographics'],['acquisition','Acquisition'],['locations','Locations'],['daily','Daily ops']].map(t =>
+        '<button class="'+(t[0]===STATE.opsTab?'active':'')+'" onclick="opsSubTab(\''+t[0]+'\')">'+t[1]+'</button>').join('') +
+    '</div>' +
+    '<div id="opsTabBody"><div class="loading-block"><span class="spin"></span></div></div>';
+  opsSubTab(STATE.opsTab);
+}
+function opsSubTab(name){
+  STATE.opsTab = name;
+  document.querySelectorAll('#opsTabs button').forEach((b,i) => b.classList.toggle('active', ['overview','revenue','demographics','acquisition','locations','daily'][i]===name));
+  const map = {overview:opsOverviewTab, revenue:opsRevenueTab, demographics:opsDemographicsTab, acquisition:opsAcquisitionTab, locations:opsLocationsTab, daily:opsDailyTab};
+  (map[name]||opsOverviewTab)();
+}
+
+async function opsOverviewTab(){
+  const box = el('opsTabBody');
+  box.innerHTML = '<div class="loading-block"><span class="spin"></span></div>';
+  const [reports, reg, active30, active90, lapsed90, returning] = await Promise.all([
+    call('get_reports_data', {}),
+    call('get_daily_metric', {metric_key:'new_customers', days:30}),
+    call('get_daily_metric', {metric_key:'active_30d', days:1}),
+    call('get_daily_metric', {metric_key:'active_90d', days:1}),
+    call('get_daily_metric', {metric_key:'lapsed_90d', days:1}),
+    call('get_daily_metric', {metric_key:'returning_customers', days:30}),
+  ]);
+  let html = '';
+  if (reports.ok){
+    const stylists = reports.stylists || [];
+    const maxCust = Math.max(1, ...stylists.map(s=>s.total_customers||0));
+    html += chartCard('Stylist performance', 'Customers on file per stylist, and what share are at risk of not returning.',
+      stylists.length ? stylists.map(s => barRow(s.stylist, s.total_customers||0, maxCust, (s.total_customers||0)+' \u00b7 '+(s.at_risk_percent||0)+'% at-risk', (s.at_risk_percent||0)>30)).join('') : '<p class="note">No stylist data yet.</p>');
+  }
+  if (reg.ok && reg.rows && reg.rows.length){
+    const rows = reg.rows.slice().sort((a,b)=> a.metric_date < b.metric_date ? -1 : 1).slice(-30);
+    const max = Math.max(1, ...rows.map(r=>Number(r.value)||0));
+    html += chartCard('Registrations over time', 'New customers per day, last 30 days.',
+      '<div style="display:flex;align-items:flex-end;gap:2px;height:90px;">' +
+        rows.map(r => '<div style="flex:1;background:var(--green);border-radius:2px 2px 0 0;height:'+Math.max(3,Math.round((Number(r.value)||0)/max*90))+'px;" title="'+esc(r.metric_date)+': '+money(r.value)+'"></div>').join('') +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--muted);margin-top:4px;"><span>'+esc(rows[0].metric_date)+'</span><span>'+esc(rows[rows.length-1].metric_date)+'</span></div>' +
+      '<p class="note" style="margin-top:8px;">'+money(reg.total||0)+' new customer(s) registered in the last 30 days.</p>');
+  }
+  const a30 = active30.ok ? active30.latest : null, a90 = active90.ok ? active90.latest : null;
+  const l90 = lapsed90.ok ? lapsed90.latest : null, ret30 = returning.ok ? returning.total : null;
+  html += chartCard('Active & lapsed customers', 'A rolling snapshot as of today.',
+    '<div class="mini-grid" style="max-width:560px;">' +
+      '<div class="mini" style="border-top:0;"><b>'+(a30!=null?money(a30):'\u2014')+'</b><span>Active, last 30 days</span></div>' +
+      '<div class="mini" style="border-top:0;"><b>'+(a90!=null?money(a90):'\u2014')+'</b><span>Active, last 90 days</span></div>' +
+      '<div class="mini" style="border-top:0;"><b>'+(l90!=null?money(l90):'\u2014')+'</b><span>Lapsed (90+ days)</span></div>' +
+      '<div class="mini" style="border-top:0;"><b>'+(ret30!=null?money(ret30):'\u2014')+'</b><span>Returning, last 30 days</span></div>' +
+    '</div>');
+  html += '<div style="border:1px dashed var(--line);border-radius:14px;padding:14px 16px;background:#fafaf8;">' +
+    '<h4 style="margin:0 0 4px;font-size:12px;font-weight:600;color:var(--ink);">Not available yet</h4>' +
+    '<p style="margin:0;font-size:11px;color:var(--muted);line-height:1.5;">Wait time, chair turnover, and revenue per stylist per visit live under the Daily ops tab \u2014 real underlying data, pending one new backend action. See that tab for specifics.</p></div>';
+  box.innerHTML = html;
+}
+
+// Real - the exact same 400-day revenue and visit-count metrics used
+// elsewhere in this build (get_daily_metric), aggregated into months
+// client-side. No new backend action needed; this one was genuinely
+// buildable today.
+async function opsRevenueTab(){
+  const box = el('opsTabBody');
+  box.innerHTML = '<div class="loading-block"><span class="spin"></span></div>';
+  const [rev, visits] = await Promise.all([
+    call('get_daily_metric', {metric_key:'revenue', days:400}),
+    call('get_daily_metric', {metric_key:'visits', days:400}),
+  ]);
+  if (!rev.ok || !visits.ok){ box.innerHTML = chartCard('Monthly revenue', '', '<p class="note">'+esc(rev.error||visits.error)+'</p>'); return; }
+  const byMonth = {};
+  (rev.rows||[]).forEach(r => { const m = r.metric_date.slice(0,7); (byMonth[m] ||= {revenue:0, visits:0}).revenue += Number(r.value)||0; });
+  (visits.rows||[]).forEach(r => { const m = r.metric_date.slice(0,7); (byMonth[m] ||= {revenue:0, visits:0}).visits += Number(r.value)||0; });
+  const months = Object.keys(byMonth).sort();
+  const totalRevenue = months.reduce((t,m)=>t+byMonth[m].revenue,0);
+  const totalVisits = months.reduce((t,m)=>t+byMonth[m].visits,0);
+  box.innerHTML = chartCard('Monthly revenue (historical)', 'Every month with recorded activity, real transactions and revenue.',
+    !months.length ? '<p class="note">No revenue history yet.</p>' :
+    '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">' +
+      '<tr style="background:var(--ink);color:#fff;font-size:10.5px;text-align:left;"><th style="padding:6px 8px;">Month</th><th style="padding:6px 8px;text-align:right;">Visits</th><th style="padding:6px 8px;text-align:right;">Revenue</th><th style="padding:6px 8px;text-align:right;">Avg</th></tr>' +
+      months.map(m => {
+        const d = byMonth[m], avgV = d.visits ? Math.round(d.revenue/d.visits) : 0;
+        return '<tr style="border-top:1px solid var(--line);"><td style="padding:5px 8px;">'+esc(new Date(m+'-01').toLocaleString('en',{month:'short',year:'numeric'}))+'</td>' +
+          '<td style="padding:5px 8px;text-align:right;">'+money(d.visits)+'</td>' +
+          '<td style="padding:5px 8px;text-align:right;color:var(--green);font-weight:600;">AED '+money(Math.round(d.revenue))+'</td>' +
+          '<td style="padding:5px 8px;text-align:right;color:var(--muted);">AED '+avgV+'</td></tr>';
+      }).join('') +
+      '<tr style="border-top:2px solid var(--ink);font-weight:700;"><td style="padding:6px 8px;">Total</td><td style="padding:6px 8px;text-align:right;">'+money(totalVisits)+'</td>' +
+      '<td style="padding:6px 8px;text-align:right;color:var(--green);">AED '+money(Math.round(totalRevenue))+'</td>' +
+      '<td style="padding:6px 8px;text-align:right;">AED '+(totalVisits?Math.round(totalRevenue/totalVisits):0)+'</td></tr>' +
+    '</table></div>');
+}
+
+// Honest gap - the real fields (segment, dob) exist on
+// mw_customer_profile, confirmed directly against this backend, but
+// no action aggregates them into counts yet. Calls a not-yet-real
+// action name deliberately, so the moment it's added this tab starts
+// working with zero further frontend changes.
+async function opsDemographicsTab(){
+  const box = el('opsTabBody');
+  box.innerHTML = '<div class="loading-block"><span class="spin"></span></div>';
+  const j = await call('get_customer_demographics', {});
+  if (!j.ok){
+    box.innerHTML = chartCard('Gender split', '', '<p class="note">'+esc(j.error||'Not available yet.')+'</p>') +
+      opsBackendGapNote('get_customer_demographics',
+        'Real fields already exist: <code>mw_customer_profile.segment</code> (boy/girl) and <code>.dob</code>. Needs one new action that groups by segment for gender, and buckets dob into age ranges (0\u20132, 3\u20135, 6\u20138, 9\u201311, 12\u201315, 16+), returning counts for each.');
+    return;
+  }
+  const g = j.gender||{}, total = (g.boys||0)+(g.girls||0);
+  const ages = j.age_buckets||[];
+  box.innerHTML =
+    chartCard('\ud83d\udc66\ud83d\udc67 Gender split', '',
+      demoBar('\ud83d\udc66 Boys', g.boys||0, total, '#1565C0') + demoBar('\ud83d\udc67 Girls', g.girls||0, total, '#EC4899')) +
+    chartCard('\ud83c\udf82 Age distribution', '',
+      ages.map((a,i) => demoBar(a.label, a.count, j.age_total||total, DEMO_COLORS[i%DEMO_COLORS.length])).join(''));
+}
+
+async function opsAcquisitionTab(){
+  const box = el('opsTabBody');
+  box.innerHTML = '<div class="loading-block"><span class="spin"></span></div>';
+  const j = await call('get_acquisition_sources', {});
+  if (!j.ok){
+    box.innerHTML = chartCard('How they heard about us', '', '<p class="note">'+esc(j.error||'Not available yet.')+'</p>') +
+      opsBackendGapNote('get_acquisition_sources',
+        'Checked three real tables directly \u2014 <code>mw_customer_profile</code>, <code>mw_transactions</code>, and <code>visits</code> \u2014 and none of them hold how a customer heard about the salon. <code>mw_transactions.source_type</code> looked like a candidate but turned out to mean something else entirely: how the transaction record itself was ingested (<code>excel_upload</code>, <code>scheduled_sync</code>), not how the customer found the business. This isn\u2019t a missing action \u2014 there\u2019s currently no real data anywhere in this database to build it from.');
+    return;
+  }
+  const entries = Object.entries(j.sources||{}).sort((a,b)=>b[1]-a[1]);
+  const total = entries.reduce((t,[,v])=>t+v,0);
+  box.innerHTML = chartCard('\ud83d\udce3 How they heard about us', '',
+    entries.length ? entries.map(([k,v],i) => demoBar(esc(k), v, total, DEMO_COLORS[i%DEMO_COLORS.length])).join('') : '<p class="note">No source data recorded yet.</p>');
+}
+
+async function opsLocationsTab(){
+  const box = el('opsTabBody');
+  box.innerHTML = '<div class="loading-block"><span class="spin"></span></div>';
+  const j = await call('get_customers_by_location', {});
+  if (!j.ok){
+    box.innerHTML = chartCard('Customers by location', '', '<p class="note">'+esc(j.error||'Not available yet.')+'</p>') +
+      opsBackendGapNote('get_customers_by_location',
+        'Same real check, same result \u2014 <code>mw_customer_profile</code>, <code>mw_transactions</code>, and <code>visits</code> were all checked directly, and none hold a location field. Not a missing action; there\u2019s no real data anywhere in this database to build it from right now.');
+    return;
+  }
+  const entries = Object.entries(j.locations||{}).sort((a,b)=>b[1]-a[1]);
+  const total = entries.reduce((t,[,v])=>t+v,0);
+  box.innerHTML = chartCard('\ud83d\udccd Customers by location', '',
+    entries.length ? entries.map(([k,v],i) => demoBar(esc(k), v, total, DEMO_COLORS[i%DEMO_COLORS.length])).join('') : '<p class="note">No location data recorded yet.</p>');
+}
+
+// Confirmed real, directly against mw_transactions - checkin_at,
+// called_at, done_at, stylist_name, and amount all sit on the exact
+// table already used everywhere else in this build. No separate
+// queue table needed; that was an earlier, wrong assumption, replaced
+// once the real schema was actually checked rather than guessed at.
+async function opsDailyTab(){
+  const box = el('opsTabBody');
+  box.innerHTML = '<div class="loading-block"><span class="spin"></span></div>';
+  const j = await call('get_daily_operations', {days:7});
+  if (!j.ok){
+    box.innerHTML = chartCard('Daily breakdown', '', '<p class="note">'+esc(j.error||'Not available yet.')+'</p>') +
+      opsBackendGapNote('get_daily_operations',
+        'Confirmed real and ready \u2014 <code>mw_transactions</code> already has <code>checkin_at</code>, <code>called_at</code>, <code>done_at</code>, <code>stylist_name</code>, and <code>amount</code>. Needs one new action computing wait time (called \u2212 checkin) and service time (done \u2212 called) per visit, grouped by day and by stylist.');
+    return;
+  }
+  const days = j.days||[], stylists = j.stylists||[];
+  let html = chartCard('Daily breakdown', 'Real check-in to done times, per day.',
+    days.length ? '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">' +
+      '<tr style="background:var(--ink);color:#fff;font-size:10.5px;text-align:left;"><th style="padding:6px 8px;">Date</th><th style="padding:6px 8px;text-align:right;">Served</th><th style="padding:6px 8px;text-align:right;">Avg wait</th><th style="padding:6px 8px;text-align:right;">Avg service</th><th style="padding:6px 8px;text-align:right;">Revenue</th></tr>' +
+      days.map(d => '<tr style="border-top:1px solid var(--line);"><td style="padding:5px 8px;">'+esc(d.date)+'</td><td style="padding:5px 8px;text-align:right;">'+money(d.served)+'</td>' +
+        '<td style="padding:5px 8px;text-align:right;'+(d.avg_wait_mins>20?'color:#B8564A;':'')+'">'+(d.avg_wait_mins!=null?d.avg_wait_mins+'m':'n/a')+'</td>' +
+        '<td style="padding:5px 8px;text-align:right;">'+(d.avg_service_mins!=null?d.avg_service_mins+'m':'n/a')+'</td>' +
+        '<td style="padding:5px 8px;text-align:right;color:var(--green);">AED '+money(d.revenue||0)+'</td></tr>').join('') +
+      '</table></div>' : '<p class="note">No check-in/done data recorded yet.</p>');
+  html += chartCard('Avg service time by stylist', 'From check-in to done \u2014 requires called_at recorded; visits without it show n/a.',
+    stylists.length ? '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">' +
+      '<tr style="background:var(--ink);color:#fff;font-size:10.5px;text-align:left;"><th style="padding:6px 8px;">Stylist</th><th style="padding:6px 8px;text-align:right;">Customers</th><th style="padding:6px 8px;text-align:right;">Avg service</th><th style="padding:6px 8px;text-align:right;">Avg wait</th><th style="padding:6px 8px;text-align:right;">Revenue</th><th style="padding:6px 8px;text-align:right;">Avg/visit</th></tr>' +
+      stylists.map(s => '<tr style="border-top:1px solid var(--line);"><td style="padding:5px 8px;"><b>'+esc(s.stylist)+'</b></td>' +
+        '<td style="padding:5px 8px;text-align:right;">'+money(s.customers)+'</td>' +
+        '<td style="padding:5px 8px;text-align:right;">'+(s.avg_service_mins!=null?s.avg_service_mins+'m':'n/a')+'</td>' +
+        '<td style="padding:5px 8px;text-align:right;'+(s.avg_wait_mins>20?'color:#B8564A;':'')+'">'+(s.avg_wait_mins!=null?s.avg_wait_mins+'m':'n/a')+'</td>' +
+        '<td style="padding:5px 8px;text-align:right;color:var(--green);">AED '+money(s.revenue||0)+'</td>' +
+        '<td style="padding:5px 8px;text-align:right;">AED '+money(s.avg_per_visit||0)+'</td></tr>').join('') +
+      '</table></div>' : '<p class="note">No stylist data yet.</p>');
+  box.innerHTML = html;
+}
+
+function opsBackendGapNote(actionName, detail){
+  return '<div style="border:1px dashed var(--line);border-radius:14px;padding:14px 16px;background:#fafaf8;">' +
+    '<h4 style="margin:0 0 4px;font-size:12px;font-weight:600;color:var(--ink);">Needs one new backend action: <code>'+actionName+'</code></h4>' +
+    '<p style="margin:0;font-size:11px;color:var(--muted);line-height:1.5;">'+detail+' This tab already calls <code>'+actionName+'</code> and will start working with no further changes here the moment it\u2019s deployed.</p></div>';
+}
+
+// Real, from list_package_priority - the price list's own gender
+// split. Deliberately NOT labelled as a customer demographic breakdown
+// (gender/age/location/referral source aren't tracked anywhere in the
+// real system) - shown honestly as what it actually is: the catalog.
+async function customerInsights(){
+  el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:22px;">Customer insights</h1><div class="loading-block"><span class="spin"></span></div>';
+  const j = await call('list_package_priority', {});
+  const packages = (j.ok ? j.packages : []) || [];
+  const counts = {boys:0, girls:0, either:0};
+  packages.forEach(p => { if (counts[p.gender]!==undefined) counts[p.gender]++; });
+  const total = counts.boys+counts.girls+counts.either;
+  el('p-flow').innerHTML =
+    '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:22px;">Customer insights</h1>' +
+    chartCard('Package catalog by category', 'Boys / girls / either split of your current price list \u2014 not a customer breakdown.',
+      total ? barRow('Boys', counts.boys, total, counts.boys) + barRow('Girls', counts.girls, total, counts.girls) + barRow('Either', counts.either, total, counts.either)
+            : '<p class="note">No packages in the price list yet.</p>') +
+    '<div style="border:1px dashed var(--line);border-radius:14px;padding:14px 16px;background:#fafaf8;">' +
+      '<h4 style="margin:0 0 4px;font-size:12px;font-weight:600;color:var(--ink);">Not tracked yet</h4>' +
+      '<p style="margin:0;font-size:11px;color:var(--muted);line-height:1.5;">These would each need a new field captured somewhere (booking, intake, or POS) plus a reporting query \u2014 shown honestly as missing rather than invented: <b>customer gender/age</b>, <b>location or area</b>, <b>referral source \u2014 how a customer first heard about the salon</b>, and <b>wait or chair time</b>.</p></div>';
+}
+// Real ad spend and results, plus a real Zen-generated suggestion -
+// not the fake DATA.insights.marketing cards this used to show.
+// Real, unsupervised - from get_service_patterns. What actually gets
+// bought together and in sequence, with lift (how much more often
+// than chance) rather than raw counts, which alone would just
+// reflect which services are simply popular.
+async function buyInsights(){
+  el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:22px;">What people buy</h1><div class="loading-block"><span class="spin"></span>Looking for real patterns\u2026</div>';
+  const j = await call('get_service_patterns', {});
+  if (!j.ok){ el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' + errBlock(j.error); return; }
+  const pairs = j.pairs||[], journeys = j.journeys||[], firstVisits = j.first_visits||[];
+  el('p-flow').innerHTML =
+    '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:22px;">What people buy</h1>' +
+    (j.note ? '<p class="note" style="margin-top:0;">'+esc(j.note)+'</p>' : '') +
+    chartCard('Bought together', 'Services the same customer buys more often than chance would predict.',
+      pairs.length ? '<div class="list">' + pairs.map(p => insLine(esc(p.pair), 'lift '+p.lift+'\u00d7')).join('') + '</div>' : '<p class="note">Not enough visits yet to see a pattern.</p>') +
+    chartCard('What comes next', 'The most common thing a customer books after another.',
+      journeys.length ? '<div class="list">' + journeys.map(x => insLine(esc(x.path), money(x.times)+' time(s)')).join('') + '</div>' : '<p class="note">Not enough repeat visits yet.</p>') +
+    chartCard('First visit \u2192 came back', 'Which first service most predicts a customer returning at all.',
+      firstVisits.length ? '<div class="list">' + firstVisits.map(f => insLine(esc(f.service), f.rate+'% returned')).join('') + '</div>' : '<p class="note">Not enough first-visit data yet.</p>');
+}
+
+// Real, evidence-based - get_learning_state (which campaigns have
+// enough labelled outcomes to mean anything) and get_package_performance
+// (which suggested packages actually led to a visit). Both explicitly
+// distinguish "not enough data yet" from an actual finding, rather
+// than presenting a thin sample as a real result.
+async function learningInsights(){
+  el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:22px;">What Zen is learning</h1><div class="loading-block"><span class="spin"></span>Reading real outcomes\u2026</div>';
+  const [learn, pkg] = await Promise.all([ call('get_learning_state', {}), call('get_package_performance', {window_days:30}) ]);
+  const groups = (learn.ok ? learn.groups : []) || [];
+  const pkgGroups = (pkg.ok ? pkg.groups : []) || [];
+  el('p-flow').innerHTML =
+    '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:22px;">What Zen is learning</h1>' +
+    zen('Evidence from completed customer outcomes \u2014 not generic AI advice.') +
+    chartCard('Campaign learning', learn.ok ? esc(learn.note) : '',
+      groups.length ? '<div class="list">' + groups.map(g =>
+        '<div class="list-row"><span><b>'+esc(g.action_type)+(g.campaign&&g.campaign!=='\u2014'?' \u00b7 '+esc(g.campaign):'')+'</b>' +
+          '<div class="sub">'+money(g.labelled)+' of '+money(g.total)+' outcomes known'+(g.waiting?' \u00b7 '+money(g.waiting)+' still waiting':'')+'</div></span>' +
+          '<span class="badge '+(g.enough_to_train?'on':g.enough_to_compare?'':'warn')+'">'+(g.rate!=null?g.rate+'%':'too early')+'</span></div>').join('') + '</div>'
+        : (learn.ok ? '<p class="note">Nothing labelled yet.</p>' : '<p class="note">'+esc(learn.error)+'</p>')) +
+    chartCard('Service suggestions', 'Which packages Zen has suggested actually led to a real visit.',
+      pkgGroups.length ? '<div class="list">' + pkgGroups.map(g =>
+        '<div class="list-row"><span><b>'+esc(g.package)+'</b><div class="sub">'+esc(g.occasion)+' \u00b7 '+esc(g.gender)+' \u00b7 '+money(g.suggested)+' suggested</div></span>' +
+        '<span class="badge '+(g.thin?'warn':'on')+'">'+(g.rate!=null?g.rate+'%':'\u2014')+(g.thin?' \u00b7 thin':'')+'</span></div>').join('') + '</div>'
+        : (pkg.ok ? '<p class="note">'+esc(pkg.note||'Nothing suggested yet.')+'</p>' : '<p class="note">'+esc(pkg.error)+'</p>'));
+}
+
 function insightDetail(key,i){
   const x = DATA.insights[key][i];
   el('p-flow').innerHTML =
     '<button class="btn btn-ghost btn-sm" onclick="flow(()=>insightCategory(\''+key+'\'))" style="margin-bottom:16px;">\u2190 Back</button>' +
     '<h1 style="font-size:21px;">'+esc(x.title)+'</h1>' +
     '<div class="stack" style="margin-top:14px;">' +
-      insLine('Observed fact','This pattern held across the customers and time period shown.') +
-      insLine('Zen\u2019s interpretation', x.why) +
-      insLine('Recommendation','Worth testing further before treating it as a rule.') +
+      findingRow('Observed fact','This pattern held across the customers and time period shown.') +
+      findingRow('Zen\u2019s interpretation', esc(x.why)) +
+      findingRow('Recommendation','Worth testing further before treating it as a rule.') +
     '</div>' +
     '<div class="wiz-actions" style="justify-content:flex-start;">' +
     '<button class="btn btn-p" onclick="go(\'campaigns\')">Act on this</button>' +
@@ -2043,6 +3022,16 @@ function insightDetail(key,i){
 }
 function insLine(label,val){
   return '<div class="list-row"><span style="color:var(--muted);">'+label+'</span><span style="text-align:right;max-width:340px;">'+val+'</span></div>';
+}
+// For a label followed by a real sentence, not a short value - stacked
+// and left-aligned throughout, since right-aligning wrapped text (as
+// insLine does, correctly, for short values) makes multi-line prose
+// read as a ragged, hard-to-follow block.
+function findingRow(label, detail){
+  return '<div class="list-row" style="flex-direction:column;align-items:stretch;">' +
+    '<span style="color:var(--muted);">'+label+'</span>' +
+    (detail ? '<span style="text-align:left;margin-top:2px;">'+detail+'</span>' : '') +
+  '</div>';
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -2061,8 +3050,8 @@ async function settings(){
   // console's reply-assistant and cooldown settings.
   const rows = [
     ['⌂','Salon profile','Name, services, hours','profile',true],
-    ['◐','Brand profile','Colours, tone, logo','brand',true],
-    ['💬','WhatsApp','Connection, reply assistant, sending limits, templates \u2014 in ZenWhatsApp','whatsapp',true],
+    ['◐','Brand & Strategy','Brand settings, business strategy, Brand DNA','brand',null],
+    ['💬','WhatsApp settings','Reply assistant, what to sell, campaign rules, templates','whatsapp',null],
     ['◎','Instagram & Meta Ads','Connection status and ad performance','connections',null],
     ['⇅','Data','Duplicate customers, resolved automatically','data',true],
     ['♙','Team members','Who can use Zen','team',true],
@@ -2071,7 +3060,7 @@ async function settings(){
     ['▣','Billing','Subscription and usage',null,null],
   ];
   el('setList').innerHTML = rows.map(r =>
-    '<div class="list-row" style="cursor:pointer;" onclick="'+(r[3]==='whatsapp'?"go('zenwhatsapp');setTimeout(()=>waSubTab('setup'),0)":r[3]?"flow(()=>settingsDetail('"+r[3]+"'))":"toast('This screen would open here.')")+'">' +
+    '<div class="list-row" style="cursor:pointer;" onclick="'+(r[3]==='whatsapp'?"flow(()=>whatsappSettingsPanel())":r[3]?"flow(()=>settingsDetail('"+r[3]+"'))":"toast('This screen would open here.')")+'">' +
     '<span style="display:flex;gap:12px;align-items:center;"><span style="width:30px;height:30px;border-radius:9px;background:#eef0ed;display:grid;place-items:center;">'+r[0]+'</span>' +
     '<span><b>'+r[1]+'</b><div class="sub">'+r[2]+'</div></span></span>' +
     (r[4]!==null ? '<span class="badge '+(r[4]?'on':'warn')+'">'+(r[4]?'Done':'Not yet')+'</span>' : '<span style="color:var(--muted);">›</span>') +
@@ -2081,16 +3070,13 @@ function settingsDetail(key){
   const views = {
     profile: () => '<h1 style="font-size:21px;">Salon profile</h1>' +
       '<div class="list" style="margin-top:10px;">' + insLine('Name',DATA.salon.name) + insLine('Hours',DATA.salon.hours) + insLine('Instagram',DATA.salon.instagram) + '</div>',
-    brand: () => '<h1 style="font-size:21px;">Brand profile</h1>' +
-      zen('This is what I use to keep every post and message on-brand.') +
-      '<div class="list" style="margin-top:10px;">' + insLine('Tone', DATA.salon.tone) + insLine('Colours', '<span style="display:inline-block;width:13px;height:13px;background:'+DATA.salon.colors[0]+';border-radius:3px;"></span>') + '</div>' +
-      '<button class="btn btn-s btn-sm" style="margin-top:12px;" onclick="editBrandFlow()">Edit brand profile</button>',
     team: () => '<h1 style="font-size:21px;">Team members</h1>' +
       '<div class="list" style="margin-top:10px;">' + DATA.team.map(t=>insLine(t.name,t.role)).join('') + '</div>' +
       '<button class="btn btn-s btn-sm" style="margin-top:10px;" onclick="toast(\'Invite screen would open here.\')">Invite someone</button>',
-  };  // whatsapp settings render from whatsappSetupHTML(); connections and data are async, handled separately below
+  };  // whatsapp settings render from whatsappSettingsPanel(); connections and data are async, handled separately below
   if (key === 'connections'){ flow(connectionsPanel); return; }
   if (key === 'data'){ flow(dataPanel); return; }
+  if (key === 'brand'){ flow(()=>brandStrategyPanel('settings')); return; }
   el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' + views[key]();
 }
 async function connectionsPanel(){
@@ -2131,25 +3117,203 @@ async function dataPanel(){
     '<h1 style="font-size:21px;">Data</h1><div class="loading-block"><span class="spin"></span></div>';
   const s = await call('get_settings', {});
   const on = !!(s.ok && s.tenant && s.tenant.auto_resolve_duplicates);
+  const cooldown = (s.ok && s.tenant && s.tenant.global_cooldown_days != null) ? s.tenant.global_cooldown_days : 21;
+  const holdout = (s.ok && s.tenant && s.tenant.holdout_percent != null) ? s.tenant.holdout_percent : 10;
   el('p-flow').innerHTML =
     '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
     '<h1 style="font-size:21px;">Data</h1>' +
     '<div class="sechead" style="margin-top:6px;"><h2>Duplicate customers</h2></div>' +
     '<p class="note" style="margin-top:0;">When the same person shows up under two spellings or numbers, Zen can merge them on its own each night'+tip('This runs automatically every night \u2014 there is no button to press. The switch below only controls whether it runs at all.')+', with no button to press.</p>' +
-    '<div class="list"><div class="list-row"><b>Resolve automatically, every day</b>'+switchControl(on, 'dataToggleAutoResolve(this.checked)')+'</div></div>';
+    '<div class="list"><div class="list-row"><b>Resolve automatically, every day</b>'+switchControl(on, 'dataToggleAutoResolve(this.checked)')+'</div></div>' +
+    '<div class="sechead"><h2>Cooldown & holdout</h2></div>' +
+    '<p class="note" style="margin-top:0;">How long someone is left alone after being contacted about anything, and how many are deliberately held back to prove the messages actually work.</p>' +
+    '<div class="list">' +
+      '<div class="list-row"><span>Global cooldown'+tip('Applies across every campaign at once, so someone can\u2019t get a nudge one week and a win-back the next. Each campaign\u2019s own cooldown still applies on top of this. Set 0 to switch it off.')+'</span>' +
+        '<span><input class="field" id="globalCooldown" type="number" min="0" max="365" value="'+cooldown+'" style="width:70px;display:inline-block;margin:0;text-align:right;"> days</span></div>' +
+      '<div class="list-row"><span>Holdout'+tip('A share of each send is deliberately left out on purpose, so results can be compared against them. Without this there is no way to tell whether a message caused someone to return, or they would have anyway.')+'</span>' +
+        '<span><input class="field" id="holdoutPct" type="number" min="0" max="50" value="'+holdout+'" style="width:60px;display:inline-block;margin:0;text-align:right;"> %</span></div>' +
+    '</div>' +
+    '<button class="btn btn-p btn-sm" style="margin-top:10px;" onclick="saveCooldownHoldout()">Save</button>';
+}
+async function saveCooldownHoldout(){
+  const cd = Number(el('globalCooldown').value);
+  const ho = Number(el('holdoutPct').value);
+  const [r1, r2] = await Promise.all([
+    call('set_global_cooldown_days', { global_cooldown_days: cd }),
+    call('set_holdout_percent', { holdout_percent: ho }),
+  ]);
+  if (!r1.ok){ toast(r1.error, 'err'); return; }
+  if (!r2.ok){ toast(r2.error, 'err'); return; }
+  toast('Saved', 'ok');
 }
 async function dataToggleAutoResolve(checked){
   const j = await call('set_auto_resolve_duplicates', { auto_resolve_duplicates: checked });
   toast(j.ok ? (checked ? 'Duplicates will be resolved automatically each night.' : 'Automatic resolution turned off.') : j.error, j.ok?'ok':'err');
   if (!j.ok) dataPanel();
 }
-function editBrandFlow(){
-  openModal(
-    '<div class="modal-head"><h2>Edit brand profile</h2><button class="modal-x" onclick="closeModal()">×</button></div>' +
-    '<div class="modal-body"><label class="lbl">Tone of voice</label><textarea class="field" style="min-height:70px;">'+DATA.salon.tone+'</textarea>' +
-    '<p class="note">Zen uses this for every post and message it writes \u2014 you only need to set it once.</p></div>' +
-    '<div class="modal-foot"><button class="btn btn-s" onclick="closeModal()">Cancel</button><button class="btn btn-p" onclick="closeModal();toast(\'Brand profile updated\',\'ok\')">Save</button></div>'
-  );
+
+// ── Brand & Strategy ────────────────────────────────────────────
+// Three real, separate backend concepts, deliberately kept as one
+// destination with sub-tabs rather than three settings rows - so
+// onboarding can point at the exact same functions later without a
+// second, drifting copy of this data ever existing.
+function brandStrategyTabBar(active){
+  const tabs = [['settings','Brand settings'],['strategy','Business strategy'],['dna','Brand DNA']];
+  return '<div class="subtabs">' + tabs.map(t =>
+    '<button class="'+(t[0]===active?'active':'')+'" onclick="brandStrategyPanel(&apos;'+t[0]+'&apos;)">'+t[1]+'</button>').join('') + '</div>';
+}
+async function brandStrategyPanel(tab){
+  el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\\u2190 Back</button>' +
+    '<h1 style="font-size:21px;">Brand & Strategy</h1>' + brandStrategyTabBar(tab) +
+    '<div id="bsTabBody"><div class="loading-block"><span class="spin"></span></div></div>';
+  if (tab === 'strategy') return businessStrategyTab();
+  if (tab === 'dna') return brandDnaTab();
+  return brandSettingsTab();
+}
+
+async function brandSettingsTab(){
+  const j = await call('get_brand_settings', {});
+  const s = (j.ok && j.settings) ? j.settings : {};
+  el('bsTabBody').innerHTML =
+    zen('Colours, logo and the model used for generated images \u2014 applied to every piece of content Zen makes.') +
+    '<div class="list" style="margin-top:10px;">' +
+      '<label class="lbl">Logo URL</label><input class="field" id="bsLogo" value="'+esc(s.logo_url||'')+'" placeholder="https://\\u2026" style="margin-bottom:10px;">' +
+      '<div style="display:flex;gap:10px;margin-bottom:10px;">' +
+        '<div style="flex:1;"><label class="lbl">Primary colour</label><input class="field" id="bsPrimary" value="'+esc(s.primary_color||'')+'" placeholder="#175E52"></div>' +
+        '<div style="flex:1;"><label class="lbl">Secondary colour</label><input class="field" id="bsSecondary" value="'+esc(s.secondary_color||'')+'" placeholder="#A96118"></div>' +
+        '<div style="flex:1;"><label class="lbl">Accent colour</label><input class="field" id="bsAccent" value="'+esc(s.accent_color||'')+'" placeholder="#4E5FC8"></div>' +
+      '</div>' +
+      '<label class="lbl">Visual brand description</label><textarea class="field" id="bsVisual" style="min-height:70px;margin-bottom:10px;" placeholder="What the brand looks like, in a sentence or two.">'+esc(s.visual_brand_description||'')+'</textarea>' +
+      '<label class="lbl">Instagram location ID</label><input class="field" id="bsIgLoc" value="'+esc(s.instagram_location_id||'')+'" style="margin-bottom:10px;">' +
+      '<label class="lbl">Meta ad account ID</label><input class="field" id="bsAdAcct" value="'+esc(s.meta_ad_account_id||'')+'" style="margin-bottom:10px;">' +
+    '</div>' +
+    '<button class="btn btn-p btn-sm" onclick="saveBrandSettings()">Save</button>';
+}
+async function saveBrandSettings(){
+  const j = await call('save_brand_settings', {
+    logo_url: el('bsLogo').value.trim(),
+    primary_color: el('bsPrimary').value.trim(),
+    secondary_color: el('bsSecondary').value.trim(),
+    accent_color: el('bsAccent').value.trim(),
+    visual_brand_description: el('bsVisual').value.trim(),
+    instagram_location_id: el('bsIgLoc').value.trim(),
+    meta_ad_account_id: el('bsAdAcct').value.trim(),
+  });
+  toast(j.ok ? 'Saved' : j.error, j.ok?'ok':'err');
+}
+
+const STRATEGY_FIELDS = [
+  ['marketing_objectives','Marketing objectives','What is this marketing meant to achieve?'],
+  ['business_priorities','Business priorities','What matters most right now?'],
+  ['target_audiences','Target audiences','Who are you trying to reach?'],
+  ['focus_products_services','Products & services to focus on',''],
+  ['positioning','Positioning','How should the business be seen?'],
+  ['campaign_priorities','Campaign priorities',''],
+  ['approved_promotions','Approved promotions',''],
+  ['content_preferences','Content preferences',''],
+  ['upcoming_events','Upcoming events',''],
+  ['exclusions','Exclusions \u2014 never promote or depict',''],
+  ['competitor_notes','Competitor notes',''],
+  ['additional_instructions','Additional instructions',''],
+];
+async function businessStrategyTab(){
+  const j = await call('get_business_strategy', {});
+  const s = (j.ok && j.strategy) ? j.strategy : {};
+  el('bsTabBody').innerHTML =
+    zen('This is the standing direction every piece of content and every campaign checks against \u2014 set once, applies everywhere.') +
+    '<div class="list" style="margin-top:10px;">' +
+    STRATEGY_FIELDS.map(f =>
+      '<label class="lbl">'+f[1]+'</label><textarea class="field" id="strat_'+f[0]+'" style="min-height:54px;margin-bottom:10px;" placeholder="'+esc(f[2])+'">'+esc(s[f[0]]||'')+'</textarea>').join('') +
+    '</div>' +
+    '<button class="btn btn-p btn-sm" onclick="saveBusinessStrategy()">Save</button>';
+}
+async function saveBusinessStrategy(){
+  const body = {};
+  STRATEGY_FIELDS.forEach(f => { body[f[0]] = el('strat_'+f[0]).value.trim(); });
+  const j = await call('save_business_strategy', body);
+  toast(j.ok ? 'Saved' : j.error, j.ok?'ok':'err');
+}
+
+// Brand DNA is AI-assisted: plain-language answers go in via
+// propose_brand_dna, Claude turns them into structured mandatory/
+// preferred/forbidden rules, and nothing is saved until approve_brand_dna
+// is called explicitly - proposing is never the same as approving.
+async function brandDnaTab(){
+  const j = await call('get_brand_dna', {});
+  const profile = j.ok ? j.profile : null;
+  if (profile && profile.approved){
+    const rules = j.rules || [];
+    el('bsTabBody').innerHTML =
+      zen('Approved. These rules are checked every time Zen generates an image or video, so the business always looks like itself.') +
+      '<div class="list" style="margin-top:10px;">' +
+        insLine('Business', esc(profile.business_name||'')) +
+        findingRow('Personality', esc(profile.brand_personality||'')) +
+        findingRow('Tone of voice', esc(profile.tone_of_voice||'')) +
+      '</div>' +
+      '<div class="sechead"><h2>Rules ('+rules.length+')</h2></div>' +
+      '<div class="list">' + rules.map(r =>
+        '<div class="list-row"><span><b>'+esc(r.category)+'.'+esc(r.attribute_key)+'</b><div class="sub">'+esc(r.attribute_value)+'</div></span>' +
+        '<span class="badge '+(r.priority==='forbidden'?'warn':'on')+'">'+esc(r.priority)+'</span></div>').join('') + '</div>' +
+      '<button class="btn btn-s btn-sm" style="margin-top:12px;" onclick="brandDnaSetupForm()">Redo from scratch</button>';
+    return;
+  }
+  brandDnaSetupForm();
+}
+function brandDnaSetupForm(){
+  el('bsTabBody').innerHTML =
+    zen('Answer in plain language \u2014 Zen turns this into structured rules it checks on every generated image.') +
+    '<div class="list" style="margin-top:10px;">' +
+      '<label class="lbl">Business name</label><input class="field" id="dnaName" style="margin-bottom:10px;">' +
+      '<label class="lbl">Industry</label><input class="field" id="dnaIndustry" style="margin-bottom:10px;">' +
+      '<label class="lbl">Business description</label><textarea class="field" id="dnaDesc" style="min-height:60px;margin-bottom:10px;"></textarea>' +
+      '<label class="lbl">Target audience</label><input class="field" id="dnaAudience" style="margin-bottom:10px;">' +
+      '<label class="lbl">Visual style notes</label><textarea class="field" id="dnaVisual" style="min-height:50px;margin-bottom:10px;"></textarea>' +
+      '<label class="lbl">Environment / setting notes</label><textarea class="field" id="dnaEnv" style="min-height:50px;margin-bottom:10px;"></textarea>' +
+      '<label class="lbl">Uniform notes</label><textarea class="field" id="dnaUniform" style="min-height:50px;margin-bottom:10px;"></textarea>' +
+      '<label class="lbl">Recurring people / staff notes</label><textarea class="field" id="dnaPeople" style="min-height:50px;margin-bottom:10px;"></textarea>' +
+      '<label class="lbl">Mascot / character notes</label><textarea class="field" id="dnaMascot" style="min-height:50px;margin-bottom:10px;"></textarea>' +
+      '<label class="lbl">Must never appear</label><textarea class="field" id="dnaNegative" style="min-height:50px;margin-bottom:10px;"></textarea>' +
+    '</div>' +
+    '<button class="btn btn-p btn-sm" id="dnaProposeBtn" onclick="proposeBrandDna()">Propose rules</button>';
+}
+async function proposeBrandDna(){
+  const business_name = el('dnaName').value.trim(), business_description = el('dnaDesc').value.trim();
+  if (!business_name || !business_description){ toast('Business name and description are both required.', 'err'); return; }
+  const btn = el('dnaProposeBtn'); btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Working out the rules\\u2026';
+  const j = await call('propose_brand_dna', {
+    business_name, business_description,
+    industry: el('dnaIndustry').value.trim(),
+    target_audience: el('dnaAudience').value.trim(),
+    visual_notes: el('dnaVisual').value.trim(),
+    environment_notes: el('dnaEnv').value.trim(),
+    uniform_notes: el('dnaUniform').value.trim(),
+    people_notes: el('dnaPeople').value.trim(),
+    mascot_notes: el('dnaMascot').value.trim(),
+    negative_notes: el('dnaNegative').value.trim(),
+  });
+  if (!j.ok){ toast(j.error, 'err'); btn.disabled = false; btn.textContent = 'Propose rules'; return; }
+  window.__dnaProposal = j;
+  const rules = j.proposed_rules || [];
+  el('bsTabBody').innerHTML =
+    zen('Here\u2019s what Zen worked out. Nothing is saved yet \u2014 review, then approve.') +
+    '<div class="list" style="margin-top:10px;">' +
+      findingRow('Personality', esc(j.proposed_profile.brand_personality||'')) +
+      findingRow('Tone of voice', esc(j.proposed_profile.tone_of_voice||'')) +
+    '</div>' +
+    '<div class="sechead"><h2>Proposed rules ('+rules.length+')</h2></div>' +
+    '<div class="list">' + rules.map((r,i) =>
+      '<div class="list-row"><span><b>'+esc(r.category)+'.'+esc(r.attribute_key)+'</b><div class="sub">'+esc(r.attribute_value)+'</div></span>' +
+      '<span class="badge '+(r.priority==='forbidden'?'warn':'on')+'">'+esc(r.priority)+'</span></div>').join('') + '</div>' +
+    '<div class="wiz-actions" style="justify-content:flex-start;margin-top:14px;">' +
+      '<button class="btn btn-ghost" onclick="brandDnaSetupForm()">Start over</button>' +
+      '<button class="btn btn-p" onclick="approveBrandDna()">Approve</button></div>';
+}
+async function approveBrandDna(){
+  const p = window.__dnaProposal;
+  if (!p) return;
+  const j = await call('approve_brand_dna', { profile: p.proposed_profile, rules: p.proposed_rules });
+  toast(j.ok ? 'Brand DNA approved' : j.error, j.ok?'ok':'err');
+  if (j.ok) brandDnaTab();
 }
 async function reconnectWhatsAppFlow(){
   el('p-flow').innerHTML = '<h1 style="font-size:21px;">Reconnecting WhatsApp\u2026</h1><div class="loading-block"><span class="spin"></span>Checking your connection</div>';
