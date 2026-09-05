@@ -1,16 +1,15 @@
 name: Metric learnings
-
-# Weekly, not daily.
-#
-# These patterns move slowly - a day-of-week effect does not change
-# overnight. Running nightly would mean re-testing 153 hypotheses every
-# day, which multiplies the chance of a spurious finding appearing at
-# least once and being acted on.
+# Daily, by request - overriding the original weekly cadence. Worth
+# knowing: running nightly re-tests all 153 metric-pair hypotheses
+# every day instead of once a week, which raises the chance that a
+# spurious pattern appears at least once and gets mistaken for real.
+# The Benjamini-Hochberg correction in the script still holds within
+# each run - this just means more runs, and more chances for a false
+# positive to slip through.
 on:
   schedule:
-    - cron: '0 8 * * 1'   # Monday 08:00 UTC
+    - cron: '15 5 * * *'   # daily, 05:15 UTC - after mw-refresh-daily-metrics (04:55 UTC), so it reads that day's fresh data
   workflow_dispatch: {}
-
 jobs:
   learn:
     runs-on: ubuntu-latest
