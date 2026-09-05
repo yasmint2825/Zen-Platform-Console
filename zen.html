@@ -1353,12 +1353,14 @@ async function campaigns(){
   const bc = buckets.counts || {};
   el('campCounts').innerHTML =
     '<div class="mini"><b>'+money(bc.pending||0)+'</b><span>Waiting to send</span></div>' +
-    '<div class="mini"><b>'+money(bc.holdout||0)+'</b><span>Held back'+tip('Deliberately left out of a past send, so results could be compared against them.')+'</span></div>' +
-    '<div class="mini"><b>'+money(bc.rejected||0)+'</b><span>Rejected</span></div>' +
+    '<div class="mini" style="cursor:pointer;" onclick="flow(()=>heldOutFlow())"><b>'+money(bc.holdout||0)+'</b><span>Held back'+tip('Deliberately left out of a past send, so results could be compared against them. Click to see who, and release any of them if you want to send after all.')+'</span></div>' +
+    '<div class="mini"><b>'+money(bc.rejected||0)+'</b><span>Rejected<span style="display:block;font-size:9.5px;color:var(--muted);font-weight:400;">Cleared automatically after 2 weeks</span></span></div>' +
     '<div class="mini"><b>'+money(bc.sent||0)+'</b><span>Sent, last 60 days</span></div>';
 
   const counts = (buckets.by_campaign && buckets.by_campaign.pending) || {};
+  const byCat = buckets.by_campaign || {};
   const strategyByKey = {}; (settings.strategy||[]).forEach(s => { strategyByKey[s.campaign_key] = s; });
+  const globalHoldout = (settings.tenant && settings.tenant.holdout_percent) || 0;
 
   CAMPAIGN_TYPES = Object.entries(counts)
     .filter(([, n]) => Number(n) > 0)
@@ -1366,6 +1368,17 @@ async function campaigns(){
       key, count: Number(n), auto: !!(strategyByKey[key] && strategyByKey[key].auto_send),
       name: (CAMP_LABELS[key]||{}).name || key.replace(/_/g,' '),
       why: (CAMP_LABELS[key]||{}).why || '',
+      // Real, per-category breakdown - rejected/sent/holdout/scheduled
+      // all come from the same decision log already used for pending,
+      // just not broken out by category until now.
+      rejected: (byCat.rejected && byCat.rejected[key]) || 0,
+      sent: (byCat.sent && byCat.sent[key]) || 0,
+      held_out: (byCat.holdout && byCat.holdout[key]) || 0,
+      scheduled: (byCat.scheduled && byCat.scheduled[key]) || 0,
+      // null means "use the global default" from Settings -> Data,
+      // not "zero" - a real, different choice from deliberately
+      // holding none of this specific campaign back.
+      holdout_percent: strategyByKey[key] && strategyByKey[key].holdout_percent != null ? strategyByKey[key].holdout_percent : null,
     }))
     .sort((a,b) => b.count - a.count);
   CAMPAIGN_TYPES.push({ key:'custom', name:'Special occasion', why:'Build a one-off message from scratch.', count:null, auto:false, custom:true });
@@ -1385,6 +1398,17 @@ function campRenderList(){
       '<div style="cursor:pointer;" onclick="'+(t.auto?'toast(\'Zen sends these on its own \u2014 nothing to review.\')':'flow(()=>campaignFlow(\''+t.key+'\'))')+'">' +
         '<div class="camp-count" style="background:'+(t.auto?'var(--green-soft)':'var(--warn-soft)')+';color:'+(t.auto?'var(--green)':'var(--warn)')+';">'+money(t.count)+'</div>' +
         '<b>'+t.name+'</b><p>'+t.why+'</p></div>' +
+      '<div style="display:flex;gap:12px;font-size:10.5px;color:var(--muted);margin:2px 0 6px;flex-wrap:wrap;">' +
+        '<span>Sent <b style="color:var(--ink);">'+money(t.sent)+'</b></span>' +
+        '<span>Scheduled <b style="color:var(--ink);">'+money(t.scheduled)+'</b></span>' +
+        '<span style="'+(t.held_out?'cursor:pointer;text-decoration:underline;text-decoration-style:dotted;':'')+'" '+(t.held_out?'onclick="flow(()=>heldOutFlow(\''+t.key+'\'))"':'')+'>Held out <b style="color:var(--ink);">'+money(t.held_out)+'</b></span>' +
+        '<span>Rejected <b style="color:var(--ink);">'+money(t.rejected)+'</b></span>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--muted);margin-bottom:8px;">' +
+        '<span>Held out'+tip('Percent of eligible customers deliberately skipped for this campaign, to compare against who was sent to. Leave blank to use the global default from Settings \u2192 Data.')+'</span>' +
+        '<input type="number" min="0" max="50" placeholder="auto" value="'+(t.holdout_percent!=null?t.holdout_percent:'')+'" style="width:52px;border:1px solid var(--line);border-radius:6px;padding:2px 6px;font-size:10.5px;" onchange="campSetHoldout(\''+t.key+'\',this.value)">' +
+        '<span>%</span>' +
+      '</div>' +
       '<div class="camp-foot">' +
         '<span class="camp-state">'+(t.auto?'Auto':'Manual')+
           tip(t.auto ? 'Zen sends these on its own, using your default WhatsApp settings. Nothing to approve.' : 'These wait in a queue for you to review and send.')+'</span>' +
@@ -1394,6 +1418,15 @@ function campRenderList(){
         '</span>' +
       '</div></div>';
   }).join('');
+}
+async function campSetHoldout(key, value){
+  const t = CAMPAIGN_TYPES.find(x=>x.key===key);
+  if (!t) return;
+  const pct = value === '' ? null : Number(value);
+  const j = await call('save_strategy', { campaign_key:key, enabled:true, auto_send:t.auto, holdout_percent:pct });
+  if (!j.ok){ toast('Could not save: '+j.error, 'err'); campRenderList(); return; }
+  t.holdout_percent = pct;
+  toast('Saved', 'ok');
 }
 
 // ZenWhatsApp: the actual conversation inbox. Genuinely separate from
@@ -1813,8 +1846,8 @@ async function whatsappSettingsPanel(){
   const cooldown = (HOME_CACHE.buckets && HOME_CACHE.buckets.cooldown_days) || 21;
   const connected = templates.ok; // the call itself needs real credentials to succeed
 
-  function section(title, body, openByDefault){
-    return '<details'+(openByDefault?' open':'')+' style="margin-bottom:12px;border:1px solid var(--line);border-radius:12px;padding:2px 16px;">' +
+  function section(title, body){
+    return '<details style="margin-bottom:12px;border:1px solid var(--line);border-radius:12px;padding:2px 16px;">' +
       '<summary style="cursor:pointer;padding:12px 0;font-weight:600;font-size:13.5px;color:var(--ink);">'+title+'</summary>' +
       '<div style="padding-bottom:14px;">'+body+'</div></details>';
   }
@@ -1847,7 +1880,7 @@ async function whatsappSettingsPanel(){
       '<p class="note" style="margin-top:0;">You know things the numbers don\u2019t \u2014 margin, what the salon does well, what you\u2019re promoting. Mark those here and the assistant leans that way.</p>' +
       (priorities.ok ? packagePriorityHTML(priorities.packages) : '<p class="note" style="color:#a02020;">'+esc(priorities.error)+'</p>')) +
 
-    section('Campaign rules',
+    section('Campaign settings',
       '<p class="note" style="margin-top:0;">Automatic or manual, per campaign type \u2014 the same switch as on the Campaigns page.</p>' +
       '<div class="list">' + (settings.ok ? (settings.strategy||[]) : []).map(s =>
         '<div class="list-row"><b>'+esc(CAMPAIGN_LABELS[s.campaign_key]||s.campaign_key)+'</b>'+switchControl(!!s.auto_send, 'settingsToggleCampaignAuto(\''+s.campaign_key+'\',this.checked)')+'</div>').join('') + '</div>' +
@@ -1965,6 +1998,59 @@ const CAMP_STEPS = ['Audience','Message','Test','Schedule'];
 const campPlan = { key:null, size:0, holdPct:20, wave:null };
 
 function campaignFlow(key){ campPlan.key = key; campAudience(); }
+
+// Real, from get_decision_buckets' own holdout list (already fetched
+// for the Campaigns page count) and release_holdout, which already
+// exists on the backend but had no way to reach it from the UI - the
+// count was shown, but nothing let you act on it. Optional campaignKey
+// filters to just that one category - the per-card "Held out" number
+// needed this, since it's about that specific campaign, not everyone
+// held back across all of them.
+async function heldOutFlow(campaignKey){
+  el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:22px;">Held back</h1><div class="loading-block"><span class="spin"></span></div>';
+  const j = (HOME_CACHE.buckets && HOME_CACHE.buckets.ok) ? HOME_CACHE.buckets : await call('get_decision_buckets', {days:60});
+  if (!j.ok){ el('p-flow').innerHTML += '<p class="note" style="color:#a02020;">'+esc(j.error)+'</p>'; return; }
+  HOME_CACHE.buckets = j;
+  const allRows = j.holdout || [];
+  const rows = campaignKey ? allRows.filter(r => r.campaign_key === campaignKey) : allRows;
+  const title = campaignKey ? ((CAMP_LABELS[campaignKey]||{}).name || String(campaignKey).replace(/_/g,' ')) : 'Held back';
+  HELD_OUT_SELECTED = new Set();
+  HELD_OUT_ROWS = rows;
+  el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:22px;">'+(campaignKey ? title+' \u2014 held back' : 'Held back')+'</h1>' +
+    '<p class="sub" style="margin-top:2px;">Deliberately left out of a past send, so results could be compared against them.</p>' +
+    (rows.length ? '<label class="list-row" style="cursor:pointer;margin-top:10px;"><span style="display:flex;align-items:center;gap:10px;">' +
+        '<input type="checkbox" id="heldOutSelectAll" onchange="heldOutToggleAll(this.checked)"><b>Select all ('+rows.length+')</b></span></label>' +
+      '<div class="list" id="heldOutList">' +
+      rows.map(r => '<label class="list-row" style="cursor:pointer;">' +
+        '<span style="display:flex;align-items:center;gap:10px;"><input type="checkbox" class="held-out-cb" onchange="heldOutToggle(\''+r.id+'\',this.checked)">' +
+          '<span><b>'+esc(r.customer_name||r.mobile)+'</b><div class="sub">'+esc((CAMP_LABELS[r.campaign_key]||{}).name || String(r.campaign_key).replace(/_/g,' '))+' \u00b7 held back '+esc((r.created_at||'').slice(0,10))+'</div></span></span>' +
+      '</label>').join('') + '</div>' +
+      '<button class="btn btn-p btn-sm" style="margin-top:14px;" onclick="heldOutRelease(\''+(campaignKey||'')+'\')">Release selected</button>'
+    : '<div class="empty-block" style="margin-top:16px;">'+emptyIcon('\u25c8')+'<h2>Nobody is currently held back'+(campaignKey?' for this campaign':'')+'</h2></div>');
+}
+let HELD_OUT_ROWS = [];
+function heldOutToggleAll(checked){
+  document.querySelectorAll('.held-out-cb').forEach(cb => cb.checked = checked);
+  HELD_OUT_SELECTED = checked ? new Set(HELD_OUT_ROWS.map(r => r.id)) : new Set();
+}
+let HELD_OUT_SELECTED = new Set();
+function heldOutToggle(id, checked){ if (checked) HELD_OUT_SELECTED.add(id); else HELD_OUT_SELECTED.delete(id); }
+async function heldOutRelease(campaignKey){
+  if (!HELD_OUT_SELECTED.size){ toast('Select at least one person first.', 'err'); return; }
+  // The backend's own warning, shown before acting on it rather than
+  // after - releasing part of a holdout group breaks the comparison
+  // it exists for, and that's worth knowing before doing it, not
+  // buried in the response once it's already done.
+  const ok = confirm('Releasing part of the holdout breaks the comparison it exists for. The point of holding customers back is that they\'re otherwise identical to the ones you message - choosing the promising-looking ones to release means you can no longer tell whether messaging actually works.\n\nRelease '+HELD_OUT_SELECTED.size+' selected anyway?');
+  if (!ok) return;
+  const j = await call('release_holdout', {ids:[...HELD_OUT_SELECTED]});
+  if (!j.ok){ toast(j.error, 'err'); return; }
+  toast(j.released+' released \u2014 they\'ll appear in the normal review queue.', 'ok');
+  HOME_CACHE.buckets = null;
+  heldOutFlow(campaignKey || undefined);
+}
 
 // Real, individual selection - not a fixed server-picked batch. Every
 // row here is a real mw_agent_decisions id, and commit_wave accepts
@@ -2408,15 +2494,6 @@ async function insights(){
     '<button class="btn btn-p btn-sm" onclick="askZen(document.querySelector(\'#p-insights .ask input\').value,\'insAnswer\')">Ask</button></div>' +
     '<div id="insAnswer"></div>' +
 
-    // Looking someone up is the single most common reason to open
-    // this page, so it sits right under the ask box rather than one
-    // more click away inside a "Customers" category tile.
-    '<div class="sechead"><h2>Look up a customer</h2></div>' +
-    '<div class="ask"><span class="spark">♙</span><input id="custSearch" placeholder="Search by name or number…" oninput="custSearch()"></div>' +
-    '<div id="custResults"></div>' +
-    '<details style="margin-top:6px;"><summary style="cursor:pointer;font-size:12px;color:var(--muted);">Browse all '+money(DATA.stats.customers)+' customers</summary>' +
-    '<div class="list" id="custList" style="margin-top:8px;"></div></details>' +
-
     '<div class="sechead"><h2>What the numbers say</h2></div>' +
     '<div class="grid2">' +
       insCat('♙','Customers','Patterns across everyone, not one person','customers') +
@@ -2430,7 +2507,6 @@ async function insights(){
         insCat('\u{1F6D2}','What people buy','Service combinations and return behaviour','buy') +
         insCat('\u{1F4C8}','What Zen is learning','Which messages and suggestions actually work','learning') +
       '</div></details>';
-  el('custList').innerHTML = DATA.customers.map(c => custRow(c)).join('');
 }
 const INS_COLORS = {customers:'#4E5FC8',whatsapp:'#175E52',marketing:'#A96118',operations:'#B8564A',buy:'#2D7A6B',learning:'#8A5A93'};
 function insCat(ic,name,why,key){
@@ -2928,18 +3004,39 @@ function opsSubTab(name){
   (map[name]||opsOverviewTab)();
 }
 
-async function opsOverviewTab(){
+async function opsOverviewTab(month){
+  month = month || new Date().toISOString().slice(0,7);
   const box = el('opsTabBody');
   box.innerHTML = '<div class="loading-block"><span class="spin"></span></div>';
-  const [reports, reg, active30, active90, lapsed90, returning] = await Promise.all([
+  const [reports, reg, active30, active90, lapsed90, returning, nvr, rev] = await Promise.all([
     call('get_reports_data', {}),
     call('get_daily_metric', {metric_key:'new_customers', days:30}),
     call('get_daily_metric', {metric_key:'active_30d', days:1}),
     call('get_daily_metric', {metric_key:'active_90d', days:1}),
     call('get_daily_metric', {metric_key:'lapsed_90d', days:1}),
     call('get_daily_metric', {metric_key:'returning_customers', days:30}),
+    call('get_new_vs_returning', {month}),
+    call('get_revenue_breakdown', {month}),
   ]);
   let html = '';
+
+  // This month at a glance - combines two already-real, already
+  // month-scoped actions (new-vs-returning, revenue breakdown) into
+  // one snapshot, rather than needing a new backend action just to
+  // show them side by side.
+  if (nvr.ok || rev.ok){
+    const totalRev = rev.ok ? Object.values(rev.payment_types||{}).reduce((t,v)=>t+v,0) : null;
+    html += chartCard(
+      'This month at a glance' + monthSelect('opsOverviewTab(this.value)', month),
+      new Date(month+'-01').toLocaleString('en',{month:'long',year:'numeric'}),
+      '<div class="mini-grid" style="max-width:640px;">' +
+        (totalRev!=null ? '<div class="mini" style="border-top:0;"><b>AED '+money(Math.round(totalRev))+'</b><span>Revenue this month</span></div>' : '') +
+        (nvr.ok ? '<div class="mini" style="border-top:0;"><b>'+money(nvr.total)+'</b><span>Services done</span></div>' : '') +
+        (nvr.ok ? '<div class="mini" style="border-top:0;"><b style="color:#175e52;">'+money(nvr.new_count)+'</b><span>New customers</span></div>' : '') +
+        (nvr.ok ? '<div class="mini" style="border-top:0;"><b style="color:#a96118;">'+money(nvr.returning_count)+'</b><span>Returning customers</span></div>' : '') +
+      '</div>');
+  }
+
   if (reports.ok){
     const stylists = reports.stylists || [];
     const maxCust = Math.max(1, ...stylists.map(s=>s.total_customers||0));
@@ -2965,9 +3062,6 @@ async function opsOverviewTab(){
       '<div class="mini" style="border-top:0;"><b>'+(l90!=null?money(l90):'\u2014')+'</b><span>Lapsed (90+ days)</span></div>' +
       '<div class="mini" style="border-top:0;"><b>'+(ret30!=null?money(ret30):'\u2014')+'</b><span>Returning, last 30 days</span></div>' +
     '</div>');
-  html += '<div style="border:1px dashed var(--line);border-radius:14px;padding:14px 16px;background:#fafaf8;">' +
-    '<h4 style="margin:0 0 4px;font-size:12px;font-weight:600;color:var(--ink);">Not available yet</h4>' +
-    '<p style="margin:0;font-size:11px;color:var(--muted);line-height:1.5;">Wait time, chair turnover, and revenue per stylist per visit live under the Daily ops tab \u2014 real underlying data, pending one new backend action. See that tab for specifics.</p></div>';
   box.innerHTML = html;
 }
 
@@ -3020,12 +3114,16 @@ async function loadRevenueBreakdown(month){
   const payTotal = pay.reduce((t,[,v])=>t+v,0);
   const svc = Object.entries(j.services||{}).sort((a,b)=>b[1]-a[1]).slice(0,8);
   const svcTotal = svc.reduce((t,[,v])=>t+v,0);
+  const sty = Object.entries(j.stylists||{}).sort((a,b)=>b[1]-a[1]);
+  const styTotal = sty.reduce((t,[,v])=>t+v,0);
   box.innerHTML =
     chartCard('\ud83d\udcb3 Payment type split' + monthSelect('loadRevenueBreakdown(this.value)', j.month),
       new Date(j.month+'-01').toLocaleString('en',{month:'long',year:'numeric'}),
       pay.length ? pay.map(([k,v],i) => demoBar(esc(k), v, payTotal, DEMO_COLORS[i%DEMO_COLORS.length], null, 'AED ')).join('') : '<p class="note">No payment type recorded this month.</p>') +
     chartCard('\u2702\ufe0f Revenue by service', '',
-      svc.length ? svc.map(([k,v],i) => demoBar(esc(k), v, svcTotal, DEMO_COLORS[i%DEMO_COLORS.length], null, 'AED ')).join('') : '<p class="note">No service data this month.</p>');
+      svc.length ? svc.map(([k,v],i) => demoBar(esc(k), v, svcTotal, DEMO_COLORS[i%DEMO_COLORS.length], null, 'AED ')).join('') : '<p class="note">No service data this month.</p>') +
+    chartCard('\ud83d\udc87 Revenue by stylist', '',
+      sty.length ? sty.map(([k,v],i) => demoBar(esc(k), v, styTotal, DEMO_COLORS[i%DEMO_COLORS.length], null, 'AED ')).join('') : '<p class="note">No stylist data this month.</p>');
 }
 
 // Honest gap - the real fields (segment, dob) exist on
@@ -3058,6 +3156,22 @@ async function opsDemographicsTab(){
     chartCard('\ud83c\udf82 Age distribution', '',
       ages.map(a => demoBar(a.label, a.count, ageTotal, AGE_COLORS[a.label] || '#6B7280')).join(''));
 
+  // New - which age groups come from which area, real from the same
+  // customers table (location + dob together, not two separate tables).
+  const locByAge = j.location_by_age || {};
+  const ageLabels = ['0-2 yrs','3-5 yrs','6-8 yrs','9-11 yrs','12-15 yrs','16+ yrs','Unknown'];
+  const locEntries = Object.entries(locByAge).map(([loc, ages]) => [loc, Object.values(ages).reduce((t,v)=>t+v,0), ages]).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  if (locEntries.length){
+    html += chartCard('\ud83d\udccd Age by location', 'Which age groups come from which area \u2014 top 10 locations by customer count.',
+      '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;">' +
+        '<tr style="color:var(--muted);font-size:10px;text-align:left;"><th style="padding:5px 6px;">Location</th>' +
+          ageLabels.map(l => '<th style="padding:5px 6px;text-align:right;">'+l.replace(' yrs','')+'</th>').join('') + '<th style="padding:5px 6px;text-align:right;">Total</th></tr>' +
+        locEntries.map(([loc, tot, ages]) => '<tr style="border-top:1px solid var(--line);"><td style="padding:4px 6px;"><b>'+esc(loc)+'</b></td>' +
+          ageLabels.map(l => '<td style="padding:4px 6px;text-align:right;">'+(ages[l]||0)+'</td>').join('') +
+          '<td style="padding:4px 6px;text-align:right;font-weight:600;">'+tot+'</td></tr>').join('') +
+      '</table></div>');
+  }
+
   // New - real loyalty & games engagement, from the same customers
   // table that unlocked Acquisition and Locations. Nobody had read
   // stamps/redemptions/game_points/game_spins from this backend before.
@@ -3082,9 +3196,10 @@ async function opsDemographicsTab(){
 // earlier version dropped guest transactions entirely, which skewed
 // the new/returning percentages since the true total was wrong.
 async function opsAcquisitionTab(month){
+  month = month || new Date().toISOString().slice(0,7);
   const box = el('opsTabBody');
   box.innerHTML = '<div class="loading-block"><span class="spin"></span></div>';
-  const [heard, nvr] = await Promise.all([ call('get_acquisition_sources', {}), call('get_new_vs_returning', {month}) ]);
+  const [heard, nvr, cross] = await Promise.all([ call('get_acquisition_sources', {}), call('get_new_vs_returning', {month}), call('get_acquisition_crosstabs', {month}) ]);
   let html = '';
 
   if (nvr.ok){
@@ -3116,13 +3231,44 @@ async function opsAcquisitionTab(month){
       opsBackendGapNote('get_acquisition_sources', 'Real, from the <code>customers</code> table \u2014 confirmed live in this same project.');
   }
 
+  // New - three real cross-tabs, all from the same classification
+  // logic as "Services this month" above, just broken down by
+  // location and heard-via instead of totalled.
+  if (cross.ok){
+    const revTotal = (cross.new_revenue||0) + (cross.old_revenue||0);
+    html += chartCard('\ud83d\udcb0 New vs. returning revenue', 'Same classification as above, split by revenue instead of count.',
+      demoBar('New customers', cross.new_revenue||0, revTotal, '#175e52', null, 'AED ') +
+      demoBar('Returning customers', cross.old_revenue||0, revTotal, '#a96118', null, 'AED '));
+
+    const byLoc = Object.entries(cross.new_vs_old_by_location||{}).map(([k,v]) => [k, v.new+v.old, v]).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    if (byLoc.length){
+      html += chartCard('\ud83d\udccd New vs. returning, by location', 'Top 10 locations this month.',
+        '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11.5px;">' +
+          '<tr style="color:var(--muted);font-size:10.5px;text-align:left;"><th style="padding:5px 6px;">Location</th><th style="padding:5px 6px;text-align:right;">New</th><th style="padding:5px 6px;text-align:right;">Returning</th></tr>' +
+          byLoc.map(([loc,,v]) => '<tr style="border-top:1px solid var(--line);"><td style="padding:4px 6px;"><b>'+esc(loc)+'</b></td>' +
+            '<td style="padding:4px 6px;text-align:right;color:#175e52;">'+v.new+'</td><td style="padding:4px 6px;text-align:right;color:#a96118;">'+v.old+'</td></tr>').join('') +
+        '</table></div>');
+    }
+
+    const byVia = Object.entries(cross.new_vs_old_by_heard_via||{}).map(([k,v]) => [k, v.new+v.old, v]).sort((a,b)=>b[1]-a[1]);
+    if (byVia.length){
+      html += chartCard('\ud83d\udce3 New vs. returning, by source', '',
+        '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11.5px;">' +
+          '<tr style="color:var(--muted);font-size:10.5px;text-align:left;"><th style="padding:5px 6px;">Source</th><th style="padding:5px 6px;text-align:right;">New</th><th style="padding:5px 6px;text-align:right;">Returning</th></tr>' +
+          byVia.map(([k,,v]) => '<tr style="border-top:1px solid var(--line);"><td style="padding:4px 6px;"><b>'+esc(k)+'</b></td>' +
+            '<td style="padding:4px 6px;text-align:right;color:#175e52;">'+v.new+'</td><td style="padding:4px 6px;text-align:right;color:#a96118;">'+v.old+'</td></tr>').join('') +
+        '</table></div>');
+    }
+  }
+
   box.innerHTML = html;
 }
 
-async function opsLocationsTab(){
+async function opsLocationsTab(month){
+  month = month || new Date().toISOString().slice(0,7);
   const box = el('opsTabBody');
   box.innerHTML = '<div class="loading-block"><span class="spin"></span></div>';
-  const j = await call('get_customers_by_location', {});
+  const [j, cross] = await Promise.all([ call('get_customers_by_location', {}), call('get_acquisition_crosstabs', {month}) ]);
   if (!j.ok){
     box.innerHTML = chartCard('Customers by location', '', '<p class="note">'+esc(j.error||'Not available yet.')+'</p>') +
       opsBackendGapNote('get_customers_by_location',
@@ -3131,8 +3277,20 @@ async function opsLocationsTab(){
   }
   const entries = Object.entries(j.locations||{}).sort((a,b)=>b[1]-a[1]);
   const total = entries.reduce((t,[,v])=>t+v,0);
-  box.innerHTML = chartCard('\ud83d\udccd Customers by location', j.total ? (total)+' of '+j.total+' customers have a location on file.' : '',
+  let html = chartCard('\ud83d\udccd Customers by location', j.total ? (total)+' of '+j.total+' customers have a location on file.' : '',
     entries.length ? entries.map(([k,v],i) => demoBar(esc(k), v, total, DEMO_COLORS[i%DEMO_COLORS.length])).join('') : '<p class="note">No location data recorded yet.</p>');
+
+  // New - real revenue per location, from the same acquisition
+  // cross-tab action used on the Acquisition tab (queue joined to
+  // customers.location), just shown here by revenue instead of
+  // new/returning split.
+  if (cross.ok){
+    const revEntries = Object.entries(cross.revenue_by_location||{}).map(([k,v]) => [k, v.revenue]).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    const revTotal = revEntries.reduce((t,[,v])=>t+v,0);
+    html += chartCard('\ud83d\udcb0 Revenue by location' + monthSelect('opsLocationsTab(this.value)', month), new Date(month+'-01').toLocaleString('en',{month:'long',year:'numeric'})+' \u2014 top 10 locations.',
+      revEntries.length ? revEntries.map(([k,v],i) => demoBar(esc(k), v, revTotal, DEMO_COLORS[i%DEMO_COLORS.length], null, 'AED ')).join('') : '<p class="note">No revenue linked to a location this month.</p>');
+  }
+  box.innerHTML = html;
 }
 
 // Confirmed real, directly against mw_transactions - checkin_at,
@@ -3153,11 +3311,11 @@ async function opsDailyTab(month){
   const daysRows = j.days||[], stylists = j.stylists||[];
   let html = chartCard(
     'Daily breakdown' + monthSelect('opsDailyTab(this.value)', j.month),
-    'Real check-in to done times, per day.',
+    'Real check-in to done times, per day. Days averaging over 15 minutes wait are flagged \u26a0\ufe0f.',
     daysRows.length ? '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">' +
       '<tr style="color:var(--muted);font-size:10.5px;text-align:left;"><th style="padding:6px 8px;">Date</th><th style="padding:6px 8px;text-align:right;">Served</th><th style="padding:6px 8px;text-align:right;">Avg wait</th><th style="padding:6px 8px;text-align:right;">Avg service</th><th style="padding:6px 8px;text-align:right;">Revenue</th></tr>' +
-      daysRows.map(d => '<tr style="border-top:1px solid var(--line);"><td style="padding:5px 8px;">'+esc(d.date)+'</td><td style="padding:5px 8px;text-align:right;">'+money(d.served)+'</td>' +
-        '<td style="padding:5px 8px;text-align:right;'+(d.avg_wait_mins>20?'color:#a96118;':'')+'">'+(d.avg_wait_mins!=null?d.avg_wait_mins+'m':'n/a')+'</td>' +
+      daysRows.map(d => '<tr style="border-top:1px solid var(--line);'+(d.avg_wait_mins>15?'background:#fbf1e6;':'')+'"><td style="padding:5px 8px;">'+esc(d.date)+(d.avg_wait_mins>15?' \u26a0\ufe0f':'')+'</td><td style="padding:5px 8px;text-align:right;">'+money(d.served)+'</td>' +
+        '<td style="padding:5px 8px;text-align:right;'+(d.avg_wait_mins>15?'color:#a96118;font-weight:700;':'')+'">'+(d.avg_wait_mins!=null?d.avg_wait_mins+'m':'n/a')+'</td>' +
         '<td style="padding:5px 8px;text-align:right;">'+(d.avg_service_mins!=null?d.avg_service_mins+'m':'n/a')+'</td>' +
         '<td style="padding:5px 8px;text-align:right;color:var(--green);">AED '+money(d.revenue||0)+'</td></tr>').join('') +
       '</table></div>' : '<p class="note">No check-in/done data in this month.</p>');
@@ -3195,12 +3353,19 @@ async function customerInsights(){
   el('p-flow').innerHTML =
     '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
     '<h1 style="font-size:22px;">Customer insights</h1>' +
+    '<div class="sechead" style="margin-top:6px;"><h2>Look up a customer</h2></div>' +
+    '<div class="ask"><span class="spark">♙</span><input id="custSearch" placeholder="Search by name or number…" oninput="custSearch()"></div>' +
+    '<div id="custResults"></div>' +
+    '<details style="margin-top:6px;"><summary style="cursor:pointer;font-size:12px;color:var(--muted);">Browse all '+money(DATA.stats.customers)+' customers</summary>' +
+    '<div class="list" id="custList" style="margin-top:8px;"></div></details>' +
+    '<div class="sechead"><h2>Patterns across everyone</h2></div>' +
     chartCard('Package catalog by category', 'Boys / girls / either split of your current price list \u2014 not a customer breakdown.',
       total ? barRow('Boys', counts.boys, total, counts.boys) + barRow('Girls', counts.girls, total, counts.girls) + barRow('Either', counts.either, total, counts.either)
             : '<p class="note">No packages in the price list yet.</p>') +
     '<div style="border:1px dashed var(--line);border-radius:14px;padding:14px 16px;background:#fafaf8;">' +
-      '<h4 style="margin:0 0 4px;font-size:12px;font-weight:600;color:var(--ink);">Not tracked yet</h4>' +
-      '<p style="margin:0;font-size:11px;color:var(--muted);line-height:1.5;">These would each need a new field captured somewhere (booking, intake, or POS) plus a reporting query \u2014 shown honestly as missing rather than invented: <b>customer gender/age</b>, <b>location or area</b>, <b>referral source \u2014 how a customer first heard about the salon</b>, and <b>wait or chair time</b>.</p></div>';
+      '<h4 style="margin:0 0 4px;font-size:12px;font-weight:600;color:var(--ink);">Now covered under Operations</h4>' +
+      '<p style="margin:0;font-size:11px;color:var(--muted);line-height:1.5;">Customer gender/age, location, how customers heard about the salon, and wait/chair time are all real now \u2014 see Insights \u2192 Operations \u2192 Demographics, Locations, and Daily ops.</p></div>';
+  el('custList').innerHTML = DATA.customers.map(c => custRow(c)).join('');
 }
 // Real ad spend and results, plus a real Zen-generated suggestion -
 // not the fake DATA.insights.marketing cards this used to show.
@@ -3305,14 +3470,61 @@ async function settings(){
     ['♙','Team members','Who can use Zen','team',true],
     ['⌾','Permissions','What each person can do',null,null],
     ['⚑','Notifications','What Zen tells you and when',null,null],
-    ['▣','Billing','Subscription and usage',null,null],
+    ['▣','Billing','Which AI model each feature uses, and what it costs','billing',null],
   ];
   el('setList').innerHTML = rows.map(r =>
-    '<div class="list-row" style="cursor:pointer;" onclick="'+(r[3]==='whatsapp'?"flow(()=>whatsappSettingsPanel())":r[3]?"flow(()=>settingsDetail('"+r[3]+"'))":"toast('This screen would open here.')")+'">' +
+    '<div class="list-row" style="cursor:pointer;" onclick="'+(r[3]==='whatsapp'?"flow(()=>whatsappSettingsPanel())":r[3]==='billing'?"flow(()=>billingModelSettings())":r[3]?"flow(()=>settingsDetail('"+r[3]+"'))":"toast('This screen would open here.')")+'">' +
     '<span style="display:flex;gap:12px;align-items:center;"><span style="width:30px;height:30px;border-radius:9px;background:#eef0ed;display:grid;place-items:center;">'+r[0]+'</span>' +
     '<span><b>'+r[1]+'</b><div class="sub">'+r[2]+'</div></span></span>' +
     (r[4]!==null ? '<span class="badge '+(r[4]?'on':'warn')+'">'+(r[4]?'Done':'Not yet')+'</span>' : '<span style="color:var(--muted);">›</span>') +
     '</div>').join('');
+}
+// Real, from list_model_jobs/set_model_for_job - both already exist
+// and work on the backend; this was purely a missing frontend page.
+// Matches the reference console's own "Billing" tab logic exactly:
+// each AI-powered feature is its own "job" with a chosen model, a
+// recommendation, and a cost estimate checked against real spend
+// from the last 30 days, not just trusted.
+async function billingModelSettings(){
+  el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:22px;">Billing</h1><p class="sub" style="margin-top:2px;">Which AI model handles each feature, and what it actually costs.</p>' +
+    '<div id="billingBox" style="margin-top:14px;"><div class="loading-block"><span class="spin"></span></div></div>';
+  await loadModelJobs();
+}
+async function loadModelJobs(){
+  const box = el('billingBox');
+  const j = await call('list_model_jobs', {});
+  if (!j.ok){ box.innerHTML = '<p class="note" style="color:#a02020;">'+esc(j.error)+'</p>'; return; }
+
+  const total = j.jobs.reduce((t,x) => t+(x.monthly_estimate||0), 0);
+  const ideal = j.jobs.reduce((t,x) => t+(x.recommended_estimate||0), 0);
+  const actual = j.jobs.reduce((t,x) => t+(x.actual_last_30d||0), 0);
+
+  box.innerHTML =
+    '<div class="mini-grid" style="max-width:640px;margin-bottom:6px;">' +
+      '<div class="mini" style="border-top:0;"><b>$'+total.toFixed(2)+'</b><span>A month, at current settings</span></div>' +
+      (Math.abs(total-ideal)>0.05 ? '<div class="mini" style="border-top:0;"><b>$'+ideal.toFixed(2)+'</b><span>If every recommendation were used</span></div>' : '') +
+      '<div class="mini" style="border-top:0;"><b>$'+actual.toFixed(2)+'</b><span>Actually spent, last 30 days</span></div>' +
+    '</div>' +
+    j.jobs.map(job => chartCard(
+      job.label + '<span style="float:right;font-size:11px;font-weight:400;color:var(--muted);">~$'+(job.monthly_estimate||0).toFixed(2)+'/mo</span>',
+      esc(job.what),
+      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0;">' +
+        '<select onchange="setModelForJob(\''+job.purpose+'\',this.value)" style="font-size:12px;border:1px solid var(--line);border-radius:8px;padding:5px 8px;">' +
+          j.models.map(m => '<option value="'+m.id+'"'+(m.id===job.current?' selected':'')+'>'+esc(m.name)+' \u00b7 $'+m.in+'/$'+m.out+' per million</option>').join('') +
+        '</select>' +
+        (job.is_recommended
+          ? '<span class="badge on">Recommended</span>'
+          : '<button class="btn btn-ghost btn-sm" onclick="setModelForJob(\''+job.purpose+'\',\''+job.recommended+'\')">Use the recommendation</button>') +
+      '</div>' +
+      '<p class="note" style="margin:0;">'+esc(job.why)+'</p>'
+    )).join('');
+}
+async function setModelForJob(purpose, model){
+  const j = await call('set_model_for_job', {purpose, model});
+  if (!j.ok){ toast(j.error, 'err'); return; }
+  toast('Saved', 'ok');
+  loadModelJobs();
 }
 function settingsDetail(key){
   const views = {
