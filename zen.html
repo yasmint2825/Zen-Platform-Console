@@ -1119,6 +1119,16 @@ function enterApp(){
    ROUTER + HOME
    ═══════════════════════════════════════════════════════════════ */
 let WA_REFRESH_TIMER = null;
+// True while the native "choose a file" dialog might be open. That
+// dialog can stay open for as long as someone takes to browse for a
+// photo, and the autorefresh below doesn't know that - left
+// unguarded, a refresh tick mid-selection destroys and replaces the
+// very <input type=file> the OS dialog is pointing at, so picking a
+// photo afterward silently goes nowhere. Cleared on file selection,
+// and as a safety net if the dialog gets cancelled instead (which
+// doesn't reliably fire an event across all browsers), so this can
+// never get stuck true forever.
+let WA_PICKER_OPEN = false;
 function go(name){
   if (WA_REFRESH_TIMER){ clearInterval(WA_REFRESH_TIMER); WA_REFRESH_TIMER = null; }
   document.querySelectorAll('.page').forEach(p=>p.classList.toggle('on', p.id==='p-'+name));
@@ -1472,8 +1482,14 @@ async function waAutoRefresh(){
   // silently wiping out a reply someone is halfway through typing
   // every 5 seconds would be worse than a short delay in seeing a new
   // message arrive.
+  // The thread itself only refreshes if there's no draft sitting in
+  // the reply box, and no file picker potentially open - waRenderThread
+  // rebuilds that box (and the file input) from scratch, and silently
+  // wiping either out mid-interaction would be worse than a short
+  // delay in seeing a new message arrive. The list above is unaffected
+  // either way, since it doesn't contain the file input or the draft.
   const draftBox = el('waReplyBox');
-  if (!draftBox || !draftBox.value.trim()) waSelect(WA_ACTIVE);
+  if (!WA_PICKER_OPEN && (!draftBox || !draftBox.value.trim())) waSelect(WA_ACTIVE);
 }
 function waSubTab(name){
   document.querySelectorAll('#waTabs button').forEach((b,i)=>b.classList.toggle('active', (name==='chat'?0:1)===i));
@@ -1576,7 +1592,7 @@ function waRenderThread(mobile){
     '<div class="wa-thread-foot">' +
       '<textarea id="waReplyBox" placeholder="Type a reply\u2026"></textarea>' +
       '<input type="file" id="waImageInput" accept="image/*" style="display:none;" onchange="waSendImage(\''+esc(mobile)+'\')">' +
-      '<button class="btn btn-ghost btn-sm" title="Attach an image" onclick="el(\'waImageInput\').click()">\ud83d\udcf7</button>' +
+      '<button class="btn btn-ghost btn-sm" title="Attach an image" onclick="WA_PICKER_OPEN=true; setTimeout(()=>WA_PICKER_OPEN=false, 60000); el(\'waImageInput\').click()">\ud83d\udcf7</button>' +
       '<button class="btn btn-p btn-sm" onclick="waSendReply(\''+esc(mobile)+'\')">Send</button>' +
     '</div>';
   pane.querySelector('.wa-thread-body').scrollTop = 9999;
@@ -1585,13 +1601,29 @@ function waRenderThread(mobile){
 // image message - send_whatsapp_image uploads it to permanent
 // storage first, since Meta needs a real URL, not a raw file.
 async function waSendImage(mobile){
+  WA_PICKER_OPEN = false; // the dialog just closed with a real selection - safe for autorefresh again
   const input = el('waImageInput');
   const file = input.files && input.files[0];
   if (!file) return;
-  if (file.size > 5 * 1024 * 1024){ toast('That image is too large - please use one under 5MB.', 'err'); input.value = ''; return; }
-  const btn = event.target.nextElementSibling; // the camera button sits right after the file input in the DOM
-  const originalLabel = btn.textContent;
-  btn.textContent = '\u2026'; btn.disabled = true;
+  // 2MB raw, not 5 - base64 encoding inflates size by roughly a third,
+  // plus JSON wrapping on top, so a file just under the old 5MB limit
+  // could turn into a 6-7MB request body - very plausibly over
+  // whatever size limit Supabase enforces on incoming requests,
+  // producing an immediate 400 with no useful detail in it.
+  if (file.size > 2 * 1024 * 1024){ toast('That image is too large (over 2MB) - please use a smaller one.', 'err'); input.value = ''; return; }
+
+  // The camera button's loading state is cosmetic, not required for
+  // the send itself to work - looking it up used to happen before any
+  // try/catch, so any failure there (a DOM structure this didn't
+  // expect, event.target not being what was assumed) crashed the
+  // whole function silently before a single message, toast or
+  // otherwise, ever reached the screen. Now genuinely optional: if it
+  // can't be found, the send still proceeds without a spinner rather
+  // than not happening at all.
+  let btn = null, originalLabel = '';
+  try { btn = event.target.nextElementSibling; originalLabel = btn.textContent; btn.textContent = '\u2026'; btn.disabled = true; }
+  catch (e) { console.warn('camera button loading state skipped', e); btn = null; }
+
   try {
     const base64 = await new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -1607,10 +1639,14 @@ async function waSendImage(mobile){
     await zenwhatsapp();
     waSubTab('chat');
   } catch (e) {
-    toast('Could not read that image file.', 'err');
+    // The real error, not a generic guess - console.error so it shows
+    // up even if the toast is missed, since this exact silence was
+    // what made the original bug so hard to pin down.
+    console.error('waSendImage failed', e);
+    toast('Could not send that image: ' + String((e && e.message) || e), 'err');
   } finally {
     input.value = '';
-    btn.textContent = originalLabel; btn.disabled = false;
+    if (btn){ btn.textContent = originalLabel; btn.disabled = false; }
   }
 }
 async function waSendReply(mobile){
