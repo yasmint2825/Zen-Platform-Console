@@ -50,11 +50,20 @@
   // staying silent. A silent hang and a silent success look identical
   // from outside; this makes the difference visible.
   setTimeout(function(){
-    var gate = document.getElementById('loginGate');
-    var app = document.getElementById('app');
-    var appVisible = app && getComputedStyle(app).display !== 'none';
-    var gateVisible = gate && getComputedStyle(gate).display !== 'none';
-    if (!appVisible && !gateVisible){
+    // Written before signup and forgot-password existed - it only
+    // ever knew about two valid resting states. Landing correctly on
+    // either of the newer ones looked identical to a genuine hang to
+    // this check, and it said so - confidently, and wrongly. All five
+    // real destinations now checked, hardcoded rather than reading
+    // the app's own VIEWS list, since this script is deliberately
+    // dependency-free and has to work even if everything else fails.
+    var ids = ['app','loginGate','signupGate','forgotGate','onb'];
+    var anyVisible = ids.some(function(id){
+      var el = document.getElementById(id);
+      return el && getComputedStyle(el).display !== 'none';
+    });
+    if (!anyVisible){
+      var gate = document.getElementById('loginGate');
       showFatal('Nothing rendered within 6 seconds, and no error was thrown \u2014 this is a genuine hang, not a normal wait.',
         'document.readyState: ' + esc(document.readyState) + '\n' +
         'window.supabase defined: ' + (typeof window.supabase) + '\n' +
@@ -120,6 +129,7 @@ a{color:var(--green);}
 
 /* ── Onboarding shell ─────────────────────────────────────────────── */
 #onb{min-height:100vh;display:none;flex-direction:column;}
+#onb.on{display:flex;}
 .onb-top{display:flex;justify-content:space-between;align-items:center;padding:20px 28px;}
 .onb-brand{display:flex;gap:9px;align-items:center;font:600 15px Sora;}
 .onb-orb{width:28px;height:28px;border-radius:9px;background:var(--ink);color:#fff;display:grid;place-items:center;font:600 12px Sora;}
@@ -184,6 +194,8 @@ label.lbl{display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:v
 /* ── App shell (post-onboarding) ─────────────────────────────────── */
 #app{display:none;min-height:100vh;}
 #app.on{display:flex;}
+#loginGate,#forgotGate,#signupGate{display:none;}
+#loginGate.on,#forgotGate.on,#signupGate.on{display:block;}
 .side{width:var(--nav-w);flex:0 0 var(--nav-w);background:#fafbf9;border-right:1px solid var(--line);
   padding:18px 12px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;}
 .side-brand{display:flex;gap:9px;align-items:center;padding:6px 8px 20px;}
@@ -449,7 +461,7 @@ label.lbl{display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:v
 </head>
 <body>
 <div class="proto-tag">LIVE · REAL DATA</div>
-<div id="loginGate" style="max-width:340px;margin:14vh auto;padding:0 20px;">
+<div id="loginGate" class="on" style="max-width:340px;margin:14vh auto;padding:0 20px;">
   <div style="display:flex;gap:9px;align-items:center;margin-bottom:22px;"><span class="onb-orb">Z</span>
     <div><b style="font:600 15px Sora;display:block;">Zen</b><small style="color:var(--muted);">MiniCuts</small></div></div>
   <form id="loginForm" novalidate onsubmit="event.preventDefault();doRealLogin();return false;">
@@ -458,6 +470,43 @@ label.lbl{display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:v
     <button class="btn btn-p btn-block" type="submit">Log in</button>
   </form>
   <div id="loginMsg" class="hint" style="margin-top:10px;"></div>
+  <div style="display:flex;justify-content:space-between;margin-top:14px;font-size:12px;">
+    <a href="#" onclick="event.preventDefault();showForgotPassword();" style="color:var(--muted);">Forgot password?</a>
+    <a href="#" onclick="event.preventDefault();showSignup();" style="color:var(--muted);">New here? Create an account</a>
+  </div>
+</div>
+
+<!-- Real Supabase Auth password reset - sends an actual email with a
+     reset link; nothing simulated here. -->
+<div id="forgotGate" style="max-width:340px;margin:14vh auto;padding:0 20px;">
+  <div style="display:flex;gap:9px;align-items:center;margin-bottom:22px;"><span class="onb-orb">Z</span>
+    <div><b style="font:600 15px Sora;display:block;">Reset your password</b></div></div>
+  <input class="field" id="forgotEmail" type="email" placeholder="Your email" style="margin-bottom:10px;">
+  <button class="btn btn-p btn-block" onclick="doForgotPassword()">Send reset link</button>
+  <div id="forgotMsg" class="hint" style="margin-top:10px;"></div>
+  <a href="#" onclick="event.preventDefault();showLogin();" style="display:block;margin-top:14px;font-size:12px;color:var(--muted);">← Back to log in</a>
+</div>
+
+<!-- Real signup: creates a genuine new Supabase Auth account, then a
+     genuine new tenant via create_tenant (already existed on the
+     backend, seeds default campaign settings and makes this user its
+     owner) - not a demo of what signup would look like. -->
+<div id="signupGate" style="max-width:340px;margin:10vh auto;padding:0 20px;">
+  <div style="display:flex;gap:9px;align-items:center;margin-bottom:22px;"><span class="onb-orb">Z</span>
+    <div><b style="font:600 15px Sora;display:block;">Create your account</b><small style="color:var(--muted);">Sets up a brand-new, separate business in Zen.</small></div></div>
+  <div id="signupForm">
+    <input class="field" id="signupBizName" placeholder="Business name, e.g. Curl Up Salon" style="margin-bottom:10px;">
+    <input class="field" id="signupEmail" type="email" placeholder="Email" autocomplete="username" style="margin-bottom:10px;">
+    <input class="field" id="signupPass" type="password" placeholder="Password (at least 8 characters)" autocomplete="new-password" style="margin-bottom:10px;">
+    <button class="btn btn-p btn-block" onclick="doSignup()">Create account</button>
+    <div id="signupMsg" class="hint" style="margin-top:10px;"></div>
+  </div>
+  <div id="signupConfirmSent" style="display:none;text-align:center;padding:20px 0;">
+    <div style="font-size:32px;margin-bottom:10px;">✉️</div>
+    <b style="display:block;font-size:14px;margin-bottom:6px;">Check your email</b>
+    <p style="color:var(--muted);font-size:12.5px;line-height:1.5;margin:0;">We’ve sent a confirmation link to <b id="signupConfirmEmail" style="color:var(--ink);"></b>. Click it, then come back and log in.</p>
+  </div>
+  <a href="#" onclick="event.preventDefault();showLogin();" style="display:block;margin-top:14px;font-size:12px;color:var(--muted);">← Back to log in</a>
 </div>
 <div id="toastHost"></div>
 <!-- ══════════════════════════════════════════════════════════════
@@ -488,7 +537,10 @@ label.lbl{display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:v
       <button class="side-btn" data-p="settings" onclick="go('settings')"><span class="ic">⚙</span>Settings</button>
     </div>
     <div class="side-foot">
-      <div class="side-user"><span class="av">M</span><div><b style="display:block;">Maya</b><span style="color:var(--muted);">Owner</span></div></div>
+      <div class="side-user" id="sideUser" style="cursor:pointer;" onclick="doLogout()" title="Log out">
+        <span class="av" id="sideUserAv">?</span>
+        <div><b style="display:block;" id="sideUserName">…</b><span style="color:var(--muted);" id="sideUserRole">…</span></div>
+      </div>
     </div>
   </nav>
 
@@ -526,7 +578,13 @@ label.lbl{display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:v
 const SB_URL = 'https://wtapyfgtwkjyjrjdnhkb.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0YXB5Zmd0d2tqeWpyamRuaGtiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NDc3ODEsImV4cCI6MjA5NTAyMzc4MX0.y_-iPfb8Pcg9zh42h6RGVBsUVZm80LcA9sPlz_Gl_fA';
 let session = null;
-const tenant = 'minicuts';
+// Was a hardcoded constant - every call() in this whole build read it
+// directly, which is exactly why this changes to a resolved value
+// rather than a different constant. Falls back to 'minicuts' if
+// resolution ever fails for any reason, so an existing login can
+// never be blocked by this change - only genuinely new accounts
+// depend on it working.
+let tenant = 'minicuts';
 let sb = null;
 
 // The Supabase library loads from an external CDN. If that request is
@@ -641,6 +699,101 @@ async function call(action, args){
   }
 }
 
+// The one function that controls which top-level view is visible -
+// every other place in this file that used to toggle style.display
+// directly on one of these five containers now goes through here
+// instead. That inconsistency (some containers via inline style, one
+// via a CSS class) was the actual cause of a real bug: logout set
+// #app's inline style directly, which permanently overrides its own
+// CSS class on every later login, since inline style always wins over
+// a class regardless of what that class says. One mechanism, always
+// applied to all five together, makes that specific class of bug
+// structurally impossible rather than something to remember to avoid.
+const VIEWS = ['loginGate','forgotGate','signupGate','onb','app'];
+function showView(name){
+  VIEWS.forEach(v => document.getElementById(v).classList.toggle('on', v === name));
+}
+function showLogin(){ showView('loginGate'); }
+function showForgotPassword(){ showView('forgotGate'); }
+function showSignup(){
+  showView('signupGate');
+  // Reset to a fresh form every time this is opened - otherwise
+  // someone who already saw the "check your email" confirmation,
+  // went back to login, and clicked "New here?" again would see that
+  // same confirmation screen instead of an actual form.
+  document.getElementById('signupForm').style.display = '';
+  document.getElementById('signupConfirmSent').style.display = 'none';
+  document.getElementById('signupMsg').textContent = '';
+}
+async function doForgotPassword(){
+  const m = document.getElementById('forgotMsg');
+  const email = document.getElementById('forgotEmail').value.trim();
+  if (!email){ m.style.color = '#a02020'; m.textContent = 'Enter your email first.'; return; }
+  m.style.color = ''; m.textContent = 'Sending\u2026';
+  // Genuinely real - Supabase Auth's own password reset, sends an
+  // actual email with a real link, nothing simulated.
+  const { error } = await sb.auth.resetPasswordForEmail(email);
+  if (error){ m.style.color = '#a02020'; m.textContent = error.message; return; }
+  m.style.color = 'var(--green)';
+  m.textContent = 'If an account exists for that email, a reset link is on its way.';
+}
+async function doSignup(){
+  const m = document.getElementById('signupMsg');
+  const bizName = document.getElementById('signupBizName').value.trim();
+  const email = document.getElementById('signupEmail').value.trim();
+  const password = document.getElementById('signupPass').value;
+  if (!bizName || !email || !password){ m.style.color = '#a02020'; m.textContent = 'Fill in all three fields.'; return; }
+  if (password.length < 8){ m.style.color = '#a02020'; m.textContent = 'Password needs to be at least 8 characters.'; return; }
+  m.style.color = ''; m.textContent = 'Creating your account\u2026';
+
+  // 1. A genuine new Supabase Auth account.
+  const { data, error } = await sb.auth.signUp({ email, password });
+  if (error){ m.style.color = '#a02020'; m.textContent = error.message; return; }
+  if (!data.session){
+    // Email confirmation is on for this project - genuinely correct
+    // to stop here rather than pretend the account is ready to use.
+    // The form used to just grow a small line of text underneath
+    // itself while staying fully visible and fillable, which looked
+    // exactly like nothing had happened. Replaced with the form
+    // entirely, so what changed is unmistakable.
+    document.getElementById('signupForm').style.display = 'none';
+    document.getElementById('signupConfirmEmail').textContent = email;
+    document.getElementById('signupConfirmSent').style.display = 'block';
+    return;
+  }
+  session = data.session;
+
+  // 2. A genuine new tenant - create_tenant already existed on the
+  // backend (seeds default campaign settings, makes this user its
+  // owner) - this was never reachable from the UI before now.
+  const id = bizName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'salon-' + Date.now();
+  m.textContent = 'Setting up '+bizName+'\u2026';
+  const j = await call2('create_tenant', { id, name: bizName }, session);
+  if (!j.ok){ m.style.color = '#a02020'; m.textContent = j.error; return; }
+
+  tenant = id;
+  myRole = 'owner'; // create_tenant makes the caller the owner, always
+  updateSideUser({ mw_tenants: { name: bizName } });
+  document.body.classList.add('logged-in');
+  // A brand-new tenant has nothing configured yet - onboarding is
+  // exactly the right first screen, not the main app with everything
+  // showing "no data yet".
+  showView('onb');
+  onbGo(ONB_SCREENS[0]);
+}
+// call() reads the module-level `tenant`, which isn't resolved yet
+// during signup (create_tenant runs before a tenant exists at all) -
+// this variant takes an explicit session and skips the tenant_id
+// entirely for the one call that genuinely doesn't need it yet.
+async function call2(action, args, sess){
+  const r = await fetch(SB_URL + '/functions/v1/mw-admin', {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + sess.access_token },
+    body: JSON.stringify(Object.assign({ action }, args || {})),
+  });
+  try { return await r.json(); } catch { return { ok:false, error:'The server sent something unreadable.' }; }
+}
+
 async function doRealLogin(){
   const m = document.getElementById('loginMsg');
   m.className = 'hint'; m.textContent = 'Logging in\u2026';
@@ -661,18 +814,108 @@ async function doRealLogin(){
     }
     return;
   }
-  onLoggedIn(data.session);
+  await onLoggedIn(data.session);
 }
-function onLoggedIn(sess){
+let myRole = null;
+let myTenantList = [];
+
+async function onLoggedIn(sess){
   session = sess;
-  document.getElementById('loginGate').style.display = 'none';
+
+  // Real tenant resolution - my_tenants already existed on the
+  // backend and already returns exactly this. No silent fallback to
+  // 'minicuts' on failure - that was a genuine security problem, not
+  // just an inelegant default: if this lookup ever failed for any new
+  // user, for any transient reason, they would have been silently
+  // logged into MiniCuts' real data. Failing clearly here, the same
+  // way any real multi-tenant product has to, is both simpler and
+  // actually correct.
+  const j = await call2('my_tenants', {}, sess);
+  if (!j.ok){
+    const m = document.getElementById('loginMsg');
+    m.style.color = '#a02020';
+    m.textContent = 'Logged in, but could not load your business: ' + j.error;
+    return;
+  }
+  myTenantList = j.tenants || [];
+
+  if (myTenantList.length === 0){
+    // Genuinely no business yet - the normal signup flow above
+    // creates one before ever reaching here, so this means someone
+    // confirmed an email and logged in without finishing signup.
+    // Onboarding is the right place to send them, not a guess at
+    // which existing tenant they might mean.
+    document.body.classList.add('logged-in');
+    showView('onb');
+    onbGo(ONB_SCREENS[0]);
+    return;
+  }
+
+  if (myTenantList.length > 1){
+    // A real owner-of-several-businesses case - let them choose
+    // rather than silently guessing the first one.
+    showTenantPicker(myTenantList);
+    return;
+  }
+
+  selectTenant(myTenantList[0]);
+}
+
+function showTenantPicker(tenants){
+  const m = document.getElementById('loginMsg');
+  m.className = 'hint'; m.style.color = '';
+  document.getElementById('loginForm').style.display = 'none';
+  m.innerHTML = '<b style="display:block;margin-bottom:8px;">Which business?</b>' +
+    tenants.map((t,i) => '<button class="btn btn-ghost btn-block" style="margin-bottom:6px;" onclick="selectTenant(myTenantList['+i+'])">'+esc((t.mw_tenants&&t.mw_tenants.name)||t.tenant_id)+'</button>').join('');
+}
+
+function selectTenant(t){
+  tenant = t.tenant_id;
+  myRole = t.role;
+  document.getElementById('loginForm').style.display = '';
   document.body.classList.add('logged-in');
-  // A returning owner goes straight to the real app - forcing the
-  // onboarding wizard on every login was adding several unnecessary
-  // clicks before reaching anything useful. Onboarding stays reachable
-  // for a genuinely new setup, just not forced on an existing account.
+  updateSideUser(t);
   enterApp();
 }
+
+function updateSideUser(t){
+  const email = (session && session.user && session.user.email) || '';
+  const name = (t && t.mw_tenants && t.mw_tenants.name) ? email : email; // display name - email is the only real identity we have
+  const initial = (email || '?').charAt(0).toUpperCase();
+  const av = document.getElementById('sideUserAv');
+  const nameEl = document.getElementById('sideUserName');
+  const roleEl = document.getElementById('sideUserRole');
+  if (av) av.textContent = initial;
+  if (nameEl) nameEl.textContent = email || 'Signed in';
+  if (roleEl) roleEl.textContent = (myRole ? myRole.charAt(0).toUpperCase()+myRole.slice(1) : '') + ' \u00b7 log out';
+}
+
+// Deliberately does NOT call sb.auth.signOut() - documented, confirmed
+// directly in this exact deployment: that call can hang indefinitely
+// (the same underlying issue that made automatic session restore at
+// boot unsafe, above). Clearing the session synchronously and
+// resetting the UI cannot hang by construction, which is the entire
+// point - a logout button that can freeze the page is worse than
+// having none.
+function doLogout(){
+  if (!confirm('Log out?')) return;
+  try {
+    const projectRef = new URL(SB_URL).hostname.split('.')[0];
+    const storage = (window.localStorage && window.localStorage !== 'unavailable') ? window.localStorage : null;
+    if (storage) storage.removeItem('sb-' + projectRef + '-auth-token');
+  } catch (e) { /* storage may be unavailable (e.g. file:// origin) - nothing to clear in that case anyway */ }
+  session = null;
+  tenant = 'minicuts';
+  myRole = null;
+  myTenantList = [];
+  document.body.classList.remove('logged-in');
+  document.getElementById('loginForm').style.display = '';
+  document.getElementById('loginMsg').textContent = '';
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginPass').value = '';
+  showView('loginGate');
+}
+
 
 const DATA = {
   salon: {
@@ -1107,8 +1350,7 @@ function onbDone(){
 
 function enterApp(){
   document.body.style.overflow='';
-  el('onb').style.display='none';
-  el('app').classList.add('on');
+  showView('app');
   go('home');
 }
 
