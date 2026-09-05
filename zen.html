@@ -1118,7 +1118,9 @@ function enterApp(){
 /* ═══════════════════════════════════════════════════════════════
    ROUTER + HOME
    ═══════════════════════════════════════════════════════════════ */
+let WA_REFRESH_TIMER = null;
 function go(name){
+  if (WA_REFRESH_TIMER){ clearInterval(WA_REFRESH_TIMER); WA_REFRESH_TIMER = null; }
   document.querySelectorAll('.page').forEach(p=>p.classList.toggle('on', p.id==='p-'+name));
   document.querySelectorAll('.side-btn').forEach(b=>b.classList.toggle('active', b.dataset.p===name));
   document.body.classList.remove('menu-open');
@@ -1126,6 +1128,7 @@ function go(name){
   ({home,campaigns,zenwhatsapp,marketing,insights,settings})[name] && ({home,campaigns,zenwhatsapp,marketing,insights,settings})[name]();
 }
 function flow(fn){
+  if (WA_REFRESH_TIMER){ clearInterval(WA_REFRESH_TIMER); WA_REFRESH_TIMER = null; }
   document.querySelectorAll('.page').forEach(p=>p.classList.toggle('on', p.id==='p-flow'));
   document.querySelectorAll('.side-btn').forEach(b=>b.classList.remove('active'));
   window.scrollTo({top:0,behavior:'smooth'});
@@ -1432,7 +1435,45 @@ async function zenwhatsapp(){
       '<div class="wa-convo-meta"><div class="wa-convo-time">'+ago(c.last_inbound_at)+'</div>' +
       (c.unhandled?'<span class="badge warn" style="margin-top:3px;">'+c.unhandled+'</span>':'') + '</div></button>';
   }).join('');
-  waRenderThread(WA_ACTIVE);
+  waSelect(WA_ACTIVE); // not waRenderThread directly - also marks the initially-opened conversation as read, same as clicking any other one
+
+  // Auto-refresh every 5 seconds while this page is open - cleared by
+  // go()/flow() the moment the person navigates anywhere else, so it
+  // never keeps polling in the background or errors against DOM that
+  // no longer exists.
+  WA_REFRESH_TIMER = setInterval(waAutoRefresh, 5000);
+}
+async function waAutoRefresh(){
+  const p = el('p-zenwhatsapp');
+  if (!p || !p.classList.contains('on')) return; // navigated away without the timer having been cleared yet
+  const j = await call('list_conversations', {limit:40});
+  if (!j.ok) return; // a transient failure here shouldn't surface as an error every 5 seconds
+  const badge = el('navWaBadge');
+  if (badge){ const n = j.total_unhandled||0; badge.style.display = n?'flex':'none'; badge.textContent = n; }
+
+  WA_CACHE = (j.conversations||[]).slice().sort((a,b)=>(b.unhandled||0)-(a.unhandled||0));
+  if (!WA_CACHE.length) return;
+  if (!WA_CACHE.some(c=>c.mobile===WA_ACTIVE)) WA_ACTIVE = WA_CACHE[0].mobile;
+
+  const listPane = el('waListPane');
+  if (listPane) listPane.innerHTML = WA_CACHE.map(c => {
+    const last = c.messages.reduce((newest, m) => (!newest || new Date(m.at||0) > new Date(newest.at||0)) ? m : newest, null);
+    const name = c.customer_name || c.mobile;
+    return '<button class="wa-convo'+(c.mobile===WA_ACTIVE?' active':'')+'" onclick="waSelect(\''+esc(c.mobile)+'\')">' +
+      avatar(name,30) +
+      '<div style="min-width:0;"><div class="wa-convo-name">'+esc(name)+'</div>' +
+      '<div class="wa-convo-last">'+esc(String((last&&last.body)||'').slice(0,60))+'</div></div>' +
+      '<div class="wa-convo-meta"><div class="wa-convo-time">'+ago(c.last_inbound_at)+'</div>' +
+      (c.unhandled?'<span class="badge warn" style="margin-top:3px;">'+c.unhandled+'</span>':'') + '</div></button>';
+  }).join('');
+
+  // The thread itself only refreshes if there's no draft sitting in
+  // the reply box - waRenderThread rebuilds that box from scratch, and
+  // silently wiping out a reply someone is halfway through typing
+  // every 5 seconds would be worse than a short delay in seeing a new
+  // message arrive.
+  const draftBox = el('waReplyBox');
+  if (!draftBox || !draftBox.value.trim()) waSelect(WA_ACTIVE);
 }
 function waSubTab(name){
   document.querySelectorAll('#waTabs button').forEach((b,i)=>b.classList.toggle('active', (name==='chat'?0:1)===i));
@@ -1440,30 +1481,67 @@ function waSubTab(name){
   el('waHistoryPane').style.display = name==='history' ? 'block' : 'none';
   if (name==='history') loadChatHistoryInline();
 }
-// Real per-message send history - its own tab, not folded into the
-// chat view, since "what was sent and what happened to it" is a
-// different question from "what's the live conversation right now".
-async function loadChatHistoryInline(){
+// Real per-message history, both directions - the earlier version
+// only ever rendered outbound-send fields (status, template_name),
+// so an inbound customer message showed as an empty, confusing row
+// rather than its actual text. Filtered by real date ranges, default
+// today, rather than a flat "last 100" with no way to narrow it.
+const WA_HIST_FILTERS = [['today','Today'],['week','This week'],['30','30 days'],['60','60 days'],['90','90 days']];
+function waHistSince(filter){
+  const d = new Date();
+  if (filter==='today'){ d.setHours(0,0,0,0); return d.toISOString(); }
+  if (filter==='week'){ d.setDate(d.getDate()-7); return d.toISOString(); }
+  d.setDate(d.getDate() - Number(filter));
+  return d.toISOString();
+}
+async function loadChatHistoryInline(filter){
+  filter = filter || 'today';
   const box = el('waHistoryPane');
   if (!box) return;
-  box.innerHTML = '<div class="loading-block"><span class="spin"></span></div>';
-  const j = await call('list_whatsapp_messages', {limit:100});
-  if (!j.ok){ box.innerHTML = '<p class="note" style="color:#a02020;">'+esc(j.error)+'</p>'; return; }
+  const filterBar = '<div class="subtabs" style="margin-bottom:10px;">' +
+    WA_HIST_FILTERS.map(f => '<button class="'+(f[0]===filter?'active':'')+'" onclick="loadChatHistoryInline(\''+f[0]+'\')">'+f[1]+'</button>').join('') + '</div>';
+  box.innerHTML = filterBar + '<div class="loading-block"><span class="spin"></span></div>';
+  const j = await call('list_whatsapp_messages', {limit:200, since: waHistSince(filter)});
+  if (!j.ok){ box.innerHTML = filterBar + '<p class="note" style="color:#a02020;">'+esc(j.error)+'</p>'; return; }
   const msgs = j.messages||[], counts = j.counts||{};
-  box.innerHTML =
+  box.innerHTML = filterBar +
     (Object.keys(counts).length ? '<div class="mini-grid" style="max-width:420px;margin-bottom:8px;">' +
       Object.keys(counts).map(k => '<div class="mini" style="border-top:0;"><b>'+counts[k]+'</b><span>'+esc(k)+'</span></div>').join('') + '</div>' : '') +
-    (msgs.length ? '<div class="list">' + msgs.slice(0,15).map(m => {
+    (msgs.length ? '<div class="list">' + msgs.map(m => {
+      const inbound = m.direction === 'inbound';
       const failed = m.status==='failed';
-      return '<div class="list-row"><span><b>'+esc(m.customer_name||m.mobile||'')+'</b><div class="sub">'+esc(m.mobile||'')+' \u00b7 '+esc(m.msg_type||'')+' \u00b7 '+esc(m.template_name||'')+'</div>'+
-        (failed && m.error ? '<div class="sub" style="color:#B8564A;">'+esc(String(m.error).slice(0,200))+'</div>' : '') + '</span>' +
-        '<span class="badge '+(failed?'warn':'on')+'">'+esc(m.status||'')+'</span></div>';
-    }).join('') + '</div>' : '<p class="note">Nothing sent in this period.</p>');
+      return '<div class="list-row" style="flex-direction:column;align-items:stretch;">' +
+        '<div style="display:flex;justify-content:space-between;">' +
+          '<span><b>'+esc(m.customer_name||m.mobile||'')+'</b> <span class="sub">'+esc(m.mobile||'')+'</span></span>' +
+          '<span class="badge '+(inbound?'on':(failed?'warn':''))+'">'+(inbound?'Customer':esc(m.status||''))+'</span>' +
+        '</div>' +
+        (m.media_url ? '<img src="'+esc(m.media_url)+'" style="max-width:160px;border-radius:8px;margin-top:4px;display:block;" loading="lazy">' : '') +
+        '<div class="sub" style="margin-top:3px;">'+(inbound ? esc(String(m.body||'').slice(0,200)) : (esc(m.template_name||m.msg_type||'')+(m.body?': '+esc(String(m.body).slice(0,150)):'')))+'</div>' +
+        (failed && m.error ? '<div class="sub" style="color:#B8564A;">'+esc(String(m.error).slice(0,200))+'</div>' : '') +
+      '</div>';
+    }).join('') + '</div>' : '<p class="note">Nothing in this period.</p>');
 }
-function waSelect(mobile){
+// Opening a conversation is what "reading" it means - the real
+// mark_conversation_handled action already existed on the backend but
+// was never called from anywhere in this build, which is the entire
+// reason a read message kept sitting in the unread badge forever.
+async function waSelect(mobile){
   WA_ACTIVE = mobile;
   el('waListPane').querySelectorAll('.wa-convo').forEach((b,i) => b.classList.toggle('active', WA_CACHE[i].mobile===mobile));
   waRenderThread(mobile);
+
+  const convo = WA_CACHE.find(c => c.mobile === mobile);
+  if (convo && convo.unhandled > 0){
+    const j = await call('mark_conversation_handled', {to_number: mobile});
+    if (j.ok){
+      convo.unhandled = 0;
+      const badgeEl = el('waListPane').querySelector('.wa-convo.active .badge');
+      if (badgeEl) badgeEl.remove();
+      const total = WA_CACHE.reduce((t,c) => t + (c.unhandled||0), 0);
+      const navBadge = el('navWaBadge');
+      if (navBadge){ navBadge.style.display = total ? 'flex' : 'none'; navBadge.textContent = total; }
+    }
+  }
 }
 function waRenderThread(mobile){
   const c = WA_CACHE.find(x=>x.mobile===mobile);
@@ -1483,17 +1561,57 @@ function waRenderThread(mobile){
       '<div><b style="font-size:12.5px;">'+esc(name)+'</b><div class="sub" style="font-size:10.5px;">'+esc(c.mobile)+'</div></div></div>' +
     '<div class="wa-thread-body" id="waThreadBody">' + ordered.slice(-20).map(m =>
       '<div class="wa-bubble" style="'+(m.direction==='out'?'margin-left:auto;background:#fff;border:1px solid var(--line);':'')+'margin-bottom:8px;">' +
-      esc(String(m.body||'').slice(0,500)) +
+      (m.media_url ? '<img src="'+esc(m.media_url)+'" style="max-width:220px;border-radius:10px;display:block;margin-bottom:'+(m.body?'6px':'0')+';" loading="lazy">' : '') +
+      (m.body ? esc(String(m.body).slice(0,500)) : '') +
       // Zen's own replies are marked, so it is visible which
       // conversations the reply assistant handled versus a person -
       // this was already returned by the backend and never shown.
+      // list_conversations translates the raw DB direction values
+      // ("inbound"/"outbound") into "in"/"out" for this exact
+      // response - confirmed by reading that action directly, after
+      // an earlier fix here wrongly assumed "outbound" based on a
+      // different action's raw table values instead.
       (m.direction==='out' ? '<div class="wa-meta">'+(m.sent_by==='auto'?'\u2728 Zen replied':m.sent_by==='agent'?'Sent automatically':'You')+'</div>' : '') +
       '</div>').join('') + '</div>' +
     '<div class="wa-thread-foot">' +
       '<textarea id="waReplyBox" placeholder="Type a reply\u2026"></textarea>' +
+      '<input type="file" id="waImageInput" accept="image/*" style="display:none;" onchange="waSendImage(\''+esc(mobile)+'\')">' +
+      '<button class="btn btn-ghost btn-sm" title="Attach an image" onclick="el(\'waImageInput\').click()">\ud83d\udcf7</button>' +
       '<button class="btn btn-p btn-sm" onclick="waSendReply(\''+esc(mobile)+'\')">Send</button>' +
     '</div>';
   pane.querySelector('.wa-thread-body').scrollTop = 9999;
+}
+// Reads the chosen file as base64 and sends it as a real WhatsApp
+// image message - send_whatsapp_image uploads it to permanent
+// storage first, since Meta needs a real URL, not a raw file.
+async function waSendImage(mobile){
+  const input = el('waImageInput');
+  const file = input.files && input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024){ toast('That image is too large - please use one under 5MB.', 'err'); input.value = ''; return; }
+  const btn = event.target.nextElementSibling; // the camera button sits right after the file input in the DOM
+  const originalLabel = btn.textContent;
+  btn.textContent = '\u2026'; btn.disabled = true;
+  try {
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    const caption = (el('waReplyBox').value || '').trim();
+    const j = await call('send_whatsapp_image', { to_number: mobile, image_base64: base64, content_type: file.type, caption: caption || undefined });
+    if (!j.ok){ toast(j.error, 'err'); return; }
+    el('waReplyBox').value = '';
+    toast('Image sent', 'ok');
+    await zenwhatsapp();
+    waSubTab('chat');
+  } catch (e) {
+    toast('Could not read that image file.', 'err');
+  } finally {
+    input.value = '';
+    btn.textContent = originalLabel; btn.disabled = false;
+  }
 }
 async function waSendReply(mobile){
   const box = el('waReplyBox'), text = box.value.trim();
@@ -2722,12 +2840,12 @@ async function generateNewSuggestions(){
 // Matches the reference exactly: label and value/percent on their own
 // row, colored progress bar directly beneath - not the inline
 // label-bar-value row barRow() uses elsewhere in this app.
-function demoBar(label, value, total, color, sub){
+function demoBar(label, value, total, color, sub, prefix){
   const pct = total > 0 ? Math.round((value/total)*1000)/10 : 0;
   return '<div style="margin-bottom:14px;">' +
     '<div style="display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;margin-bottom:5px;">' +
       '<span style="color:var(--ink);">'+label+'</span>' +
-      '<span><b style="color:'+color+';">'+money(value)+'</b> <span style="color:var(--muted);font-size:11px;">('+pct+'%)</span></span>' +
+      '<span><b style="color:'+color+';">'+(prefix||'')+money(value)+'</b> <span style="color:var(--muted);font-size:11px;">('+pct+'%)</span></span>' +
     '</div>' +
     '<div style="height:8px;border-radius:99px;background:#eef0ec;overflow:hidden;">' +
       '<div style="height:100%;border-radius:99px;background:'+color+';width:'+Math.max(pct,pct>0?2:0)+'%;"></div>' +
@@ -2735,7 +2853,26 @@ function demoBar(label, value, total, color, sub){
     (sub ? '<div style="font-size:10.5px;color:var(--muted);margin-top:3px;">'+sub+'</div>' : '') +
   '</div>';
 }
-const DEMO_COLORS = ['#1565C0','#7C3AED','#16A34A','#D97706','#DC2626','#0891B2','#9333EA','#EA580C','#EC4899'];
+// Zen's own restrained, earthy palette - not the bright rainbow
+// (bright blue/red/purple/green) copied from the original reference.
+// Every color here is a shade within the same family as var(--green)
+// and var(--warn), the two accents already used everywhere else in
+// this app, so these charts look like part of Zen, not a different
+// product's color scheme pasted in.
+const DEMO_COLORS = ['#175e52','#a96118','#3d5c52','#8b6b3d','#4a5548','#6f756f','#2d4a42','#c17f4a'];
+// Reusable calendar-month picker - last 12 real months, not a rolling
+// day count. Every Operations tab that needs a time filter uses this
+// same control, so switching between them feels consistent.
+function monthSelect(onchange, selected){
+  const opts = [];
+  const now = new Date();
+  for (let i=0; i<12; i++){
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    const val = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    opts.push('<option value="'+val+'"'+(val===selected?' selected':'')+'>'+d.toLocaleString('en',{month:'long',year:'numeric'})+'</option>');
+  }
+  return '<select onchange="'+onchange+'" style="float:right;font-size:10.5px;border:1px solid var(--line);border-radius:7px;padding:3px 6px;">'+opts.join('')+'</select>';
+}
 
 async function operationsInsights(){
   STATE.opsTab = STATE.opsTab || 'overview';
@@ -2830,7 +2967,29 @@ async function opsRevenueTab(){
       '<tr style="border-top:2px solid var(--ink);font-weight:700;"><td style="padding:6px 8px;">Total</td><td style="padding:6px 8px;text-align:right;">'+money(totalVisits)+'</td>' +
       '<td style="padding:6px 8px;text-align:right;color:var(--green);">AED '+money(Math.round(totalRevenue))+'</td>' +
       '<td style="padding:6px 8px;text-align:right;">AED '+(totalVisits?Math.round(totalRevenue/totalVisits):0)+'</td></tr>' +
-    '</table></div>');
+    '</table></div>') +
+    '<div id="revBreakdownBox"><div class="loading-block"><span class="spin"></span></div></div>';
+  loadRevenueBreakdown(); // independent, own month filter
+}
+// New - payment type and per-service revenue, real from queue.
+// Loaded separately from the historical table above since it has its
+// own month filter rather than the 400-day precomputed view.
+async function loadRevenueBreakdown(month){
+  const box = el('revBreakdownBox');
+  if (!box) return;
+  box.innerHTML = '<div class="loading-block"><span class="spin"></span></div>';
+  const j = await call('get_revenue_breakdown', {month});
+  if (!j.ok){ box.innerHTML = chartCard('Payment type & services', '', '<p class="note">'+esc(j.error)+'</p>'); return; }
+  const pay = Object.entries(j.payment_types||{}).sort((a,b)=>b[1]-a[1]);
+  const payTotal = pay.reduce((t,[,v])=>t+v,0);
+  const svc = Object.entries(j.services||{}).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const svcTotal = svc.reduce((t,[,v])=>t+v,0);
+  box.innerHTML =
+    chartCard('\ud83d\udcb3 Payment type split' + monthSelect('loadRevenueBreakdown(this.value)', j.month),
+      new Date(j.month+'-01').toLocaleString('en',{month:'long',year:'numeric'}),
+      pay.length ? pay.map(([k,v],i) => demoBar(esc(k), v, payTotal, DEMO_COLORS[i%DEMO_COLORS.length], null, 'AED ')).join('') : '<p class="note">No payment type recorded this month.</p>') +
+    chartCard('\u2702\ufe0f Revenue by service', '',
+      svc.length ? svc.map(([k,v],i) => demoBar(esc(k), v, svcTotal, DEMO_COLORS[i%DEMO_COLORS.length], null, 'AED ')).join('') : '<p class="note">No service data this month.</p>');
 }
 
 // Honest gap - the real fields (segment, dob) exist on
@@ -2838,10 +2997,16 @@ async function opsRevenueTab(){
 // no action aggregates them into counts yet. Calls a not-yet-real
 // action name deliberately, so the moment it's added this tab starts
 // working with zero further frontend changes.
+// Exact color-per-label mapping from the reference file, not a
+// repeating palette - Unknown deliberately stays gray regardless of
+// how many buckets precede it, matching the original intent instead
+// of whatever color a round-robin happens to land on.
+const AGE_COLORS = {'0-2 yrs':'#175e52','3-5 yrs':'#3d5c52','6-8 yrs':'#a96118','9-11 yrs':'#8b6b3d','12-15 yrs':'#4a5548','16+ yrs':'#2d4a42','Unknown':'#9CA3AF'};
+
 async function opsDemographicsTab(){
   const box = el('opsTabBody');
   box.innerHTML = '<div class="loading-block"><span class="spin"></span></div>';
-  const j = await call('get_customer_demographics', {});
+  const [j, loyalty] = await Promise.all([ call('get_customer_demographics', {}), call('get_loyalty_engagement', {}) ]);
   if (!j.ok){
     box.innerHTML = chartCard('Gender split', '', '<p class="note">'+esc(j.error||'Not available yet.')+'</p>') +
       opsBackendGapNote('get_customer_demographics',
@@ -2850,27 +3015,72 @@ async function opsDemographicsTab(){
   }
   const g = j.gender||{}, total = (g.boys||0)+(g.girls||0);
   const ages = j.age_buckets||[];
-  box.innerHTML =
+  const ageTotal = j.age_total || ages.reduce((t,a)=>t+(a.count||0),0);
+  let html =
     chartCard('\ud83d\udc66\ud83d\udc67 Gender split', '',
-      demoBar('\ud83d\udc66 Boys', g.boys||0, total, '#1565C0') + demoBar('\ud83d\udc67 Girls', g.girls||0, total, '#EC4899')) +
+      demoBar('\ud83d\udc66 Boys', g.boys||0, total, '#175e52') + demoBar('\ud83d\udc67 Girls', g.girls||0, total, '#a96118')) +
     chartCard('\ud83c\udf82 Age distribution', '',
-      ages.map((a,i) => demoBar(a.label, a.count, j.age_total||total, DEMO_COLORS[i%DEMO_COLORS.length])).join(''));
+      ages.map(a => demoBar(a.label, a.count, ageTotal, AGE_COLORS[a.label] || '#6B7280')).join(''));
+
+  // New - real loyalty & games engagement, from the same customers
+  // table that unlocked Acquisition and Locations. Nobody had read
+  // stamps/redemptions/game_points/game_spins from this backend before.
+  if (loyalty.ok){
+    const played = loyalty.total_customers ? Math.round(loyalty.played_game_count/loyalty.total_customers*100) : 0;
+    html += chartCard('\ud83c\udfae Loyalty & games engagement', 'From the same customer records as above.',
+      '<div class="mini-grid" style="max-width:720px;">' +
+        '<div class="mini" style="border-top:0;"><b>'+money(loyalty.total_stamps||0)+'</b><span>Total stamps issued</span></div>' +
+        '<div class="mini" style="border-top:0;"><b>'+money(loyalty.total_redemptions||0)+'</b><span>Total redemptions</span></div>' +
+        '<div class="mini" style="border-top:0;"><b>'+money(loyalty.played_game_count||0)+'</b><span>Played a game ('+played+'%)</span></div>' +
+        '<div class="mini" style="border-top:0;"><b>'+money(loyalty.total_game_points||0)+'</b><span>Total game points</span></div>' +
+        '<div class="mini" style="border-top:0;"><b>'+money(loyalty.total_game_spins||0)+'</b><span>Total game spins</span></div>' +
+      '</div>');
+  }
+  box.innerHTML = html;
 }
 
-async function opsAcquisitionTab(){
+// Two real, separate pieces make up Acquisition: how customers heard
+// about the salon (from the customers table) and a full month-based
+// breakdown of every transaction - new, returning, guest (no profile
+// at all), and missing-phone, none of them silently dropped. The
+// earlier version dropped guest transactions entirely, which skewed
+// the new/returning percentages since the true total was wrong.
+async function opsAcquisitionTab(month){
   const box = el('opsTabBody');
   box.innerHTML = '<div class="loading-block"><span class="spin"></span></div>';
-  const j = await call('get_acquisition_sources', {});
-  if (!j.ok){
-    box.innerHTML = chartCard('How they heard about us', '', '<p class="note">'+esc(j.error||'Not available yet.')+'</p>') +
-      opsBackendGapNote('get_acquisition_sources',
-        'Checked three real tables directly \u2014 <code>mw_customer_profile</code>, <code>mw_transactions</code>, and <code>visits</code> \u2014 and none of them hold how a customer heard about the salon. <code>mw_transactions.source_type</code> looked like a candidate but turned out to mean something else entirely: how the transaction record itself was ingested (<code>excel_upload</code>, <code>scheduled_sync</code>), not how the customer found the business. This isn\u2019t a missing action \u2014 there\u2019s currently no real data anywhere in this database to build it from.');
-    return;
+  const [heard, nvr] = await Promise.all([ call('get_acquisition_sources', {}), call('get_new_vs_returning', {month}) ]);
+  let html = '';
+
+  if (nvr.ok){
+    const t = nvr;
+    const pct = (n) => t.total ? Math.round(n/t.total*100) : 0;
+    html += chartCard(
+      'Services this month' + monthSelect('opsAcquisitionTab(this.value)', t.month),
+      new Date(t.month+'-01').toLocaleString('en',{month:'long',year:'numeric'}),
+      '<div class="mini-grid" style="max-width:720px;">' +
+        '<div class="mini" style="border-top:0;"><b>'+money(t.total)+'</b><span>Services done</span></div>' +
+        '<div class="mini" style="border-top:0;"><b style="color:#175e52;">'+money(t.new_count)+'</b><span>New ('+pct(t.new_count)+'%) \u2014 first ever visit</span></div>' +
+        '<div class="mini" style="border-top:0;"><b style="color:#a96118;">'+money(t.returning_count)+'</b><span>Returning ('+pct(t.returning_count)+'%) \u2014 visited before</span></div>' +
+        '<div class="mini" style="border-top:0;"><b style="color:var(--muted);">'+money(t.guest_count)+'</b><span>Guests ('+pct(t.guest_count)+'%) \u2014 walked in, no profile</span></div>' +
+        '<div class="mini" style="border-top:0;"><b>'+money(t.no_phone_count)+'</b><span>No phone on file</span></div>' +
+        '<div class="mini" style="border-top:0;"><b>'+money(t.registered_this_month)+'</b><span>New registrations this month</span></div>' +
+      '</div>' +
+      '<p class="note" style="margin-top:10px;">AED '+money(t.revenue)+' revenue this month.</p>');
+  } else {
+    html += chartCard('Services this month', '', '<p class="note">'+esc(nvr.error)+'</p>');
   }
-  const entries = Object.entries(j.sources||{}).sort((a,b)=>b[1]-a[1]);
-  const total = entries.reduce((t,[,v])=>t+v,0);
-  box.innerHTML = chartCard('\ud83d\udce3 How they heard about us', '',
-    entries.length ? entries.map(([k,v],i) => demoBar(esc(k), v, total, DEMO_COLORS[i%DEMO_COLORS.length])).join('') : '<p class="note">No source data recorded yet.</p>');
+
+  if (heard.ok){
+    const entries = Object.entries(heard.sources||{}).sort((a,b)=>b[1]-a[1]);
+    const total = entries.reduce((t,[,v])=>t+v,0);
+    html += chartCard('\ud83d\udce3 How they heard about us', heard.total ? total+' of '+heard.total+' customers have a source on file.' : '',
+      entries.length ? entries.map(([k,v],i) => demoBar(esc(k), v, total, DEMO_COLORS[i%DEMO_COLORS.length])).join('') : '<p class="note">No source data recorded yet.</p>');
+  } else {
+    html += chartCard('How they heard about us', '', '<p class="note">'+esc(heard.error)+'</p>') +
+      opsBackendGapNote('get_acquisition_sources', 'Real, from the <code>customers</code> table \u2014 confirmed live in this same project.');
+  }
+
+  box.innerHTML = html;
 }
 
 async function opsLocationsTab(){
@@ -2880,12 +3090,12 @@ async function opsLocationsTab(){
   if (!j.ok){
     box.innerHTML = chartCard('Customers by location', '', '<p class="note">'+esc(j.error||'Not available yet.')+'</p>') +
       opsBackendGapNote('get_customers_by_location',
-        'Same real check, same result \u2014 <code>mw_customer_profile</code>, <code>mw_transactions</code>, and <code>visits</code> were all checked directly, and none hold a location field. Not a missing action; there\u2019s no real data anywhere in this database to build it from right now.');
+        'Real, from the <code>customers</code> table \u2014 the same one the loyalty-passport app itself reads, confirmed to live in this same project. If this is still failing, the action may not have deployed correctly yet, or that table\u2019s access permissions need checking, rather than the data genuinely being missing.');
     return;
   }
   const entries = Object.entries(j.locations||{}).sort((a,b)=>b[1]-a[1]);
   const total = entries.reduce((t,[,v])=>t+v,0);
-  box.innerHTML = chartCard('\ud83d\udccd Customers by location', '',
+  box.innerHTML = chartCard('\ud83d\udccd Customers by location', j.total ? (total)+' of '+j.total+' customers have a location on file.' : '',
     entries.length ? entries.map(([k,v],i) => demoBar(esc(k), v, total, DEMO_COLORS[i%DEMO_COLORS.length])).join('') : '<p class="note">No location data recorded yet.</p>');
 }
 
@@ -2894,32 +3104,34 @@ async function opsLocationsTab(){
 // table already used everywhere else in this build. No separate
 // queue table needed; that was an earlier, wrong assumption, replaced
 // once the real schema was actually checked rather than guessed at.
-async function opsDailyTab(){
+async function opsDailyTab(month){
   const box = el('opsTabBody');
   box.innerHTML = '<div class="loading-block"><span class="spin"></span></div>';
-  const j = await call('get_daily_operations', {days:7});
+  const j = await call('get_daily_operations', {month});
   if (!j.ok){
     box.innerHTML = chartCard('Daily breakdown', '', '<p class="note">'+esc(j.error||'Not available yet.')+'</p>') +
       opsBackendGapNote('get_daily_operations',
         'Confirmed real and ready \u2014 <code>mw_transactions</code> already has <code>checkin_at</code>, <code>called_at</code>, <code>done_at</code>, <code>stylist_name</code>, and <code>amount</code>. Needs one new action computing wait time (called \u2212 checkin) and service time (done \u2212 called) per visit, grouped by day and by stylist.');
     return;
   }
-  const days = j.days||[], stylists = j.stylists||[];
-  let html = chartCard('Daily breakdown', 'Real check-in to done times, per day.',
-    days.length ? '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">' +
-      '<tr style="background:var(--ink);color:#fff;font-size:10.5px;text-align:left;"><th style="padding:6px 8px;">Date</th><th style="padding:6px 8px;text-align:right;">Served</th><th style="padding:6px 8px;text-align:right;">Avg wait</th><th style="padding:6px 8px;text-align:right;">Avg service</th><th style="padding:6px 8px;text-align:right;">Revenue</th></tr>' +
-      days.map(d => '<tr style="border-top:1px solid var(--line);"><td style="padding:5px 8px;">'+esc(d.date)+'</td><td style="padding:5px 8px;text-align:right;">'+money(d.served)+'</td>' +
-        '<td style="padding:5px 8px;text-align:right;'+(d.avg_wait_mins>20?'color:#B8564A;':'')+'">'+(d.avg_wait_mins!=null?d.avg_wait_mins+'m':'n/a')+'</td>' +
+  const daysRows = j.days||[], stylists = j.stylists||[];
+  let html = chartCard(
+    'Daily breakdown' + monthSelect('opsDailyTab(this.value)', j.month),
+    'Real check-in to done times, per day.',
+    daysRows.length ? '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">' +
+      '<tr style="color:var(--muted);font-size:10.5px;text-align:left;"><th style="padding:6px 8px;">Date</th><th style="padding:6px 8px;text-align:right;">Served</th><th style="padding:6px 8px;text-align:right;">Avg wait</th><th style="padding:6px 8px;text-align:right;">Avg service</th><th style="padding:6px 8px;text-align:right;">Revenue</th></tr>' +
+      daysRows.map(d => '<tr style="border-top:1px solid var(--line);"><td style="padding:5px 8px;">'+esc(d.date)+'</td><td style="padding:5px 8px;text-align:right;">'+money(d.served)+'</td>' +
+        '<td style="padding:5px 8px;text-align:right;'+(d.avg_wait_mins>20?'color:#a96118;':'')+'">'+(d.avg_wait_mins!=null?d.avg_wait_mins+'m':'n/a')+'</td>' +
         '<td style="padding:5px 8px;text-align:right;">'+(d.avg_service_mins!=null?d.avg_service_mins+'m':'n/a')+'</td>' +
         '<td style="padding:5px 8px;text-align:right;color:var(--green);">AED '+money(d.revenue||0)+'</td></tr>').join('') +
-      '</table></div>' : '<p class="note">No check-in/done data recorded yet.</p>');
-  html += chartCard('Avg service time by stylist', 'From check-in to done \u2014 requires called_at recorded; visits without it show n/a.',
+      '</table></div>' : '<p class="note">No check-in/done data in this month.</p>');
+  html += chartCard('Avg service time by stylist', 'From check-in to done, same month as above \u2014 requires called_at recorded; visits without it show n/a.',
     stylists.length ? '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">' +
-      '<tr style="background:var(--ink);color:#fff;font-size:10.5px;text-align:left;"><th style="padding:6px 8px;">Stylist</th><th style="padding:6px 8px;text-align:right;">Customers</th><th style="padding:6px 8px;text-align:right;">Avg service</th><th style="padding:6px 8px;text-align:right;">Avg wait</th><th style="padding:6px 8px;text-align:right;">Revenue</th><th style="padding:6px 8px;text-align:right;">Avg/visit</th></tr>' +
+      '<tr style="color:var(--muted);font-size:10.5px;text-align:left;"><th style="padding:6px 8px;">Stylist</th><th style="padding:6px 8px;text-align:right;">Customers</th><th style="padding:6px 8px;text-align:right;">Avg service</th><th style="padding:6px 8px;text-align:right;">Avg wait</th><th style="padding:6px 8px;text-align:right;">Revenue</th><th style="padding:6px 8px;text-align:right;">Avg/visit</th></tr>' +
       stylists.map(s => '<tr style="border-top:1px solid var(--line);"><td style="padding:5px 8px;"><b>'+esc(s.stylist)+'</b></td>' +
         '<td style="padding:5px 8px;text-align:right;">'+money(s.customers)+'</td>' +
         '<td style="padding:5px 8px;text-align:right;">'+(s.avg_service_mins!=null?s.avg_service_mins+'m':'n/a')+'</td>' +
-        '<td style="padding:5px 8px;text-align:right;'+(s.avg_wait_mins>20?'color:#B8564A;':'')+'">'+(s.avg_wait_mins!=null?s.avg_wait_mins+'m':'n/a')+'</td>' +
+        '<td style="padding:5px 8px;text-align:right;'+(s.avg_wait_mins>20?'color:#a96118;':'')+'">'+(s.avg_wait_mins!=null?s.avg_wait_mins+'m':'n/a')+'</td>' +
         '<td style="padding:5px 8px;text-align:right;color:var(--green);">AED '+money(s.revenue||0)+'</td>' +
         '<td style="padding:5px 8px;text-align:right;">AED '+money(s.avg_per_visit||0)+'</td></tr>').join('') +
       '</table></div>' : '<p class="note">No stylist data yet.</p>');
