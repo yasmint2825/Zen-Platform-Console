@@ -1408,7 +1408,9 @@ async function home(){
     '<div class="sechead"><h2>Needs your attention</h2></div>' +
     '<div class="stack" id="homeAttn"><div class="loading-block"><span class="spin"></span>Checking your business\u2026</div></div>' +
     '<div class="sechead"><h2>This month</h2><span>Revenue</span></div>' +
-    '<div id="homeResults"><div class="loading-block"><span class="spin"></span></div></div>';
+    '<div id="homeResults"><div class="loading-block"><span class="spin"></span></div></div>' +
+    '<div class="sechead"><h2>This quarter</h2><span>Revenue</span></div>' +
+    '<div id="homeQuarter"><div class="loading-block"><span class="spin"></span></div></div>';
 
   // The 400-day revenue fetch needed for the MTD comparison is the
   // slowest call on this page. It runs in parallel but is not
@@ -1421,6 +1423,7 @@ async function home(){
     call('list_conversations', {limit:30}),
   ]);
   const revPromise = call('get_daily_metric', {metric_key:'revenue', days:400});
+  const quarterPromise = call('get_quarter_comparison', {});
 
   const [cc, buckets, convos] = await fast;
   HOME_CACHE = { cc, buckets, convos };
@@ -1447,6 +1450,8 @@ async function home(){
   // date ranges.
   const revMetric = await revPromise;
   if (el('homeResults')) el('homeResults').innerHTML = mtdCompareHTML(revMetric);
+  const quarterData = await quarterPromise;
+  if (el('homeQuarter')) el('homeQuarter').innerHTML = quarterCompareHTML(quarterData);
 }
 function mtdCompareHTML(revMetric){
   if (!revMetric.ok || !revMetric.rows || !revMetric.rows.length) return '<p class="note">Not enough revenue history yet to compare.</p>';
@@ -1481,18 +1486,58 @@ function mtdCompareHTML(revMetric){
   if (thisMonth == null) return '<p class="note">No revenue recorded yet this month.</p>';
 
   const monthName = yesterday.toLocaleString('en', {month:'long'});
-  const vsLast = last1!=null ? Math.round(((thisMonth-last1)/(last1||1))*100) : null;
-  const vsYear = yearAgo!=null ? Math.round(((thisMonth-yearAgo)/(yearAgo||1))*100) : null;
+  const pctVs = (base) => base!=null ? Math.round(((thisMonth-base)/(base||1))*100) : null;
+  const trendSpan = (pct) => pct!=null ? ' \u00b7 <span class="trend '+(pct>=0?'up':'down')+'">'+(pct>=0?'\u2191':'\u2193')+' '+Math.abs(pct)+'%</span>' : '';
+  const vsLast = pctVs(last1), vsLast2 = pctVs(last2), vsLast3 = pctVs(last3), vsYear = pctVs(yearAgo);
 
   return '<div class="mini" style="border-top:0;"><b class="spark-num">AED '+money(Math.round(thisMonth))+'</b>' +
     '<span>'+esc(monthName)+' so far, through yesterday'+(vsLast!=null?' \u00b7 <span class="trend '+(vsLast>=0?'up':'down')+'">'+(vsLast>=0?'\u2191':'\u2193')+' '+Math.abs(vsLast)+'% vs last month</span>':'')+'</span></div>' +
     '<div class="mini-grid" style="margin-top:8px;">' +
-      (last1!=null ? '<div class="mini"><b>AED '+money(Math.round(last1))+'</b><span>Same days last month</span></div>' : '') +
-      (last2!=null ? '<div class="mini"><b>AED '+money(Math.round(last2))+'</b><span>Two months ago</span></div>' : '') +
-      (last3!=null ? '<div class="mini"><b>AED '+money(Math.round(last3))+'</b><span>Three months ago</span></div>' : '') +
-      (yearAgo!=null ? '<div class="mini"><b>AED '+money(Math.round(yearAgo))+'</b><span>Same month last year'+(vsYear!=null?' \u00b7 <span class="trend '+(vsYear>=0?'up':'down')+'">'+(vsYear>=0?'\u2191':'\u2193')+' '+Math.abs(vsYear)+'%</span>':'')+'</span></div>' : '') +
+      // Every comparison card now carries its own % change against
+      // this month, not just the two that happened to have one before -
+      // "Two months ago" and "Three months ago" showed a number with
+      // nothing to say whether that was better or worse.
+      (last1!=null ? '<div class="mini"><b>AED '+money(Math.round(last1))+'</b><span>Same days last month'+trendSpan(vsLast)+'</span></div>' : '') +
+      (last2!=null ? '<div class="mini"><b>AED '+money(Math.round(last2))+'</b><span>Two months ago'+trendSpan(vsLast2)+'</span></div>' : '') +
+      (last3!=null ? '<div class="mini"><b>AED '+money(Math.round(last3))+'</b><span>Three months ago'+trendSpan(vsLast3)+'</span></div>' : '') +
+      (yearAgo!=null ? '<div class="mini"><b>AED '+money(Math.round(yearAgo))+'</b><span>Same month last year'+trendSpan(vsYear)+'</span></div>' : '') +
     '</div>';
 }
+// Real - get_quarter_comparison computes both comparisons server-side
+// (current quarter vs the exact same day-count last year, plus every
+// quarter of this year against each other), summed directly from
+// mw_daily_metrics rather than shipping months of daily rows here to
+// add up client-side, since a year-over-year quarter comparison can
+// need history further back than the 400-day cap on the metric this
+// month's own card uses.
+function quarterCompareHTML(data){
+  if (!data.ok) return '<p class="note" style="color:#a02020;">'+esc(data.error)+'</p>';
+  const cur = data.current_quarter, prior = data.same_period_last_year;
+  if (cur.revenue == null) return '<p class="note">'+esc(data.note||'Not enough revenue history yet to compare.')+'</p>';
+  const yoy = data.yoy_change_percent;
+  const quarters = data.this_year_quarters || [];
+
+  return '<div class="mini" style="border-top:0;"><b class="spark-num">AED '+money(cur.revenue)+'</b>' +
+    '<span>'+esc(cur.label)+' so far'+(yoy!=null?' \u00b7 <span class="trend '+(yoy>=0?'up':'down')+'">'+(yoy>=0?'\u2191':'\u2193')+' '+Math.abs(yoy)+'% vs same period last year</span>':'')+'</span></div>' +
+    (prior.revenue!=null ? '<div class="mini-grid" style="margin-top:8px;">' +
+      '<div class="mini"><b>AED '+money(prior.revenue)+'</b><span>'+esc(prior.label)+', same '+Math.round((new Date(cur.to)-new Date(cur.from))/86400000)+' day(s)</span></div>' +
+    '</div>' : '') +
+    (quarters.length>1 ? '<div class="sechead" style="margin-top:14px;"><h2 style="font-size:11.5px;">Quarters this year</h2></div>' +
+      '<div class="mini-grid">' + quarters.map((q,i) => {
+        // Quarter-over-quarter, not just the headline's vs-last-year -
+        // each quarter compared against the one right before it, so
+        // Q2 vs Q1 and Q3 vs Q2 are both visible, not just the single
+        // year-over-year figure at the top.
+        const prevQ = i>0 ? quarters[i-1] : null;
+        const qoq = (prevQ && prevQ.revenue!=null && q.revenue!=null && prevQ.revenue!==0)
+          ? Math.round(((q.revenue-prevQ.revenue)/prevQ.revenue)*100) : null;
+        return '<div class="mini"><b>'+(q.revenue!=null?'AED '+money(q.revenue):'\u2014')+'</b><span>'+esc(q.label)+(q.partial?' (so far)':'')+
+          (qoq!=null?' \u00b7 <span class="trend '+(qoq>=0?'up':'down')+'">'+(qoq>=0?'\u2191':'\u2193')+' '+Math.abs(qoq)+'%</span>':'')+'</span></div>';
+      }).join('') +
+      '</div>' : '') +
+    '<p class="note" style="margin-top:8px;">'+esc(data.note||'')+'</p>';
+}
+
 // Real question-answering: the backend writes and runs a SQL query
 // against your actual data, then summarises the result. No canned
 // answers, and nothing here decides in advance what a question means.
