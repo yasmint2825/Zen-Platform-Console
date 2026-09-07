@@ -1514,40 +1514,54 @@ async function askZen(q,targetId){
 // segments here too was the overlap that made the two pages read as
 // duplicates of each other.
 function custRow(c){
-  return '<div class="list-row" style="cursor:pointer;" onclick="flow(()=>custDetail(\''+c.id+'\'))">' +
-    '<div style="display:flex;gap:12px;align-items:center;">' + avatar(c.name) +
-    '<div><b>'+esc(c.name)+'</b><div class="sub">'+esc(c.mobile)+' \u00b7 '+c.visits+' visits \u00b7 last '+esc(c.last)+'</div></div></div>' +
-    '<span class="badge'+(c.tier==='At risk'?' warn':c.tier==='Regular'?' on':'')+'">'+esc(c.tier)+'</span></div>';
+  return '<div class="list-row" style="cursor:pointer;" onclick="flow(()=>custDetail(\''+c.customer_key+'\'))">' +
+    '<div style="display:flex;gap:12px;align-items:center;">' + avatar(c.name||c.mobile) +
+    '<div><b>'+esc(c.name||'(no name on file)')+'</b><div class="sub">'+esc(c.mobile||'')+'</div></div></div></div>';
 }
 let custT=null;
-function custSearch(){
+async function custSearch(){
   clearTimeout(custT);
-  custT = setTimeout(()=>{
-    const q = el('custSearch').value.trim().toLowerCase();
-    const out = el('custResults');
-    if (q.length<2){ out.innerHTML=''; return; }
-    const hits = DATA.customers.filter(c=>c.name.toLowerCase().includes(q)||c.mobile.includes(q));
+  const q = el('custSearch').value.trim();
+  const out = el('custResults');
+  if (q.length<2){ out.innerHTML=''; return; }
+  custT = setTimeout(async ()=>{
+    out.innerHTML = '<div class="loading-block"><span class="spin"></span></div>';
+    const j = await call('search_customers', {query:q});
+    if (!j.ok){ out.innerHTML = '<p class="note" style="color:#a02020;">'+esc(j.error)+'</p>'; return; }
+    const hits = j.results || [];
     out.innerHTML = hits.length
       ? '<div class="list" style="margin-bottom:10px;">'+hits.map(c=>custRow(c)).join('')+'</div>'
       : '<div class="empty-block">'+emptyIcon('♙')+'<h2>No matching customers</h2><p>Try a different name or number.</p></div>';
   }, 220);
 }
-function custDetail(id){
-  const c = DATA.customers.find(x=>x.id===id);
+async function custDetail(customerKey){
+  el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="go(\'insights\')" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<div class="loading-block"><span class="spin"></span></div>';
+  const j = await call('get_customer_profile', {customer_key: customerKey});
+  if (!j.ok){
+    el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="go(\'insights\')" style="margin-bottom:16px;">\u2190 Back</button>' +
+      '<p class="note" style="color:#a02020;">'+esc(j.error)+'</p>';
+    return;
+  }
+  const p = j.profile || {};
+  const pred = j.prediction || {};
+  const visits = j.visits || [];
+  const history = j.campaign_history || [];
+  const name = p.customer_name || '(no name on file)';
   el('p-flow').innerHTML =
     '<button class="btn btn-ghost btn-sm" onclick="go(\'insights\')" style="margin-bottom:16px;">\u2190 Back</button>' +
-    '<h1 style="font-size:23px;margin-bottom:4px;">'+esc(c.name)+'</h1>' +
-    '<p class="note" style="margin-top:0;">'+esc(c.mobile)+' \u00b7 '+esc(c.segment)+'</p>' +
+    '<h1 style="font-size:23px;margin-bottom:4px;">'+esc(name)+'</h1>' +
+    '<p class="note" style="margin-top:0;">'+esc(p.customer_mobile||'')+(p.segment?' \u00b7 '+esc(p.segment):'')+'</p>' +
     '<div class="mini-grid" style="max-width:520px;margin-top:14px;">' +
-      '<div class="mini"><b>'+c.visits+'</b><span>Visits</span></div>' +
-      '<div class="mini"><b>'+esc(c.last)+'</b><span>Last visit</span></div>' +
-      '<div class="mini"><b>'+esc(c.tier)+'</b><span>Likely to return</span></div></div>' +
+      '<div class="mini"><b>'+visits.length+'</b><span>Visits on file (last 50)</span></div>' +
+      '<div class="mini"><b>'+(visits[0]?esc(visits[0].transaction_date):'\u2014')+'</b><span>Last visit</span></div>' +
+      '<div class="mini"><b>'+(pred.tier?esc(pred.tier):'\u2014')+'</b><span>'+(pred.probability!=null?Math.round(pred.probability*100)+'% likely to return':'No prediction yet')+'</span></div></div>' +
     '<div class="sechead"><h2>Recent visits</h2></div>' +
-    '<div class="list">' +
-      '<div class="list-row"><span>Girls Haircut Long</span><span class="sub">'+esc(c.last)+' \u00b7 AED 50</span></div>' +
-      '<div class="list-row"><span>Hair Braids</span><span class="sub">14 Jun 2026 \u00b7 AED 35</span></div>' +
-    '</div>' +
-    '<div style="margin-top:20px;"><button class="btn btn-p btn-sm" onclick="toast(\'Message sent (simulated).\',\'ok\')">Send a quick message</button></div>';
+    (visits.length ? '<div class="list">' + visits.slice(0,10).map(v =>
+      '<div class="list-row"><span>'+esc(v.description||'Visit')+(v.stylist_name?' \u00b7 '+esc(v.stylist_name):'')+'</span><span class="sub">'+esc(v.transaction_date)+' \u00b7 AED '+money(v.amount||0)+'</span></div>').join('') + '</div>'
+      : '<p class="note">No transaction history on file.</p>') +
+    (history.length ? '<div class="sechead"><h2>WhatsApp campaign history</h2></div><div class="list">' + history.map(h =>
+      '<div class="list-row"><span>'+esc((CAMP_LABELS[h.campaign_key]||{}).name || String(h.campaign_key).replace(/_/g,' '))+'</span><span class="sub">'+esc(h.status)+' \u00b7 '+esc((h.created_at||'').slice(0,10))+'</span></div>').join('') + '</div>' : '');
 }
 </script>
 <script>
@@ -1569,6 +1583,7 @@ const CAMP_LABELS = {
   after_service:{ name:'Just been in', why:'A thank you, and how close to a free wash.' },
 };
 let CAMPAIGN_TYPES = [];
+let CAMP_GLOBAL_HOLDOUT = 0; // set alongside CAMPAIGN_TYPES in campaigns() - the fallback when a campaign has no per-category override
 async function campaigns(){
   STATE.lastPage='campaigns';
   const p = el('p-campaigns');
@@ -1603,6 +1618,7 @@ async function campaigns(){
   const byCat = buckets.by_campaign || {};
   const strategyByKey = {}; (settings.strategy||[]).forEach(s => { strategyByKey[s.campaign_key] = s; });
   const globalHoldout = (settings.tenant && settings.tenant.holdout_percent) || 0;
+  CAMP_GLOBAL_HOLDOUT = globalHoldout;
 
   CAMPAIGN_TYPES = Object.entries(counts)
     .filter(([, n]) => Number(n) > 0)
@@ -2134,6 +2150,10 @@ async function whatsappSettingsPanel(){
         : '<p class="note" style="color:#a02020;">'+esc(mappings.error)+'</p>') +
       '<p class="note" style="font-size:10.5px;">Adding a new mapping goes through the WhatsApp Templates tool directly \u2014 not available from this settings page.</p>') +
 
+    section('Do not disturb',
+      '<p class="note" style="margin-top:0;">Anyone here is excluded from every campaign, automatically \u2014 including anyone who has ever replied STOP.</p>' +
+      '<button class="btn btn-s btn-sm" onclick="flow(()=>dndSettings())">View the list</button>') +
+
     section('Rule book \u2014 what the agent currently does',
       ruleBookHTML(settings.ok ? (settings.strategy||[]) : []) +
       '<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line);">' +
@@ -2237,7 +2257,7 @@ function cancelStrategyPreview(){
 }
 
 const CAMP_STEPS = ['Audience','Message','Test','Schedule'];
-const campPlan = { key:null, size:0, holdPct:20, wave:null };
+const campPlan = { key:null, size:0, holdPct:20, wave:null }; // holdPct's 20 is a placeholder, overwritten in campAudience() with the real configured value before it's ever used
 
 function campaignFlow(key){ campPlan.key = key; campAudience(); }
 
@@ -2301,6 +2321,14 @@ async function heldOutRelease(campaignKey){
 // group at once.
 async function campAudience(){
   const t = CAMPAIGN_TYPES.find(x=>x.key===campPlan.key) || { name:campPlan.key, why:'', count:0 };
+  // The actual fix: campPlan.holdPct used to sit at a hardcoded 20
+  // from the object literal, completely disconnected from either the
+  // per-campaign override (Campaigns page) or the global default
+  // (Settings -> Data) - every campaign held back a flat 20%
+  // regardless of what was actually configured. commit_wave already
+  // correctly receives control_ids built from this value downstream;
+  // the number feeding it was simply wrong.
+  campPlan.holdPct = t.holdout_percent != null ? t.holdout_percent : CAMP_GLOBAL_HOLDOUT;
   el('p-flow').innerHTML = wizSteps(CAMP_STEPS,0) + '<h1 style="font-size:22px;">'+esc(t.name)+'</h1>' +
     '<div class="loading-block"><span class="spin"></span>Working out who to include\u2026</div>';
 
@@ -2313,26 +2341,64 @@ async function campAudience(){
   // complete candidate list.
   const j = await call('plan_wave', { campaign_key: campPlan.key, size: Math.min(250, t.count || 250), control_percent: 0 });
   if (!j.ok){ el('p-flow').innerHTML = wizSteps(CAMP_STEPS,0) + errBlock(j.error); return; }
-  const rows = (j.wave||[]).map(w => ({ id:w.id, customer_name:w.name, mobile:w.mobile, last_visit:w.last_visit }));
+  const rows = (j.wave||[]).map(w => ({ id:w.id, customer_name:w.name, mobile:w.mobile, last_visit:w.last_visit, tier:w.tier, probability:w.probability }));
+  campPlan.allRows = rows; // unfiltered - "Who"/"How many" filter this without a second fetch
   campPlan.rows = rows;
   campPlan.selected = new Set(rows.map(r=>r.id)); // everyone starts selected
   campPlan.realTotal = t.count; // for the "N of the real total" note below
+  campPlan.byTier = j.by_tier || {};
+  campPlan.filterTier = '';
+  campPlan.filterLimit = '';
 
+  campRenderAudience();
+}
+// "Who" and "How many" - the same idea as Pending review's filter bar,
+// scoped to one campaign already chosen rather than across all of
+// them. Client-side only: plan_wave already returned tier and
+// probability per row, so filtering doesn't need a second fetch.
+function campApplyFilter(field, value){
+  campPlan['filter'+(field==='tier'?'Tier':'Limit')] = value;
+  let rows = campPlan.allRows || [];
+  if (campPlan.filterTier) rows = rows.filter(r => r.tier === campPlan.filterTier);
+  // Highest probability first within the filtered set - the ones
+  // closest to returning need the least persuading, so a limited
+  // batch should be these first, same reasoning as plan_wave's own
+  // default ordering.
+  rows = rows.slice().sort((a,b) => (b.probability||0) - (a.probability||0));
+  const limit = parseInt(campPlan.filterLimit, 10);
+  if (limit > 0) rows = rows.slice(0, limit);
+  campPlan.rows = rows;
+  campPlan.selected = new Set(rows.map(r=>r.id));
   campRenderAudience();
 }
 function campRenderAudience(){
   const t = CAMPAIGN_TYPES.find(x=>x.key===campPlan.key) || { name:campPlan.key, why:'', count:0 };
   const rows = campPlan.rows || [];
+  const allRows = campPlan.allRows || rows;
   const n = campPlan.selected.size;
-  const capped = campPlan.realTotal && campPlan.realTotal > rows.length;
+  const capped = campPlan.realTotal && campPlan.realTotal > allRows.length;
+  const byTier = campPlan.byTier || {};
+  const tierLabel = (tv) => tv==='uncertain' ? 'Uncertain \u2014 a message can move these' : tv==='at_risk' ? 'At risk \u2014 furthest gone' : tv==='likely' ? 'Likely \u2014 would probably return anyway' : 'Everyone';
   el('p-flow').innerHTML =
     wizSteps(CAMP_STEPS,0) + '<h1 style="font-size:22px;">'+esc(t.name)+'</h1>' +
     zen((capped
-      ? 'There are '+money(campPlan.realTotal)+' in total for this \u2014 here are the first '+rows.length+'. '
-      : rows.length + ' real customers are queued for this. ') +
+      ? 'There are '+money(campPlan.realTotal)+' in total for this \u2014 here are the first '+allRows.length+'. '
+      : allRows.length + ' real customers are queued for this. ') +
       esc(t.why)+' Uncheck anyone you\u2019d rather not include.') +
     (capped ? '<p class="note" style="margin-top:-6px;">The rest stay queued and can be sent another day.</p>' : '') +
-    '<div style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap;">' +
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin:14px 0 4px;">' +
+      '<div><label style="display:block;font-size:10.5px;color:var(--muted);margin-bottom:3px;">Who</label>' +
+        '<select onchange="campApplyFilter(\'tier\',this.value)" style="font-size:12px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;">' +
+          ['','uncertain','at_risk','likely'].map(tv => '<option value="'+tv+'"'+(campPlan.filterTier===tv?' selected':'')+'>'+tierLabel(tv)+(tv&&byTier[tv]?' ('+byTier[tv]+')':'')+'</option>').join('') +
+        '</select></div>' +
+      '<div><label style="display:block;font-size:10.5px;color:var(--muted);margin-bottom:3px;">How many</label>' +
+        '<input type="number" min="0" max="'+allRows.length+'" placeholder="all" value="'+(campPlan.filterLimit||'')+'" style="width:70px;font-size:12px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;" onchange="campApplyFilter(\'limit\',this.value)">' +
+      '</div>' +
+      '<span class="note" style="margin-bottom:6px;">'+rows.length+' of '+allRows.length+' match'+(campPlan.filterTier||campPlan.filterLimit?' \u2014 sorted by who\u2019s most likely to respond first':'')+'</span>' +
+    '</div>' +
+    (campPlan.holdPct>0 ? '<p class="note" style="margin-top:0;">'+campPlan.holdPct+'% of whoever you continue with will be held back as a control group, per '+
+      (t.holdout_percent!=null?'this campaign\u2019s own setting':'the global default in Settings \u2192 Data')+' \u2014 shown exactly on the next screen before anything sends.</p>' : '') +
+    '<div style="display:flex;gap:8px;margin:8px 0 12px;flex-wrap:wrap;">' +
       '<button class="btn btn-s btn-sm" onclick="campSelectAll(true)">Select all</button>' +
       '<button class="btn btn-s btn-sm" onclick="campSelectAll(false)">Deselect all</button>' +
       '<button class="btn btn-s btn-sm" style="color:#a02020;" onclick="campRejectAll()">Reject all '+rows.length+'</button>' +
@@ -2736,9 +2802,21 @@ async function insights(){
     '<button class="btn btn-p btn-sm" onclick="askZen(document.querySelector(\'#p-insights .ask input\').value,\'insAnswer\')">Ask</button></div>' +
     '<div id="insAnswer"></div>' +
 
+    // Real and genuinely useful on its own, regardless of whether a
+    // "Customers" category tile exists - kept here rather than lost
+    // when that thin tab was removed. The "browse all" list under
+    // this used to read DATA.customers - a hardcoded 4-entry demo
+    // array left over from the original prototype, with a fake
+    // "3,585" count next to it. There's no real "list every customer"
+    // action to back a genuine version of that without real
+    // pagination, so removed rather than left silently fake -
+    // search is real now and is the actual fix for "lookup doesn't work".
+    '<div class="sechead"><h2>Look up a customer</h2></div>' +
+    '<div class="ask"><span class="spark">♙</span><input id="custSearch" placeholder="Search by name or number…" oninput="custSearch()"></div>' +
+    '<div id="custResults"></div>' +
+
     '<div class="sechead"><h2>What the numbers say</h2></div>' +
-    '<div class="grid2">' +
-      insCat('♙','Customers','Patterns across everyone, not one person','customers') +
+    '<div class="grid3">' +
       insCat('💬','WhatsApp','What\u2019s working in your messages','whatsapp') +
       insCat('✦','Marketing','What content is performing','marketing') +
       insCat('⚡','Operations','How your salon is running day to day','operations') +
@@ -2750,7 +2828,7 @@ async function insights(){
         insCat('\u{1F4C8}','What Zen is learning','Which messages and suggestions actually work','learning') +
       '</div></details>';
 }
-const INS_COLORS = {customers:'#4E5FC8',whatsapp:'#175E52',marketing:'#A96118',operations:'#B8564A',buy:'#2D7A6B',learning:'#8A5A93'};
+const INS_COLORS = {whatsapp:'#175E52',marketing:'#A96118',operations:'#B8564A',buy:'#2D7A6B',learning:'#8A5A93'};
 function insCat(ic,name,why,key){
   const c = INS_COLORS[key];
   return '<button class="task" onclick="flow(()=>insightCategory(\''+key+'\'))">' +
@@ -2761,7 +2839,6 @@ async function insightCategory(key){
   if (key === 'marketing') { marketingInsights(); return; }
   if (key === 'whatsapp') { whatsappInsights(); return; }
   if (key === 'operations') { operationsInsights(); return; }
-  if (key === 'customers') { customerInsights(); return; }
   if (key === 'buy') { buyInsights(); return; }
   if (key === 'learning') { learningInsights(); return; }
   const items = DATA.insights[key] || [];
@@ -2804,6 +2881,12 @@ function chartCard(title, sub, body){
 // the customer's own profile, not the template name), how many days
 // it typically took, and revenue per person reached - not just an
 // aggregate rate.
+//
+// AED_PER_MESSAGE: Meta charges $0.05 USD per delivered conversation
+// message; AED is pegged to USD at a fixed 3.6725 rate (unchanged
+// since 1997, not a floating rate that needs looking up), so this is
+// a real, stable constant, not an estimate that goes stale.
+const AED_PER_MESSAGE = 0.05 * 3.6725;
 function conversionTableHTML(conversion){
   if (!conversion.ok) return chartCard('What conversations turn into', '', '<p class="note">'+esc(conversion.error)+'</p>');
   if (!conversion.groups || !conversion.groups.length) return chartCard('What conversations turn into', '', '<p class="note">Not enough messages yet to measure this.</p>');
@@ -2813,13 +2896,20 @@ function conversionTableHTML(conversion){
     if (!seg || !seg.people) return '\u2014';
     return (seg.rate!=null?seg.rate+'%':'\u2014') + '<div class="sub" style="font-size:10px;">'+seg.came_back+'/'+seg.people+(seg.thin?' thin':'')+'</div>';
   }
-  function groupTable(groups){
+  // Cost only applies to messages we actually sent, not people who
+  // messaged us first - there's no per-conversation charge for those,
+  // so a cost/gain column on the inbound table would be meaningless.
+  function groupTable(groups, withCost){
     return '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">' +
       '<tr style="color:var(--muted);font-size:10px;text-align:left;">' +
         '<th style="padding:4px 6px;"></th><th style="padding:4px 6px;text-align:right;">People</th><th style="padding:4px 6px;text-align:right;">Rate</th>' +
         '<th style="padding:4px 6px;text-align:right;">Girls</th><th style="padding:4px 6px;text-align:right;">Boys</th>' +
-        '<th style="padding:4px 6px;text-align:right;">After</th><th style="padding:4px 6px;text-align:right;">Revenue</th><th style="padding:4px 6px;text-align:right;">Each</th></tr>' +
-      groups.map(g => '<tr style="border-top:1px solid var(--line);">' +
+        '<th style="padding:4px 6px;text-align:right;">After</th><th style="padding:4px 6px;text-align:right;">Revenue</th><th style="padding:4px 6px;text-align:right;">Each</th>' +
+        (withCost ? '<th style="padding:4px 6px;text-align:right;">Cost</th><th style="padding:4px 6px;text-align:right;">Net</th>' : '') + '</tr>' +
+      groups.map(g => {
+        const cost = withCost ? g.people * AED_PER_MESSAGE : null;
+        const net = withCost ? (g.revenue||0) - cost : null;
+        return '<tr style="border-top:1px solid var(--line);">' +
         '<td style="padding:5px 6px;"><b>'+esc(g.label)+'</b></td>' +
         '<td style="padding:5px 6px;text-align:right;">'+money(g.people)+'</td>' +
         '<td style="padding:5px 6px;text-align:right;">'+(g.rate!=null?g.rate+'%':'\u2014')+(g.thin?' <span style="color:#B8564A;font-size:10px;">thin</span>':'')+'</td>' +
@@ -2827,13 +2917,21 @@ function conversionTableHTML(conversion){
         '<td style="padding:5px 6px;text-align:right;">'+genderCell(g.boys)+'</td>' +
         '<td style="padding:5px 6px;text-align:right;">'+(g.median_days!=null?g.median_days+'d':'\u2014')+'</td>' +
         '<td style="padding:5px 6px;text-align:right;">'+(g.revenue?'AED '+money(g.revenue):'\u2014')+'</td>' +
-        '<td style="padding:5px 6px;text-align:right;">'+(g.revenue_per_message?'AED '+money(g.revenue_per_message):'\u2014')+'</td></tr>').join('') +
+        '<td style="padding:5px 6px;text-align:right;">'+(g.revenue_per_message?'AED '+money(g.revenue_per_message):'\u2014')+'</td>' +
+        (withCost ? '<td style="padding:5px 6px;text-align:right;color:var(--muted);">AED '+cost.toFixed(2)+'</td>' +
+          '<td style="padding:5px 6px;text-align:right;font-weight:600;color:'+(net>=0?'var(--green)':'#a02020')+';">AED '+money(Math.round(net))+'</td>' : '') +
+        '</tr>';
+      }).join('') +
     '</table></div>';
   }
   const t = conversion.totals || {};
+  const sentTotal = sent.reduce((s,g)=>s+(g.people||0),0);
+  const sentRevenue = sent.reduce((s,g)=>s+(g.revenue||0),0);
+  const sentCost = sentTotal * AED_PER_MESSAGE;
   return chartCard('What conversations turn into', 'Campaigns we sent and people who came to us, and whether either led to a visit within 30 days.',
-    (sent.length ? '<div class="sechead" style="margin-top:0;"><h2>Campaigns we sent</h2></div>' + groupTable(sent) : '') +
-    (inbound.length ? '<div class="sechead"><h2>People who came to us</h2></div>' + groupTable(inbound) : '') +
+    (sent.length ? '<div class="sechead" style="margin-top:0;"><h2>Campaigns we sent</h2></div>' + groupTable(sent, true) +
+      '<p class="note" style="margin-top:8px;">Sending cost about <b>AED '+sentCost.toFixed(2)+'</b> ('+money(sentTotal)+' messages at AED '+AED_PER_MESSAGE.toFixed(4)+' each, Meta\u2019s $0.05 per delivered message) against <b>AED '+money(sentRevenue)+'</b> in revenue \u2014 a net of <b style="color:'+(sentRevenue-sentCost>=0?'var(--green)':'#a02020')+';">AED '+money(Math.round(sentRevenue-sentCost))+'</b>.</p>' : '') +
+    (inbound.length ? '<div class="sechead"><h2>People who came to us</h2></div>' + groupTable(inbound, false) : '') +
     '<p class="note" style="margin-top:10px;">'+money(t.came_back||0)+' of '+money(t.people||0)+' came in within 30 days ('+(t.rate!=null?t.rate+'%':'\u2014')+'), worth <b>AED '+money(t.revenue||0)+'</b>.</p>' +
     (conversion.caveat ? '<p class="note">'+esc(conversion.caveat)+'</p>' : ''));
 }
@@ -2863,47 +2961,26 @@ async function whatsappInsights(){
       '<div class="mini" style="border-top:0;"><b>'+money(t.failed||0)+'</b><span>Failed</span></div>' +
     '</div>';
     if (engage.receipts_available===false) html += '<p class="note">Delivery and read receipts only exist for messages sent after the webhook went live \u2014 not shown as zero, since that would look like failure.</p>';
-    // The real answer to "does messaging actually work" - a holdout
-    // group was deliberately left out, so this compares like with
-    // like rather than assuming everyone who came back did so because
-    // of the message. Rendered defensively: this card must never be
-    // silently blank, whatever shape the real data comes back in.
-    if (lift && lift.readable){
-      html += chartCard('Did the messaging work?', 'Contacted customers compared against a group deliberately held back \u2014 the only honest way to know.',
-        '<div class="mini-grid" style="max-width:520px;">' +
-          '<div class="mini" style="border-top:0;"><b>'+(lift.contacted_rate!=null?lift.contacted_rate+'%':'\u2014')+'</b><span>Contacted, came back</span></div>' +
-          '<div class="mini" style="border-top:0;"><b>'+(lift.holdout_rate!=null?lift.holdout_rate+'%':'\u2014')+'</b><span>Held back, came back anyway</span></div>' +
-          '<div class="mini" style="border-top:0;"><b>'+(lift.lift_points!=null?(lift.lift_points>=0?'+':'')+lift.lift_points+' pts':'\u2014')+'</b><span>Real difference</span></div>' +
-        '</div>' +
-        (lift.extra_returns!=null ? '<p class="note" style="margin-top:8px;">About '+money(lift.extra_returns)+' extra visit(s) in this period are attributable to messaging, not chance.</p>' : ''));
-    } else if (lift && (lift.contacted!=null || lift.holdout!=null)){
-      html += chartCard('Did the messaging work?', '', '<p class="note">Not enough data yet in both groups to compare \u2014 needs at least '+(lift.min_arm!=null?lift.min_arm:30)+' in each. Contacted: '+(lift.contacted||0)+', held back: '+(lift.holdout||0)+'.</p>');
-    } else {
-      html += chartCard('Did the messaging work?', '', '<p class="note">No holdout comparison available yet \u2014 this needs some customers to have been deliberately held back from a send. Check the holdout percentage under Settings \u2192 Data.</p>');
-    }
-    // The full per-campaign breakdown - delivery/read rate alongside
-    // return rate, with a thin-sample caveat so a rate computed from a
-    // handful of sends doesn't read as a real finding.
-    html += chartCard('Campaign performance', 'Sent, delivered, read, and who came back \u2014 per campaign.',
+    // The full per-campaign breakdown - delivery/read rate. "Came
+    // back" used to be a column here too, duplicating the more
+    // rigorous holdout comparison above and the Retention figure
+    // below with a per-campaign number that had neither a control
+    // group nor a sample-size caveat attached the same way.
+    html += chartCard('Campaign performance', 'Sent, delivered, read, and failed \u2014 per campaign.',
       campaigns.length ? '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">' +
         '<tr style="color:var(--muted);font-size:10.5px;text-align:left;">' +
           '<th style="padding:4px 6px;">Campaign</th><th style="padding:4px 6px;text-align:right;">Sent</th>' +
           '<th style="padding:4px 6px;text-align:right;">Delivered</th><th style="padding:4px 6px;text-align:right;">Read</th>' +
-          '<th style="padding:4px 6px;text-align:right;">Failed</th><th style="padding:4px 6px;">Came back</th></tr>' +
+          '<th style="padding:4px 6px;text-align:right;">Failed</th></tr>' +
         campaigns.map(c => {
           const del = engage.receipts_available && c.delivery_rate!=null ? c.delivery_rate+'%' : '\u2014';
           const rd = engage.receipts_available && c.read_rate!=null ? c.read_rate+'%' : '\u2014';
-          const thin = (c.measurable||0) < 10;
-          const ret = c.return_rate!=null
-            ? c.return_rate+'% <span style="color:var(--muted);">('+(c.returned||0)+' of '+(c.measurable||0)+')</span>'+(thin?' <span style="color:#B8564A;">too few to read into</span>':'')
-            : '<span style="color:var(--muted);">not measurable yet</span>';
           return '<tr style="border-top:1px solid var(--line);">' +
             '<td style="padding:5px 6px;"><b>'+esc(c.campaign)+'</b></td>' +
             '<td style="padding:5px 6px;text-align:right;">'+(c.sent||0)+'</td>' +
             '<td style="padding:5px 6px;text-align:right;">'+del+'</td>' +
             '<td style="padding:5px 6px;text-align:right;">'+rd+'</td>' +
-            '<td style="padding:5px 6px;text-align:right;'+(c.failed?'color:#B8564A;':'')+'">'+(c.failed||0)+'</td>' +
-            '<td style="padding:5px 6px;">'+ret+'</td></tr>';
+            '<td style="padding:5px 6px;text-align:right;'+(c.failed?'color:#B8564A;':'')+'">'+(c.failed||0)+'</td></tr>';
         }).join('') + '</table></div>'
       : '<p class="note">No campaigns sent yet.</p>');
 
@@ -2924,8 +3001,15 @@ async function whatsappInsights(){
       '<div class="list">' + daily.map(d => insLine(esc(d.date),
         money(d.sent)+' sent'+(engage.receipts_available?' \u00b7 '+money(d.delivered)+' delivered \u00b7 '+money(d.read)+' read':'')+(d.failed?' \u00b7 '+money(d.failed)+' failed':''))).join('') + '</div>');
 
-    if (retention) html += chartCard('Retention', 'Share of contacted customers who returned within '+retention.return_window_days+' days.',
-      '<p class="note" style="margin-top:0;">'+money(retention.customers_returned)+' of '+money(retention.measured_messages)+' ('+(retention.return_rate!=null?retention.return_rate+'%':'\u2014')+') \u2014 evidence the message helped, not proof by itself; see the holdout comparison above for that.</p>');
+    // Same stat, same wording as "What conversations turn into"
+    // (conversion.totals / conversion.caveat) - deliberately the exact
+    // same figures rather than Retention's own separate calculation,
+    // so the two don't tell two different stories from two different
+    // methodologies.
+    const ctot = conversion && conversion.totals;
+    if (ctot) html += chartCard('Retention', '',
+      '<p class="note" style="margin-top:0;">'+money(ctot.came_back||0)+' of '+money(ctot.people||0)+' came in within 30 days ('+(ctot.rate!=null?ctot.rate+'%':'\u2014')+'), worth <b>AED '+money(ctot.revenue||0)+'</b>.</p>' +
+      (conversion.caveat ? '<p class="note">'+esc(conversion.caveat)+'</p>' : ''));
   } else {
     html += '<p class="note">'+(engage.ok ? esc(engage.note||'No messages sent in this period.') : esc(engage.error))+'</p>';
   }
@@ -3580,35 +3664,6 @@ function opsBackendGapNote(actionName, detail){
     '<p style="margin:0;font-size:11px;color:var(--muted);line-height:1.5;">'+detail+' This tab already calls <code>'+actionName+'</code> and will start working with no further changes here the moment it\u2019s deployed.</p></div>';
 }
 
-// Real, from list_package_priority - the price list's own gender
-// split. Deliberately NOT labelled as a customer demographic breakdown
-// (gender/age/location/referral source aren't tracked anywhere in the
-// real system) - shown honestly as what it actually is: the catalog.
-async function customerInsights(){
-  el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
-    '<h1 style="font-size:22px;">Customer insights</h1><div class="loading-block"><span class="spin"></span></div>';
-  const j = await call('list_package_priority', {});
-  const packages = (j.ok ? j.packages : []) || [];
-  const counts = {boys:0, girls:0, either:0};
-  packages.forEach(p => { if (counts[p.gender]!==undefined) counts[p.gender]++; });
-  const total = counts.boys+counts.girls+counts.either;
-  el('p-flow').innerHTML =
-    '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
-    '<h1 style="font-size:22px;">Customer insights</h1>' +
-    '<div class="sechead" style="margin-top:6px;"><h2>Look up a customer</h2></div>' +
-    '<div class="ask"><span class="spark">♙</span><input id="custSearch" placeholder="Search by name or number…" oninput="custSearch()"></div>' +
-    '<div id="custResults"></div>' +
-    '<details style="margin-top:6px;"><summary style="cursor:pointer;font-size:12px;color:var(--muted);">Browse all '+money(DATA.stats.customers)+' customers</summary>' +
-    '<div class="list" id="custList" style="margin-top:8px;"></div></details>' +
-    '<div class="sechead"><h2>Patterns across everyone</h2></div>' +
-    chartCard('Package catalog by category', 'Boys / girls / either split of your current price list \u2014 not a customer breakdown.',
-      total ? barRow('Boys', counts.boys, total, counts.boys) + barRow('Girls', counts.girls, total, counts.girls) + barRow('Either', counts.either, total, counts.either)
-            : '<p class="note">No packages in the price list yet.</p>') +
-    '<div style="border:1px dashed var(--line);border-radius:14px;padding:14px 16px;background:#fafaf8;">' +
-      '<h4 style="margin:0 0 4px;font-size:12px;font-weight:600;color:var(--ink);">Now covered under Operations</h4>' +
-      '<p style="margin:0;font-size:11px;color:var(--muted);line-height:1.5;">Customer gender/age, location, how customers heard about the salon, and wait/chair time are all real now \u2014 see Insights \u2192 Operations \u2192 Demographics, Locations, and Daily ops.</p></div>';
-  el('custList').innerHTML = DATA.customers.map(c => custRow(c)).join('');
-}
 // Real ad spend and results, plus a real Zen-generated suggestion -
 // not the fake DATA.insights.marketing cards this used to show.
 // Real, unsupervised - from get_service_patterns. What actually gets
@@ -3641,9 +3696,10 @@ async function buyInsights(){
 async function learningInsights(){
   el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
     '<h1 style="font-size:22px;">What Zen is learning</h1><div class="loading-block"><span class="spin"></span>Reading real outcomes\u2026</div>';
-  const [learn, pkg] = await Promise.all([ call('get_learning_state', {}), call('get_package_performance', {window_days:30}) ]);
+  const [learn, pkg, metrics] = await Promise.all([ call('get_learning_state', {}), call('get_package_performance', {window_days:30}), call('get_metric_learnings', {}) ]);
   const groups = (learn.ok ? learn.groups : []) || [];
   const pkgGroups = (pkg.ok ? pkg.groups : []) || [];
+  const findings = (metrics.ok ? metrics.learnings : []) || [];
   el('p-flow').innerHTML =
     '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
     '<h1 style="font-size:22px;">What Zen is learning</h1>' +
@@ -3658,7 +3714,20 @@ async function learningInsights(){
       pkgGroups.length ? '<div class="list">' + pkgGroups.map(g =>
         '<div class="list-row"><span><b>'+esc(g.package)+'</b><div class="sub">'+esc(g.occasion)+' \u00b7 '+esc(g.gender)+' \u00b7 '+money(g.suggested)+' suggested</div></span>' +
         '<span class="badge '+(g.thin?'warn':'on')+'">'+(g.rate!=null?g.rate+'%':'\u2014')+(g.thin?' \u00b7 thin':'')+'</span></div>').join('') + '</div>'
-        : (pkg.ok ? '<p class="note">'+esc(pkg.note||'Nothing suggested yet.')+'</p>' : '<p class="note">'+esc(pkg.error)+'</p>'));
+        : (pkg.ok ? '<p class="note">'+esc(pkg.note||'Nothing suggested yet.')+'</p>' : '<p class="note">'+esc(pkg.error)+'</p>')) +
+    // Real - unsupervised patterns across ~400 days of daily metrics
+    // (what moves together, day-of-week effects, structural shifts),
+    // corrected for multiple comparisons before anything is shown.
+    // The backend action for this already existed and already worked;
+    // it was simply never called from anywhere in the UI until now.
+    chartCard('Patterns in the numbers' + (metrics.ok && metrics.computed_at ? '<span style="float:right;font-size:10.5px;font-weight:400;color:var(--muted);">as of '+esc(metrics.computed_at.slice(0,10))+'</span>' : ''),
+      metrics.ok ? esc(metrics.note) : '',
+      findings.length ? '<div class="list">' + findings.map(f =>
+        '<div class="list-row" style="align-items:flex-start;"><span><b>'+esc(f.statement)+'</b>' +
+          (f.caveat ? '<div class="sub">'+esc(f.caveat)+'</div>' : '') +
+          '<div class="sub">'+money(f.observations)+' days observed</div></span>' +
+          '<span class="badge'+(f.strength>=0.6?' on':'')+'">'+f.strength+'</span></div>').join('') + '</div>'
+        : (metrics.ok ? '<p class="note">'+esc(metrics.note)+'</p>' : '<p class="note">'+esc(metrics.error)+'</p>'));
 }
 
 function insightDetail(key,i){
@@ -3767,6 +3836,77 @@ async function setModelForJob(purpose, model){
   if (!j.ok){ toast(j.error, 'err'); return; }
   toast('Saved', 'ok');
   loadModelJobs();
+}
+// Real, from list_do_not_disturb/set_do_not_disturb/check_opt_out_readiness -
+// all three already existed and already worked on the backend, just
+// never called from anywhere in this UI. This was the actual gap:
+// there was no way to even see who had opted out, let alone add or
+// remove someone manually.
+async function dndSettings(){
+  el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:22px;">Do not disturb</h1><div class="loading-block"><span class="spin"></span></div>';
+  await loadDndSettings();
+}
+async function loadDndSettings(){
+  const [ready, list] = await Promise.all([ call('check_opt_out_readiness', {}), call('list_do_not_disturb', {}) ]);
+  const box = el('p-flow');
+  let html = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:22px;">Do not disturb</h1>' +
+    '<p class="sub" style="margin-top:2px;">Anyone here is excluded from every campaign, automatically.</p>';
+
+  if (ready.ok){
+    html += chartCard('Template readiness', ready.note || 'Every template tells customers how to stop.',
+      '<div class="mini-grid" style="max-width:420px;">' +
+        '<div class="mini" style="border-top:0;"><b>'+money(ready.opted_out||0)+'</b><span>Opted out so far</span></div>' +
+        '<div class="mini" style="border-top:0;"><b style="color:'+(ready.missing?'#a02020':'var(--green)')+';">'+money(ready.missing||0)+'</b><span>Templates missing a way to stop</span></div>' +
+      '</div>' +
+      (ready.missing ? '<p class="note" style="margin-top:8px;">Suggested footer: <code>'+esc(ready.suggested_footer||'')+'</code></p>' : ''));
+  }
+
+  html += '<div class="sechead"><h2>Add someone</h2></div>' +
+    '<div class="ask"><span class="spark">\u26d4</span><input id="dndSearch" placeholder="Search by name or number\u2026" oninput="dndSearch()"></div>' +
+    '<div id="dndSearchResults"></div>';
+
+  const people = (list.ok ? list.people : []) || [];
+  html += '<div class="sechead"><h2>Currently excluded ('+people.length+')</h2></div>';
+  html += people.length
+    ? '<div class="list">' + people.map(p =>
+        '<div class="list-row"><span><b>'+esc(p.name||p.mobile||'(no name)')+'</b><div class="sub">'+esc(p.mobile||'')+' \u00b7 '+
+          (p.source==='asked us' ? esc(p.reason||'Asked us') : 'Excluded in the salon system') +
+          (p.since ? ' \u00b7 '+esc(String(p.since).slice(0,10)) : '')+'</div></span>' +
+          (p.source==='asked us' ? '<button class="btn btn-s btn-sm" onclick="dndToggle(\''+p.key+'\',false,\''+esc((p.name||p.mobile||'').replace(/'/g,''))+'\')">Allow again</button>' : '') +
+        '</div>').join('') + '</div>'
+    : (list.ok ? '<p class="note">Nobody excluded right now.</p>' : '<p class="note" style="color:#a02020;">'+esc(list.error)+'</p>');
+
+  box.innerHTML = html;
+}
+let dndT = null;
+async function dndSearch(){
+  clearTimeout(dndT);
+  const q = el('dndSearch').value.trim();
+  const out = el('dndSearchResults');
+  if (q.length<2){ out.innerHTML=''; return; }
+  dndT = setTimeout(async ()=>{
+    out.innerHTML = '<div class="loading-block"><span class="spin"></span></div>';
+    const j = await call('search_customers', {query:q});
+    if (!j.ok){ out.innerHTML = '<p class="note" style="color:#a02020;">'+esc(j.error)+'</p>'; return; }
+    const hits = j.results || [];
+    out.innerHTML = hits.length
+      ? '<div class="list" style="margin-bottom:10px;">' + hits.map(c =>
+          '<div class="list-row"><span><b>'+esc(c.name||c.mobile)+'</b><div class="sub">'+esc(c.mobile||'')+'</div></span>' +
+          '<button class="btn btn-s btn-sm" onclick="dndToggle(\''+c.customer_key+'\',true,\''+esc((c.name||c.mobile||'').replace(/'/g,''))+'\')">Exclude</button></div>').join('') + '</div>'
+      : '<p class="note">No matching customers.</p>';
+  }, 220);
+}
+async function dndToggle(key, on, who){
+  const reason = on ? prompt('Why is '+who+' being excluded? (shown next to their name)', 'Asked not to be messaged') : null;
+  if (on && reason === null) return; // cancelled
+  const j = await call('set_do_not_disturb', {customer_key:key, on, reason: reason||undefined});
+  if (!j.ok){ toast(j.error, 'err'); return; }
+  toast(on ? who+' excluded from all campaigns' : who+' can be messaged again', 'ok');
+  if (j.note) toast(j.note, '');
+  el('dndSearch').value = ''; el('dndSearchResults').innerHTML = '';
+  loadDndSettings();
 }
 function settingsDetail(key){
   const views = {
