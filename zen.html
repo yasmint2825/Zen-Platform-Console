@@ -124,8 +124,6 @@ a{color:var(--green);}
 ::-webkit-scrollbar-thumb{background:#d8dcd6;border-radius:9px;}
 
 /* ── Prototype chrome (Figma-frame indicator — remove for real build) */
-.proto-tag{position:fixed;top:10px;right:10px;background:#1c201d;color:#fff;font-size:10px;
-  padding:4px 9px;border-radius:999px;z-index:999;font-weight:600;letter-spacing:.03em;opacity:.85;}
 
 /* ── Onboarding shell ─────────────────────────────────────────────── */
 #onb{min-height:100vh;display:none;flex-direction:column;}
@@ -194,8 +192,8 @@ label.lbl{display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:v
 /* ── App shell (post-onboarding) ─────────────────────────────────── */
 #app{display:none;min-height:100vh;}
 #app.on{display:flex;}
-#loginGate,#forgotGate,#signupGate{display:none;}
-#loginGate.on,#forgotGate.on,#signupGate.on{display:block;}
+#loginGate,#forgotGate,#signupGate{display:none;min-height:100vh;align-items:center;justify-content:center;padding-bottom:8vh;}
+#loginGate.on,#forgotGate.on,#signupGate.on{display:flex;}
 .side{width:var(--nav-w);flex:0 0 var(--nav-w);background:#fafbf9;border-right:1px solid var(--line);
   padding:18px 12px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;}
 .side-brand{display:flex;gap:9px;align-items:center;padding:6px 8px 20px;}
@@ -469,10 +467,10 @@ label.lbl{display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:v
 </style>
 </head>
 <body>
-<div class="proto-tag">LIVE · REAL DATA</div>
-<div id="loginGate" class="on" style="max-width:340px;margin:14vh auto;padding:0 20px;">
-  <div style="display:flex;gap:9px;align-items:center;margin-bottom:22px;"><span class="onb-orb">Z</span>
-    <div><b style="font:600 15px Sora;display:block;">Zen</b><small style="color:var(--muted);">MiniCuts</small></div></div>
+<div id="loginGate" class="on">
+<div style="width:100%;max-width:340px;padding:0 20px;">
+  <div style="display:flex;gap:9px;align-items:center;margin-bottom:16px;"><span class="onb-orb">Z</span>
+    <div><b style="font:600 15px Sora;display:block;">Zen</b><small style="color:var(--muted);">AI</small></div></div>
   <form id="loginForm" novalidate onsubmit="event.preventDefault();doRealLogin();return false;">
     <input class="field" id="loginEmail" name="email" type="email" placeholder="Email" autocomplete="username" style="margin-bottom:10px;">
     <input class="field" id="loginPass" name="password" type="password" placeholder="Password" autocomplete="current-password" style="margin-bottom:10px;">
@@ -484,24 +482,28 @@ label.lbl{display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:v
     <a href="#" onclick="event.preventDefault();showSignup();" style="color:var(--muted);">New here? Create an account</a>
   </div>
 </div>
+</div>
 
 <!-- Real Supabase Auth password reset - sends an actual email with a
      reset link; nothing simulated here. -->
-<div id="forgotGate" style="max-width:340px;margin:14vh auto;padding:0 20px;">
-  <div style="display:flex;gap:9px;align-items:center;margin-bottom:22px;"><span class="onb-orb">Z</span>
+<div id="forgotGate">
+<div style="width:100%;max-width:340px;padding:0 20px;">
+  <div style="display:flex;gap:9px;align-items:center;margin-bottom:16px;"><span class="onb-orb">Z</span>
     <div><b style="font:600 15px Sora;display:block;">Reset your password</b></div></div>
   <input class="field" id="forgotEmail" type="email" placeholder="Your email" style="margin-bottom:10px;">
   <button class="btn btn-p btn-block" onclick="doForgotPassword()">Send reset link</button>
   <div id="forgotMsg" class="hint" style="margin-top:10px;"></div>
-  <a href="#" onclick="event.preventDefault();showLogin();" style="display:block;margin-top:14px;font-size:12px;color:var(--muted);">← Back to log in</a>
+  <a href="#" onclick="event.preventDefault();showLogin();" style="display:block;margin-top:14px;font-size:12px;color:var(--muted);">\u2190 Back to log in</a>
+</div>
 </div>
 
 <!-- Real signup: creates a genuine new Supabase Auth account, then a
      genuine new tenant via create_tenant (already existed on the
      backend, seeds default campaign settings and makes this user its
      owner) - not a demo of what signup would look like. -->
-<div id="signupGate" style="max-width:340px;margin:10vh auto;padding:0 20px;">
-  <div style="display:flex;gap:9px;align-items:center;margin-bottom:22px;"><span class="onb-orb">Z</span>
+<div id="signupGate">
+<div style="width:100%;max-width:340px;padding:0 20px;">
+  <div style="display:flex;gap:9px;align-items:center;margin-bottom:16px;"><span class="onb-orb">Z</span>
     <div><b style="font:600 15px Sora;display:block;">Create your account</b><small style="color:var(--muted);">Sets up a brand-new, separate business in Zen.</small></div></div>
   <div id="signupForm">
     <input class="field" id="signupBizName" placeholder="Business name, e.g. Curl Up Salon" style="margin-bottom:10px;">
@@ -511,11 +513,12 @@ label.lbl{display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:v
     <div id="signupMsg" class="hint" style="margin-top:10px;"></div>
   </div>
   <div id="signupConfirmSent" style="display:none;text-align:center;padding:20px 0;">
-    <div style="font-size:32px;margin-bottom:10px;">✉️</div>
+    <div style="font-size:32px;margin-bottom:10px;">\u2709\ufe0f</div>
     <b style="display:block;font-size:14px;margin-bottom:6px;">Check your email</b>
-    <p style="color:var(--muted);font-size:12.5px;line-height:1.5;margin:0;">We’ve sent a confirmation link to <b id="signupConfirmEmail" style="color:var(--ink);"></b>. Click it, then come back and log in.</p>
+    <p style="color:var(--muted);font-size:12.5px;line-height:1.5;margin:0;">We\u2019ve sent a confirmation link to <b id="signupConfirmEmail" style="color:var(--ink);"></b>. Click it, then come back and log in.</p>
   </div>
-  <a href="#" onclick="event.preventDefault();showLogin();" style="display:block;margin-top:14px;font-size:12px;color:var(--muted);">← Back to log in</a>
+  <a href="#" onclick="event.preventDefault();showLogin();" style="display:block;margin-top:14px;font-size:12px;color:var(--muted);">\u2190 Back to log in</a>
+</div>
 </div>
 <div id="toastHost"></div>
 <!-- ══════════════════════════════════════════════════════════════
@@ -536,7 +539,7 @@ label.lbl{display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:v
      ══════════════════════════════════════════════════════════════ -->
 <div id="app">
   <nav class="side">
-    <div class="side-brand"><span class="onb-orb">Z</span><div><b>Zen</b><small>MiniCuts</small></div></div>
+    <div class="side-brand"><span class="onb-orb">Z</span><div><b>Zen</b><small id="sideBrandTenant">AI</small></div></div>
     <div class="side-nav">
       <button class="side-btn active" data-p="home" onclick="go('home')"><span class="ic">⌂</span>Home</button>
       <button class="side-btn" data-p="campaigns" onclick="go('campaigns')"><span class="ic">◈</span>Campaigns<span class="cnt" id="navCampBadge" style="display:none;"></span></button>
@@ -897,6 +900,12 @@ function updateSideUser(t){
   if (av) av.textContent = initial;
   if (nameEl) nameEl.textContent = email || 'Signed in';
   if (roleEl) roleEl.textContent = (myRole ? myRole.charAt(0).toUpperCase()+myRole.slice(1) : '') + ' \u00b7 log out';
+  // The real, selected tenant's name, not a hardcoded one - this was
+  // static "MiniCuts" in the HTML regardless of which business was
+  // actually signed in, which would have shown the wrong salon's name
+  // for literally any other tenant on this platform.
+  const brandEl = document.getElementById('sideBrandTenant');
+  if (brandEl) brandEl.textContent = (t && t.mw_tenants && t.mw_tenants.name) ? t.mw_tenants.name : 'AI';
 }
 
 // Deliberately does NOT call sb.auth.signOut() - documented, confirmed
@@ -1415,11 +1424,7 @@ async function home(){
       '<button class="chip" onclick="go(\'marketing\')">Create something</button>' +
     '</div><div id="homeAnswer"></div>' +
     '<div class="sechead"><h2>Needs your attention</h2></div>' +
-    '<div class="stack" id="homeAttn"><div class="loading-block"><span class="spin"></span>Checking your business\u2026</div></div>' +
-    '<div class="sechead"><h2>This month</h2><span>Revenue</span></div>' +
-    '<div id="homeResults"><div class="loading-block"><span class="spin"></span></div></div>' +
-    '<div class="sechead"><h2>This quarter</h2><span>Revenue</span></div>' +
-    '<div id="homeQuarter"><div class="loading-block"><span class="spin"></span></div></div>';
+    '<div class="stack" id="homeAttn"><div class="loading-block"><span class="spin"></span>Checking your business\u2026</div></div>';
 
   // The 400-day revenue fetch needed for the MTD comparison is the
   // slowest call on this page. It runs in parallel but is not
@@ -1431,8 +1436,6 @@ async function home(){
     call('get_command_center_data', {}), call('get_decision_buckets', {days:60}),
     call('list_conversations', {limit:30}),
   ]);
-  const revPromise = call('get_daily_metric', {metric_key:'revenue', days:400});
-  const quarterPromise = call('get_quarter_comparison', {});
 
   const [cc, buckets, convos] = await fast;
   HOME_CACHE = { cc, buckets, convos };
@@ -1450,17 +1453,6 @@ async function home(){
     '<div class="attn"><div class="n">'+(i+1)+'</div><div><b>'+esc(a.title||'')+'</b><p>'+esc(String(a.detail||'').slice(0,150))+'</p></div>' +
     '<button class="btn btn-s btn-sm go" onclick="go(\'campaigns\')">Review</button></div>').join('')
     : '<div class="empty-block">'+emptyIcon('\u25ce')+'<h2>Nothing unusual today</h2><p>Zen is still watching.</p></div>';
-
-  // Month-to-date, compared the way an owner actually thinks about it:
-  // against the same number of days into recent months, and against
-  // the same month last year - not just "the last 8 days". Built by
-  // slicing one real 400-day fetch by actual calendar date, since the
-  // backend only supports "days back from today", not arbitrary
-  // date ranges.
-  const revMetric = await revPromise;
-  if (el('homeResults')) el('homeResults').innerHTML = mtdCompareHTML(revMetric);
-  const quarterData = await quarterPromise;
-  if (el('homeQuarter')) el('homeQuarter').innerHTML = quarterCompareHTML(quarterData);
 }
 function mtdCompareHTML(revMetric){
   if (!revMetric.ok || !revMetric.rows || !revMetric.rows.length) return '<p class="note">Not enough revenue history yet to compare.</p>';
@@ -2932,7 +2924,7 @@ async function insights(){
     '<div class="grid3">' +
       insCat('💬','WhatsApp','What\u2019s working in your messages','whatsapp') +
       insCat('✦','Marketing','What content is performing','marketing') +
-      insCat('⚡','Operations','How your salon is running day to day','operations') +
+      insCat('⚡','Sales and Operations','How your salon is running day to day','operations') +
     '</div>' +
 
     '<details style="margin-top:16px;"><summary style="cursor:pointer;font-size:12.5px;font-weight:600;color:var(--ink);">More business analysis</summary>' +
@@ -3461,7 +3453,7 @@ function monthSelect(onchange, selected){
 async function operationsInsights(){
   STATE.opsTab = STATE.opsTab || 'overview';
   el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
-    '<h1 style="font-size:22px;">Operations insights</h1>' +
+    '<h1 style="font-size:22px;">Sales and Operations insights</h1>' +
     '<div class="subtabs" id="opsTabs">' +
       [['overview','Overview'],['revenue','Revenue'],['demographics','Demographics'],['acquisition','Acquisition'],['locations','Locations'],['daily','Daily ops']].map(t =>
         '<button class="'+(t[0]===STATE.opsTab?'active':'')+'" onclick="opsSubTab(\''+t[0]+'\')">'+t[1]+'</button>').join('') +
@@ -3480,17 +3472,29 @@ async function opsOverviewTab(month){
   month = month || new Date().toISOString().slice(0,7);
   const box = el('opsTabBody');
   box.innerHTML = '<div class="loading-block"><span class="spin"></span></div>';
-  const [reports, reg, active30, active90, lapsed90, returning, nvr, rev] = await Promise.all([
+  const [reports, reg, activity, returning, nvr, rev, revMetric, quarterData] = await Promise.all([
     call('get_reports_data', {}),
     call('get_daily_metric', {metric_key:'new_customers', days:30}),
-    call('get_daily_metric', {metric_key:'active_30d', days:1}),
-    call('get_daily_metric', {metric_key:'active_90d', days:1}),
-    call('get_daily_metric', {metric_key:'lapsed_90d', days:1}),
+    // Real, computed directly from mw_transactions - see the backend
+    // comment on this action for why the previous version (four
+    // separate get_daily_metric calls, three of them for keys that
+    // were never confirmed to exist) showed nothing on every figure.
+    call('get_customer_activity_summary', {}),
     call('get_daily_metric', {metric_key:'returning_customers', days:30}),
     call('get_new_vs_returning', {month}),
     call('get_revenue_breakdown', {month}),
+    // This month / this quarter, moved here from Home per request -
+    // same real calls and same slicing logic as before, just living
+    // under Sales and Operations -> Overview now instead of Home.
+    call('get_daily_metric', {metric_key:'revenue', days:400}),
+    call('get_quarter_comparison', {}),
   ]);
   let html = '';
+
+  html += '<div class="sechead" style="margin-top:0;"><h2>This month</h2><span>Revenue</span></div>' +
+    '<div style="margin-bottom:18px;">' + mtdCompareHTML(revMetric) + '</div>' +
+    '<div class="sechead"><h2>This quarter</h2><span>Revenue</span></div>' +
+    '<div style="margin-bottom:18px;">' + quarterCompareHTML(quarterData) + '</div>';
 
   // This month at a glance - combines two already-real, already
   // month-scoped actions (new-vs-returning, revenue breakdown) into
@@ -3525,8 +3529,12 @@ async function opsOverviewTab(month){
       '<div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--muted);margin-top:4px;"><span>'+esc(rows[0].metric_date)+'</span><span>'+esc(rows[rows.length-1].metric_date)+'</span></div>' +
       '<p class="note" style="margin-top:8px;">'+money(reg.total||0)+' new customer(s) registered in the last 30 days.</p>');
   }
-  const a30 = active30.ok ? active30.latest : null, a90 = active90.ok ? active90.latest : null;
-  const l90 = lapsed90.ok ? lapsed90.latest : null, ret30 = returning.ok ? returning.total : null;
+  const a30 = activity.ok ? activity.active_30d : null, a90 = activity.ok ? activity.active_90d : null;
+  const l90 = activity.ok ? activity.lapsed_90d : null;
+  // returning_30d comes from the same reliable, real computation as
+  // the other three now - the old returning_customers daily-metric
+  // call is kept as a fallback only if the new one somehow fails.
+  const ret30 = activity.ok ? activity.returning_30d : (returning.ok ? returning.total : null);
   html += chartCard('Active & lapsed customers', 'A rolling snapshot as of today.',
     '<div class="mini-grid" style="max-width:560px;">' +
       '<div class="mini" style="border-top:0;"><b>'+(a30!=null?money(a30):'\u2014')+'</b><span>Active, last 30 days</span></div>' +
