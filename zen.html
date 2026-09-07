@@ -1850,6 +1850,13 @@ async function waSelect(mobile){
     }
   }
 }
+function msgTime(ts){
+  if (!ts) return '';
+  const d = new Date(ts);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const hh = String(d.getHours()).padStart(2,'0'), mm = String(d.getMinutes()).padStart(2,'0');
+  return d.getDate()+' '+months[d.getMonth()]+', '+hh+':'+mm;
+}
 function waRenderThread(mobile){
   const c = WA_CACHE.find(x=>x.mobile===mobile);
   const pane = el('waThreadPane');
@@ -1870,15 +1877,16 @@ function waRenderThread(mobile){
       '<div class="wa-bubble" style="'+(m.direction==='out'?'margin-left:auto;background:#fff;border:1px solid var(--line);':'')+'margin-bottom:8px;">' +
       (m.media_url ? '<img src="'+esc(m.media_url)+'" style="max-width:220px;border-radius:10px;display:block;margin-bottom:'+(m.body?'6px':'0')+';" loading="lazy">' : '') +
       (m.body ? esc(String(m.body).slice(0,500)) : '') +
-      // Zen's own replies are marked, so it is visible which
-      // conversations the reply assistant handled versus a person -
-      // this was already returned by the backend and never shown.
-      // list_conversations translates the raw DB direction values
-      // ("inbound"/"outbound") into "in"/"out" for this exact
-      // response - confirmed by reading that action directly, after
-      // an earlier fix here wrongly assumed "outbound" based on a
-      // different action's raw table values instead.
-      (m.direction==='out' ? '<div class="wa-meta">'+(m.sent_by==='auto'?'\u2728 Zen replied':m.sent_by==='agent'?'Sent automatically':'You')+'</div>' : '') +
+      // Every message now carries its real timestamp - this was
+      // completely missing before, on both inbound and outbound
+      // messages, which made it impossible to tell when in a
+      // conversation something was actually said without cross-
+      // referencing the conversation list's single "2h ago" for the
+      // whole thread. Zen's own reply-source label (already existed,
+      // outbound only) sits alongside it rather than replacing it.
+      '<div class="wa-meta">'+esc(msgTime(m.at))+
+        (m.direction==='out' ? ' \u00b7 '+(m.sent_by==='auto'?'\u2728 Zen replied':m.sent_by==='agent'?'Sent automatically':'You') : '')+
+      '</div>' +
       '</div>').join('') + '</div>' +
     '<div class="wa-thread-foot">' +
       '<textarea id="waReplyBox" placeholder="Type a reply\u2026"></textarea>' +
@@ -2256,7 +2264,7 @@ function cancelStrategyPreview(){
   el('nlResult').textContent = '';
 }
 
-const CAMP_STEPS = ['Audience','Message','Test','Schedule'];
+const CAMP_STEPS = ['Audience','Message','Schedule'];
 const campPlan = { key:null, size:0, holdPct:20, wave:null }; // holdPct's 20 is a placeholder, overwritten in campAudience() with the real configured value before it's ever used
 
 function campaignFlow(key){ campPlan.key = key; campAudience(); }
@@ -2464,66 +2472,74 @@ async function campRejectAll(){
   go('campaigns');
 }
 
+// Merged with the former separate "Test" step, per request - the
+// template text, its real variable inputs, and the test-send box now
+// all live on this one screen instead of two. Pulls the actual
+// approved template straight from Meta (get_campaign_template_preview)
+// rather than the older, weaker action that had no variable inputs at
+// all - which is why a test send used to fail for any template with a
+// required variable, which is nearly all of them.
 async function campMessage(){
-  el('p-flow').innerHTML = wizSteps(CAMP_STEPS,1) + '<h1 style="font-size:22px;">Review the message</h1>' +
+  el('p-flow').innerHTML = wizSteps(CAMP_STEPS,1) + '<h1 style="font-size:22px;">Message & test</h1>' +
     '<div class="loading-block"><span class="spin"></span>Reading the approved template\u2026</div>';
 
-  // The real, WhatsApp-approved template for this campaign - not a
-  // message we made up. get_decision_buckets has no message text at
-  // all, so this is composed from the real mapping plus the real,
-  // live template body.
-  const [mapJ, tplJ] = await Promise.all([ call('list_template_mappings', {}), call('list_sendable_templates', {}) ]);
-  // The real table column is type_key, not campaign_key - this
-  // mismatch was the actual cause of "no template found" for every
-  // campaign, regardless of what was really mapped in the database.
-  const mapping = (mapJ.ok ? (mapJ.mappings||[]) : []).find(m => m.type_key === campPlan.key);
-  const templates = tplJ.ok ? (tplJ.templates||[]) : [];
-  const tpl = mapping ? templates.find(x => x.name === mapping.template_name) : null;
-
-  if (!tpl){
-    el('p-flow').innerHTML = wizSteps(CAMP_STEPS,1) + '<h1 style="font-size:22px;">Review the message</h1>' +
-      '<div class="empty-block">'+emptyIcon('\u2620')+'<h2>No approved template found for this campaign</h2>' +
-      '<p>'+esc(!tplJ.ok ? tplJ.error : 'This campaign has no template mapped in WhatsApp Manager yet.')+'</p></div>' +
+  const j = await call('get_campaign_template_preview', {campaign_key: campPlan.key});
+  if (!j.ok){
+    el('p-flow').innerHTML = wizSteps(CAMP_STEPS,1) + '<h1 style="font-size:22px;">Message & test</h1>' +
+      errBlock(j.error, 'campMessage()') +
       '<div class="wiz-actions"><button class="btn btn-ghost" onclick="campAudience()">Back</button></div>';
     return;
   }
-  campPlan.template = tpl.name;
+  campPlan.template = j.template_name;
+  campPlan.testTemplate = j;
+  const msg = [j.header_text, j.body_text, j.footer_text].filter(Boolean).join('\n\n');
+  function varInputs(prefix, count, label){
+    if (!count) return '';
+    let out = '<label class="lbl" style="margin-top:8px;">'+label+'</label>';
+    for (let i=1; i<=count; i++) out += '<input class="field" id="tv_'+prefix+'_'+i+'" placeholder="Value for {{'+i+'}}" style="margin-bottom:6px;">';
+    return out;
+  }
   el('p-flow').innerHTML =
-    wizSteps(CAMP_STEPS,1) + '<h1 style="font-size:22px;">Review the message</h1>' +
-    zen('This is the real, WhatsApp-approved template Zen will use. Each customer\u2019s name and details fill in the blanks.') +
-    '<div class="wa-bubble" style="margin-top:12px;">'+esc(tpl.body||'')+'</div>' +
-    '<div class="wa-meta">Template: '+esc(tpl.name)+' \u00b7 '+esc(tpl.lang||'en')+'</div>' +
-    '<div class="note">You cannot edit this here'+tip('WhatsApp checks every template in advance. Changes go through WhatsApp Manager and need re-approval before they can be used.')+' \u2014 changes go through WhatsApp Manager and need approval again.</div>' +
-    '<div class="wiz-actions"><button class="btn btn-ghost" onclick="campAudience()">Back</button>' +
-    '<button class="btn btn-p" onclick="campTest()">Continue</button></div>';
-}
-
-function campTest(){
-  el('p-flow').innerHTML =
-    wizSteps(CAMP_STEPS,2) + '<h1 style="font-size:22px;">Send yourself a test</h1>' +
-    '<p class="note" style="margin-top:4px;">This uses the real WhatsApp send \u2014 it will genuinely arrive. If the template needs details like a name or offer, Meta may reject a test with none supplied; that error is real and worth knowing before the real send.</p>' +
+    wizSteps(CAMP_STEPS,1) + '<h1 style="font-size:22px;">Message & test</h1>' +
+    zen('This is the real, WhatsApp-approved template Zen will use for the actual send \u2014 each customer\u2019s own name and details fill the blanks automatically. Below it, send yourself a real test with values you choose.') +
+    '<p class="note" style="margin-top:0;">'+esc(j.template_name)+' ('+esc(j.language)+') \u2014 '+esc(j.status)+'</p>' +
+    '<pre style="white-space:pre-wrap;font-size:12px;background:#fafaf8;border:1px solid var(--line);border-radius:10px;padding:12px;margin:0 0 10px;">'+esc(msg)+'</pre>' +
+    '<div class="note" style="margin-bottom:14px;">You cannot edit this template here'+tip('WhatsApp checks every template in advance. Changes go through WhatsApp Manager and need re-approval before they can be used.')+' \u2014 changes go through WhatsApp Manager and need approval again.</div>' +
+    '<div class="sechead" style="margin-top:4px;"><h2>Send yourself a test</h2></div>' +
     '<div id="testArea">' +
-      '<input class="field" id="campTestNumber" placeholder="Your WhatsApp number, e.g. 9715XXXXXXXX" style="max-width:280px;margin-bottom:10px;">' +
-      '<button class="btn btn-p" onclick="campSendTest()">Send test</button></div>' +
-    '<div class="wiz-actions"><button class="btn btn-ghost" onclick="campMessage()">Back</button>' +
-    '<button class="btn btn-s" onclick="campSchedule()">Skip test</button></div>';
+      varInputs('h', j.header_var_count, 'Header variable'+(j.header_var_count>1?'s':'')) +
+      varInputs('b', j.body_var_count, 'Body variable'+(j.body_var_count>1?'s':'')) +
+      (j.header_var_count||j.body_var_count ? '<p class="note" style="font-size:10.5px;">Leave blank to use sensible placeholder values instead.</p>' : '') +
+      '<input class="field" id="campTestNumber" placeholder="Your WhatsApp number, e.g. 9715XXXXXXXX" style="max-width:280px;margin:10px 0;">' +
+      '<button class="btn btn-p" onclick="campSendTest()">Send test</button>' +
+      '<div id="campTestResult" style="margin-top:8px;"></div>' +
+    '</div>' +
+    '<div class="wiz-actions"><button class="btn btn-ghost" onclick="campAudience()">Back</button>' +
+    '<button class="btn btn-p" id="campMsgContinueBtn" onclick="campSchedule()">Continue</button></div>';
 }
 async function campSendTest(){
   const num = el('campTestNumber').value.trim();
-  if (!num){ toast('Enter a number first.', 'err'); return; }
-  el('testArea').innerHTML = '<div class="loading-block"><span class="spin"></span>Sending to '+esc(num)+'\u2026</div>';
-  const j = await call('send_whatsapp_test_message', { to_number:num, template_name: campPlan.template });
-  if (!j.ok){ el('testArea').innerHTML = errBlock(j.error, 'campTest()'); return; }
-  el('testArea').innerHTML =
-    '<p style="color:var(--green);font-size:12px;">\u2713 Test sent to '+esc(num)+' \u2014 check WhatsApp.</p>' +
-    '<button class="btn btn-p" style="margin-top:10px;" onclick="campSchedule()">Looks good \u2014 continue</button>';
+  const res = el('campTestResult');
+  if (!num){ res.innerHTML = '<p class="note" style="color:#a02020;">Enter a number first.</p>'; return; }
+  const j0 = campPlan.testTemplate || {};
+  const collect = (prefix, count) => {
+    const out = [];
+    for (let i=1; i<=count; i++){ const v = el('tv_'+prefix+'_'+i); out.push(v ? v.value.trim() : ''); }
+    return out.filter(Boolean);
+  };
+  const header_params = collect('h', j0.header_var_count||0);
+  const body_params = collect('b', j0.body_var_count||0);
+  res.innerHTML = '<div class="loading-block"><span class="spin"></span>Sending to '+esc(num)+'\u2026</div>';
+  const j = await call('send_campaign_test_message', { campaign_key: campPlan.key, to_number:num, header_params, body_params });
+  if (!j.ok){ res.innerHTML = errBlock(j.error, 'campMessage()'); return; }
+  res.innerHTML = '<p style="color:var(--green);font-size:12px;">\u2713 Test sent to '+esc(num)+' \u2014 check WhatsApp.</p>';
 }
 
 async function campSchedule(){
-  el('p-flow').innerHTML = wizSteps(CAMP_STEPS,3) + '<h1 style="font-size:22px;">Ready to send</h1>' +
+  el('p-flow').innerHTML = wizSteps(CAMP_STEPS,2) + '<h1 style="font-size:22px;">Ready to send</h1>' +
     '<div class="loading-block"><span class="spin"></span>Checking today\u2019s allowance\u2026</div>';
   const room = await call('list_failed_sends', {days:1});
-  if (!room.ok){ el('p-flow').innerHTML = wizSteps(CAMP_STEPS,3) + errBlock('Could not check today\u2019s allowance, so this stops here. '+room.error, 'campSchedule()'); return; }
+  if (!room.ok){ el('p-flow').innerHTML = wizSteps(CAMP_STEPS,2) + errBlock('Could not check today\u2019s allowance, so this stops here. '+room.error, 'campSchedule()'); return; }
   const left = room.room_left != null ? room.room_left : 0;
 
   // Exactly who was checked in the audience step - not a server-side
@@ -2536,7 +2552,7 @@ async function campSchedule(){
   campPlan.capped = capped; campPlan.held = held;
 
   el('p-flow').innerHTML =
-    wizSteps(CAMP_STEPS,3) + '<h1 style="font-size:22px;">Ready to send</h1><p class="note" style="margin-top:4px;">Nothing has gone out yet.</p>' +
+    wizSteps(CAMP_STEPS,2) + '<h1 style="font-size:22px;">Ready to send</h1><p class="note" style="margin-top:4px;">Nothing has gone out yet.</p>' +
     '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:16px 18px;max-width:520px;margin-top:12px;display:flex;gap:18px;align-items:center;">' +
       ring(capped.length ? Math.round(sending/capped.length*100) : 0) +
       '<div style="flex:1;">' + rowKV('You selected', money(selectedIds.length)) +
@@ -2544,25 +2560,68 @@ async function campSchedule(){
       rowKV('Getting a message', money(sending)) +
       rowKV('Kept back to measure results'+tip('A small group is left out on purpose so you can see whether the message actually caused people to return, not just that they happened to visit anyway.'), money(held)) +
       rowKV('Today\u2019s allowance left after this', money(left-sending)) + '</div></div>' +
-    '<div class="wiz-actions"><button class="btn btn-ghost" onclick="campTest()">Back</button>' +
+    // Real - commit_wave now accepts a genuine future scheduled_send_at
+    // instead of always hardcoding "right now". The dispatcher that
+    // actually sends a scheduled wave already existed and already ran
+    // every 5 minutes; this was purely a missing way to tell it when.
+    '<div style="max-width:520px;margin-top:14px;">' +
+      '<label class="lbl">When</label>' +
+      '<div style="display:flex;gap:8px;margin-bottom:8px;">' +
+        '<button class="btn btn-s btn-sm" id="campWhenNowBtn" onclick="campSetWhen(false)">Send now</button>' +
+        '<button class="btn btn-s btn-sm" id="campWhenLaterBtn" onclick="campSetWhen(true)">Schedule for later</button>' +
+      '</div>' +
+      '<input type="datetime-local" id="campScheduleAt" style="display:none;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:13px;">' +
+    '</div>' +
+    '<div class="wiz-actions"><button class="btn btn-ghost" onclick="campMessage()">Back</button>' +
     '<button class="btn btn-p btn-lg" id="campSendBtn" '+(sending?'':'disabled')+' onclick="campDoSend()">Send to '+money(sending)+' customers</button></div>';
+  campSetWhen(false);
+}
+function campSetWhen(later){
+  campPlan.scheduleLater = later;
+  el('campWhenNowBtn').className = 'btn btn-sm '+(later?'btn-s':'btn-p');
+  el('campWhenLaterBtn').className = 'btn btn-sm '+(later?'btn-p':'btn-s');
+  const inp = el('campScheduleAt');
+  inp.style.display = later ? 'block' : 'none';
+  if (later && !inp.value){
+    // Default to an hour from now - close enough to be a one-click
+    // accept for "shortly", far enough out that it's obviously a
+    // deliberate future time, not accidentally identical to "now".
+    const d = new Date(Date.now() + 3600000);
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    inp.value = d.toISOString().slice(0,16);
+  }
+  const btn = el('campSendBtn');
+  if (btn) btn.textContent = (later ? 'Schedule for ' : 'Send to ') + money(campPlan.capped ? campPlan.capped.length - campPlan.held : 0) + ' customers';
 }
 function rowKV(k,v){ return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:12.5px;"><span style="color:var(--muted);">'+k+'</span><b>'+v+'</b></div>'; }
 async function campDoSend(){
-  const btn = el('campSendBtn'); btn.disabled=true; btn.innerHTML='<span class="spin"></span>Sending\u2026';
+  let scheduledAt = null;
+  if (campPlan.scheduleLater){
+    const raw = el('campScheduleAt').value;
+    if (!raw){ toast('Pick a date and time first.', 'err'); return; }
+    const when = new Date(raw);
+    if (isNaN(when.getTime()) || when.getTime() <= Date.now()){ toast('Pick a time in the future.', 'err'); return; }
+    scheduledAt = when.toISOString();
+  }
+  const btn = el('campSendBtn'); btn.disabled=true; btn.innerHTML='<span class="spin"></span>'+(scheduledAt?'Scheduling\u2026':'Sending\u2026');
   // The exact people chosen in the audience step, split into send vs
   // held-back client-side - no server auto-pick involved once someone
   // has made a manual selection.
   const held = new Set(campPlan.capped.slice(0, campPlan.held));
   const send = campPlan.capped.filter(id => !held.has(id));
-  const j = await call('commit_wave', { send_ids: send, control_ids: [...held], review_first:false });
+  const args = { send_ids: send, control_ids: [...held], review_first:false };
+  if (scheduledAt) args.scheduled_send_at = scheduledAt;
+  const j = await call('commit_wave', args);
   if (!j.ok){ btn.disabled=false; btn.innerHTML='Send'; toast(j.error, 'err'); return; }
+  const whenText = j.scheduled_send_at && new Date(j.scheduled_send_at).getTime() > Date.now() + 60000
+    ? 'will go out at '+new Date(j.scheduled_send_at).toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'})
+    : 'will hear from you shortly';
   el('p-flow').innerHTML =
     '<div style="text-align:center;padding:40px 0;">' +
-    '<div style="font-size:34px;">\u2713</div><h1 style="font-size:23px;margin:12px 0 6px;">On their way</h1>' +
-    '<p class="note" style="margin:0 auto;max-width:400px;">'+money(j.queued)+' customers will hear from you shortly. '+money(j.held_back)+' were kept back on purpose.</p>' +
+    '<div style="font-size:34px;">\u2713</div><h1 style="font-size:23px;margin:12px 0 6px;">'+(scheduledAt?'Scheduled':'On their way')+'</h1>' +
+    '<p class="note" style="margin:0 auto;max-width:400px;">'+money(j.queued)+' customers '+whenText+'. '+money(j.held_back)+' were kept back on purpose.</p>' +
     '<div class="wiz-actions" style="justify-content:center;margin-top:22px;"><button class="btn btn-p" onclick="go(\'campaigns\')">Back to Campaigns</button></div></div>';
-  toast('Sent', 'ok');
+  toast(scheduledAt ? 'Scheduled' : 'Sent', 'ok');
   HOME_CACHE.buckets = null;
 }
 // Real measured outcomes: every WhatsApp/Instagram touch (in either
