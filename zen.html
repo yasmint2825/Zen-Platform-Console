@@ -1086,8 +1086,10 @@ function ring(percent, color){
 }
 // A "?" that explains a term in place, so nothing requires the
 // reader to already know what a control group or a template is.
-function errBlock(text, retry){
-  return '<div class="empty-block">'+emptyIcon('\u26a0')+'<h2>That did not work</h2><p>'+esc(text)+'</p></div>' +
+function errBlock(text, retry, rawPreview){
+  return '<div class="empty-block">'+emptyIcon('\u26a0')+'<h2>That did not work</h2><p>'+esc(text)+'</p>'+
+    (rawPreview ? '<textarea readonly style="width:100%;max-width:480px;min-height:80px;font-size:11px;font-family:monospace;background:#faf9f6;margin-top:10px;">'+esc(rawPreview)+'</textarea>' : '')+
+  '</div>' +
     (retry ? '<div class="wiz-actions" style="justify-content:center;"><button class="btn btn-p" onclick="'+retry+'">Try again</button></div>' : '');
 }
 function tip(text){
@@ -3139,7 +3141,7 @@ async function magentStepCreativeMix(){
   el('p-flow').innerHTML = magentShell('<div class="loading-block"><span class="spin"></span>Building a content mix around your selected persona(s)\u2026</div>', '');
   const selected = magentState.selectedPersonas.map(i => magentState.personas[i]);
   const j = await call('recommend_creative_mix', { personas: selected }, 45000);
-  if (!j.ok){ el('p-flow').innerHTML = magentShell(errBlock(j.error, 'magentStepCreativeMix()'), '<button class="btn btn-ghost" onclick="magentStepPersona()">Back</button><span></span>'); return; }
+  if (!j.ok){ el('p-flow').innerHTML = magentShell(errBlock(j.error, 'magentStepCreativeMix()', j.raw_preview), '<button class="btn btn-ghost" onclick="magentStepPersona()">Back</button><span></span>'); return; }
   magentState.concepts = j.concepts || [];
   magentState.selectedConcepts = magentState.concepts.map((_,i) => i); // all selected by default - "Use Recommended Mix"
   renderCreativeMix();
@@ -3314,7 +3316,7 @@ async function magentCompileAndShow(){
     persona_id: persona?.id || null, persona_context: persona ? (persona.name+': '+persona.creative_angle) : null,
     creative_concept: concept,
   }, 45000);
-  if (!briefRes.ok){ el('p-flow').innerHTML = magentShell(errBlock(briefRes.error, 'magentStepVisualSource()'), '<button class="btn btn-ghost" onclick="magentStepVisualSource()">Back</button><span></span>'); return; }
+  if (!briefRes.ok){ el('p-flow').innerHTML = magentShell(errBlock(briefRes.error, 'magentStepVisualSource()', briefRes.raw_preview), '<button class="btn btn-ghost" onclick="magentStepVisualSource()">Back</button><span></span>'); return; }
 
   // If an avatar was explicitly selected in Step 4, that choice
   // overrides the automatic PERSON reference specifically - but
@@ -3337,7 +3339,7 @@ async function magentCompileAndShow(){
   // exceed a 20s default, so it gets the same extended timeout as the
   // other AI-generation calls already using one.
   const compileRes = await call('compile_prompt', { creative_brief_id: briefRes.brief.id, asset_ids: assetIds, special_notes: specialNotes }, 45000);
-  if (!compileRes.ok){ el('p-flow').innerHTML = magentShell(errBlock(compileRes.error, 'magentStepVisualSource()'), '<button class="btn btn-ghost" onclick="magentStepVisualSource()">Back</button><span></span>'); return; }
+  if (!compileRes.ok){ el('p-flow').innerHTML = magentShell(errBlock(compileRes.error, 'magentStepVisualSource()', compileRes.raw_preview), '<button class="btn btn-ghost" onclick="magentStepVisualSource()">Back</button><span></span>'); return; }
 
   magentState.pendingBriefId = briefRes.brief.id;
   magentState.pendingCompiledPrompt = compileRes.compiled_prompt;
