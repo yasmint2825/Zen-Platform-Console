@@ -274,6 +274,24 @@ label.lbl{display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:v
 
 /* ── Wizard steps ─────────────────────────────────────────────────── */
 .wiz-steps{display:flex;gap:0;margin-bottom:24px;max-width:560px;}
+/* Marketing Agent wizard - deliberately its own layout, not wizSteps():
+   the spec explicitly asks for progress-left/decision-right on desktop,
+   which the existing horizontal wizSteps() pattern doesn't provide.
+   Collapses to single-column with a sticky action bar on mobile,
+   reusing the app's existing responsive breakpoint rather than a new one. */
+.magent-shell{display:flex;gap:28px;align-items:flex-start;}
+.magent-nav{width:220px;flex-shrink:0;position:sticky;top:20px;}
+.magent-nav-step{padding:10px 12px;border-radius:9px;font-size:12.5px;color:var(--muted);margin-bottom:2px;display:flex;align-items:center;gap:8px;}
+.magent-nav-step.active{background:#fff;color:var(--ink);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.05);}
+.magent-nav-step.done{color:var(--green);}
+.magent-content{flex:1;min-width:0;max-width:640px;}
+.magent-actions{display:flex;justify-content:space-between;margin-top:20px;}
+@media(max-width:860px){
+  .magent-shell{display:block;}
+  .magent-nav{display:flex;position:static;width:100%;overflow-x:auto;gap:4px;margin-bottom:16px;padding-bottom:4px;}
+  .magent-nav-step{white-space:nowrap;margin-bottom:0;}
+  .magent-actions{position:sticky;bottom:0;background:var(--bg);padding:12px 0;margin-top:16px;border-top:1px solid var(--line);}
+}
 .wiz-step{flex:1;padding-top:9px;border-top:2px solid var(--line);font-size:10.5px;color:var(--muted);}
 .wiz-step.done{border-top-color:var(--green);}
 .wiz-step.now{border-top-color:var(--green);color:var(--ink);font-weight:600;}
@@ -682,14 +700,19 @@ if (typeof window.supabase === 'undefined'){
   }
 }
 
-async function call(action, args){
+async function call(action, args, timeoutMs){
   const controller = new AbortController();
   // No call in this app should ever hang the page indefinitely - a
   // few of these (ad diagnostics, ad spend) make a live round-trip to
   // Meta's own API on top of the real database, and a slow or stalled
   // external call previously left the page spinning forever with no
-  // way out and no error to explain why.
-  const timeoutId = setTimeout(() => controller.abort(), 20000);
+  // way out and no error to explain why. 20s is the default for that
+  // reason. A small, explicit set of AI-generation calls request a
+  // genuinely larger structured output (2000-4000 tokens) and can
+  // legitimately take longer to generate than 20s without anything
+  // being stuck - those callers pass a longer timeoutMs explicitly;
+  // every other call keeps the original 20s protection unchanged.
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs || 20000);
   try{
     const r = await fetch(SB_URL + '/functions/v1/mw-admin', {
       method:'POST',
@@ -704,7 +727,7 @@ async function call(action, args){
     if (j && typeof j === 'object'){ if (!('ok' in j)) j.ok = r.ok; return j; }
     return { ok:false, error:'Unexpected response.' };
   } catch(e){
-    if (e && e.name === 'AbortError') return { ok:false, error:'This took too long to respond and was stopped after 20 seconds.' };
+    if (e && e.name === 'AbortError') return { ok:false, error:'This took too long to respond and was stopped after '+Math.round((timeoutMs||20000)/1000)+' seconds.' };
     return { ok:false, error:'Could not reach the server. ' + (e && e.message ? e.message : '') };
   } finally {
     clearTimeout(timeoutId);
@@ -2726,11 +2749,13 @@ async function marketing(){
   p.innerHTML =
     '<div class="topline"><div class="pagetitle"><div class="kicker">Marketing</div><h1>What would you like to create?</h1>' +
     '<p>Start with the outcome. Zen uses your salon\u2019s look and voice behind the scenes.</p></div></div>' +
+    '<button class="task" style="border:1.5px solid var(--green);margin-bottom:14px;" onclick="flow(()=>marketingAgentWizard())"><div class="task-top"><b>\u2726 Marketing Agent \u2014 guided</b> <span class="note" style="font-weight:600;color:var(--green);">Recommended</span></div><span>Goal \u2192 Audience/Persona \u2192 Creative \u2192 Generate \u2192 Publish \u2192 Promote, one guided flow. The options below are still here as quick shortcuts if you know exactly what you want.</span></button>' +
     '<div class="grid3">' +
       mktTask('◇','Plan this month','A full month of content, planned for you','plan') +
       mktTask('▣','Make a poster','A single Instagram-ready image','poster') +
       mktTask('▶','Make a video','A short reel with scenes and captions','video') +
       mktTask('▦','Make a carousel','A multi-slide story','carousel') +
+      mktTask('◈','Meta ad strategies','Build real audiences from your own customer data','strategies') +
       mktTask('✦','Let Zen suggest','Based on what\u2019s working right now','suggest') +
       mktTask('▤','Publishing schedule','See what\u2019s coming up','schedule') +
     '</div>' +
@@ -2746,12 +2771,682 @@ async function marketing(){
 }
 function mktTask(ic,name,why,key){
   const fn = {plan:'monthlyPlanFlow',poster:"()=>contentFlow('Poster')",video:"()=>contentFlow('Video')",
-    carousel:"()=>contentFlow('Carousel')",suggest:'suggestFlow',schedule:'scheduleFlow'}[key];
+    carousel:"()=>contentFlow('Carousel')",strategies:'strategyLibraryFlow',suggest:'suggestFlow',schedule:'scheduleFlow'}[key];
   return '<button class="task" onclick="flow('+fn+')"><div class="task-top"><b>'+ic+' '+name+'</b></div><span>'+why+'</span></button>';
 }
 
-/* ── Monthly plan: priorities → Zen recommendation → volume → final ── */
+/* ── Meta Strategy Library: real Custom Audiences built from real
+   customer data (mw_transactions / mw_customer_profile), via
+   create_custom_audience_from_segment / list_custom_audiences.
+   Deliberately scoped: this is Phase 1 of a much larger vision (a
+   full autopilot campaign builder, personas, organic-to-paid
+   detection). What's built here is real end to end - it genuinely
+   creates a Meta Custom Audience from this salon's own visit and
+   spend history - but it stops at the audience. Building the ad set
+   and creative around it still happens in Meta Ads Manager for now,
+   named honestly as the next phase rather than faked as "done". */
+const STRATEGIES = [
+  { key:'lapsed', name:'Win-Back Engine', icon:'\u21bb',
+    desc:'Targets customers who haven\u2019t been in for 90+ days with a real Custom Audience built from your own visit history \u2014 not a generic "people who like haircuts" audience.' },
+  { key:'high_value', name:'High-Value Customer Hunter', icon:'\u2666',
+    desc:'Builds an audience from your top 25% of customers by total spend, to find more people like them. This is a hypothesis to test, not a settled fact \u2014 Zen will tell you plainly once there\u2019s enough ad data to say whether it actually outperforms broader targeting.' },
+  { key:'birthday_soon', name:'Birthday Package Promoter', icon:'\u2605',
+    desc:'Targets customers with a child\u2019s birthday in the next 30 days \u2014 exactly the moment a birthday package offer is most relevant.' },
+];
+async function strategyLibraryFlow(){
+  el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:22px;">Meta ad strategies</h1>' +
+    zen('Real Custom Audiences, built from your own customer data rather than a generic interest guess \u2014 the same salon visit and spend history already used elsewhere in Zen. This is the audience-building layer; building the ad set and creative around an audience still happens in Meta Ads Manager for now.') +
+    '<div class="sechead" style="margin-top:0;"><h2>Build from a goal</h2></div>' +
+    '<button class="task" style="max-width:520px;" onclick="flow(()=>goalStrategyFlow())"><div class="task-top"><b>\u25c8 \u201cI want 80 new customers, AED 3,000\u201d</b></div><span>State a goal and a budget \u2014 Zen designs the campaign architecture: real personas, real targeting, a real budget split \u2014 not a form to fill in yourself.</span></button>' +
+    '<button class="task" style="max-width:520px;margin-top:8px;" onclick="flow(()=>organicWinnersFlow())"><div class="task-top"><b>\ud83d\udcc8 Organic-to-paid</b></div><span>Find your own posts that genuinely outperformed the rest \u2014 checked against a real minimum and a real multiple of your own baseline, not a vague \u201cdid well\u201d.</span></button>' +
+    '<button class="task" style="max-width:520px;margin-top:8px;" onclick="flow(()=>attributionFlow())"><div class="task-top"><b>\ud83d\udd17 Ad attribution</b></div><span>Which ads actually produce qualified conversations, real visits, and real lifetime value \u2014 not just cheap clicks.</span></button>' +
+    '<div class="sechead"><h2>Build from a customer segment</h2></div>' +
+    '<div class="grid2">' +
+      STRATEGIES.map(s => '<button class="task" onclick="flow(()=>strategyDetail(\''+s.key+'\'))"><div class="task-top"><b>'+s.icon+' '+esc(s.name)+'</b></div><span>'+esc(s.desc)+'</span></button>').join('') +
+    '</div>' +
+    '<div class="sechead"><h2>Audiences you\u2019ve built</h2></div>' +
+    '<div id="audienceList"><div class="loading-block"><span class="spin"></span></div></div>';
+  const j = await call('list_custom_audiences', {});
+  const box = el('audienceList');
+  if (!j.ok){ box.innerHTML = errBlock(j.error, 'strategyLibraryFlow()'); return; }
+  const list = j.audiences || [];
+  box.innerHTML = list.length ? (
+    '<div class="list">' + list.map(a => {
+      const strat = STRATEGIES.find(s=>s.key===a.segment);
+      const sizeText = a.live_size_lower!=null ? money(a.live_size_lower)+'\u2013'+money(a.live_size_upper) : money(a.uploaded_count)+' uploaded';
+      return '<div class="list-row"><span><b>'+esc(a.name)+'</b><div class="sub">'+esc(strat?strat.name:a.segment)+' \u00b7 '+sizeText+' \u00b7 '+esc(a.delivery_status||'')+'</div></span>' +
+        (a.segment!=='lookalike' ? '<button class="btn btn-s btn-sm" onclick="audienceLookalike(\''+a.meta_audience_id+'\',\''+esc((a.name||'').replace(/\'/g,''))+'\')">Build lookalike</button> ' : '') +
+        '<button class="btn btn-s btn-sm" style="color:#a02020;" onclick="audienceDelete(\''+a.meta_audience_id+'\',\''+esc((a.name||'').replace(/\'/g,''))+'\')">Delete</button></div>';
+    }).join('') + '</div>' +
+    '<button class="btn btn-s btn-sm" style="margin-top:10px;color:#a02020;" onclick="audienceDeleteAll()">Delete all '+list.length+'</button>'
+  ) : '<p class="note">None yet \u2014 pick a strategy above to build your first real audience.</p>';
+}
+async function audienceLookalike(sourceId, sourceName){
+  const j = await call('create_lookalike_audience', { source_audience_id: sourceId, name: 'Lookalike of '+sourceName });
+  if (!j.ok){ toast(j.error, 'err'); return; }
+  toast('Lookalike created \u2014 '+(j.note||''), 'ok');
+  strategyLibraryFlow();
+}
+
+// Phase 6: Organic-to-Paid. Real winners only - a post has to clear
+// both a minimum absolute reach and a real multiple of this account's
+// own baseline, checked server-side. Genuinely honest empty state when
+// nothing qualifies, not a forced recommendation.
+async function organicWinnersFlow(){
+  el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="strategyLibraryFlow()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:22px;">Organic-to-paid</h1>' +
+    zen('Checks your real posting history for anything that meaningfully outperformed the rest \u2014 not just "did okay," but cleared both a real minimum reach and at least 3x your account\u2019s own recent average.') +
+    '<div id="organicResult"><div class="loading-block"><span class="spin"></span>Checking your real post history\u2026</div></div>';
+  const j = await call('detect_organic_winners', {});
+  const box = el('organicResult');
+  if (!j.ok){ box.innerHTML = errBlock(j.error, 'organicWinnersFlow()'); return; }
+  if (!j.winners || !j.winners.length){
+    box.innerHTML = '<p class="note">'+esc(j.note||'Nothing has cleared the bar yet.')+'</p>';
+    return;
+  }
+  box.innerHTML = j.winners.map(w =>
+    '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-bottom:10px;">' +
+      '<b>'+esc(w.multiple_of_baseline)+'x baseline</b> \u00b7 <span class="note">'+esc(w.reach)+' reach, '+esc(w.engagement)+' engagements</span>' +
+      '<p class="note" style="margin:6px 0;">'+esc(w.caption||'(no caption)')+'</p>' +
+      '<p class="note" style="font-size:10.5px;">'+esc(w.evidence)+'</p>' +
+      '<button class="btn btn-s btn-sm" style="margin-top:8px;" onclick=\'organicSuggest('+JSON.stringify(w.id)+','+JSON.stringify(w.reach)+','+JSON.stringify(w.engagement)+','+JSON.stringify(w.caption||"")+')\'>Suggest promoting this</button>' +
+    '</div>'
+  ).join('');
+}
+async function organicSuggest(postId, reach, engagement, caption){
+  const j = await call('suggest_organic_promotion', { post_id: postId, reach, engagement, caption });
+  if (!j.ok){ toast(j.error, 'err'); return; }
+  const s = j.suggestion;
+  el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="organicWinnersFlow()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:22px;">Promotion suggestion</h1>' +
+    '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;">' +
+      rowKV('Suggested objective', esc(s.suggested_objective)) +
+      rowKV('Suggested audience', s.suggested_audience ? esc(s.suggested_audience.name) : 'None built yet') +
+      rowKV('Suggested budget', 'AED '+esc(s.suggested_budget_aed)) +
+    '</div>' +
+    '<p class="note" style="margin-top:10px;">'+esc(s.suggested_creative_test)+'</p>' +
+    (s.suggested_audience_note ? '<p class="note" style="color:#a96118;">'+esc(s.suggested_audience_note)+'</p>' : '') +
+    '<p class="note">'+esc(j.note||'')+'</p>' +
+    '<button class="btn btn-p" style="margin-top:10px;" onclick="goalStrategyFlow()">Build a strategy from a goal</button>';
+}
+
+// Phase 7: Attribution & Learning - real, and previously had no
+// frontend at all despite the backend action existing and working.
+// Qualified leads, repeat customers, and real LTV per ad, plus a way
+// to record a hypothesis as confirmed/rejected from what's actually
+// seen here, closing the loop Phase 2.5 opened.
+async function attributionFlow(){
+  el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="strategyLibraryFlow()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:22px;">Ad attribution</h1>' +
+    zen('Which ads produce genuine commercial interest and real visits, not just cheap clicks \u2014 including real lifetime value, not just what happened in the first two weeks.') +
+    '<div id="attrResult"><div class="loading-block"><span class="spin"></span></div></div>';
+  const j = await call('get_ad_attribution', { days: 30 });
+  const box = el('attrResult');
+  if (!j.ok){ box.innerHTML = errBlock(j.error, 'attributionFlow()'); return; }
+  if (!j.ads || !j.ads.length){ box.innerHTML = '<p class="note">'+esc(j.note||'No ad conversations yet.')+'</p>'; return; }
+  box.innerHTML = '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">' +
+    '<tr style="color:var(--muted);font-size:10.5px;text-align:left;">' +
+      '<th style="padding:4px 6px;">Ad</th><th style="padding:4px 6px;text-align:right;">Qualified</th>' +
+      '<th style="padding:4px 6px;text-align:right;">Visited</th><th style="padding:4px 6px;text-align:right;">Repeat</th>' +
+      '<th style="padding:4px 6px;text-align:right;">Revenue</th><th style="padding:4px 6px;text-align:right;">Real LTV</th>' +
+      '<th style="padding:4px 6px;text-align:right;">LTV ROAS</th><th></th></tr>' +
+    j.ads.map(a => '<tr style="border-top:1px solid var(--line);">' +
+      '<td style="padding:5px 6px;"><b>'+esc(a.headline||a.ad_id)+'</b></td>' +
+      '<td style="padding:5px 6px;text-align:right;">'+(a.qualified_rate!=null?a.qualified_rate+'%':'\u2014')+' <span class="note">('+a.qualified+'/'+a.conversations+')</span></td>' +
+      '<td style="padding:5px 6px;text-align:right;">'+(a.visit_rate!=null?a.visit_rate+'%':'\u2014')+'</td>' +
+      '<td style="padding:5px 6px;text-align:right;">'+money(a.repeat_customers)+'</td>' +
+      '<td style="padding:5px 6px;text-align:right;">AED '+money(a.revenue)+'</td>' +
+      '<td style="padding:5px 6px;text-align:right;"><b>AED '+money(a.ltv_total)+'</b></td>' +
+      '<td style="padding:5px 6px;text-align:right;'+(a.ltv_return_on_spend>=1?'color:var(--green);font-weight:600;':'')+'">'+(a.ltv_return_on_spend!=null?a.ltv_return_on_spend+'x':'\u2014')+'</td>' +
+      '<td style="padding:5px 6px;"><button class="btn btn-s btn-sm" onclick=\'attributionRecord('+JSON.stringify(a.headline||a.ad_id)+','+JSON.stringify(a)+')\'>Record finding</button></td>' +
+    '</tr>').join('') +
+    '</table></div>' +
+    '<p class="note" style="margin-top:8px;">Real LTV sums each unique customer\u2019s actual full transaction history, not just what they spent in the two weeks after this conversation \u2014 the number that actually answers \u201cwas this ad worth it\u201d for a business built on repeat visits.</p>';
+}
+async function attributionRecord(label, adData){
+  const hypothesis = prompt('What is this ad testing? (e.g. "Premium device targeting for '+label+'")');
+  if (!hypothesis) return;
+  const status = adData.ltv_return_on_spend >= 1 ? 'confirmed' : 'rejected';
+  const j = await call('record_attribution_evidence', { hypothesis, status, supporting_data: adData });
+  if (!j.ok){ toast(j.error, 'err'); return; }
+  toast('Recorded as '+status+' \u2014 '+(status==='confirmed'?'this will now show as an already-tested pattern in future weekly reviews':'won\u2019t be suggested again as an untested tactic'), 'ok');
+}
+async function audienceDelete(metaAudienceId, name){
+  if (!confirm('Permanently delete "'+name+'" from Meta? This removes it from your ad account entirely, not just from this list \u2014 it cannot be undone.')) return;
+  const j = await call('delete_custom_audience', { meta_audience_id: metaAudienceId });
+  if (!j.ok){ toast(j.error, 'err'); return; }
+  toast('Deleted from Meta', 'ok');
+  strategyLibraryFlow();
+}
+async function audienceDeleteAll(){
+  if (!confirm('Permanently delete ALL audiences Zen has built in Meta? This removes every one of them from your ad account entirely \u2014 it cannot be undone.')) return;
+  const j = await call('delete_all_custom_audiences', {});
+  if (!j.ok){ toast(j.error, 'err'); return; }
+  toast(j.deleted+' deleted'+(j.failed&&j.failed.length?', '+j.failed.length+' failed':''), j.failed&&j.failed.length?'err':'ok');
+  strategyLibraryFlow();
+}
+
+/* ── Goal-based campaign builder ──────────────────────────────────────
+   "I want 80 new customers, AED 3000" -> propose_ad_strategy_from_goal
+   (real AI reasoning over real business data) -> owner reviews/edits
+   the proposed personas and budget split -> build_ad_strategy_campaign
+   creates a REAL Meta campaign + one real ad set per persona, every
+   level explicitly PAUSED. No ad/creative is created here - a paused
+   ad set with no creative has nowhere to spend regardless, and
+   attaching real creative is a deliberate next step, not automated. */
+const goalState = { strategy:null, goal_customers:null, budget_aed:null };
+function goalStrategyFlow(){
+  el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="strategyLibraryFlow()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:22px;">Build a strategy from a goal</h1>' +
+    zen('Tell Zen what you want, not how to configure a campaign. It reasons over your real business data \u2014 revenue, at-risk customers, popular services \u2014 and proposes a full campaign architecture: distinct personas, real targeting, and a justified budget split.') +
+    '<label class="lbl">Objective</label>' +
+    '<select class="field" id="goalObjective" style="max-width:220px;margin-bottom:10px;">' +
+      '<option value="new_customers">Get more customers</option>' +
+      '<option value="awareness">Build awareness</option>' +
+    '</select>' +
+    '<label class="lbl">New customers wanted</label><input class="field" id="goalCustomers" type="number" placeholder="e.g. 80" style="max-width:200px;margin-bottom:10px;">' +
+    '<label class="lbl">Budget (AED)</label><input class="field" id="goalBudget" type="number" placeholder="e.g. 3000" style="max-width:200px;margin-bottom:10px;">' +
+    '<label class="lbl">Timeframe (days, optional)</label><input class="field" id="goalDays" type="number" placeholder="e.g. 30" style="max-width:200px;margin-bottom:14px;">' +
+    '<button class="btn btn-p" onclick="goalPropose()">Design a strategy</button>' +
+    '<div id="goalResult" style="margin-top:14px;"></div>';
+}
+async function goalPropose(){
+  const goal_customers = Number(el('goalCustomers').value), budget_aed = Number(el('goalBudget').value);
+  const timeframe_days = Number(el('goalDays').value) || null;
+  const objective = el('goalObjective').value;
+  if (!goal_customers || !budget_aed){ toast('A customer goal and a budget are both required.', 'err'); return; }
+  const box = el('goalResult');
+  box.innerHTML = '<div class="loading-block"><span class="spin"></span>Designing a strategy against your real data\u2026</div>';
+  const j = await call('propose_ad_strategy_from_goal', { goal_customers, budget_aed, timeframe_days }, 45000);
+  if (!j.ok){ box.innerHTML = errBlock(j.error, 'goalStrategyFlow()'); return; }
+  goalState.strategy = j.strategy; goalState.goal_customers = goal_customers; goalState.budget_aed = budget_aed; goalState.objective = objective;
+  const s = j.strategy;
+  const alloc = s.budget_allocation || {};
+  box.innerHTML =
+    '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-bottom:14px;">' +
+      '<p class="note" style="margin:0 0 8px;font-weight:600;color:var(--ink);">'+esc(s.feasibility_note||'')+'</p>' +
+      rowKV('Prospecting', (alloc.prospecting_percent||0)+'%') +
+      rowKV('Retargeting', (alloc.retargeting_percent||0)+'%') +
+      rowKV('Testing', (alloc.testing_percent||0)+'%') +
+      '<p class="note" style="margin-top:8px;">'+esc(alloc.reasoning||'')+'</p>' +
+    '</div>' +
+    '<div class="sechead" style="margin-top:0;"><h2>Personas</h2></div>' +
+    (s.personas||[]).map((p,i) => '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-bottom:10px;">' +
+      '<b>'+esc(p.name)+'</b>' + (p.is_hypothesis ? ' <span class="note" style="font-size:10.5px;">hypothesis \u2014 test, don\u2019t assume</span>' : '') +
+      '<p class="note" style="margin:6px 0;">'+esc(p.who_they_are||'')+'</p>' +
+      '<p class="note" style="margin:0;">Targeting: ages '+esc(p.targeting_age_min)+'\u2013'+esc(p.targeting_age_max)+(p.targeting_radius_km?', '+esc(p.targeting_radius_km)+'km radius':'')+' \u00b7 '+esc(p.targeting_approach||'')+'</p>' +
+      '<p class="note" style="margin:6px 0 0;font-style:italic;">"'+esc(p.creative_angle||'')+'"</p>' +
+    '</div>').join('') +
+    '<p class="note" style="margin-top:10px;"><b>Measure:</b> '+esc(s.measurement_plan||'')+'</p>' +
+    '<button class="btn btn-p" style="margin-top:12px;" onclick="goalBuild()">Build this in Meta \u2014 created paused</button>' +
+    '<div id="goalBuildResult" style="margin-top:12px;"></div>';
+}
+async function goalBuild(){
+  const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Creating in Meta\u2026';
+  const s = goalState.strategy;
+  const j = await call('build_ad_strategy_campaign', {
+    campaign_name: goalState.goal_customers+' new customers \u2014 AED '+goalState.budget_aed,
+    personas: s.personas, budget_aed: goalState.budget_aed, budget_allocation: s.budget_allocation,
+    objective: goalState.objective,
+  });
+  const res = el('goalBuildResult');
+  if (!j.ok){ res.innerHTML = errBlock(j.error, 'goalStrategyFlow()'); btn.disabled=false; btn.textContent='Build this in Meta \u2014 created paused'; return; }
+  res.innerHTML =
+    '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;">' +
+      '<p class="note" style="margin:0 0 8px;color:var(--green);font-weight:600;">\u2713 Created in Meta, paused at every level</p>' +
+      rowKV('Ad sets created', j.succeeded+' of '+(j.adsets||[]).length) +
+      (j.failed ? '<p class="note" style="color:#a02020;">'+j.failed+' failed \u2014 see details below.</p>' : '') +
+    '</div>' +
+    '<p class="note" style="margin-top:10px;">'+esc(j.note||'')+'</p>' +
+    (j.adsets||[]).map(a => '<p class="note">'+(a.ok?'\u2713':'\u2717')+' '+esc(a.persona)+(a.error?': '+esc(a.error):'')+'</p>').join('') +
+    '<button class="btn btn-s btn-sm" style="margin-top:10px;" onclick="strategyLibraryFlow()">Back to strategies</button>';
+  toast('Campaign created (paused)', 'ok');
+}
+
+/* ── Marketing Agent Wizard (Phase 2) ─────────────────────────────────
+   7 steps: Goal -> Audience/Persona -> Creative Mix -> Visual Source ->
+   Generate -> Publish -> Promote. Genuinely new shell (.magent-shell),
+   not wizSteps() - the spec explicitly asks for progress-left/decision-
+   right on desktop, which the horizontal wizSteps() pattern used by
+   every other wizard in this app doesn't provide.
+
+   Steps 1-2 are fully real this phase. Steps 3-7 are honest
+   placeholders naming which later phase builds them - per the
+   implementation discipline, nothing here pretends to be more complete
+   than it is. goalStrategyFlow() and contentFlow() remain fully
+   available as separate quick shortcuts, per instruction - this wizard
+   does not replace or absorb them. */
+const MAGENT_STEPS = ['Goal','Audience & Persona','Creative Mix','Visual Source','Generate','Publish','Promote'];
+const magentState = { step:0, goal:{}, personas:[], selectedPersonas:[] };
+
+function magentShell(bodyHtml, actionsHtml){
+  return '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:22px;">Marketing Agent</h1>' +
+    '<div class="magent-shell" style="margin-top:14px;">' +
+      '<div class="magent-nav">' +
+        MAGENT_STEPS.map((s,i) => '<div class="magent-nav-step '+(i===magentState.step?'active':i<magentState.step?'done':'')+'">'+
+          (i<magentState.step?'\u2713':(i+1))+'. '+s+'</div>').join('') +
+      '</div>' +
+      '<div class="magent-content">' + bodyHtml +
+        (actionsHtml ? '<div class="magent-actions">'+actionsHtml+'</div>' : '') +
+      '</div>' +
+    '</div>';
+}
+function marketingAgentWizard(){ magentState.step = 0; magentStepGoal(); }
+
+// Step 1: Goal
+function magentStepGoal(){
+  magentState.step = 0;
+  el('p-flow').innerHTML = magentShell(
+    '<p class="note" style="margin-bottom:14px;">What are you deciding now: the outcome you want. What happens next: Zen designs personas and an audience around it.</p>' +
+    '<label class="lbl">Objective</label>' +
+    '<select class="field" id="magGoalObjective" style="margin-bottom:10px;">' +
+      '<option value="new_customers">Get more customers</option>' +
+      '<option value="awareness">Build awareness</option>' +
+      '<option value="offer">Promote an offer</option>' +
+      '<option value="retarget">Retarget warm audiences</option>' +
+      '<option value="premium">Find premium/high-value customers</option>' +
+      '<option value="roas">Improve ROAS on what\u2019s already running</option>' +
+    '</select>' +
+    '<label class="lbl">Budget (AED)</label><input class="field" id="magGoalBudget" type="number" placeholder="e.g. 3000" style="max-width:220px;margin-bottom:10px;">' +
+    '<label class="lbl">New customers wanted (if applicable)</label><input class="field" id="magGoalCustomers" type="number" placeholder="e.g. 80" style="max-width:220px;margin-bottom:10px;">' +
+    '<label class="lbl">Location / service area</label><input class="field" id="magGoalLocation" placeholder="e.g. Dubai Silicon Oasis, 8km radius" style="margin-bottom:10px;">',
+    '<span></span><button class="btn btn-p" onclick="magentGoalNext()">Continue</button>'
+  );
+}
+function magentGoalNext(){
+  const budget = Number(el('magGoalBudget').value);
+  if (!budget){ toast('A budget is required to continue.', 'err'); return; }
+  magentState.goal = {
+    objective: el('magGoalObjective').value, budget_aed: budget,
+    goal_customers: Number(el('magGoalCustomers').value) || null,
+    location: el('magGoalLocation').value.trim() || null,
+  };
+  magentStepPersona();
+}
+
+// Step 2: Audience/Persona - library-first, "see more", custom creation
+async function magentStepPersona(){
+  magentState.step = 1;
+  el('p-flow').innerHTML = magentShell('<div class="loading-block"><span class="spin"></span>Checking what already fits, before generating anything new\u2026</div>', '');
+  const j = await call('get_persona_recommendations', {}, 45000);
+  if (!j.ok){ el('p-flow').innerHTML = magentShell(errBlock(j.error, 'magentStepPersona()'), ''); return; }
+  const all = [...(j.recommended||[]), ...(j.generated||[])];
+  magentState.personas = all; magentState.morePersonas = j.more||[];
+  renderPersonaStep(all, j.more||[], j.source);
+}
+function personaCard(p, idx){
+  const selected = magentState.selectedPersonas.includes(idx);
+  return '<div style="background:#fff;border:1px solid '+(selected?'var(--green)':'var(--line)')+';border-radius:13px;padding:14px 16px;margin-bottom:10px;cursor:pointer;" onclick="magentTogglePersona('+idx+')">' +
+    '<div style="display:flex;justify-content:space-between;"><b>'+esc(p.name)+'</b>' +
+    '<span class="note" style="font-size:10.5px;">'+(p.is_from_library?'from library':'generated for you')+(p.is_hypothesis?' \u00b7 hypothesis':'')+'</span></div>' +
+    '<p class="note" style="margin:6px 0;">'+esc(p.who_they_are||'')+'</p>' +
+    '<p class="note" style="margin:0;font-style:italic;">"'+esc(p.creative_angle||'')+'"</p>' +
+    (selected ? '<p class="note" style="color:var(--green);margin-top:6px;">\u2713 Selected</p>' : '') +
+  '</div>';
+}
+function renderPersonaStep(shown, more, source){
+  el('p-flow').innerHTML = magentShell(
+    '<p class="note" style="margin-bottom:14px;">'+(source==='library'?'These are drawn from Zen\u2019s persona library, matched to your business \u2014 not freshly generated each time.':'Some came from the library, some Zen generated specifically for this goal.')+' Pick one or more, edit any of them, or build your own.</p>' +
+    shown.map((p,i) => personaCard(p,i)).join('') +
+    (more.length ? '<button class="btn btn-s btn-sm" onclick="magentShowMorePersonas()">See '+more.length+' more</button>' : '') +
+    '<button class="btn btn-s btn-sm" style="margin-left:8px;" onclick="magentCustomPersonaForm()">+ Create your own</button>' +
+    '<div id="magCustomPersonaForm"></div>',
+    '<button class="btn btn-ghost" onclick="magentStepGoal()">Back</button><button class="btn btn-p" onclick="magentPersonaNext()">Continue</button>'
+  );
+}
+function magentTogglePersona(idx){
+  const i = magentState.selectedPersonas.indexOf(idx);
+  if (i>-1) magentState.selectedPersonas.splice(i,1); else magentState.selectedPersonas.push(idx);
+  renderPersonaStep(magentState.personas, magentState.morePersonas||[], 'library');
+}
+function magentShowMorePersonas(){
+  magentState.personas = magentState.personas.concat(magentState.morePersonas||[]);
+  magentState.morePersonas = [];
+  renderPersonaStep(magentState.personas, [], 'library');
+}
+function magentCustomPersonaForm(){
+  el('magCustomPersonaForm').innerHTML =
+    '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-top:10px;">' +
+    '<label class="lbl">Name</label><input class="field" id="magCpName" style="margin-bottom:8px;">' +
+    '<label class="lbl">Who they are</label><textarea class="field" id="magCpWho" style="min-height:50px;margin-bottom:8px;"></textarea>' +
+    '<label class="lbl">Creative angle</label><input class="field" id="magCpAngle" style="margin-bottom:8px;">' +
+    '<button class="btn btn-p btn-sm" onclick="magentSaveCustomPersona()">Save persona</button>' +
+    '</div>';
+}
+async function magentSaveCustomPersona(){
+  const name = el('magCpName').value.trim();
+  if (!name){ toast('Give the persona a name.', 'err'); return; }
+  const j = await call('save_custom_persona', {
+    name, who_they_are: el('magCpWho').value.trim(), creative_angle: el('magCpAngle').value.trim(),
+  });
+  if (!j.ok){ toast(j.error, 'err'); return; }
+  toast('Persona saved', 'ok');
+  magentState.personas.push({ ...j.persona, is_from_library: true });
+  magentState.selectedPersonas.push(magentState.personas.length-1);
+  renderPersonaStep(magentState.personas, magentState.morePersonas||[], 'library');
+}
+function magentPersonaNext(){
+  if (!magentState.selectedPersonas.length){ toast('Select at least one persona to continue.', 'err'); return; }
+  magentStepCreativeMix();
+}
+
+// Step 3: Creative Mix - real, calls recommend_creative_mix with the
+// selected personas. Format Mix Recommender per the architecture.
+async function magentStepCreativeMix(){
+  magentState.step = 2;
+  el('p-flow').innerHTML = magentShell('<div class="loading-block"><span class="spin"></span>Building a content mix around your selected persona(s)\u2026</div>', '');
+  const selected = magentState.selectedPersonas.map(i => magentState.personas[i]);
+  const j = await call('recommend_creative_mix', { personas: selected }, 45000);
+  if (!j.ok){ el('p-flow').innerHTML = magentShell(errBlock(j.error, 'magentStepCreativeMix()'), '<button class="btn btn-ghost" onclick="magentStepPersona()">Back</button><span></span>'); return; }
+  magentState.concepts = j.concepts || [];
+  magentState.selectedConcepts = magentState.concepts.map((_,i) => i); // all selected by default - "Use Recommended Mix"
+  renderCreativeMix();
+}
+function conceptCard(c, idx){
+  const selected = magentState.selectedConcepts.includes(idx);
+  return '<div style="background:#fff;border:1px solid '+(selected?'var(--green)':'var(--line)')+';border-radius:13px;padding:12px 14px;margin-bottom:8px;cursor:pointer;" onclick="magentToggleConcept('+idx+')">' +
+    '<div style="display:flex;justify-content:space-between;"><b>'+esc((c.format||'').toUpperCase())+(c.persona_name?' \u2014 '+esc(c.persona_name):'')+'</b>'+(selected?'<span style="color:var(--green);">\u2713</span>':'')+'</div>' +
+    '<p class="note" style="margin:4px 0 0;">'+esc(c.angle||'')+'</p>' +
+  '</div>';
+}
+function renderCreativeMix(){
+  el('p-flow').innerHTML = magentShell(
+    zen('This is the recommended mix \u2014 use it as-is, or deselect anything that doesn\u2019t fit.') +
+    magentState.concepts.map((c,i) => conceptCard(c,i)).join(''),
+    '<button class="btn btn-ghost" onclick="magentStepPersona()">Back</button><button class="btn btn-p" onclick="magentCreativeMixNext()">Continue</button>'
+  );
+}
+function magentToggleConcept(idx){
+  const i = magentState.selectedConcepts.indexOf(idx);
+  if (i>-1) magentState.selectedConcepts.splice(i,1); else magentState.selectedConcepts.push(idx);
+  renderCreativeMix();
+}
+function magentCreativeMixNext(){
+  if (!magentState.selectedConcepts.length){ toast('Select at least one concept to continue.', 'err'); return; }
+  magentState.conceptQueue = magentState.selectedConcepts.map(i => magentState.concepts[i]);
+  magentState.conceptIndex = 0;
+  magentStepVisualSource();
+}
+
+// Step 4: Visual Source. Honest about what's real: text-only generation
+// is fully real; "own image" reuses the existing asset/reference
+// infrastructure. "Create new avatar" is NOT built - said plainly, not
+// silently offered as if it works.
+async function magentStepVisualSource(){
+  magentState.step = 3;
+  magentState.selectedAvatarId = null;
+  magentState.includeSalonPhoto = false;
+  const concept = magentState.conceptQueue[magentState.conceptIndex];
+  el('p-flow').innerHTML = magentShell(
+    zen('Concept '+(magentState.conceptIndex+1)+' of '+magentState.conceptQueue.length+': '+esc((concept.format||'').toUpperCase())+' \u2014 '+esc(concept.angle||'')) +
+    '<div id="visualSourceBody"><div class="loading-block"><span class="spin"></span></div></div>',
+    '<button class="btn btn-ghost" onclick="magentStepCreativeMix()">Back</button><button class="btn btn-p" onclick="magentStepGenerate()">Continue</button>'
+  );
+  const j = await call('list_avatar_library', {});
+  const body = el('visualSourceBody');
+  if (!j.ok){ body.innerHTML = errBlock(j.error, 'magentStepVisualSource()'); return; }
+  const avatars = j.avatars || [];
+  const prebuilt = avatars.filter(a=>a.source==='prebuilt');
+  const custom = avatars.filter(a=>a.source==='user_created');
+  renderVisualSource(prebuilt, custom);
+}
+function avatarCard(a){
+  const selected = magentState.selectedAvatarId === a.id;
+  return '<div class="avatar-card" data-avatar-id="'+a.id+'" style="display:inline-block;text-align:center;margin:0 8px 8px 0;cursor:pointer;" onclick="magentSelectAvatar(\''+a.id+'\')">' +
+    '<img src="'+esc(a.storage_url)+'" style="width:72px;height:72px;object-fit:cover;border-radius:10px;border:2px solid '+(selected?'var(--green)':'var(--line)')+';" loading="lazy">' +
+    '<div class="note" style="font-size:10px;max-width:72px;">'+esc(a.name)+(selected?' \u2713':'')+'</div>' +
+  '</div>';
+}
+function renderVisualSource(prebuilt, custom){
+  el('visualSourceBody').innerHTML =
+    '<label class="lbl">Visual source</label>' +
+    '<div style="margin-bottom:6px;">' +
+      '<label style="margin-right:14px;font-size:13px;"><input type="radio" name="visSrc" value="text" checked onchange="magentState.selectedAvatarId=null;"> Generate from description only</label>' +
+    '</div>' +
+    (prebuilt.length ? '<p class="note" style="margin:10px 0 4px;font-weight:600;color:var(--ink);">Prebuilt avatars</p><div>'+prebuilt.map(avatarCard).join('')+'</div>' : '') +
+    (custom.length ? '<p class="note" style="margin:10px 0 4px;font-weight:600;color:var(--ink);">Your avatars</p><div>'+custom.map(avatarCard).join('')+'</div>' : '') +
+    (!prebuilt.length && !custom.length ? '<p class="note">No avatars yet \u2014 create one below.</p>' : '') +
+    '<button class="btn btn-s btn-sm" style="margin-top:10px;" onclick="magentCreateAvatarForm()">+ Create a new avatar</button>' +
+    '<div id="createAvatarForm"></div>' +
+    (custom.length ? '<p class="note" style="margin-top:8px;">To rename or delete an avatar you\u2019ve created, use Settings \u2192 Avatar Library.</p>' : '') +
+    '<div style="margin:14px 0;border-top:1px solid var(--line);padding-top:14px;">' +
+      '<label style="font-size:13px;"><input type="checkbox" id="magIncludeSalon" onchange="magentState.includeSalonPhoto=this.checked;"> Blend in a real salon photo, if one\u2019s in the Salon Gallery</label>' +
+      '<p class="note" style="margin:4px 0 0;">Combines with an avatar too \u2014 Replicate can place the selected avatar inside the real salon environment in one generation. Manage photos under Settings \u2192 Salon Gallery.</p>' +
+    '</div>' +
+    '<p class="note" style="margin-top:10px;">Selecting a source never generates anything by itself \u2014 nothing is sent to Replicate until you click Generate on the next step, or, for a new avatar, until you click Create below.</p>';
+}
+function magentSelectAvatar(avatarId){
+  magentState.selectedAvatarId = avatarId;
+  toast('Avatar selected', 'ok');
+  // Reliable regardless of exactly where within the card was clicked
+  // (image, name text, or the card's own padding) - the earlier
+  // version used event.target.closest('div'), which could match the
+  // inner name/note div instead of the outer card when the click
+  // landed on the text, leaving querySelector('img') with nothing to
+  // find and throwing on .style of null. A stable data attribute on
+  // the actual card element removes the ambiguity entirely.
+  document.querySelectorAll('.avatar-card').forEach(card => {
+    const img = card.querySelector('img');
+    if (img) img.style.border = (card.dataset.avatarId === avatarId) ? '2px solid var(--green)' : '2px solid var(--line)';
+  });
+}
+function magentCreateAvatarForm(){
+  el('createAvatarForm').innerHTML =
+    '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-top:10px;">' +
+    '<label class="lbl">Name</label><input class="field" id="avName" placeholder="e.g. Friendly Stylist" style="margin-bottom:8px;">' +
+    '<label class="lbl">Describe the avatar</label><textarea class="field" id="avDesc" style="min-height:60px;margin-bottom:8px;" placeholder="e.g. A warm, approachable young stylist in salon uniform, friendly smile"></textarea>' +
+    '<button class="btn btn-p btn-sm" onclick="magentCreateAvatar()">Create \u2014 uses Replicate now</button>' +
+    '<div id="avResult" style="margin-top:8px;"></div>' +
+    '<div style="margin:14px 0;border-top:1px solid var(--line);padding-top:14px;">' +
+      '<p class="note" style="margin:0 0 8px;">Already have an avatar image? Upload it directly instead.</p>' +
+      '<input type="file" id="avUploadInput" accept="image/*" style="display:none;" onchange="magentUploadAvatar()">' +
+      '<button class="btn btn-s btn-sm" onclick="el(\'avUploadInput\').click()">Upload an image</button>' +
+      '<div id="avUploadResult" style="margin-top:8px;"></div>' +
+    '</div>' +
+    '</div>';
+}
+async function magentCreateAvatar(){
+  const name = el('avName').value.trim(), description = el('avDesc').value.trim();
+  if (!name || !description){ toast('Name and description are both required.', 'err'); return; }
+  const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Generating\u2026 this can take a moment';
+  const j = await call('create_avatar', { name, description }, 45000);
+  btn.disabled = false; btn.textContent = 'Create \u2014 uses Replicate now';
+  if (!j.ok){ el('avResult').innerHTML = errBlock(j.error, 'magentStepVisualSource()'); return; }
+  toast('Avatar created', 'ok');
+  magentStepVisualSource();
+}
+// Real upload for an avatar the owner already has - reuses the exact
+// same base64-conversion pattern already proven in waSendImage(), not
+// a new upload mechanism invented for this specific screen.
+async function magentUploadAvatar(){
+  const input = el('avUploadInput');
+  const file = input.files && input.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024){ toast('That image is too large (over 2MB) - please use a smaller one.', 'err'); input.value = ''; return; }
+  const name = (el('avName').value || '').trim() || file.name.replace(/\.[^.]+$/, '');
+  const description = (el('avDesc').value || '').trim();
+  const box = el('avUploadResult');
+  box.innerHTML = '<div class="loading-block"><span class="spin"></span>Uploading\u2026</div>';
+  try {
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    const j = await call('upload_avatar_image', { name, description, image_base64: base64, content_type: file.type });
+    if (!j.ok){ box.innerHTML = errBlock(j.error, 'magentStepVisualSource()'); return; }
+    toast('Avatar uploaded', 'ok');
+    magentStepVisualSource();
+  } catch (e) {
+    box.innerHTML = errBlock(String((e && e.message) || e), 'magentStepVisualSource()');
+  } finally {
+    input.value = '';
+  }
+}
+// Step 5: Generate - real. Reuses the exact real pipeline: generate_
+// creative_brief (now persona-aware) -> compile_prompt -> run_generation.
+async function magentStepGenerate(){
+  magentState.step = 4;
+  const concept = magentState.conceptQueue[magentState.conceptIndex];
+  const personaIdx = magentState.selectedPersonas[0];
+  const persona = magentState.personas[personaIdx];
+  el('p-flow').innerHTML = magentShell('<div class="loading-block"><span class="spin"></span>Generating\u2026 using this persona\u2019s angle and your brand rules</div>', '');
+
+  const briefRes = await call('generate_creative_brief', {
+    user_request: concept.message || concept.angle, platform: 'instagram', aspect_ratio: '1:1',
+    persona_id: persona?.id || null, persona_context: persona ? (persona.name+': '+persona.creative_angle) : null,
+    creative_concept: concept,
+  });
+  if (!briefRes.ok){ el('p-flow').innerHTML = magentShell(errBlock(briefRes.error, 'magentStepVisualSource()'), '<button class="btn btn-ghost" onclick="magentStepVisualSource()">Back</button><span></span>'); return; }
+
+  // If an avatar was explicitly selected in Step 4, that choice
+  // overrides the automatic PERSON reference specifically - but
+  // environment/salon-gallery references still need to be looked up
+  // and combined alongside it, or a selected avatar would silently
+  // exclude any salon photo entirely. Both asset ids get passed
+  // together so Replicate genuinely blends the avatar and the real
+  // salon environment in one generation, not one or the other.
+  let assetIds = [];
+  const assetsRes = await call('select_reference_assets', { creative_brief_id: briefRes.brief.id, force_environment: !!magentState.includeSalonPhoto });
+  const environmentIds = assetsRes.ok ? (assetsRes.assets||[]).filter(a=>a.asset_type==='environment').map(a=>a.id) : [];
+  if (magentState.selectedAvatarId){
+    const avRes = await call('select_avatar_for_generation', { avatar_id: magentState.selectedAvatarId });
+    assetIds = avRes.ok ? [avRes.asset_id, ...environmentIds] : environmentIds;
+  } else {
+    assetIds = assetsRes.ok ? (assetsRes.assets||[]).map(a=>a.id) : [];
+  }
+  const compileRes = await call('compile_prompt', { creative_brief_id: briefRes.brief.id, asset_ids: assetIds });
+  if (!compileRes.ok){ el('p-flow').innerHTML = magentShell(errBlock(compileRes.error, 'magentStepVisualSource()'), '<button class="btn btn-ghost" onclick="magentStepVisualSource()">Back</button><span></span>'); return; }
+
+  const genRes = await call('run_generation', {
+    creative_brief_id: briefRes.brief.id, compiled_prompt: compileRes.compiled_prompt,
+    model: 'black-forest-labs/flux-2-pro', aspect_ratio: '1:1', reference_asset_urls: compileRes.reference_asset_urls||[],
+  });
+  if (!genRes.ok){ el('p-flow').innerHTML = magentShell(errBlock(genRes.error, 'magentStepVisualSource()'), '<button class="btn btn-ghost" onclick="magentStepVisualSource()">Back</button><span></span>'); return; }
+
+  el('p-flow').innerHTML = magentShell(
+    '<img src="'+esc(genRes.output_url)+'" style="width:260px;aspect-ratio:1;object-fit:cover;border-radius:13px;margin-bottom:12px;" loading="lazy">' +
+    '<p class="note">'+esc(concept.format)+' for '+esc(persona?persona.name:'your audience')+'</p>',
+    '<button class="btn btn-ghost" onclick="magentStepVisualSource()">Regenerate</button>' +
+    '<button class="btn btn-p" onclick="magentStepPublish(\''+genRes.generation_id+'\',\''+esc((briefRes.brief.subject||concept.message||'Post').replace(/\'/g,''))+'\')">Continue</button>'
+  );
+}
+
+// Step 6: Publish - real, reuses the exact same tested pipeline the
+// separate "Make a poster" flow already uses (attach_generation_to_
+// content_item -> publish_content_plan_item_now / schedule_content_
+// plan_item), not a new publish mechanism built for this wizard.
+async function magentStepPublish(generationId, title){
+  magentState.step = 5;
+  el('p-flow').innerHTML = magentShell('<div class="loading-block"><span class="spin"></span></div>', '');
+  const concept = magentState.conceptQueue[magentState.conceptIndex];
+  const j = await call('attach_generation_to_content_item', {
+    generation_id: generationId, title, caption: concept.message||'', aspect_ratio: '1:1',
+  });
+  if (!j.ok){ el('p-flow').innerHTML = magentShell(errBlock(j.error, 'magentStepGenerate()'), '<button class="btn btn-ghost" onclick="magentStepVisualSource()">Back</button><span></span>'); return; }
+  magentState.itemId = j.item.id;
+  el('p-flow').innerHTML = magentShell(
+    zen('Post to Instagram now, hold it for approval, or choose a time \u2014 same real publishing this business already uses elsewhere in Zen, just reached from inside this wizard now.') +
+    '<input class="field" type="datetime-local" id="magPubWhen" style="max-width:260px;margin:10px 0;">' +
+    '<div id="magPubResult" style="margin-top:8px;"></div>',
+    '<button class="btn btn-s" onclick="magentDoApprove()">Save for approval</button>' +
+    '<button class="btn btn-s" onclick="magentDoSchedule()">Schedule</button>' +
+    '<button class="btn btn-p" onclick="magentDoPublish()">Publish now</button>'
+  );
+}
+async function magentDoPublish(){
+  const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Publishing\u2026';
+  const j = await call('publish_content_plan_item_now', { id: magentState.itemId });
+  if (!j.ok){ el('magPubResult').innerHTML = errBlock(j.error, 'magentStepPublish()'); btn.disabled=false; btn.textContent='Publish now'; return; }
+  magentPublishSuccess('published');
+}
+async function magentDoSchedule(){
+  const when = el('magPubWhen').value;
+  if (!when){ toast('Pick a date and time first.', 'err'); return; }
+  const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Scheduling\u2026';
+  const j = await call('schedule_content_plan_item', { id: magentState.itemId, scheduled_date: when });
+  if (!j.ok){ el('magPubResult').innerHTML = errBlock(j.error, 'magentStepPublish()'); btn.disabled=false; btn.textContent='Schedule'; return; }
+  magentPublishSuccess('scheduled');
+}
+async function magentDoApprove(){
+  const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Saving\u2026';
+  const j = await call('approve_content_plan_item', { id: magentState.itemId });
+  if (!j.ok){ el('magPubResult').innerHTML = errBlock(j.error, 'magentStepPublish()'); btn.disabled=false; btn.textContent='Save for approval'; return; }
+  magentPublishSuccess('approved');
+}
+function magentPublishSuccess(mode){
+  const hasMore = magentState.conceptIndex < magentState.conceptQueue.length - 1;
+  el('p-flow').innerHTML = magentShell(
+    '<div style="text-align:center;padding:30px 0;">' +
+      '<div style="font-size:36px;margin-bottom:10px;">\u2713</div>' +
+      '<h2 style="font-size:18px;">'+(mode==='published'?'Published':mode==='scheduled'?'Scheduled':'Saved for approval')+'</h2>' +
+    '</div>',
+    hasMore
+      ? '<span></span><button class="btn btn-p" onclick="magentState.conceptIndex++;magentStepVisualSource();">Next concept ('+(magentState.conceptIndex+2)+' of '+magentState.conceptQueue.length+')</button>'
+      : '<button class="btn btn-ghost" onclick="go(\'marketing\')">Done</button>' +
+        '<button class="btn btn-p" onclick="magentStepPlaceholder(6,\'Promote\',\'Phase 5\',\'Turning this content into a real Meta ad campaign from inside the wizard isn\\u2019t wired yet \\u2014 use \u201cBuild a strategy from a goal\u201d as a fully working shortcut for that today.\')">Promote to Meta ads</button>'
+  );
+}
+
+// Steps 6-7: honest placeholders naming which phase builds them - not
+// faked as working. magentStepGoal()/magentStepPersona() stay reachable
+// via Back so nothing here is a dead end.
+function magentStepPlaceholder(stepIndex, stepName, phase, description){
+  magentState.step = stepIndex;
+  el('p-flow').innerHTML = magentShell(
+    zen(stepName+' is built in '+phase+', not this one \u2014 said plainly rather than shown as if it already works. '+description) +
+    '<p class="note" style="margin-top:14px;">In the meantime, <a href="#" onclick="event.preventDefault();flow(()=>contentFlow(\'Poster\'))">Make a poster</a> or <a href="#" onclick="event.preventDefault();flow(()=>goalStrategyFlow())">Build a strategy from a goal</a> are fully working shortcuts for what this step will eventually do inside the guided flow.</p>',
+    '<button class="btn btn-ghost" onclick="magentStepPersona()">Back</button><span></span>'
+  );
+}
+
+async function strategyDetail(key){
+  const s = STRATEGIES.find(x=>x.key===key);
+  el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="strategyLibraryFlow()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:22px;">'+s.icon+' '+esc(s.name)+'</h1>' +
+    zen(esc(s.desc)) +
+    '<label class="lbl" style="margin-top:14px;">Audience name</label>' +
+    '<input class="field" id="audName" value="'+esc(s.name)+' \u2014 '+new Date().toISOString().slice(0,10)+'" style="max-width:400px;margin-bottom:12px;">' +
+    '<button class="btn btn-p" onclick="strategyBuild(\''+key+'\')">Build this audience in Meta</button>' +
+    '<div id="strategyResult" style="margin-top:12px;"></div>';
+}
+async function strategyBuild(key){
+  const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Building\u2026 this can take a moment';
+  const res = el('strategyResult');
+  const j = await call('create_custom_audience_from_segment', { segment:key, audience_name: el('audName').value.trim() });
+  btn.disabled = false; btn.textContent = 'Build this audience in Meta';
+  if (!j.ok){ res.innerHTML = errBlock(j.error, 'strategyDetail(\''+key+'\')'); return; }
+  res.innerHTML =
+    '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;max-width:480px;">' +
+      '<p class="note" style="margin:0 0 8px;color:var(--green);font-weight:600;">\u2713 Audience created in Meta</p>' +
+      // "Uploaded", not "matched" - num_received confirms Meta accepted
+      // these records for processing, not that they correspond to real,
+      // matchable accounts. The real matched size only exists after
+      // Meta finishes matching (often hours later) and is read live in
+      // the audience list below, not here.
+      rowKV('Uploaded for Meta to match', money(j.uploaded)+' of '+money(j.total)) +
+      (j.warning ? '<p class="note" style="color:#a02020;margin-top:8px;">'+esc(j.warning)+'</p>' : '') +
+    '</div>' +
+    '<p class="note" style="margin-top:10px;">'+esc(j.segment_note||'')+'</p>' +
+    '<p class="note">'+esc(j.note||'')+'</p>' +
+    '<button class="btn btn-s btn-sm" style="margin-top:10px;" onclick="strategyLibraryFlow()">Back to strategies</button>';
+  toast('Audience created', 'ok');
+}
+
+/* ── Monthly plan: priorities → Zen recommendation → volume → final ──
+   Real, wired to propose_monthly_strategy / approve_monthly_strategy /
+   generate_content_plan - none of which were ever called from this
+   flow before. What ran here previously used fakeCall() (an explicit
+   mock, does nothing but wait and resolve true) and hardcoded "back
+   to school, boys 4-10" text at every step, regardless of what was
+   typed into "Main goal" or "Anything special this month" - which is
+   exactly why a birthday-packages input produced a back-to-school
+   plan. Those inputs were captured into the DOM and never read again. */
 const PLAN_STEPS = ['Priorities','Zen\u2019s plan','How much','Final plan'];
+const campPlanState = { strategyId:null, proposed:null };
 function monthlyPlanFlow(){ planPriorities(); }
 function planPriorities(){
   el('p-flow').innerHTML =
@@ -2759,103 +3454,239 @@ function planPriorities(){
     '<h1 style="font-size:22px;">What matters this month?</h1>' +
     '<label class="lbl">Main goal</label><input class="field" id="planGoal" placeholder="e.g. Fill weekday afternoons" style="max-width:480px;">' +
     '<label class="lbl" style="margin-top:12px;">Anything special this month?</label>' +
-    '<input class="field" id="planDates" placeholder="e.g. Back to school, Eid" style="max-width:480px;">' +
+    '<input class="field" id="planDates" placeholder="e.g. Promote birthday packages, Back to school" style="max-width:480px;">' +
     '<div class="wiz-actions"><button class="btn btn-ghost" onclick="flowBack()">Cancel</button>' +
     '<button class="btn btn-p" onclick="planRecommend()">Continue</button></div>';
 }
 async function planRecommend(){
+  // Both inputs genuinely combined into one real instruction now,
+  // rather than captured and discarded.
+  const goal = el('planGoal').value.trim(), special = el('planDates').value.trim();
+  const brand_monthly_input = [goal, special].filter(Boolean).join(' \u2014 ') || undefined;
   el('p-flow').innerHTML = wizSteps(PLAN_STEPS,1) + '<h1 style="font-size:22px;">Zen\u2019s recommendation</h1>' +
     '<div class="loading-block"><span class="spin"></span>Looking at your customers, your calendar and what\u2019s worked before\u2026</div>';
-  await fakeCall('plan_recommend', {delay:1000});
+  const month_year = new Date().toISOString().slice(0,7);
+  const j = await call('propose_monthly_strategy', { month_year, brand_monthly_input }, 45000);
+  if (!j.ok || !j.strategy){ el('p-flow').innerHTML = wizSteps(PLAN_STEPS,1) + errBlock(j.error||'No strategy came back.', 'planPriorities()'); return; }
+  campPlanState.strategyId = j.strategy.id;
+  const p = j.strategy.ai_proposed_strategy || {};
+  campPlanState.proposed = p;
+  const pillars = (p.content_pillars||[]).map(c => c.name+' ('+c.percent+'%)').join(', ');
+  const segs = (p.segments_to_target||[]).map(s => s==='boy'?'Boys':s==='girl'?'Girls':s).join(' & ');
   el('p-flow').innerHTML =
     wizSteps(PLAN_STEPS,1) + '<h1 style="font-size:22px;">Zen\u2019s recommendation</h1>' +
-    zen('Based on your goal, I\u2019d focus September on <b>back-to-school haircuts</b>, targeting parents of boys 4\u201310. Tuesday afternoons have room, so I\u2019d push weekday offers.') +
-    '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:16px 18px;max-width:520px;margin-top:12px;">' +
-      rowKV('Theme','Back to school') + rowKV('Focus service','Boys Haircut, Hero Cut') +
-      rowKV('Key dates','8 Sep \u2013 school starts') + rowKV('Suggested rhythm','3 posts / week') + '</div>' +
+    zen(esc(p.core_campaign || p.primary_objective || 'Strategy proposed.')) +
+    '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:16px 18px;max-width:560px;margin-top:12px;">' +
+      rowKV('Theme', esc(p.campaign_name||'\u2014')) +
+      rowKV('Targeting', esc(segs||'\u2014')) +
+      rowKV('Target customer', esc(p.target_customer||'\u2014')) +
+      rowKV('Content pillars', esc(pillars||'\u2014')) +
+      rowKV('Products/services featured', esc((p.products_services_to_feature||[]).map(x=>x.name).join(', ')||'\u2014')) +
+    '</div>' +
+    (p.business_opportunity ? '<p class="note" style="max-width:560px;margin-top:8px;">'+esc(p.business_opportunity.text||'')+(p.business_opportunity.reasoning?' \u2014 '+esc(p.business_opportunity.reasoning):'')+'</p>' : '') +
     '<div class="wiz-actions"><button class="btn btn-ghost" onclick="planPriorities()">Back</button>' +
     '<button class="btn btn-p" onclick="planVolume()">Continue</button></div>';
 }
 function planVolume(){
   el('p-flow').innerHTML =
     wizSteps(PLAN_STEPS,2) + '<h1 style="font-size:22px;">How much content?</h1>' +
-    zen('For this goal, I\u2019d recommend <b>8 posters, 4 short videos and 2 carousels</b>. You can change any of these.') +
-    '<div class="grid3" style="max-width:480px;margin-top:14px;">' +
-      volInput('Posters',8) + volInput('Videos',4) + volInput('Carousels',2) +
+    zen('A reasonable starting spread for a month \u2014 change either number.') +
+    '<div class="grid2" style="max-width:340px;margin-top:14px;">' +
+      volInput('Posters',8,'planImgCount') + volInput('Videos',4,'planVidCount') +
     '</div>' +
     '<div class="wiz-actions"><button class="btn btn-ghost" onclick="planRecommend()">Back</button>' +
     '<button class="btn btn-p" onclick="planFinal()">Continue</button></div>';
 }
-function volInput(label,val){
-  return '<div><label class="lbl">'+label+'</label><input class="field" type="number" value="'+val+'"></div>';
+function volInput(label,val,id){
+  return '<div><label class="lbl">'+label+'</label><input class="field" type="number" min="0" id="'+id+'" value="'+val+'"></div>';
 }
 function planFinal(){
+  const p = campPlanState.proposed || {};
   el('p-flow').innerHTML =
-    wizSteps(PLAN_STEPS,3) + '<h1 style="font-size:22px;">Your September plan</h1>' +
+    wizSteps(PLAN_STEPS,3) + '<h1 style="font-size:22px;">Your '+new Date().toLocaleString('en',{month:'long'})+' plan</h1>' +
     '<p class="note" style="margin-top:4px;">This combines what you told Zen with what Zen recommends \u2014 review before it goes live.</p>' +
     '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:16px 18px;max-width:520px;margin-top:10px;">' +
-      rowKV('Theme','Back to school') + rowKV('Content','8 posters, 4 videos, 2 carousels') +
-      rowKV('Starts','This Friday') + '</div>' +
-    '<div class="wiz-actions"><button class="btn btn-s" onclick="toast(\'Saved as draft.\')">Save as draft</button>' +
+      rowKV('Theme', esc(p.campaign_name||'\u2014')) +
+      rowKV('Content', (el('planImgCount')?el('planImgCount').value:8)+' posters, '+(el('planVidCount')?el('planVidCount').value:4)+' videos') +
+    '</div>' +
+    '<div id="planApproveResult" style="margin-top:10px;"></div>' +
+    '<div class="wiz-actions"><button class="btn btn-ghost" onclick="planVolume()">Back</button>' +
     '<button class="btn btn-p btn-lg" onclick="planApprove()">Approve plan</button></div>';
 }
 async function planApprove(){
-  await fakeCall('approve_plan', {delay:700});
+  const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Approving\u2026';
+  const res = el('planApproveResult');
+  if (!campPlanState.strategyId || !campPlanState.proposed){ res.innerHTML = '<p class="note" style="color:#a02020;">No proposed strategy to approve \u2014 go back and generate one first.</p>'; btn.disabled=false; btn.textContent='Approve plan'; return; }
+  const j1 = await call('approve_monthly_strategy', { strategy_id: campPlanState.strategyId, approved_strategy: campPlanState.proposed });
+  if (!j1.ok){ res.innerHTML = errBlock(j1.error, 'planFinal()'); btn.disabled=false; btn.textContent='Approve plan'; return; }
+  const image_count = Number(el('planImgCount')?.value)||8, video_count = Number(el('planVidCount')?.value)||4;
+  const j2 = await call('generate_content_plan', { strategy_id: campPlanState.strategyId, image_count, video_count });
+  if (!j2.ok){ res.innerHTML = '<p class="note" style="color:#a02020;">Strategy approved, but generating the content plan failed: '+esc(j2.error)+'. You can retry generation from the campaign\u2019s own page.</p>'; return; }
   el('p-flow').innerHTML =
-    '<div style="text-align:center;padding:40px 0;"><div style="font-size:34px;">✓</div>' +
+    '<div style="text-align:center;padding:40px 0;"><div style="font-size:34px;">\u2713</div>' +
     '<h1 style="font-size:22px;margin:12px 0 6px;">Plan approved</h1>' +
-    '<p class="note" style="margin:0 auto;max-width:380px;">Zen will start creating content against this plan and add it to your schedule for review.</p>' +
+    '<p class="note" style="margin:0 auto;max-width:380px;">Zen has generated '+money((j2.items||[]).length)+' content item(s) against this plan \u2014 review and approve them from Publishing schedule.</p>' +
     '<div class="wiz-actions" style="justify-content:center;margin-top:20px;"><button class="btn btn-p" onclick="go(\'marketing\')">Back to Marketing</button></div></div>';
-  toast('September plan approved', 'ok');
+  toast('Plan approved', 'ok');
 }
 
-/* ── Shared content flow: brief → generate → review → caption → schedule/publish ── */
+/* ── Shared content flow: brief → generate → review → caption → schedule/publish ──
+   Rebuilt real - this previously ran entirely on fakeCall() and hardcoded
+   "Back to School" text/preview regardless of what was typed, and Publish/
+   Schedule did nothing at all ("simulated"). Now genuinely wired to
+   generate_creative_brief -> compile_prompt -> run_generation ->
+   attach_generation_to_content_item, then the same real
+   publish_content_plan_item_now / schedule_content_plan_item every other
+   piece of content already uses - no separate, parallel publish path.
+   Zeely-inspired: Theme, Targeting and Target customer are pulled from
+   the latest APPROVED monthly strategy and shown as real context, not
+   fields to fill in - the only thing genuinely asked of the owner is
+   what THIS post is specifically about, pre-filled with a real
+   suggestion drawn from the strategy's own key messages. */
 const CONTENT_STEPS = ['Brief','Generate','Review','Publish'];
+const contentState = { brief:null, generation:null, strategy:null };
 function contentFlow(format){ STATE.contentFormat = format; contentBrief(); }
-function contentBrief(){
+async function contentBrief(){
   const f = STATE.contentFormat;
+  if (f !== 'Poster'){
+    // Video and Carousel genuinely aren't built for this quick,
+    // one-off flow - run_generation only produces a single still
+    // image. Real video/carousel generation exists, scene by scene,
+    // through the Monthly Plan -> generate_content_plan path, which
+    // is where this honestly belongs rather than faking a shortcut
+    // that doesn't exist yet.
+    el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
+      '<h1 style="font-size:22px;">'+f+' isn\u2019t a quick one-off yet</h1>' +
+      zen(f+'s are generated scene by scene as part of a full monthly plan, not as a single quick post. Use Monthly Plan to build one \u2014 it genuinely creates '+f.toLowerCase()+'s, this quick flow just doesn\u2019t yet.') +
+      '<button class="btn btn-p" style="margin-top:12px;" onclick="monthlyPlanFlow()">Go to Monthly Plan</button>';
+    return;
+  }
+  el('p-flow').innerHTML = wizSteps(CONTENT_STEPS,0) + '<h1 style="font-size:22px;">Make a poster</h1>' +
+    '<div class="loading-block"><span class="spin"></span></div>';
+  // Zeely-inspired: pull real context from the latest approved
+  // strategy rather than asking the owner to re-specify targeting,
+  // theme and audience for every single post. Only "what's this post
+  // about" is a genuine ask, and even that gets a real starting
+  // suggestion rather than a blank box.
+  const j = await call('get_monthly_strategy', {});
+  const strat = (j.ok && j.strategy && j.strategy.status === 'approved') ? (j.strategy.approved_strategy||{}) : null;
+  contentState.strategy = strat;
+  const segsArr = strat ? (strat.segments_to_target||[]) : ['boy','girl'];
+  const suggestion = strat ? ((strat.key_messages||[])[0] || strat.core_campaign || '') : '';
   el('p-flow').innerHTML =
-    wizSteps(CONTENT_STEPS,0) + '<h1 style="font-size:22px;">Make a '+f.toLowerCase()+'</h1>' +
-    '<label class="lbl">What\u2019s it about?</label>' +
-    '<textarea class="field" id="briefText" style="min-height:80px;max-width:480px;" placeholder="e.g. Back to school haircuts this weekend"></textarea>' +
-    (f==='Video' ? '<label class="lbl" style="margin-top:12px;">Length</label><select class="field" style="max-width:200px;"><option>9 seconds (recommended)</option><option>15 seconds</option><option>30 seconds</option></select>' : '') +
-    (f==='Carousel' ? '<label class="lbl" style="margin-top:12px;">Number of slides</label><select class="field" style="max-width:200px;"><option>4 slides (recommended)</option><option>6 slides</option><option>8 slides</option></select>' : '') +
+    wizSteps(CONTENT_STEPS,0) + '<h1 style="font-size:22px;">Make a poster</h1>' +
+    (strat ? zen('Pre-filled from this month\u2019s approved campaign \u2014 change anything below if this post should differ from it.')
+      : zen('No approved monthly strategy yet, so there\u2019s nothing to pre-fill \u2014 this post will stand alone. Set one up under Monthly Plan if you want future posts to draw from it.')) +
+    '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;max-width:480px;margin:10px 0 16px;">' +
+      '<label class="lbl">Theme</label><input class="field" id="cTheme" value="'+esc(strat ? (strat.campaign_name||strat.core_campaign||'') : '')+'" placeholder="e.g. Birthday packages" style="margin-bottom:10px;">' +
+      '<label class="lbl">Targeting</label>' +
+      '<div style="display:flex;gap:14px;margin-bottom:10px;">' +
+        '<label style="display:flex;align-items:center;gap:6px;font-size:13px;"><input type="checkbox" id="cTargetBoy" '+(segsArr.includes('boy')?'checked':'')+'> Boys</label>' +
+        '<label style="display:flex;align-items:center;gap:6px;font-size:13px;"><input type="checkbox" id="cTargetGirl" '+(segsArr.includes('girl')?'checked':'')+'> Girls</label>' +
+      '</div>' +
+      '<label class="lbl">Target customer</label><input class="field" id="cTargetCust" value="'+esc(strat ? (strat.target_customer||'') : '')+'" placeholder="e.g. Families with kids 3-10 in DSO">' +
+    '</div>' +
+    '<label class="lbl">What\u2019s this post specifically about?</label>' +
+    '<textarea class="field" id="briefText" style="min-height:80px;max-width:480px;" placeholder="e.g. Back to school haircuts this weekend">'+esc(suggestion)+'</textarea>' +
     '<div class="wiz-actions"><button class="btn btn-ghost" onclick="flowBack()">Cancel</button>' +
     '<button class="btn btn-p" onclick="contentGenerate()">Generate</button></div>';
 }
 async function contentGenerate(){
-  const f = STATE.contentFormat;
-  el('p-flow').innerHTML = wizSteps(CONTENT_STEPS,1) + '<h1 style="font-size:22px;">Making your '+f.toLowerCase()+'\u2026</h1>' +
+  const text = (el('briefText').value||'').trim();
+  if (!text){ toast('Say what this post is about first.', 'err'); return; }
+  // Read the editable fields before they're replaced by the loading
+  // screen - these may have been changed from the pre-filled strategy
+  // defaults, and what was actually typed/checked here is what should
+  // genuinely drive this specific post, not the original strategy
+  // object alone.
+  const theme = (el('cTheme').value||'').trim();
+  const targetCust = (el('cTargetCust').value||'').trim();
+  const wantBoy = el('cTargetBoy').checked, wantGirl = el('cTargetGirl').checked;
+  // Both checked, or neither, both mean "no single-gender restriction" -
+  // only a genuine single checkbox narrows the brief to one segment.
+  const target_segment = (wantBoy && !wantGirl) ? 'boy' : (wantGirl && !wantBoy) ? 'girl' : null;
+  contentState.theme = theme; contentState.targetCustomer = targetCust; contentState.targetSegment = target_segment;
+
+  el('p-flow').innerHTML = wizSteps(CONTENT_STEPS,1) + '<h1 style="font-size:22px;">Making your poster\u2026</h1>' +
     '<div class="loading-block"><span class="spin"></span>Using your brand colours and voice</div>';
-  await fakeCall('generate_content', {delay:1400});
+
+  // The theme and target customer feed into the request itself, not
+  // just target_segment - a brief built from "what's it about" alone
+  // would lose an edited theme or audience the owner just typed.
+  const fullRequest = [text, theme && theme!==text ? 'Campaign theme: '+theme : '', targetCust ? 'Audience: '+targetCust : '']
+    .filter(Boolean).join('. ');
+  const briefRes = await call('generate_creative_brief', { user_request: fullRequest, platform:'instagram', aspect_ratio:'1:1', target_segment });
+  if (!briefRes.ok){ el('p-flow').innerHTML = wizSteps(CONTENT_STEPS,1) + errBlock(briefRes.error, 'contentBrief()'); return; }
+  contentState.brief = briefRes.brief;
+
+  const assetsRes = await call('select_reference_assets', { creative_brief_id: briefRes.brief.id });
+  const assetIds = assetsRes.ok ? (assetsRes.assets||[]).map(a=>a.id) : [];
+  const compileRes = await call('compile_prompt', { creative_brief_id: briefRes.brief.id, asset_ids: assetIds });
+  if (!compileRes.ok){ el('p-flow').innerHTML = wizSteps(CONTENT_STEPS,1) + errBlock(compileRes.error, 'contentBrief()'); return; }
+
+  const genRes = await call('run_generation', {
+    creative_brief_id: briefRes.brief.id, compiled_prompt: compileRes.compiled_prompt,
+    model: 'black-forest-labs/flux-2-pro', aspect_ratio: '1:1',
+    reference_asset_urls: compileRes.reference_asset_urls||[],
+  });
+  if (!genRes.ok){ el('p-flow').innerHTML = wizSteps(CONTENT_STEPS,1) + errBlock(genRes.error, 'contentBrief()'); return; }
+  contentState.generation = genRes;
   contentReview();
 }
 function contentReview(){
-  const f = STATE.contentFormat;
+  const b = contentState.brief||{}, g = contentState.generation||{};
+  const strat = contentState.strategy;
+  // A real starter caption built from the brief actually generated,
+  // not a hardcoded "Back to School" line shown regardless of input -
+  // still just a starting point the owner is expected to personalise.
+  const starter = [b.subject, strat && strat.key_messages && strat.key_messages[0]].filter(Boolean).join(' \u2014 ');
   el('p-flow').innerHTML =
-    wizSteps(CONTENT_STEPS,2) + '<h1 style="font-size:22px;">Here\u2019s your '+f.toLowerCase()+'</h1>' +
-    '<div style="width:260px;aspect-ratio:1;background:linear-gradient(135deg,#175E52,#0e463d);border-radius:13px;margin:12px 0;' +
-      'display:flex;align-items:center;justify-content:center;color:#fff;font:600 13px Sora;text-align:center;padding:20px;">' +
-      (f==='Video'?'▶ ':'')+'MiniCuts \u2014 Back to School<br><span style="font-size:10px;opacity:.8;font-weight:400;">'+f+' preview</span></div>' +
-    '<textarea class="field" style="max-width:420px;min-height:64px;">Ready for school? \ud83c\udf92 Fresh cuts for fresh starts \u2014 book this weekend at MiniCuts! #MiniCutsDSO</textarea>' +
+    wizSteps(CONTENT_STEPS,2) + '<h1 style="font-size:22px;">Here\u2019s your poster</h1>' +
+    '<img src="'+esc(g.output_url)+'" style="width:260px;aspect-ratio:1;object-fit:cover;border-radius:13px;margin:12px 0;display:block;" loading="lazy">' +
+    '<label class="lbl">Caption</label>' +
+    '<textarea class="field" id="capText" style="max-width:420px;min-height:64px;">'+esc(starter)+'</textarea>' +
     '<div style="margin-top:10px;">' +
-      '<button class="btn btn-s btn-sm" onclick="contentGenerate()">Regenerate</button> ' +
-      '<button class="btn btn-s btn-sm" onclick="toast(\'Edit tools would open here.\')">Edit</button> ' +
-      '<button class="btn btn-danger btn-sm" onclick="toast(\'Deleted (simulated).\');flowBack();">Delete</button>' +
+      '<button class="btn btn-s btn-sm" onclick="contentGenerate()">Regenerate</button>' +
     '</div>' +
     '<div class="wiz-actions"><button class="btn btn-ghost" onclick="contentBrief()">Back</button>' +
     '<button class="btn btn-p" onclick="contentPublish()">Continue</button></div>';
 }
-function contentPublish(){
+async function contentPublish(){
+  const caption = (el('capText').value||'').trim();
+  const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Saving\u2026';
+  // The actual values from the editable Brief screen - possibly
+  // overridden from the strategy defaults - not re-derived from the
+  // original strategy object, which would silently ignore any change
+  // made on that screen.
+  const j = await call('attach_generation_to_content_item', {
+    generation_id: contentState.generation.generation_id,
+    title: contentState.theme || (contentState.brief||{}).subject || 'Post', caption,
+    target_segment: contentState.targetSegment, aspect_ratio: '1:1',
+  });
+  if (!j.ok){ toast(j.error, 'err'); btn.disabled=false; btn.textContent='Continue'; return; }
+  contentState.itemId = j.item.id;
   el('p-flow').innerHTML =
     wizSteps(CONTENT_STEPS,3) + '<h1 style="font-size:22px;">Ready to publish</h1>' +
-    '<p class="note" style="margin-top:4px;">Post to Instagram now, or choose a time.</p>' +
-    '<input class="field" type="datetime-local" style="max-width:260px;margin-top:10px;">' +
+    '<p class="note" style="margin-top:4px;">Post to Instagram now, or choose a time.'+(j.in_current_campaign?' Counted as part of this month\u2019s campaign.':' No approved campaign right now, so this stands alone.')+'</p>' +
+    '<input class="field" type="datetime-local" id="pubWhen" style="max-width:260px;margin-top:10px;">' +
+    '<div id="pubResult" style="margin-top:8px;"></div>' +
     '<div class="wiz-actions"><button class="btn btn-s" onclick="contentDoSchedule()">Schedule</button>' +
     '<button class="btn btn-p" onclick="contentDoPublish()">Publish now</button></div>';
 }
-async function contentDoPublish(){ await fakeCall('publish', {delay:900}); contentSuccess('published'); }
-async function contentDoSchedule(){ await fakeCall('schedule', {delay:600}); contentSuccess('scheduled'); }
+async function contentDoPublish(){
+  const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Publishing\u2026';
+  const j = await call('publish_content_plan_item_now', { id: contentState.itemId });
+  if (!j.ok){ el('pubResult').innerHTML = errBlock(j.error, 'contentPublish()'); btn.disabled=false; btn.textContent='Publish now'; return; }
+  contentSuccess('published');
+}
+async function contentDoSchedule(){
+  const when = el('pubWhen').value;
+  if (!when){ toast('Pick a date and time first.', 'err'); return; }
+  const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Scheduling\u2026';
+  const j = await call('schedule_content_plan_item', { id: contentState.itemId, scheduled_date: when });
+  if (!j.ok){ el('pubResult').innerHTML = errBlock(j.error, 'contentPublish()'); btn.disabled=false; btn.textContent='Schedule'; return; }
+  contentSuccess('scheduled');
+}
 function contentSuccess(mode){
   el('p-flow').innerHTML =
     '<div style="text-align:center;padding:40px 0;"><div style="font-size:34px;">✓</div>' +
@@ -2867,7 +3698,18 @@ function contentSuccess(mode){
 function contentDetail(id){
   const post = DATA.posts.find(x=>x.id===id);
   STATE.contentFormat = post.format;
-  if (post.status==='draft' || post.status==='ready') { contentReview(); return; }
+  if (post.status==='draft' || post.status==='ready') {
+    // "Recently created" above is still sample data (DATA.posts), not
+    // real content_plan_items - a separate, known gap from the
+    // creation flow itself, which is now real. Said honestly here
+    // rather than handing this off to contentReview(), which now
+    // expects a real generation and would show a broken image for a
+    // post that was never actually generated.
+    el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
+      '<h1 style="font-size:22px;">'+esc(post.title)+'</h1>' +
+      zen('This list is still sample data, not a real generated post \u2014 there\u2019s nothing real here to open yet. Real posts made through \u201cMake a poster\u201d can be found and managed from Publishing schedule.');
+    return;
+  }
   el('p-flow').innerHTML =
     '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
     '<h1 style="font-size:22px;">'+esc(post.title)+'</h1><p class="note" style="margin-top:4px;">'+post.format+' \u00b7 '+post.date+'</p>' +
@@ -3931,6 +4773,8 @@ async function settings(){
     ['◐','Brand & Strategy','Brand settings, business strategy, Brand DNA','brand',null],
     ['💬','WhatsApp settings','Reply assistant, what to sell, campaign rules, templates','whatsapp',null],
     ['◎','Instagram & Meta Ads','Connection status and ad performance','connections',null],
+    ['\u25c8','Avatar Library','Upload or create reusable avatars for content generation','avatars',null],
+    ['\u25a4','Salon Gallery','Real photos of your space, for Replicate to blend into generated content','gallery',null],
     ['⇅','Data','Duplicate customers, resolved automatically','data',true],
     ['♙','Team members','Who can use Zen','team',true],
     ['⌾','Permissions','What each person can do',null,null],
@@ -3938,7 +4782,7 @@ async function settings(){
     ['▣','Billing','Which AI model each feature uses, and what it costs','billing',null],
   ];
   el('setList').innerHTML = rows.map(r =>
-    '<div class="list-row" style="cursor:pointer;" onclick="'+(r[3]==='whatsapp'?"flow(()=>whatsappSettingsPanel())":r[3]==='billing'?"flow(()=>billingModelSettings())":r[3]?"flow(()=>settingsDetail('"+r[3]+"'))":"toast('This screen would open here.')")+'">' +
+    '<div class="list-row" style="cursor:pointer;" onclick="'+(r[3]==='whatsapp'?"flow(()=>whatsappSettingsPanel())":r[3]==='billing'?"flow(()=>billingModelSettings())":r[3]==='avatars'?"flow(()=>avatarLibrarySettings())":r[3]==='gallery'?"flow(()=>salonGallerySettings())":r[3]?"flow(()=>settingsDetail('"+r[3]+"'))":"toast('This screen would open here.')")+'">' +
     '<span style="display:flex;gap:12px;align-items:center;"><span style="width:30px;height:30px;border-radius:9px;background:#eef0ed;display:grid;place-items:center;">'+r[0]+'</span>' +
     '<span><b>'+r[1]+'</b><div class="sub">'+r[2]+'</div></span></span>' +
     (r[4]!==null ? '<span class="badge '+(r[4]?'on':'warn')+'">'+(r[4]?'Done':'Not yet')+'</span>' : '<span style="color:var(--muted);">›</span>') +
@@ -3950,6 +4794,166 @@ async function settings(){
 // each AI-powered feature is its own "job" with a chosen model, a
 // recommendation, and a cost estimate checked against real spend
 // from the last 30 days, not just trusted.
+// Real, from list_avatar_library/create_avatar/upload_avatar_image -
+// all already built and working for the wizard's Visual Source step;
+// this is the same real functionality, just also reachable from
+// Settings directly, without needing to be mid-wizard to manage
+// avatars. No platform-admin distinction yet - every avatar created
+// or uploaded here is tenant-scoped (source: 'user_created'), same as
+// from the wizard. Prebuilt (tenant_id null) avatars still load via
+// direct SQL for now, per the deferred platform-admin decision.
+async function avatarLibrarySettings(){
+  el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:22px;">Avatar Library</h1>' +
+    '<p class="sub" style="margin-top:2px;">Reusable avatars for content generation \u2014 create one with Replicate, or upload an image you already have.</p>' +
+    '<div id="avSettingsBody" style="margin-top:16px;"><div class="loading-block"><span class="spin"></span></div></div>';
+  await avatarLibraryRefresh();
+}
+async function avatarLibraryRefresh(){
+  const j = await call('list_avatar_library', {});
+  const body = el('avSettingsBody');
+  if (!j.ok){ body.innerHTML = errBlock(j.error, 'avatarLibrarySettings()'); return; }
+  const avatars = j.avatars || [];
+  const prebuilt = avatars.filter(a=>a.source==='prebuilt');
+  const custom = avatars.filter(a=>a.source==='user_created');
+  body.innerHTML =
+    (prebuilt.length ? '<p class="note" style="font-weight:600;color:var(--ink);margin-bottom:6px;">Prebuilt</p><div style="margin-bottom:14px;">'+prebuilt.map(a=>settingsAvatarCard(a,false)).join('')+'</div>' : '') +
+    '<p class="note" style="font-weight:600;color:var(--ink);margin-bottom:6px;">Your avatars</p>' +
+    (custom.length ? '<div style="margin-bottom:14px;">'+custom.map(a=>settingsAvatarCard(a,true)).join('')+'</div>' : '<p class="note" style="margin-bottom:14px;">None yet.</p>') +
+    '<div class="sechead" style="margin-top:0;"><h2>Create a new avatar</h2></div>' +
+    '<label class="lbl">Name</label><input class="field" id="avSetName" placeholder="e.g. Friendly Stylist" style="max-width:320px;margin-bottom:8px;">' +
+    '<label class="lbl">Describe the avatar</label><textarea class="field" id="avSetDesc" style="max-width:480px;min-height:60px;margin-bottom:8px;" placeholder="e.g. A warm, approachable young stylist in salon uniform, friendly smile"></textarea>' +
+    '<button class="btn btn-p btn-sm" onclick="avSettingsCreate()">Create \u2014 uses Replicate now</button>' +
+    '<div id="avSetResult" style="margin-top:8px;"></div>' +
+    '<div style="margin:16px 0 0;border-top:1px solid var(--line);padding-top:14px;">' +
+      '<p class="note" style="margin:0 0 8px;">Already have an avatar image? Upload it directly instead.</p>' +
+      '<input type="file" id="avSetUploadInput" accept="image/*" style="display:none;" onchange="avSettingsUpload()">' +
+      '<button class="btn btn-s btn-sm" onclick="el(\'avSetUploadInput\').click()">Upload an image</button>' +
+      '<div id="avSetUploadResult" style="margin-top:8px;"></div>' +
+    '</div>';
+}
+function settingsAvatarCard(a, editable){
+  return '<div style="display:inline-block;text-align:center;margin:0 8px 12px 0;vertical-align:top;">' +
+    '<img src="'+esc(a.storage_url)+'" style="width:64px;height:64px;object-fit:cover;border-radius:10px;border:1px solid var(--line);" loading="lazy">' +
+    '<div class="note" style="font-size:10px;max-width:80px;">'+esc(a.name)+'</div>' +
+    (editable
+      ? '<div style="margin-top:2px;"><a href="#" style="font-size:10px;margin-right:6px;" onclick="event.preventDefault();avSettingsRename(\''+a.id+'\',\''+esc((a.name||'').replace(/\'/g,''))+'\')">Rename</a>' +
+        '<a href="#" style="font-size:10px;color:#a02020;" onclick="event.preventDefault();avSettingsDelete(\''+a.id+'\',\''+esc((a.name||'').replace(/\'/g,''))+'\')">Delete</a></div>'
+      : '') +
+  '</div>';
+}
+async function avSettingsRename(avatarId, currentName){
+  const name = prompt('Rename avatar', currentName);
+  if (!name || name === currentName) return;
+  const j = await call('update_avatar', { avatar_id: avatarId, name });
+  if (!j.ok){ toast(j.error, 'err'); return; }
+  toast('Renamed', 'ok');
+  avatarLibraryRefresh();
+}
+async function avSettingsDelete(avatarId, name){
+  if (!confirm('Delete "'+name+'"? This removes it permanently \u2014 it cannot be undone.')) return;
+  const j = await call('delete_avatar', { avatar_id: avatarId });
+  if (!j.ok){ toast(j.error, 'err'); return; }
+  toast('Deleted', 'ok');
+  avatarLibraryRefresh();
+}
+async function avSettingsCreate(){
+  const name = el('avSetName').value.trim(), description = el('avSetDesc').value.trim();
+  if (!name || !description){ toast('Name and description are both required.', 'err'); return; }
+  const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Generating\u2026 this can take a moment';
+  const j = await call('create_avatar', { name, description }, 45000);
+  btn.disabled = false; btn.textContent = 'Create \u2014 uses Replicate now';
+  if (!j.ok){ el('avSetResult').innerHTML = errBlock(j.error, 'avatarLibrarySettings()'); return; }
+  toast('Avatar created', 'ok');
+  avatarLibraryRefresh();
+}
+async function avSettingsUpload(){
+  const input = el('avSetUploadInput');
+  const file = input.files && input.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024){ toast('That image is too large (over 2MB) - please use a smaller one.', 'err'); input.value = ''; return; }
+  const name = (el('avSetName').value || '').trim() || file.name.replace(/\.[^.]+$/, '');
+  const description = (el('avSetDesc').value || '').trim();
+  const box = el('avSetUploadResult');
+  box.innerHTML = '<div class="loading-block"><span class="spin"></span>Uploading\u2026</div>';
+  try {
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    const j = await call('upload_avatar_image', { name, description, image_base64: base64, content_type: file.type });
+    if (!j.ok){ box.innerHTML = errBlock(j.error, 'avatarLibrarySettings()'); return; }
+    toast('Avatar uploaded', 'ok');
+    avatarLibraryRefresh();
+  } catch (e) {
+    box.innerHTML = errBlock(String((e && e.message) || e), 'avatarLibrarySettings()');
+  } finally {
+    input.value = '';
+  }
+}
+
+// Real, from list_assets/upload_environment_asset - the generic
+// assets system already existed and was already used by compile_
+// prompt, but like avatars before this session, had no frontend for
+// actually uploading a real photo into it. asset_type: 'environment'
+// is the exact convention select_reference_assets already looks for.
+async function salonGallerySettings(){
+  el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:22px;">Salon Gallery</h1>' +
+    '<p class="sub" style="margin-top:2px;">Real photos of your space \u2014 Replicate can blend these into generated content, including alongside a selected avatar.</p>' +
+    '<div id="galSettingsBody" style="margin-top:16px;"><div class="loading-block"><span class="spin"></span></div></div>';
+  await salonGalleryRefresh();
+}
+async function salonGalleryRefresh(){
+  const j = await call('list_assets', {});
+  const body = el('galSettingsBody');
+  if (!j.ok){ body.innerHTML = errBlock(j.error, 'salonGallerySettings()'); return; }
+  const photos = (j.assets || []).filter(a => a.asset_type === 'environment');
+  body.innerHTML =
+    (photos.length
+      ? '<div style="margin-bottom:14px;">'+photos.map(a =>
+          '<div style="display:inline-block;text-align:center;margin:0 8px 8px 0;">' +
+            '<img src="'+esc(a.storage_url)+'" style="width:80px;height:80px;object-fit:cover;border-radius:10px;border:1px solid var(--line);" loading="lazy">' +
+            '<div class="note" style="font-size:10px;max-width:80px;">'+esc(a.name)+'</div>' +
+          '</div>'
+        ).join('')+'</div>'
+      : '<p class="note" style="margin-bottom:14px;">No photos yet \u2014 add one below.</p>') +
+    '<div class="sechead" style="margin-top:0;"><h2>Add a photo</h2></div>' +
+    '<label class="lbl">Name</label><input class="field" id="galName" placeholder="e.g. Reception area" style="max-width:320px;margin-bottom:8px;">' +
+    '<label class="lbl">Description (optional)</label><input class="field" id="galDesc" placeholder="e.g. Bright, modern reception with wood accents" style="max-width:480px;margin-bottom:8px;">' +
+    '<input type="file" id="galUploadInput" accept="image/*" style="display:none;" onchange="galSettingsUpload()">' +
+    '<button class="btn btn-p btn-sm" onclick="el(\'galUploadInput\').click()">Upload a photo</button>' +
+    '<div id="galUploadResult" style="margin-top:8px;"></div>';
+}
+async function galSettingsUpload(){
+  const input = el('galUploadInput');
+  const file = input.files && input.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024){ toast('That image is too large (over 2MB) - please use a smaller one.', 'err'); input.value = ''; return; }
+  const name = (el('galName').value || '').trim() || file.name.replace(/\.[^.]+$/, '');
+  const description = (el('galDesc').value || '').trim();
+  const box = el('galUploadResult');
+  box.innerHTML = '<div class="loading-block"><span class="spin"></span>Uploading\u2026</div>';
+  try {
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    const j = await call('upload_environment_asset', { name, description, image_base64: base64, content_type: file.type });
+    if (!j.ok){ box.innerHTML = errBlock(j.error, 'salonGallerySettings()'); return; }
+    toast('Photo added', 'ok');
+    salonGalleryRefresh();
+  } catch (e) {
+    box.innerHTML = errBlock(String((e && e.message) || e), 'salonGallerySettings()');
+  } finally {
+    input.value = '';
+  }
+}
+
 async function billingModelSettings(){
   el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
     '<h1 style="font-size:22px;">Billing</h1><p class="sub" style="margin-top:2px;">Which AI model handles each feature, and what it actually costs.</p>' +
@@ -4159,7 +5163,7 @@ function brandStrategyTabBar(active){
     '<button class="'+(t[0]===active?'active':'')+'" onclick="brandStrategyPanel(&apos;'+t[0]+'&apos;)">'+t[1]+'</button>').join('') + '</div>';
 }
 async function brandStrategyPanel(tab){
-  el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\\u2190 Back</button>' +
+  el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
     '<h1 style="font-size:21px;">Brand & Strategy</h1>' + brandStrategyTabBar(tab) +
     '<div id="bsTabBody"><div class="loading-block"><span class="spin"></span></div></div>';
   if (tab === 'strategy') return businessStrategyTab();
@@ -4173,13 +5177,22 @@ async function brandSettingsTab(){
   el('bsTabBody').innerHTML =
     zen('Colours, logo and the model used for generated images \u2014 applied to every piece of content Zen makes.') +
     '<div class="list" style="margin-top:10px;">' +
-      '<label class="lbl">Logo URL</label><input class="field" id="bsLogo" value="'+esc(s.logo_url||'')+'" placeholder="https://\\u2026" style="margin-bottom:10px;">' +
+      '<label class="lbl">Logo URL</label><input class="field" id="bsLogo" value="'+esc(s.logo_url||'')+'" placeholder="https://\u2026" style="margin-bottom:10px;">' +
       '<div style="display:flex;gap:10px;margin-bottom:10px;">' +
         '<div style="flex:1;"><label class="lbl">Primary colour</label><input class="field" id="bsPrimary" value="'+esc(s.primary_color||'')+'" placeholder="#175E52"></div>' +
         '<div style="flex:1;"><label class="lbl">Secondary colour</label><input class="field" id="bsSecondary" value="'+esc(s.secondary_color||'')+'" placeholder="#A96118"></div>' +
         '<div style="flex:1;"><label class="lbl">Accent colour</label><input class="field" id="bsAccent" value="'+esc(s.accent_color||'')+'" placeholder="#4E5FC8"></div>' +
       '</div>' +
       '<label class="lbl">Visual brand description</label><textarea class="field" id="bsVisual" style="min-height:70px;margin-bottom:10px;" placeholder="What the brand looks like, in a sentence or two.">'+esc(s.visual_brand_description||'')+'</textarea>' +
+      '<label class="lbl">Default image model'+tip('Used for content plan generation. Creative Lab has its own separate choice per generation.')+'</label>' +
+      '<select class="field" id="bsImageModel" style="margin-bottom:4px;">' +
+        [['black-forest-labs/flux-2-pro','flux-2-pro (default)'],['black-forest-labs/flux-1.1-pro','flux-1.1-pro'],
+         ['black-forest-labs/flux-2-max','flux-2-max (highest fidelity)'],['black-forest-labs/flux-kontext-pro','flux-kontext-pro (reference-image editing)']]
+          .map(o => '<option value="'+o[0]+'"'+((s.default_image_model||'black-forest-labs/flux-2-pro')===o[0]?' selected':'')+'>'+o[1]+'</option>').join('') +
+      '</select>' +
+      '<p class="note" style="margin:0 0 10px;">krea-2-large isn\u2019t offered here \u2014 it doesn\u2019t support JPEG output, so it can\u2019t reliably feed Instagram publishing. Still available in Creative Lab for one-off, non-publishing use.</p>' +
+      '<label class="lbl">Kokoro voice'+tip('Used for scene voiceovers. Options: af_heart, af_bella, af_sarah (American female), am_adam, am_michael (American male), bf_emma, bf_isabella (British female), bm_george, bm_lewis (British male).')+'</label>' +
+      '<input class="field" id="bsVoice" value="'+esc(s.kokoro_voice_id||'')+'" placeholder="Defaults to af_heart" style="margin-bottom:10px;">' +
       '<label class="lbl">Instagram location ID</label><input class="field" id="bsIgLoc" value="'+esc(s.instagram_location_id||'')+'" style="margin-bottom:10px;">' +
       '<label class="lbl">Meta ad account ID</label><input class="field" id="bsAdAcct" value="'+esc(s.meta_ad_account_id||'')+'" style="margin-bottom:10px;">' +
     '</div>' +
@@ -4192,6 +5205,8 @@ async function saveBrandSettings(){
     secondary_color: el('bsSecondary').value.trim(),
     accent_color: el('bsAccent').value.trim(),
     visual_brand_description: el('bsVisual').value.trim(),
+    default_image_model: el('bsImageModel').value,
+    kokoro_voice_id: el('bsVoice').value.trim(),
     instagram_location_id: el('bsIgLoc').value.trim(),
     meta_ad_account_id: el('bsAdAcct').value.trim(),
   });
@@ -4215,19 +5230,47 @@ const STRATEGY_FIELDS = [
 async function businessStrategyTab(){
   const j = await call('get_business_strategy', {});
   const s = (j.ok && j.strategy) ? j.strategy : {};
-  el('bsTabBody').innerHTML =
-    zen('This is the standing direction every piece of content and every campaign checks against \u2014 set once, applies everywhere.') +
-    '<div class="list" style="margin-top:10px;">' +
-    STRATEGY_FIELDS.map(f =>
-      '<label class="lbl">'+f[1]+'</label><textarea class="field" id="strat_'+f[0]+'" style="min-height:54px;margin-bottom:10px;" placeholder="'+esc(f[2])+'">'+esc(s[f[0]]||'')+'</textarea>').join('') +
-    '</div>' +
-    '<button class="btn btn-p btn-sm" onclick="saveBusinessStrategy()">Save</button>';
+  // Filled and read-only by default, matching the same pattern Brand
+  // DNA already uses (approved rules shown as read-only, with a "Redo
+  // from scratch" way back in) - this was always an open editable
+  // form regardless of whether it had real content, which risked an
+  // accidental edit to a standing strategy every campaign checks
+  // against. Empty on first visit still shows the editable form
+  // directly, since there's nothing yet to freeze.
+  const hasContent = STRATEGY_FIELDS.some(f => s[f[0]] && String(s[f[0]]).trim());
+  if (hasContent){
+    el('bsTabBody').innerHTML =
+      zen('This is the standing direction every piece of content and every campaign checks against.') +
+      '<div class="list" style="margin-top:10px;">' +
+        STRATEGY_FIELDS.filter(f => s[f[0]] && String(s[f[0]]).trim())
+          .map(f => insLine(f[1], esc(s[f[0]]))).join('') +
+      '</div>' +
+      '<button class="btn btn-s btn-sm" style="margin-top:12px;" onclick="businessStrategyEditForm()">Edit</button>';
+    return;
+  }
+  businessStrategyEditForm();
+}
+function businessStrategyEditForm(){
+  call('get_business_strategy', {}).then(j => {
+    const s = (j.ok && j.strategy) ? j.strategy : {};
+    el('bsTabBody').innerHTML =
+      zen('This is the standing direction every piece of content and every campaign checks against \u2014 set once, applies everywhere.') +
+      '<div class="list" style="margin-top:10px;">' +
+      STRATEGY_FIELDS.map(f =>
+        '<label class="lbl">'+f[1]+'</label><textarea class="field" id="strat_'+f[0]+'" style="min-height:54px;margin-bottom:10px;" placeholder="'+esc(f[2])+'">'+esc(s[f[0]]||'')+'</textarea>').join('') +
+      '</div>' +
+      '<button class="btn btn-p btn-sm" onclick="saveBusinessStrategy()">Save</button>';
+  });
 }
 async function saveBusinessStrategy(){
   const body = {};
   STRATEGY_FIELDS.forEach(f => { body[f[0]] = el('strat_'+f[0]).value.trim(); });
   const j = await call('save_business_strategy', body);
   toast(j.ok ? 'Saved' : j.error, j.ok?'ok':'err');
+  // Back to the frozen, read-only view after saving - the same
+  // moment Brand DNA locks in after approve_brand_dna, rather than
+  // leaving the form open and editable indefinitely after a save.
+  if (j.ok) businessStrategyTab();
 }
 
 // Brand DNA is AI-assisted: plain-language answers go in via
@@ -4275,7 +5318,7 @@ function brandDnaSetupForm(){
 async function proposeBrandDna(){
   const business_name = el('dnaName').value.trim(), business_description = el('dnaDesc').value.trim();
   if (!business_name || !business_description){ toast('Business name and description are both required.', 'err'); return; }
-  const btn = el('dnaProposeBtn'); btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Working out the rules\\u2026';
+  const btn = el('dnaProposeBtn'); btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Working out the rules\u2026';
   const j = await call('propose_brand_dna', {
     business_name, business_description,
     industry: el('dnaIndustry').value.trim(),
