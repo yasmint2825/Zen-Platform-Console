@@ -3251,7 +3251,7 @@ async function magentCreateAvatar(){
   const name = el('avName').value.trim(), description = el('avDesc').value.trim();
   if (!name || !description){ toast('Name and description are both required.', 'err'); return; }
   const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Generating\u2026 this can take a moment';
-  const j = await call('create_avatar', { name, description }, 45000);
+  const j = await call('create_avatar', { name, description }, 75000);
   btn.disabled = false; btn.textContent = 'Create \u2014 uses Replicate now';
   if (!j.ok){ el('avResult').innerHTML = errBlock(j.error, 'magentStepVisualSource()'); return; }
   toast('Avatar created', 'ok');
@@ -3313,7 +3313,7 @@ async function magentCompileAndShow(){
     user_request: concept.message || concept.angle, platform: 'instagram', aspect_ratio: '1:1',
     persona_id: persona?.id || null, persona_context: persona ? (persona.name+': '+persona.creative_angle) : null,
     creative_concept: concept,
-  });
+  }, 45000);
   if (!briefRes.ok){ el('p-flow').innerHTML = magentShell(errBlock(briefRes.error, 'magentStepVisualSource()'), '<button class="btn btn-ghost" onclick="magentStepVisualSource()">Back</button><span></span>'); return; }
 
   // If an avatar was explicitly selected in Step 4, that choice
@@ -3332,7 +3332,11 @@ async function magentCompileAndShow(){
   } else {
     assetIds = assetsRes.ok ? (assetsRes.assets||[]).map(a=>a.id) : [];
   }
-  const compileRes = await call('compile_prompt', { creative_brief_id: briefRes.brief.id, asset_ids: assetIds, special_notes: specialNotes });
+  // compile_prompt uses the largest max_tokens (4500) of any AI call
+  // in this backend - genuinely the one most likely of all of them to
+  // exceed a 20s default, so it gets the same extended timeout as the
+  // other AI-generation calls already using one.
+  const compileRes = await call('compile_prompt', { creative_brief_id: briefRes.brief.id, asset_ids: assetIds, special_notes: specialNotes }, 45000);
   if (!compileRes.ok){ el('p-flow').innerHTML = magentShell(errBlock(compileRes.error, 'magentStepVisualSource()'), '<button class="btn btn-ghost" onclick="magentStepVisualSource()">Back</button><span></span>'); return; }
 
   magentState.pendingBriefId = briefRes.brief.id;
@@ -3355,7 +3359,7 @@ async function magentRunGeneration(){
   const genRes = await call('run_generation', {
     creative_brief_id: magentState.pendingBriefId, compiled_prompt: magentState.pendingCompiledPrompt,
     model: 'black-forest-labs/flux-2-pro', aspect_ratio: '1:1', reference_asset_urls: magentState.pendingReferenceUrls,
-  });
+  }, 60000);
   if (!genRes.ok){ el('p-flow').innerHTML = magentShell(errBlock(genRes.error, 'magentStepVisualSource()'), '<button class="btn btn-ghost" onclick="magentStepVisualSource()">Back</button><span></span>'); return; }
 
   el('p-flow').innerHTML = magentShell(
@@ -3646,20 +3650,23 @@ async function contentGenerate(){
   // would lose an edited theme or audience the owner just typed.
   const fullRequest = [text, theme && theme!==text ? 'Campaign theme: '+theme : '', targetCust ? 'Audience: '+targetCust : '']
     .filter(Boolean).join('. ');
-  const briefRes = await call('generate_creative_brief', { user_request: fullRequest, platform:'instagram', aspect_ratio:'1:1', target_segment });
+  const briefRes = await call('generate_creative_brief', { user_request: fullRequest, platform:'instagram', aspect_ratio:'1:1', target_segment }, 45000);
   if (!briefRes.ok){ el('p-flow').innerHTML = wizSteps(CONTENT_STEPS,1) + errBlock(briefRes.error, 'contentBrief()'); return; }
   contentState.brief = briefRes.brief;
 
   const assetsRes = await call('select_reference_assets', { creative_brief_id: briefRes.brief.id });
   const assetIds = assetsRes.ok ? (assetsRes.assets||[]).map(a=>a.id) : [];
-  const compileRes = await call('compile_prompt', { creative_brief_id: briefRes.brief.id, asset_ids: assetIds });
+  const compileRes = await call('compile_prompt', { creative_brief_id: briefRes.brief.id, asset_ids: assetIds }, 45000);
   if (!compileRes.ok){ el('p-flow').innerHTML = wizSteps(CONTENT_STEPS,1) + errBlock(compileRes.error, 'contentBrief()'); return; }
 
+  // Real Replicate image generation - genuinely the most likely of
+  // all these calls to legitimately exceed a short timeout, given
+  // actual model inference time plus reference-image processing.
   const genRes = await call('run_generation', {
     creative_brief_id: briefRes.brief.id, compiled_prompt: compileRes.compiled_prompt,
     model: 'black-forest-labs/flux-2-pro', aspect_ratio: '1:1',
     reference_asset_urls: compileRes.reference_asset_urls||[],
-  });
+  }, 60000);
   if (!genRes.ok){ el('p-flow').innerHTML = wizSteps(CONTENT_STEPS,1) + errBlock(genRes.error, 'contentBrief()'); return; }
   contentState.generation = genRes;
   contentReview();
@@ -4892,7 +4899,7 @@ async function avSettingsCreate(){
   const name = el('avSetName').value.trim(), description = el('avSetDesc').value.trim();
   if (!name || !description){ toast('Name and description are both required.', 'err'); return; }
   const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Generating\u2026 this can take a moment';
-  const j = await call('create_avatar', { name, description }, 45000);
+  const j = await call('create_avatar', { name, description }, 75000);
   btn.disabled = false; btn.textContent = 'Create \u2014 uses Replicate now';
   if (!j.ok){ el('avSetResult').innerHTML = errBlock(j.error, 'avatarLibrarySettings()'); return; }
   toast('Avatar created', 'ok');
