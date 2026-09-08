@@ -3288,12 +3288,26 @@ async function magentUploadAvatar(){
 }
 // Step 5: Generate - real. Reuses the exact real pipeline: generate_
 // creative_brief (now persona-aware) -> compile_prompt -> run_generation.
-async function magentStepGenerate(){
+// Step 5, stage 1: collect optional special notes ("uniform must be
+// navy blue", or any other specific instruction), then compile and
+// show the actual prompt before anything is sent to Replicate.
+// Genuinely visible for now, per direct instruction - a real
+// transparency step, not a placeholder pretending to be one.
+function magentStepGenerate(){
   magentState.step = 4;
+  const concept = magentState.conceptQueue[magentState.conceptIndex];
+  el('p-flow').innerHTML = magentShell(
+    zen('Any specific instruction for this one \u2014 an exact color, a detail to include, anything the description above doesn\u2019t already cover? Optional.') +
+    '<textarea class="field" id="magSpecialNotes" style="min-height:60px;margin-bottom:10px;" placeholder="e.g. Uniform must be navy blue, not black"></textarea>',
+    '<button class="btn btn-ghost" onclick="magentStepVisualSource()">Back</button><button class="btn btn-p" onclick="magentCompileAndShow()">Continue</button>'
+  );
+}
+async function magentCompileAndShow(){
+  const specialNotes = (el('magSpecialNotes').value || '').trim();
   const concept = magentState.conceptQueue[magentState.conceptIndex];
   const personaIdx = magentState.selectedPersonas[0];
   const persona = magentState.personas[personaIdx];
-  el('p-flow').innerHTML = magentShell('<div class="loading-block"><span class="spin"></span>Generating\u2026 using this persona\u2019s angle and your brand rules</div>', '');
+  el('p-flow').innerHTML = magentShell('<div class="loading-block"><span class="spin"></span>Writing the prompt\u2026</div>', '');
 
   const briefRes = await call('generate_creative_brief', {
     user_request: concept.message || concept.angle, platform: 'instagram', aspect_ratio: '1:1',
@@ -3318,12 +3332,29 @@ async function magentStepGenerate(){
   } else {
     assetIds = assetsRes.ok ? (assetsRes.assets||[]).map(a=>a.id) : [];
   }
-  const compileRes = await call('compile_prompt', { creative_brief_id: briefRes.brief.id, asset_ids: assetIds });
+  const compileRes = await call('compile_prompt', { creative_brief_id: briefRes.brief.id, asset_ids: assetIds, special_notes: specialNotes });
   if (!compileRes.ok){ el('p-flow').innerHTML = magentShell(errBlock(compileRes.error, 'magentStepVisualSource()'), '<button class="btn btn-ghost" onclick="magentStepVisualSource()">Back</button><span></span>'); return; }
 
+  magentState.pendingBriefId = briefRes.brief.id;
+  magentState.pendingCompiledPrompt = compileRes.compiled_prompt;
+  magentState.pendingReferenceUrls = compileRes.reference_asset_urls || [];
+
+  el('p-flow').innerHTML = magentShell(
+    zen('This is exactly what\u2019s about to be sent to Replicate \u2014 shown here for now so you can check it before generating.') +
+    '<textarea class="field" style="min-height:160px;font-size:12px;font-family:monospace;background:#faf9f6;" readonly>'+esc(compileRes.compiled_prompt)+'</textarea>' +
+    (compileRes.reference_asset_urls && compileRes.reference_asset_urls.length ? '<p class="note" style="margin-top:8px;">Plus '+compileRes.reference_asset_urls.length+' real reference image(s) sent alongside the prompt.</p>' : ''),
+    '<button class="btn btn-ghost" onclick="magentStepGenerate()">Back</button><button class="btn btn-p" onclick="magentRunGeneration()">Generate image</button>'
+  );
+}
+async function magentRunGeneration(){
+  const concept = magentState.conceptQueue[magentState.conceptIndex];
+  const personaIdx = magentState.selectedPersonas[0];
+  const persona = magentState.personas[personaIdx];
+  el('p-flow').innerHTML = magentShell('<div class="loading-block"><span class="spin"></span>Generating\u2026</div>', '');
+
   const genRes = await call('run_generation', {
-    creative_brief_id: briefRes.brief.id, compiled_prompt: compileRes.compiled_prompt,
-    model: 'black-forest-labs/flux-2-pro', aspect_ratio: '1:1', reference_asset_urls: compileRes.reference_asset_urls||[],
+    creative_brief_id: magentState.pendingBriefId, compiled_prompt: magentState.pendingCompiledPrompt,
+    model: 'black-forest-labs/flux-2-pro', aspect_ratio: '1:1', reference_asset_urls: magentState.pendingReferenceUrls,
   });
   if (!genRes.ok){ el('p-flow').innerHTML = magentShell(errBlock(genRes.error, 'magentStepVisualSource()'), '<button class="btn btn-ghost" onclick="magentStepVisualSource()">Back</button><span></span>'); return; }
 
@@ -3331,7 +3362,7 @@ async function magentStepGenerate(){
     '<img src="'+esc(genRes.output_url)+'" style="width:260px;aspect-ratio:1;object-fit:cover;border-radius:13px;margin-bottom:12px;" loading="lazy">' +
     '<p class="note">'+esc(concept.format)+' for '+esc(persona?persona.name:'your audience')+'</p>',
     '<button class="btn btn-ghost" onclick="magentStepVisualSource()">Regenerate</button>' +
-    '<button class="btn btn-p" onclick="magentStepPublish(\''+genRes.generation_id+'\',\''+esc((briefRes.brief.subject||concept.message||'Post').replace(/\'/g,''))+'\')">Continue</button>'
+    '<button class="btn btn-p" onclick="magentStepPublish(\''+genRes.generation_id+'\',\''+esc((concept.message||'Post').replace(/\'/g,''))+'\')">Continue</button>'
   );
 }
 
