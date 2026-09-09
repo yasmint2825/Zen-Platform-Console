@@ -2763,6 +2763,7 @@ async function marketing(){
   p.innerHTML =
     '<div class="topline"><div class="pagetitle"><div class="kicker">Marketing</div><h1>What would you like to create?</h1>' +
     '<p>Start with the outcome. Zen uses your salon\u2019s look and voice behind the scenes.</p></div></div>' +
+    '<div id="mktCampaignsInProgress"></div>' +
     '<button class="task" style="border:1.5px solid var(--green);margin-bottom:14px;" onclick="flow(()=>marketingAgentWizard())"><div class="task-top"><b>\u2726 Marketing Agent \u2014 guided</b> <span class="note" style="font-weight:600;color:var(--green);">Recommended</span></div><span>Goal \u2192 Audience/Persona \u2192 Creative \u2192 Generate \u2192 Publish \u2192 Promote, one guided flow. The options below are still here as quick shortcuts if you know exactly what you want.</span></button>' +
     '<div class="grid3">' +
       mktTask('◇','Plan this month','A full month of content, planned for you','plan') +
@@ -2782,6 +2783,20 @@ async function marketing(){
       '<div><b>'+esc(post.title)+'</b><div class="sub">'+post.format+' \u00b7 '+post.date+'</div></div></div>' +
       '<span class="badge '+s[1]+'">'+s[0]+'</span></div>';
   }).join('');
+  // Real, live check for unfinished work - never lost, and now
+  // impossible to miss when reopening Marketing, not tucked away
+  // somewhere the person has to remember to check.
+  const cj = await call('list_wizard_campaigns', {});
+  const inProgress = cj.ok ? (cj.campaigns||[]).filter(c => c.status === 'in_progress') : [];
+  if (inProgress.length){
+    el('mktCampaignsInProgress').innerHTML =
+      '<div style="background:#fff8e8;border:1px solid #e8d9a8;border-radius:13px;padding:14px 16px;margin-bottom:14px;">' +
+        '<b>'+inProgress.length+' campaign'+(inProgress.length>1?'s':'')+' in progress</b>' +
+        inProgress.map(c => '<div class="list-row" style="cursor:pointer;background:transparent;" onclick="magentResumeCampaign(\''+c.id+'\')">' +
+          '<span>'+esc((c.goal&&c.goal.objective)||'Untitled goal')+' <span class="note">'+c.done+' of '+c.total+' generated</span></span>' +
+          '<span class="note">Continue \u2192</span></div>').join('') +
+      '</div>';
+  }
 }
 function mktTask(ic,name,why,key){
   const fn = {plan:'monthlyPlanFlow',poster:"()=>contentFlow('Poster')",video:"()=>contentFlow('Video')",
@@ -3034,6 +3049,38 @@ async function goalBuild(){
    does not replace or absorb them. */
 const MAGENT_STEPS = ['Goal','Audience & Persona','Creative Mix','Visual Source','Generate','Publish','Promote'];
 const magentState = { step:0, goal:{}, personas:[], selectedPersonas:[] };
+// Resuming a real, persisted campaign - restores the state a fresh
+// wizard run would have built up to Step 3, then jumps straight to
+// whichever concept still needs work rather than making the person
+// redo Goal/Persona/Creative Mix for work that's already done.
+async function magentResumeCampaign(campaignId){
+  el('p-marketing').innerHTML = '<div class="loading-block"><span class="spin"></span>Loading your campaign\u2026</div>';
+  const j = await call('get_wizard_campaign', { campaign_id: campaignId });
+  if (!j.ok){ toast(j.error, 'err'); flow(marketing); return; }
+  magentState.campaignId = campaignId;
+  magentState.goal = j.campaign.goal || {};
+  magentState.personas = j.campaign.personas || [];
+  magentState.selectedPersonas = (j.campaign.personas || []).map((_,i)=>i);
+  magentState.conceptQueue = j.concepts.map(c => c.concept);
+  magentState.selectedConcepts = j.concepts.map((_,i)=>i);
+
+  // Prefer resuming an ungenerated concept; if everything's generated
+  // but something still needs publishing, resume there instead.
+  const nextPending = j.concepts.findIndex(c => c.status === 'pending');
+  const nextUnpublished = j.concepts.findIndex(c => c.status === 'generated');
+  if (nextPending > -1){
+    magentState.conceptIndex = nextPending;
+    flow(()=>magentStepVisualSource());
+  } else if (nextUnpublished > -1){
+    magentState.conceptIndex = nextUnpublished;
+    const c = j.concepts[nextUnpublished];
+    magentState.pendingBriefId = c.creative_brief_id;
+    flow(()=>magentStepPublish(c.generation_id, (magentState.conceptQueue[nextUnpublished].message||'Post')));
+  } else {
+    toast('Everything in this campaign is already published.', 'ok');
+    flow(marketing);
+  }
+}
 
 function magentShell(bodyHtml, actionsHtml){
   return '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
@@ -3182,10 +3229,17 @@ function magentToggleConcept(idx){
   if (i>-1) magentState.selectedConcepts.splice(i,1); else magentState.selectedConcepts.push(idx);
   renderCreativeMix();
 }
-function magentCreativeMixNext(){
+async function magentCreativeMixNext(){
   if (!magentState.selectedConcepts.length){ toast('Select at least one concept to continue.', 'err'); return; }
   magentState.conceptQueue = magentState.selectedConcepts.map(i => magentState.concepts[i]);
   magentState.conceptIndex = 0;
+  // Real, persistent campaign record from this point on - previously
+  // this whole run only existed in browser memory. Best-effort: if
+  // this write fails for any reason, the wizard still proceeds
+  // normally (magentState.campaignId just stays unset), it just won't
+  // be resumable later - never blocks the person from continuing.
+  const cj = await call('create_wizard_campaign', { goal: magentState.goal || null, personas: magentState.selectedPersonas.map(i => magentState.personas[i]), concepts: magentState.conceptQueue });
+  magentState.campaignId = cj.ok ? cj.campaign_id : null;
   magentStepVisualSource();
 }
 
@@ -3445,6 +3499,12 @@ async function magentRunGeneration(){
   }, 60000);
   if (!genRes.ok){ el('p-flow').innerHTML = magentShell(errBlock(genRes.error, 'magentStepVisualSource()'), '<button class="btn btn-ghost" onclick="magentStepVisualSource()">Back</button><span></span>'); return; }
   magentState.pendingGenerationIds = [genRes.generation_id];
+  if (magentState.campaignId){
+    call('update_wizard_campaign_concept', {
+      campaign_id: magentState.campaignId, concept_index: magentState.conceptIndex, status: 'generated',
+      creative_brief_id: magentState.pendingBriefId, generation_id: genRes.generation_id,
+    }); // best-effort, doesn't block the flow if it fails
+  }
 
   el('p-flow').innerHTML = magentShell(
     '<img src="'+esc(genRes.output_url)+'" style="width:260px;aspect-ratio:1;object-fit:cover;border-radius:13px;margin-bottom:12px;" loading="lazy">' +
@@ -3610,6 +3670,12 @@ async function magentStepPublish(generationId, title){
   });
   if (!j.ok){ el('p-flow').innerHTML = magentShell(errBlock(j.error, 'magentStepGenerate()'), '<button class="btn btn-ghost" onclick="magentStepVisualSource()">Back</button><span></span>'); return; }
   magentState.itemId = j.item.id;
+  if (magentState.campaignId){
+    call('update_wizard_campaign_concept', {
+      campaign_id: magentState.campaignId, concept_index: magentState.conceptIndex, status: 'published',
+      creative_brief_id: magentState.pendingBriefId, generation_id: generationId, content_plan_item_id: j.item.id,
+    }); // best-effort
+  }
   el('p-flow').innerHTML = magentShell(
     zen((j.is_carousel ? j.slide_count+'-slide carousel ready. ' : '')+'Post to Instagram now, hold it for approval, or choose a time \u2014 same real publishing this business already uses elsewhere in Zen, just reached from inside this wizard now.') +
     '<input class="field" type="datetime-local" id="magPubWhen" style="max-width:260px;margin:10px 0;">' +
