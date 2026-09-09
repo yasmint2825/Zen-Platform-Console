@@ -5268,15 +5268,29 @@ async function loadModelJobs(){
       job.label + '<span style="float:right;font-size:11px;font-weight:400;color:var(--muted);">~$'+(job.monthly_estimate||0).toFixed(2)+'/mo</span>',
       esc(job.what),
       '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0;">' +
-        '<select onchange="setModelForJob(\''+job.purpose+'\',this.value)" style="font-size:12px;border:1px solid var(--line);border-radius:8px;padding:5px 8px;">' +
+        '<select id="modelSel_'+job.purpose+'" onchange="setModelForJob(\''+job.purpose+'\',this.value)" style="font-size:12px;border:1px solid var(--line);border-radius:8px;padding:5px 8px;">' +
           j.models.map(m => '<option value="'+m.id+'"'+(m.id===job.current?' selected':'')+'>'+esc(m.name)+' \u00b7 $'+m.in+'/$'+m.out+' per million</option>').join('') +
         '</select>' +
         (job.is_recommended
           ? '<span class="badge on">Recommended</span>'
           : '<button class="btn btn-ghost btn-sm" onclick="setModelForJob(\''+job.purpose+'\',\''+job.recommended+'\')">Use the recommendation</button>') +
+        '<button class="btn btn-s btn-sm" onclick="testLlmModel(\''+job.purpose+'\')">Test this model</button>' +
       '</div>' +
+      '<div id="testResult_'+job.purpose+'"></div>' +
       '<p class="note" style="margin:0;">'+esc(job.why)+'</p>'
     )).join('');
+}
+// Real, direct verification - genuinely calls the model through the
+// exact same routing every real job uses (OpenAI included), not a
+// separate check. Trivial prompt, cheap and fast, purely to confirm
+// the setup actually works before relying on it for real content.
+async function testLlmModel(purpose){
+  const model = el('modelSel_'+purpose).value;
+  const box = el('testResult_'+purpose);
+  box.innerHTML = '<p class="note"><span class="spin"></span> Testing '+esc(model)+'\u2026</p>';
+  const j = await call('test_llm_model', { model });
+  if (!j.ok){ box.innerHTML = errBlock(j.error); return; }
+  box.innerHTML = '<p class="note" style="color:var(--green);">\u2713 '+esc(model)+' responded in '+j.elapsed_ms+'ms: \u201c'+esc(j.response_text)+'\u201d</p>';
 }
 async function setModelForJob(purpose, model){
   const j = await call('set_model_for_job', {purpose, model});
