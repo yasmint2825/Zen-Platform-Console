@@ -3224,6 +3224,7 @@ function renderVisualSource(prebuilt, custom){
         '<option value="4:5">Portrait (4:5) \u2014 Feed</option>' +
         '<option value="9:16">Vertical (9:16) \u2014 Stories/Reels</option>' +
         '<option value="16:9">Landscape (16:9)</option>' +
+        '<option value="match_input_image" id="magRatioMatchInput" style="display:none;">Match reference image \u2014 Nano Banana only</option>' +
       '</select>' +
       '<label class="lbl">Quality</label>' +
       '<select class="field" id="magQuality" style="max-width:220px;margin-bottom:8px;" onchange="magentState.outputQuality=Number(this.value);">' +
@@ -3232,11 +3233,12 @@ function renderVisualSource(prebuilt, custom){
         '<option value="75">Lower (75) \u2014 smaller file, faster</option>' +
       '</select>' +
       '<label class="lbl">Image model</label>' +
-      '<select class="field" id="magModel" style="max-width:280px;" onchange="magentState.selectedModel=this.value;">' +
+      '<select class="field" id="magModel" style="max-width:280px;" onchange="magentModelChanged(this.value);">' +
         '<option value="black-forest-labs/flux-2-pro" selected>Flux 2 Pro (default)</option>' +
         '<option value="google/nano-banana-2-lite">Nano Banana 2 Lite \u2014 faster, cheaper</option>' +
       '</select>' +
       '<p class="note" style="margin:4px 0 0;">New \u2014 try it and compare against Flux for this business\u2019s content specifically.</p>' +
+      '<p class="note" id="magQualityNote" style="display:none;">Nano Banana 2 Lite has no quality setting of its own \u2014 this control is ignored for it.</p>' +
     '</div>' +
     '<div style="margin:14px 0;border-top:1px solid var(--line);padding-top:14px;">' +
       '<label style="font-size:13px;"><input type="checkbox" id="magIncludeSalon" onchange="magentState.includeSalonPhoto=this.checked;"> Blend in a real salon photo, if one\u2019s in the Salon Gallery</label>' +
@@ -3244,6 +3246,23 @@ function renderVisualSource(prebuilt, custom){
     '</div>' +
     '<p class="note" style="margin-top:10px;">Selecting a source never generates anything by itself \u2014 nothing is sent to Replicate until you click Generate on the next step, or, for a new avatar, until you click Create below.</p>';
 }
+// Nano Banana specifically supports "match reference image" as a real
+// aspect_ratio value (confirmed against Replicate's own schema) -
+// Flux has no equivalent, so this option only makes sense, and is
+// only shown, when Nano Banana is the selected model. Also: Nano
+// Banana Lite genuinely has no quality parameter at all (confirmed
+// absent from its docs) - the Quality dropdown still exists for Flux,
+// but a note makes clear it does nothing for this model rather than
+// silently appearing to apply.
+function magentModelChanged(model){
+  magentState.selectedModel = model;
+  const isNanoBanana = model === 'google/nano-banana-2-lite';
+  const matchOption = el('magRatioMatchInput');
+  if (matchOption) matchOption.style.display = isNanoBanana ? '' : 'none';
+  const qualityNote = el('magQualityNote');
+  if (qualityNote) qualityNote.style.display = isNanoBanana ? '' : 'none';
+}
+
 function magentToggleAvatar(avatarId){
   const idx = magentState.selectedAvatarIds.indexOf(avatarId);
   if (idx > -1) magentState.selectedAvatarIds.splice(idx, 1);
@@ -3411,12 +3430,88 @@ async function magentRunGeneration(){
 
   el('p-flow').innerHTML = magentShell(
     '<img src="'+esc(genRes.output_url)+'" style="width:260px;aspect-ratio:1;object-fit:cover;border-radius:13px;margin-bottom:12px;" loading="lazy">' +
-    '<p class="note">'+esc(concept.format)+' for '+esc(persona?persona.name:'your audience')+'</p>',
+    '<p class="note">'+esc(concept.format)+' for '+esc(persona?persona.name:'your audience')+'</p>' +
+    '<button class="btn btn-s btn-sm" style="margin-top:8px;" onclick="magentTurnIntoVideoForm(\''+genRes.generation_id+'\')">\ud83c\udfa5 Turn this into a video</button>' +
+    '<div id="videoFormArea"></div>',
     '<button class="btn btn-ghost" onclick="magentStepVisualSource()">Regenerate</button>' +
     '<button class="btn btn-p" onclick="magentStepPublish(\''+genRes.generation_id+'\',\''+esc((concept.message||'Post').replace(/\'/g,''))+'\')">Continue</button>'
   );
 }
-
+// Real image-to-video, converting the actual generated image above -
+// not a separate, unrelated generation. Cost is shown as a labeled
+// estimate before anything is spent, updates live as duration/model
+// change, and generation is async (real video takes minutes, not
+// seconds) - polls check_video_status rather than blocking.
+async function magentTurnIntoVideoForm(generationId){
+  const j = await call('list_video_models', {});
+  const area = el('videoFormArea');
+  if (!j.ok){ area.innerHTML = errBlock(j.error, 'magentTurnIntoVideoForm()'); return; }
+  magentState.videoModels = j.models;
+  magentState.videoSourceGenerationId = generationId;
+  area.innerHTML =
+    '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-top:10px;">' +
+    '<label class="lbl">Video model</label>' +
+    '<select class="field" id="vidModel" style="max-width:280px;margin-bottom:8px;" onchange="magentVideoOptionsChanged()">' +
+      j.models.map(m => '<option value="'+m.id+'">'+esc(m.label)+' \u2014 up to '+m.maxDuration+'s</option>').join('') +
+    '</select>' +
+    '<label class="lbl">Duration (seconds)</label>' +
+    '<input class="field" type="number" id="vidDuration" value="5" min="1" style="max-width:120px;margin-bottom:8px;" onchange="magentVideoOptionsChanged()">' +
+    '<p class="note" id="vidCostNote" style="margin:4px 0 10px;"></p>' +
+    '<label class="lbl">Motion prompt</label>' +
+    '<textarea class="field" id="vidPrompt" style="min-height:60px;margin-bottom:6px;" placeholder="Describe the motion/camera movement\u2026"></textarea>' +
+    '<button class="btn btn-s btn-sm" onclick="magentWriteVideoPrompt()">\u2728 Let Zen write this</button>' +
+    '<div id="vidPromptResult" style="margin-top:6px;"></div>' +
+    '<button class="btn btn-p btn-sm" style="margin-top:10px;" onclick="magentGenerateVideo()">Generate video</button>' +
+    '<div id="vidGenResult" style="margin-top:10px;"></div>' +
+    '</div>';
+  magentVideoOptionsChanged();
+}
+function magentVideoOptionsChanged(){
+  const modelId = el('vidModel').value;
+  const duration = Number(el('vidDuration').value) || 5;
+  const model = (magentState.videoModels || []).find(m => m.id === modelId);
+  if (!model) return;
+  const safeDuration = Math.min(duration, model.maxDuration);
+  if (safeDuration !== duration) el('vidDuration').value = safeDuration;
+  const est = Math.round(safeDuration * model.estCostPerSecond * 100) / 100;
+  el('vidCostNote').innerHTML = '<b>Estimated cost: $'+est.toFixed(2)+'</b> ('+safeDuration+'s at an estimated $'+model.estCostPerSecond+'/s for '+esc(model.label)+'). This is an estimate based on published rates, which vary by source \u2014 not a guarantee. Check your Replicate account for actual billed amounts.';
+}
+async function magentWriteVideoPrompt(){
+  const modelId = el('vidModel').value;
+  const duration = Number(el('vidDuration').value) || 5;
+  const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Writing\u2026';
+  const j = await call('generate_video_motion_prompt', { generation_id: magentState.videoSourceGenerationId, duration, model: modelId });
+  btn.disabled = false; btn.textContent = '\u2728 Let Zen write this';
+  if (!j.ok){ el('vidPromptResult').innerHTML = errBlock(j.error, 'magentTurnIntoVideoForm()'); return; }
+  el('vidPrompt').value = j.motion_prompt;
+}
+async function magentGenerateVideo(){
+  const modelId = el('vidModel').value;
+  const duration = Number(el('vidDuration').value) || 5;
+  const prompt = (el('vidPrompt').value || '').trim();
+  if (!prompt){ toast('Add a motion prompt first, or let Zen write one.', 'err'); return; }
+  const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Starting\u2026';
+  const j = await call('run_image_to_video', {
+    generation_id: magentState.videoSourceGenerationId, prompt, model: modelId, duration, aspect_ratio: magentState.aspectRatio,
+  }, 45000);
+  if (!j.ok){ btn.disabled = false; btn.textContent = 'Generate video'; el('vidGenResult').innerHTML = errBlock(j.error, 'magentTurnIntoVideoForm()'); return; }
+  el('vidGenResult').innerHTML = '<div class="loading-block"><span class="spin"></span>Generating\u2026 real video generation can take several minutes.</div>';
+  magentPollVideoStatus(j.prediction_id, 0);
+}
+async function magentPollVideoStatus(predictionId, attempt){
+  if (attempt > 40){ el('vidGenResult').innerHTML = '<p class="note">Still processing after a while \u2014 check back shortly, or view it directly in your Replicate dashboard.</p>'; return; }
+  const j = await call('check_video_status', { prediction_id: predictionId });
+  if (!j.ok){ el('vidGenResult').innerHTML = errBlock(j.error, 'magentTurnIntoVideoForm()'); return; }
+  if (j.status === 'succeeded' && j.output_url){
+    el('vidGenResult').innerHTML = '<video src="'+esc(j.output_url)+'" controls style="width:260px;border-radius:13px;"></video><p class="note" style="margin-top:6px;color:var(--green);">\u2713 Video ready</p>';
+    return;
+  }
+  if (j.status === 'failed' || j.status === 'canceled'){
+    el('vidGenResult').innerHTML = errBlock('Video generation '+j.status+(j.error?': '+j.error:''), 'magentTurnIntoVideoForm()');
+    return;
+  }
+  setTimeout(() => magentPollVideoStatus(predictionId, attempt + 1), 8000);
+}
 // Carousel: real, multiple coordinated slides, not the same image
 // repeated. Fixed 3 slides for now - each gets a different angle
 // instruction appended to the same reviewed, approved prompt, so the
@@ -4908,9 +5003,10 @@ async function settings(){
     ['⌂','Salon profile','Name, services, hours','profile',true],
     ['◐','Brand & Strategy','Brand settings, business strategy, Brand DNA','brand',null],
     ['💬','WhatsApp settings','Reply assistant, what to sell, campaign rules, templates','whatsapp',null],
-    ['◎','Instagram & Meta Ads','Connection status and ad performance','connections',null],
+    ['◎','Connections & Integrations','Instagram posting, Meta Ads, Replicate, Canva \u2014 real status for each','connections',null],
     ['\u25c8','Avatar Library','Upload or create reusable avatars for content generation','avatars',null],
     ['\u25a4','Salon Gallery','Real photos of your space, for Replicate to blend into generated content','gallery',null],
+    ['\u25b3','Ad Autopilot','Policy limits for automated budget decisions - off by default','autopilot',null],
     ['⇅','Data','Duplicate customers, resolved automatically','data',true],
     ['♙','Team members','Who can use Zen','team',true],
     ['⌾','Permissions','What each person can do',null,null],
@@ -4918,7 +5014,7 @@ async function settings(){
     ['▣','Billing','Which AI model each feature uses, and what it costs','billing',null],
   ];
   el('setList').innerHTML = rows.map(r =>
-    '<div class="list-row" style="cursor:pointer;" onclick="'+(r[3]==='whatsapp'?"flow(()=>whatsappSettingsPanel())":r[3]==='billing'?"flow(()=>billingModelSettings())":r[3]==='avatars'?"flow(()=>avatarLibrarySettings())":r[3]==='gallery'?"flow(()=>salonGallerySettings())":r[3]?"flow(()=>settingsDetail('"+r[3]+"'))":"toast('This screen would open here.')")+'">' +
+    '<div class="list-row" style="cursor:pointer;" onclick="'+(r[3]==='whatsapp'?"flow(()=>whatsappSettingsPanel())":r[3]==='billing'?"flow(()=>billingModelSettings())":r[3]==='avatars'?"flow(()=>avatarLibrarySettings())":r[3]==='gallery'?"flow(()=>salonGallerySettings())":r[3]==='autopilot'?"flow(()=>autopilotSettings())":r[3]?"flow(()=>settingsDetail('"+r[3]+"'))":"toast('This screen would open here.')")+'">' +
     '<span style="display:flex;gap:12px;align-items:center;"><span style="width:30px;height:30px;border-radius:9px;background:#eef0ed;display:grid;place-items:center;">'+r[0]+'</span>' +
     '<span><b>'+r[1]+'</b><div class="sub">'+r[2]+'</div></span></span>' +
     (r[4]!==null ? '<span class="badge '+(r[4]?'on':'warn')+'">'+(r[4]?'Done':'Not yet')+'</span>' : '<span style="color:var(--muted);">›</span>') +
@@ -5090,6 +5186,63 @@ async function galSettingsUpload(){
   }
 }
 
+// Phase 8: real policy that actually gates automated Meta budget
+// changes (see apply_ad_recommendation's is_automated check on the
+// backend) - not a display-only preference screen. Off (recommend_
+// only) by default; nothing executes automatically until this is
+// explicitly changed here.
+async function autopilotSettings(){
+  el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:22px;">Ad Autopilot</h1>' +
+    '<p class="sub" style="margin-top:2px;">Real limits for automated budget decisions. Pausing or reducing an ad always requires your manual approval, in every mode \u2014 that never changes here.</p>' +
+    '<div id="autopilotBody" style="margin-top:16px;"><div class="loading-block"><span class="spin"></span></div></div>';
+  await autopilotRefresh();
+}
+async function autopilotRefresh(){
+  const j = await call('get_autopilot_policy', {});
+  const body = el('autopilotBody');
+  if (!j.ok){ body.innerHTML = errBlock(j.error, 'autopilotSettings()'); return; }
+  const p = j.policy;
+  body.innerHTML =
+    '<label class="lbl">Mode</label>' +
+    '<select class="field" id="apMode" style="max-width:320px;margin-bottom:10px;">' +
+      '<option value="recommend_only"'+(p.mode==='recommend_only'?' selected':'')+'>Recommend only \u2014 nothing runs automatically</option>' +
+      '<option value="approval"'+(p.mode==='approval'?' selected':'')+'>Approval mode \u2014 you approve each change manually</option>' +
+      '<option value="autopilot"'+(p.mode==='autopilot'?' selected':'')+'>Autopilot \u2014 budget increases apply automatically, within limits</option>' +
+    '</select>' +
+    '<label class="lbl">Maximum budget increase per change</label>' +
+    '<input class="field" type="number" id="apMaxPercent" value="'+esc(p.max_budget_increase_percent)+'" style="max-width:160px;margin-bottom:10px;"> %' +
+    '<label class="lbl">Maximum incremental spend per change (AED/day)</label>' +
+    '<input class="field" type="number" id="apMaxIncremental" value="'+esc(p.max_incremental_spend_aed)+'" style="max-width:160px;margin-bottom:10px;">' +
+    '<label class="lbl">Minimum real spend before trusting a recommendation (AED, last 30 days)</label>' +
+    '<input class="field" type="number" id="apMinThreshold" value="'+esc(p.min_data_threshold_spend_aed)+'" style="max-width:160px;margin-bottom:14px;">' +
+    '<button class="btn btn-p btn-sm" onclick="autopilotSave()">Save policy</button>' +
+    '<div id="apSaveResult" style="margin-top:8px;"></div>' +
+    '<div class="sechead"><h2>Recent decisions</h2></div>' +
+    '<div id="apLog"><div class="loading-block"><span class="spin"></span></div></div>';
+  const logRes = await call('list_autopilot_log', {});
+  const logBox = el('apLog');
+  if (!logRes.ok){ logBox.innerHTML = errBlock(logRes.error, 'autopilotSettings()'); return; }
+  const log = logRes.log || [];
+  logBox.innerHTML = log.length ? log.map(l =>
+    '<div class="list-row"><span><b>'+esc(l.entity_name||l.entity_id||'')+'</b> \u2014 '+esc(l.verdict||'')+
+    '<div class="sub">'+esc(l.reason||'')+'</div></span>' +
+    '<span class="note" style="color:'+(l.decision==='applied'?'var(--green)':'#a02020')+';">'+esc(l.decision)+'</span></div>'
+  ).join('') : '<p class="note">No automated decisions yet.</p>';
+}
+async function autopilotSave(){
+  const mode = el('apMode').value;
+  const max_budget_increase_percent = Number(el('apMaxPercent').value);
+  const max_incremental_spend_aed = Number(el('apMaxIncremental').value);
+  const min_data_threshold_spend_aed = Number(el('apMinThreshold').value);
+  const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Saving\u2026';
+  const j = await call('save_autopilot_policy', { mode, max_budget_increase_percent, max_incremental_spend_aed, min_data_threshold_spend_aed });
+  btn.disabled = false; btn.textContent = 'Save policy';
+  if (!j.ok){ el('apSaveResult').innerHTML = errBlock(j.error, 'autopilotSettings()'); return; }
+  toast('Policy saved', 'ok');
+  if (mode === 'autopilot') toast('Autopilot is now live for budget increases within these limits \u2014 pause/reduce always still needs your approval.', 'ok');
+}
+
 async function billingModelSettings(){
   el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
     '<h1 style="font-size:22px;">Billing</h1><p class="sub" style="margin-top:2px;">Which AI model handles each feature, and what it actually costs.</p>' +
@@ -5215,21 +5368,76 @@ function settingsDetail(key){
   if (key === 'brand'){ flow(()=>brandStrategyPanel('settings')); return; }
   el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' + views[key]();
 }
+// Real, consolidated view - previously "Instagram & Meta Ads" only
+// ever checked Meta Ads status despite its name, and Instagram
+// posting, Replicate, and Canva had no visibility anywhere in the
+// app at all. Every status shown here is a real check against real
+// stored data, not a static list of integration names.
 async function connectionsPanel(){
   el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
-    '<h1 style="font-size:21px;">Instagram & Meta Ads</h1><div class="loading-block"><span class="spin"></span>Checking real connection status\u2026</div>';
-  const ads = await call('get_meta_ads_status', {});
+    '<h1 style="font-size:21px;">Connections & Integrations</h1><div class="loading-block"><span class="spin"></span>Checking real connection status\u2026</div>';
+  const [ads, ig, canva] = await Promise.all([
+    call('get_meta_ads_status', {}), call('get_instagram_status', {}), call('canva_status', {}),
+  ]);
   el('p-flow').innerHTML =
     '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
-    '<h1 style="font-size:21px;">Instagram & Meta Ads</h1>' +
-    '<div class="list" style="margin-top:10px;">' +
-      '<div class="list-row"><b>Meta Ads</b><span class="badge'+(ads.ok&&ads.connected?' on':' warn')+'">'+(ads.ok&&ads.connected?'Connected':'Not connected')+'</span></div>' +
-    '</div>' +
+    '<h1 style="font-size:21px;">Connections & Integrations</h1>' +
+    '<div class="sechead" style="margin-top:10px;"><h2>Instagram posting</h2></div>' +
+    '<div class="list"><div class="list-row"><b>Instagram</b><span class="badge'+(ig.ok&&ig.connected?' on':' warn')+'">'+(ig.ok&&ig.connected?'Connected':'Not connected')+'</span></div></div>' +
+    (ig.ok && ig.connected
+      ? insLineBlock([['Account ID', ig.instagram_business_account_id||'\u2014'],['Last updated', ig.updated_at?new Date(ig.updated_at).toLocaleDateString():'\u2014']]) +
+        '<button class="btn btn-s btn-sm" style="margin-top:8px;" onclick="igTestConnection()">Test connection</button>' +
+        '<button class="btn btn-s btn-sm" style="margin-top:8px;margin-left:6px;" onclick="igShowCredForm()">Update credentials</button>'
+      : '<p class="note">Save your Instagram Business Account ID and access token to enable posting.</p>' +
+        '<button class="btn btn-s btn-sm" style="margin-top:6px;" onclick="igShowCredForm()">Connect Instagram</button>') +
+    '<div id="igCredForm"></div><div id="igTestResult" style="margin-top:8px;"></div>' +
+
+    '<div class="sechead"><h2>Meta Ads</h2></div>' +
+    '<div class="list"><div class="list-row"><b>Meta Ads</b><span class="badge'+(ads.ok&&ads.connected?' on':' warn')+'">'+(ads.ok&&ads.connected?'Connected':'Not connected')+'</span></div></div>' +
     (ads.ok && ads.connected
-      ? '<div class="list">'+insLine('Ad account', ads.ad_account_id||'\u2014')+insLine('Last updated', ads.updated_at ? new Date(ads.updated_at).toLocaleDateString() : '\u2014')+'</div>'
-        + '<button class="btn btn-s btn-sm" style="margin-top:10px;" onclick="flow(adsPerformancePanel)">See ad performance</button>'
+      ? insLineBlock([['Ad account', ads.ad_account_id||'\u2014'],['Last updated', ads.updated_at?new Date(ads.updated_at).toLocaleDateString():'\u2014']]) +
+        '<button class="btn btn-s btn-sm" style="margin-top:8px;" onclick="flow(adsPerformancePanel)">See ad performance</button>'
       : '<p class="note">'+(ads.ok ? 'Connect a Meta Ads account to see real ad spend and results here.' : esc(ads.error))+'</p>'
-        + '<button class="btn btn-s btn-sm" style="margin-top:8px;" onclick="toast(\'The Meta Ads connection flow would open here.\')">Connect Meta Ads</button>');
+        + '<button class="btn btn-s btn-sm" style="margin-top:8px;" onclick="toast(\'The Meta Ads connection flow would open here.\')">Connect Meta Ads</button>') +
+
+    '<div class="sechead"><h2>Image generation (Replicate)</h2></div>' +
+    '<div class="list"><div class="list-row"><b>Replicate</b><span class="badge on">Always on</span></div></div>' +
+    '<p class="note">Not a per-business connection \u2014 one shared server-side key powers image generation (Flux, Nano Banana) for every business using Zen. Nothing to connect here.</p>' +
+
+    '<div class="sechead"><h2>Canva</h2></div>' +
+    '<div class="list"><div class="list-row"><b>Canva</b><span class="badge'+(canva.ok&&canva.connected?' on':' warn')+'">'+(canva.ok&&canva.connected?'Connected':canva.ok&&canva.configured?'Not connected':'Not set up')+'</span></div></div>' +
+    '<p class="note">'+(canva.ok?esc(canva.note||''):esc(canva.error||''))+'</p>';
+}
+function insLineBlock(pairs){
+  return '<div class="list">'+pairs.map(p=>insLine(p[0], p[1])).join('')+'</div>';
+}
+function igShowCredForm(){
+  el('igCredForm').innerHTML =
+    '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-top:10px;">' +
+    '<label class="lbl">Instagram Business Account ID</label><input class="field" id="igAccountId" style="margin-bottom:8px;">' +
+    '<label class="lbl">Access token</label><input class="field" id="igToken" type="password" style="margin-bottom:8px;">' +
+    '<button class="btn btn-p btn-sm" onclick="igSaveCredentials()">Save</button>' +
+    '<div id="igSaveResult" style="margin-top:8px;"></div>' +
+    '</div>';
+}
+async function igSaveCredentials(){
+  const instagram_business_account_id = (el('igAccountId').value||'').trim();
+  const access_token = (el('igToken').value||'').trim();
+  if (!instagram_business_account_id || !access_token){ toast('Both fields are required.', 'err'); return; }
+  const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Saving\u2026';
+  const j = await call('save_instagram_credentials', { instagram_business_account_id, access_token });
+  btn.disabled = false; btn.textContent = 'Save';
+  if (!j.ok){ el('igSaveResult').innerHTML = errBlock(j.error, 'connectionsPanel()'); return; }
+  toast('Saved', 'ok');
+  flow(connectionsPanel);
+}
+async function igTestConnection(){
+  const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Testing\u2026';
+  const j = await call('test_instagram_connection', {});
+  btn.disabled = false; btn.textContent = 'Test connection';
+  el('igTestResult').innerHTML = j.ok
+    ? '<p class="note" style="color:var(--green);">\u2713 Connection verified.</p>'
+    : errBlock(j.error, 'connectionsPanel()');
 }
 async function adsPerformancePanel(){
   el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flow(connectionsPanel)" style="margin-bottom:16px;">\u2190 Back</button>' +
