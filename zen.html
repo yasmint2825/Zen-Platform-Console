@@ -1047,6 +1047,18 @@ function fakeCall(name, {delay=700, fail=false}={}) {
 }
 
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+// Real, shared across every wizard step that can offer back a
+// previously-generated result: a plain-language "generated when" line
+// plus a genuine Regenerate button, so revisiting a step never spends
+// another paid call unless the user explicitly chooses to.
+function cacheNote(fromCache, generatedAt, regenerateFnCall){
+  if (!fromCache) return '';
+  const when = generatedAt ? new Date(generatedAt).toLocaleString() : 'earlier';
+  return '<div style="background:#f7f6f2;border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">' +
+    '<span class="note" style="margin:0;">\u21bb Showing what was generated '+esc(when)+' \u2014 no new call made.</span>' +
+    '<button class="btn btn-ghost btn-sm" onclick="'+regenerateFnCall+'">Regenerate</button>' +
+  '</div>';
+}
 
 /* ── Visual helpers ──────────────────────────────────────────────
    Small, composable pieces reused everywhere a number, a person or
@@ -2953,19 +2965,20 @@ function goalStrategyFlow(){
     '<button class="btn btn-p" onclick="goalPropose()">Design a strategy</button>' +
     '<div id="goalResult" style="margin-top:14px;"></div>';
 }
-async function goalPropose(){
+async function goalPropose(forceRegenerate){
   const goal_customers = Number(el('goalCustomers').value), budget_aed = Number(el('goalBudget').value);
   const timeframe_days = Number(el('goalDays').value) || null;
   const objective = el('goalObjective').value;
   if (!goal_customers || !budget_aed){ toast('A customer goal and a budget are both required.', 'err'); return; }
   const box = el('goalResult');
   box.innerHTML = '<div class="loading-block"><span class="spin"></span>Designing a strategy against your real data\u2026</div>';
-  const j = await call('propose_ad_strategy_from_goal', { goal_customers, budget_aed, timeframe_days }, 45000);
+  const j = await call('propose_ad_strategy_from_goal', forceRegenerate ? { goal_customers, budget_aed, timeframe_days, force_regenerate: true } : { goal_customers, budget_aed, timeframe_days }, 45000);
   if (!j.ok){ box.innerHTML = errBlock(j.error, 'goalStrategyFlow()'); return; }
   goalState.strategy = j.strategy; goalState.goal_customers = goal_customers; goalState.budget_aed = budget_aed; goalState.objective = objective;
   const s = j.strategy;
   const alloc = s.budget_allocation || {};
   box.innerHTML =
+    cacheNote(j.from_cache, j.generated_at, 'goalPropose(true)') +
     '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-bottom:14px;">' +
       '<p class="note" style="margin:0 0 8px;font-weight:600;color:var(--ink);">'+esc(s.feasibility_note||'')+'</p>' +
       rowKV('Prospecting', (alloc.prospecting_percent||0)+'%') +
@@ -3069,13 +3082,14 @@ function magentGoalNext(){
 }
 
 // Step 2: Audience/Persona - library-first, "see more", custom creation
-async function magentStepPersona(){
+async function magentStepPersona(forceRegenerate){
   magentState.step = 1;
   el('p-flow').innerHTML = magentShell('<div class="loading-block"><span class="spin"></span>Checking what already fits, before generating anything new\u2026</div>', '');
-  const j = await call('get_persona_recommendations', {}, 45000);
+  const j = await call('get_persona_recommendations', forceRegenerate ? { force_regenerate: true } : {}, 45000);
   if (!j.ok){ el('p-flow').innerHTML = magentShell(errBlock(j.error, 'magentStepPersona()'), ''); return; }
   const all = [...(j.recommended||[]), ...(j.generated||[])];
   magentState.personas = all; magentState.morePersonas = j.more||[];
+  magentState.personaFromCache = !!j.from_cache; magentState.personaGeneratedAt = j.generated_at || null;
   renderPersonaStep(all, j.more||[], j.source);
 }
 function personaCard(p, idx){
@@ -3090,6 +3104,7 @@ function personaCard(p, idx){
 }
 function renderPersonaStep(shown, more, source){
   el('p-flow').innerHTML = magentShell(
+    cacheNote(magentState.personaFromCache, magentState.personaGeneratedAt, 'magentStepPersona(true)') +
     '<p class="note" style="margin-bottom:14px;">'+(source==='library'?'These are drawn from Zen\u2019s persona library, matched to your business \u2014 not freshly generated each time.':'Some came from the library, some Zen generated specifically for this goal.')+' Pick one or more, edit any of them, or build your own.</p>' +
     shown.map((p,i) => personaCard(p,i)).join('') +
     (more.length ? '<button class="btn btn-s btn-sm" onclick="magentShowMorePersonas()">See '+more.length+' more</button>' : '') +
@@ -3136,14 +3151,15 @@ function magentPersonaNext(){
 
 // Step 3: Creative Mix - real, calls recommend_creative_mix with the
 // selected personas. Format Mix Recommender per the architecture.
-async function magentStepCreativeMix(){
+async function magentStepCreativeMix(forceRegenerate){
   magentState.step = 2;
   el('p-flow').innerHTML = magentShell('<div class="loading-block"><span class="spin"></span>Building a content mix around your selected persona(s)\u2026</div>', '');
   const selected = magentState.selectedPersonas.map(i => magentState.personas[i]);
-  const j = await call('recommend_creative_mix', { personas: selected }, 45000);
+  const j = await call('recommend_creative_mix', forceRegenerate ? { personas: selected, force_regenerate: true } : { personas: selected }, 45000);
   if (!j.ok){ el('p-flow').innerHTML = magentShell(errBlock(j.error, 'magentStepCreativeMix()', j.raw_preview), '<button class="btn btn-ghost" onclick="magentStepPersona()">Back</button><span></span>'); return; }
   magentState.concepts = j.concepts || [];
   magentState.selectedConcepts = magentState.concepts.map((_,i) => i); // all selected by default - "Use Recommended Mix"
+  magentState.mixFromCache = !!j.from_cache; magentState.mixGeneratedAt = j.generated_at || null;
   renderCreativeMix();
 }
 function conceptCard(c, idx){
@@ -3155,6 +3171,7 @@ function conceptCard(c, idx){
 }
 function renderCreativeMix(){
   el('p-flow').innerHTML = magentShell(
+    cacheNote(magentState.mixFromCache, magentState.mixGeneratedAt, 'magentStepCreativeMix(true)') +
     zen('This is the recommended mix \u2014 use it as-is, or deselect anything that doesn\u2019t fit.') +
     magentState.concepts.map((c,i) => conceptCard(c,i)).join(''),
     '<button class="btn btn-ghost" onclick="magentStepPersona()">Back</button><button class="btn btn-p" onclick="magentCreativeMixNext()">Continue</button>'
@@ -3347,7 +3364,7 @@ function magentStepGenerate(){
     '<button class="btn btn-ghost" onclick="magentStepVisualSource()">Back</button><button class="btn btn-p" onclick="magentCompileAndShow()">Continue</button>'
   );
 }
-async function magentCompileAndShow(){
+async function magentCompileAndShow(forceRegenerate){
   const specialNotes = (el('magSpecialNotes').value || '').trim();
   const concept = magentState.conceptQueue[magentState.conceptIndex];
   const personaIdx = magentState.selectedPersonas[0];
@@ -3357,7 +3374,7 @@ async function magentCompileAndShow(){
   const briefRes = await call('generate_creative_brief', {
     user_request: concept.message || concept.angle, platform: 'instagram', aspect_ratio: magentState.aspectRatio || '1:1',
     persona_id: persona?.id || null, persona_context: persona ? (persona.name+': '+persona.creative_angle) : null,
-    creative_concept: concept,
+    creative_concept: concept, force_regenerate: !!forceRegenerate,
   }, 45000);
   if (!briefRes.ok){ el('p-flow').innerHTML = magentShell(errBlock(briefRes.error, 'magentStepVisualSource()', briefRes.raw_preview), '<button class="btn btn-ghost" onclick="magentStepVisualSource()">Back</button><span></span>'); return; }
 
@@ -3403,6 +3420,7 @@ async function magentCompileAndShow(){
   magentState.pendingReferenceUrls = compileRes.reference_asset_urls || [];
 
   el('p-flow').innerHTML = magentShell(
+    cacheNote(briefRes.from_cache, briefRes.generated_at, 'magentCompileAndShow(true)') +
     zen('This is exactly what\u2019s about to be sent to Replicate \u2014 shown here for now so you can check it before generating.') +
     '<textarea class="field" style="min-height:160px;font-size:12px;font-family:monospace;background:#faf9f6;" readonly>'+esc(compileRes.compiled_prompt)+'</textarea>' +
     (compileRes.reference_asset_urls && compileRes.reference_asset_urls.length ? '<p class="note" style="margin-top:8px;">Plus '+compileRes.reference_asset_urls.length+' real reference image(s) sent alongside the prompt.</p>' : ''),
@@ -5285,12 +5303,29 @@ async function loadModelJobs(){
 // separate check. Trivial prompt, cheap and fast, purely to confirm
 // the setup actually works before relying on it for real content.
 async function testLlmModel(purpose){
-  const model = el('modelSel_'+purpose).value;
-  const box = el('testResult_'+purpose);
-  box.innerHTML = '<p class="note"><span class="spin"></span> Testing '+esc(model)+'\u2026</p>';
-  const j = await call('test_llm_model', { model });
-  if (!j.ok){ box.innerHTML = errBlock(j.error); return; }
-  box.innerHTML = '<p class="note" style="color:var(--green);">\u2713 '+esc(model)+' responded in '+j.elapsed_ms+'ms: \u201c'+esc(j.response_text)+'\u201d</p>';
+  // Defensive: an element lookup failing here previously meant a
+  // silent, unhandled exception inside an async function - no full-
+  // page error overlay (that only catches synchronous errors), no
+  // visible error, nothing. The result area would stay empty and the
+  // card's own static "why" text underneath it was the only thing
+  // left showing, which is exactly what looked like a wrong response.
+  // Wrapped so any failure here now always produces a real, visible
+  // error instead of silence.
+  try {
+    const modelSel = el('modelSel_'+purpose);
+    const box = el('testResult_'+purpose);
+    if (!modelSel || !box){ toast('Could not find this job\u2019s controls on the page - try reloading.', 'err'); return; }
+    const model = modelSel.value;
+    box.innerHTML = '<p class="note"><span class="spin"></span> Testing '+esc(model)+'\u2026</p>';
+    const j = await call('test_llm_model', { model });
+    if (!j.ok){ box.innerHTML = errBlock(j.error); return; }
+    box.innerHTML = '<p class="note" style="color:var(--green);">\u2713 '+esc(model)+' responded in '+j.elapsed_ms+'ms: \u201c'+esc(j.response_text)+'\u201d</p>';
+  } catch (e) {
+    const box = el('testResult_'+purpose);
+    const msg = 'Test failed unexpectedly: ' + String((e && e.message) || e);
+    if (box) box.innerHTML = errBlock(msg); else toast(msg, 'err');
+    console.error('testLlmModel failed', e);
+  }
 }
 async function setModelForJob(purpose, model){
   const j = await call('set_model_for_job', {purpose, model});
