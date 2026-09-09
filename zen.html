@@ -3178,8 +3178,11 @@ function magentCreativeMixNext(){
 // silently offered as if it works.
 async function magentStepVisualSource(){
   magentState.step = 3;
-  magentState.selectedAvatarId = null;
+  magentState.selectedAvatarIds = [];
   magentState.includeSalonPhoto = false;
+  magentState.aspectRatio = '1:1';
+  magentState.outputQuality = 90;
+  magentState.selectedModel = 'black-forest-labs/flux-2-pro';
   const concept = magentState.conceptQueue[magentState.conceptIndex];
   el('p-flow').innerHTML = magentShell(
     zen('Concept '+(magentState.conceptIndex+1)+' of '+magentState.conceptQueue.length+': '+esc((concept.format||'').toUpperCase())+' \u2014 '+esc(concept.angle||'')) +
@@ -3194,9 +3197,12 @@ async function magentStepVisualSource(){
   const custom = avatars.filter(a=>a.source==='user_created');
   renderVisualSource(prebuilt, custom);
 }
+// Multi-select: more than one avatar can genuinely be used together
+// in a single scene (e.g. two stylists, or a stylist and a child
+// customer), toggled independently rather than one replacing another.
 function avatarCard(a){
-  const selected = magentState.selectedAvatarId === a.id;
-  return '<div class="avatar-card" data-avatar-id="'+a.id+'" style="display:inline-block;text-align:center;margin:0 8px 8px 0;cursor:pointer;" onclick="magentSelectAvatar(\''+a.id+'\')">' +
+  const selected = magentState.selectedAvatarIds.includes(a.id);
+  return '<div class="avatar-card" data-avatar-id="'+a.id+'" style="display:inline-block;text-align:center;margin:0 8px 8px 0;cursor:pointer;" onclick="magentToggleAvatar(\''+a.id+'\')">' +
     '<img src="'+esc(a.storage_url)+'" style="width:72px;height:72px;object-fit:cover;border-radius:10px;border:2px solid '+(selected?'var(--green)':'var(--line)')+';" loading="lazy">' +
     '<div class="note" style="font-size:10px;max-width:72px;">'+esc(a.name)+(selected?' \u2713':'')+'</div>' +
   '</div>';
@@ -3204,9 +3210,7 @@ function avatarCard(a){
 function renderVisualSource(prebuilt, custom){
   el('visualSourceBody').innerHTML =
     '<label class="lbl">Visual source</label>' +
-    '<div style="margin-bottom:6px;">' +
-      '<label style="margin-right:14px;font-size:13px;"><input type="radio" name="visSrc" value="text" checked onchange="magentState.selectedAvatarId=null;"> Generate from description only</label>' +
-    '</div>' +
+    '<p class="note" style="margin-bottom:8px;">Select one or more avatars to include in the same scene, or none to generate from the description alone.</p>' +
     (prebuilt.length ? '<p class="note" style="margin:10px 0 4px;font-weight:600;color:var(--ink);">Prebuilt avatars</p><div>'+prebuilt.map(avatarCard).join('')+'</div>' : '') +
     (custom.length ? '<p class="note" style="margin:10px 0 4px;font-weight:600;color:var(--ink);">Your avatars</p><div>'+custom.map(avatarCard).join('')+'</div>' : '') +
     (!prebuilt.length && !custom.length ? '<p class="note">No avatars yet \u2014 create one below.</p>' : '') +
@@ -3214,24 +3218,44 @@ function renderVisualSource(prebuilt, custom){
     '<div id="createAvatarForm"></div>' +
     (custom.length ? '<p class="note" style="margin-top:8px;">To rename or delete an avatar you\u2019ve created, use Settings \u2192 Avatar Library.</p>' : '') +
     '<div style="margin:14px 0;border-top:1px solid var(--line);padding-top:14px;">' +
+      '<label class="lbl">Aspect ratio</label>' +
+      '<select class="field" id="magAspectRatio" style="max-width:220px;margin-bottom:8px;" onchange="magentState.aspectRatio=this.value;">' +
+        '<option value="1:1">Square (1:1) \u2014 Feed</option>' +
+        '<option value="4:5">Portrait (4:5) \u2014 Feed</option>' +
+        '<option value="9:16">Vertical (9:16) \u2014 Stories/Reels</option>' +
+        '<option value="16:9">Landscape (16:9)</option>' +
+      '</select>' +
+      '<label class="lbl">Quality</label>' +
+      '<select class="field" id="magQuality" style="max-width:220px;margin-bottom:8px;" onchange="magentState.outputQuality=Number(this.value);">' +
+        '<option value="90" selected>Standard (90)</option>' +
+        '<option value="100">Maximum (100) \u2014 larger file</option>' +
+        '<option value="75">Lower (75) \u2014 smaller file, faster</option>' +
+      '</select>' +
+      '<label class="lbl">Image model</label>' +
+      '<select class="field" id="magModel" style="max-width:280px;" onchange="magentState.selectedModel=this.value;">' +
+        '<option value="black-forest-labs/flux-2-pro" selected>Flux 2 Pro (default)</option>' +
+        '<option value="google/nano-banana-2-lite">Nano Banana 2 Lite \u2014 faster, cheaper</option>' +
+      '</select>' +
+      '<p class="note" style="margin:4px 0 0;">New \u2014 try it and compare against Flux for this business\u2019s content specifically.</p>' +
+    '</div>' +
+    '<div style="margin:14px 0;border-top:1px solid var(--line);padding-top:14px;">' +
       '<label style="font-size:13px;"><input type="checkbox" id="magIncludeSalon" onchange="magentState.includeSalonPhoto=this.checked;"> Blend in a real salon photo, if one\u2019s in the Salon Gallery</label>' +
-      '<p class="note" style="margin:4px 0 0;">Combines with an avatar too \u2014 Replicate can place the selected avatar inside the real salon environment in one generation. Manage photos under Settings \u2192 Salon Gallery.</p>' +
+      '<p class="note" style="margin:4px 0 0;">Combines with any selected avatar(s) too \u2014 Replicate can place them inside the real salon environment in one generation. Manage photos under Settings \u2192 Salon Gallery.</p>' +
     '</div>' +
     '<p class="note" style="margin-top:10px;">Selecting a source never generates anything by itself \u2014 nothing is sent to Replicate until you click Generate on the next step, or, for a new avatar, until you click Create below.</p>';
 }
-function magentSelectAvatar(avatarId){
-  magentState.selectedAvatarId = avatarId;
-  toast('Avatar selected', 'ok');
+function magentToggleAvatar(avatarId){
+  const idx = magentState.selectedAvatarIds.indexOf(avatarId);
+  if (idx > -1) magentState.selectedAvatarIds.splice(idx, 1);
+  else magentState.selectedAvatarIds.push(avatarId);
+  toast(idx > -1 ? 'Avatar deselected' : 'Avatar selected', 'ok');
   // Reliable regardless of exactly where within the card was clicked
-  // (image, name text, or the card's own padding) - the earlier
-  // version used event.target.closest('div'), which could match the
-  // inner name/note div instead of the outer card when the click
-  // landed on the text, leaving querySelector('img') with nothing to
-  // find and throwing on .style of null. A stable data attribute on
-  // the actual card element removes the ambiguity entirely.
+  // (image, name text, or the card's own padding) - a stable data
+  // attribute on the actual card element removes any ambiguity.
   document.querySelectorAll('.avatar-card').forEach(card => {
     const img = card.querySelector('img');
-    if (img) img.style.border = (card.dataset.avatarId === avatarId) ? '2px solid var(--green)' : '2px solid var(--line)';
+    const isSelected = magentState.selectedAvatarIds.includes(card.dataset.avatarId);
+    if (img) img.style.border = isSelected ? '2px solid var(--green)' : '2px solid var(--line)';
   });
 }
 function magentCreateAvatarForm(){
@@ -3312,7 +3336,7 @@ async function magentCompileAndShow(){
   el('p-flow').innerHTML = magentShell('<div class="loading-block"><span class="spin"></span>Writing the prompt\u2026</div>', '');
 
   const briefRes = await call('generate_creative_brief', {
-    user_request: concept.message || concept.angle, platform: 'instagram', aspect_ratio: '1:1',
+    user_request: concept.message || concept.angle, platform: 'instagram', aspect_ratio: magentState.aspectRatio || '1:1',
     persona_id: persona?.id || null, persona_context: persona ? (persona.name+': '+persona.creative_angle) : null,
     creative_concept: concept,
   }, 45000);
@@ -3328,9 +3352,23 @@ async function magentCompileAndShow(){
   let assetIds = [];
   const assetsRes = await call('select_reference_assets', { creative_brief_id: briefRes.brief.id, force_environment: !!magentState.includeSalonPhoto });
   const environmentIds = assetsRes.ok ? (assetsRes.assets||[]).filter(a=>a.asset_type==='environment').map(a=>a.id) : [];
-  if (magentState.selectedAvatarId){
-    const avRes = await call('select_avatar_for_generation', { avatar_id: magentState.selectedAvatarId });
-    assetIds = avRes.ok ? [avRes.asset_id, ...environmentIds] : environmentIds;
+  if (magentState.selectedAvatarIds && magentState.selectedAvatarIds.length){
+    // Fixed: this previously called select_avatar_for_generation and,
+    // on failure, silently fell back to no avatar at all - the exact
+    // kind of silent failure that would make it look like avatars
+    // were never being sent, with no error to explain why. Now every
+    // avatar's real, resolved asset id is confirmed before continuing,
+    // or the person sees exactly which one failed and why.
+    const avatarAssetIds = [];
+    for (const avId of magentState.selectedAvatarIds){
+      const avRes = await call('select_avatar_for_generation', { avatar_id: avId });
+      if (!avRes.ok){
+        el('p-flow').innerHTML = magentShell(errBlock('Could not attach the selected avatar: '+avRes.error, 'magentStepVisualSource()'), '<button class="btn btn-ghost" onclick="magentStepVisualSource()">Back</button><span></span>');
+        return;
+      }
+      avatarAssetIds.push(avRes.asset_id);
+    }
+    assetIds = [...avatarAssetIds, ...environmentIds];
   } else {
     assetIds = assetsRes.ok ? (assetsRes.assets||[]).map(a=>a.id) : [];
   }
@@ -3356,19 +3394,72 @@ async function magentRunGeneration(){
   const concept = magentState.conceptQueue[magentState.conceptIndex];
   const personaIdx = magentState.selectedPersonas[0];
   const persona = magentState.personas[personaIdx];
+
+  if (concept.format === 'carousel'){
+    return magentRunCarouselGeneration(concept, persona);
+  }
+
   el('p-flow').innerHTML = magentShell('<div class="loading-block"><span class="spin"></span>Generating\u2026</div>', '');
 
   const genRes = await call('run_generation', {
     creative_brief_id: magentState.pendingBriefId, compiled_prompt: magentState.pendingCompiledPrompt,
-    model: 'black-forest-labs/flux-2-pro', aspect_ratio: '1:1', reference_asset_urls: magentState.pendingReferenceUrls,
+    model: magentState.selectedModel || 'black-forest-labs/flux-2-pro', aspect_ratio: magentState.aspectRatio || '1:1',
+    output_quality: magentState.outputQuality || 90, reference_asset_urls: magentState.pendingReferenceUrls,
   }, 60000);
   if (!genRes.ok){ el('p-flow').innerHTML = magentShell(errBlock(genRes.error, 'magentStepVisualSource()'), '<button class="btn btn-ghost" onclick="magentStepVisualSource()">Back</button><span></span>'); return; }
+  magentState.pendingGenerationIds = [genRes.generation_id];
 
   el('p-flow').innerHTML = magentShell(
     '<img src="'+esc(genRes.output_url)+'" style="width:260px;aspect-ratio:1;object-fit:cover;border-radius:13px;margin-bottom:12px;" loading="lazy">' +
     '<p class="note">'+esc(concept.format)+' for '+esc(persona?persona.name:'your audience')+'</p>',
     '<button class="btn btn-ghost" onclick="magentStepVisualSource()">Regenerate</button>' +
     '<button class="btn btn-p" onclick="magentStepPublish(\''+genRes.generation_id+'\',\''+esc((concept.message||'Post').replace(/\'/g,''))+'\')">Continue</button>'
+  );
+}
+
+// Carousel: real, multiple coordinated slides, not the same image
+// repeated. Fixed 3 slides for now - each gets a different angle
+// instruction appended to the same reviewed, approved prompt, so the
+// slides genuinely form a sequence rather than being independent
+// re-rolls of one shot. Each slide is a real separate run_generation
+// call (Flux's own docs don't confirm a multi-output parameter for
+// this specific model, so this is the honest way to get real,
+// distinct images rather than guessing at an unverified parameter).
+const CAROUSEL_ANGLES = [
+  'Slide 1 of 3: wide establishing shot of the full scene',
+  'Slide 2 of 3: closer detail shot - same subject, tighter framing',
+  'Slide 3 of 3: final result or reaction moment - same subject, concluding the sequence',
+];
+async function magentRunCarouselGeneration(concept, persona){
+  magentState.pendingGenerationIds = [];
+  const slideUrls = [];
+  for (let i = 0; i < CAROUSEL_ANGLES.length; i++){
+    el('p-flow').innerHTML = magentShell('<div class="loading-block"><span class="spin"></span>Generating slide '+(i+1)+' of '+CAROUSEL_ANGLES.length+'\u2026</div>', '');
+    const genRes = await call('run_generation', {
+      creative_brief_id: magentState.pendingBriefId,
+      compiled_prompt: magentState.pendingCompiledPrompt + '. ' + CAROUSEL_ANGLES[i],
+      model: magentState.selectedModel || 'black-forest-labs/flux-2-pro', aspect_ratio: magentState.aspectRatio || '1:1',
+      output_quality: magentState.outputQuality || 90, reference_asset_urls: magentState.pendingReferenceUrls,
+    }, 60000);
+    if (!genRes.ok){
+      el('p-flow').innerHTML = magentShell(
+        errBlock('Slide '+(i+1)+' failed: '+genRes.error, 'magentStepVisualSource()') +
+        (slideUrls.length ? '<p class="note">'+slideUrls.length+' slide(s) generated successfully before this failed \u2014 back and try again to start the carousel over.</p>' : ''),
+        '<button class="btn btn-ghost" onclick="magentStepVisualSource()">Back</button><span></span>'
+      );
+      return;
+    }
+    magentState.pendingGenerationIds.push(genRes.generation_id);
+    slideUrls.push(genRes.output_url);
+  }
+
+  el('p-flow').innerHTML = magentShell(
+    '<div style="display:flex;gap:8px;margin-bottom:12px;">' +
+      slideUrls.map((u,i) => '<div><img src="'+esc(u)+'" style="width:110px;aspect-ratio:1;object-fit:cover;border-radius:10px;" loading="lazy"><p class="note" style="text-align:center;">'+(i+1)+'</p></div>').join('') +
+    '</div>' +
+    '<p class="note">'+slideUrls.length+'-slide carousel for '+esc(persona?persona.name:'your audience')+'</p>',
+    '<button class="btn btn-ghost" onclick="magentStepVisualSource()">Regenerate</button>' +
+    '<button class="btn btn-p" onclick="magentStepPublish(\''+magentState.pendingGenerationIds[0]+'\',\''+esc((concept.message||'Post').replace(/\'/g,''))+'\')">Continue</button>'
   );
 }
 
@@ -3380,13 +3471,18 @@ async function magentStepPublish(generationId, title){
   magentState.step = 5;
   el('p-flow').innerHTML = magentShell('<div class="loading-block"><span class="spin"></span></div>', '');
   const concept = magentState.conceptQueue[magentState.conceptIndex];
+  // Carousel: pass every slide after the first as additional_generation_ids
+  // so attach_generation_to_content_item creates real mw_carousel_slides
+  // rows for each, not just the first image.
+  const additionalIds = (magentState.pendingGenerationIds || []).slice(1);
   const j = await call('attach_generation_to_content_item', {
-    generation_id: generationId, title, caption: concept.message||'', aspect_ratio: '1:1',
+    generation_id: generationId, title, caption: concept.message||'', aspect_ratio: magentState.aspectRatio || '1:1',
+    additional_generation_ids: additionalIds.length ? additionalIds : undefined,
   });
   if (!j.ok){ el('p-flow').innerHTML = magentShell(errBlock(j.error, 'magentStepGenerate()'), '<button class="btn btn-ghost" onclick="magentStepVisualSource()">Back</button><span></span>'); return; }
   magentState.itemId = j.item.id;
   el('p-flow').innerHTML = magentShell(
-    zen('Post to Instagram now, hold it for approval, or choose a time \u2014 same real publishing this business already uses elsewhere in Zen, just reached from inside this wizard now.') +
+    zen((j.is_carousel ? j.slide_count+'-slide carousel ready. ' : '')+'Post to Instagram now, hold it for approval, or choose a time \u2014 same real publishing this business already uses elsewhere in Zen, just reached from inside this wizard now.') +
     '<input class="field" type="datetime-local" id="magPubWhen" style="max-width:260px;margin:10px 0;">' +
     '<div id="magPubResult" style="margin-top:8px;"></div>',
     '<button class="btn btn-s" onclick="magentDoApprove()">Save for approval</button>' +
