@@ -2757,14 +2757,13 @@ function campaignDetail(id){
    specific steps only where they genuinely differ.
    Covers Prototype Flows 9–14.
    ═══════════════════════════════════════════════════════════════ */
-async function marketing(){
+function marketing(){
   STATE.lastPage='marketing';
   const p = el('p-marketing');
   p.innerHTML =
     '<div class="topline"><div class="pagetitle"><div class="kicker">Marketing</div><h1>What would you like to create?</h1>' +
     '<p>Start with the outcome. Zen uses your salon\u2019s look and voice behind the scenes.</p></div></div>' +
-    '<div id="mktCampaignsInProgress"></div>' +
-    '<button class="task" style="border:1.5px solid var(--green);margin-bottom:14px;" onclick="flow(()=>marketingAgentWizard())"><div class="task-top"><b>\u2726 Marketing Agent \u2014 guided</b> <span class="note" style="font-weight:600;color:var(--green);">Recommended</span></div><span>Goal \u2192 Audience/Persona \u2192 Creative \u2192 Generate \u2192 Publish \u2192 Promote, one guided flow. The options below are still here as quick shortcuts if you know exactly what you want.</span></button>' +
+    '<button class="task" style="border:1.5px solid var(--green);margin-bottom:14px;" onclick="flow(()=>marketingAgentWizard())"><div class="task-top"><b>\u2726 Marketing Agent \u2014 guided</b> <span class="note" style="font-weight:600;color:var(--green);">Recommended</span></div><span>Goal \u2192 Audience/Persona \u2192 Creative \u2192 Generate \u2192 Publish \u2192 Promote, one guided flow. Also shows any campaigns you\u2019ve already started, so you can pick up where you left off.</span></button>' +
     '<div class="grid3">' +
       mktTask('◇','Plan this month','A full month of content, planned for you','plan') +
       mktTask('▣','Make a poster','A single Instagram-ready image','poster') +
@@ -2783,27 +2782,12 @@ async function marketing(){
       '<div><b>'+esc(post.title)+'</b><div class="sub">'+post.format+' \u00b7 '+post.date+'</div></div></div>' +
       '<span class="badge '+s[1]+'">'+s[0]+'</span></div>';
   }).join('');
-  // Real, live check for unfinished work - never lost, and now
-  // impossible to miss when reopening Marketing, not tucked away
-  // somewhere the person has to remember to check.
-  const cj = await call('list_wizard_campaigns', {});
-  const inProgress = cj.ok ? (cj.campaigns||[]).filter(c => c.status === 'in_progress') : [];
-  if (inProgress.length){
-    el('mktCampaignsInProgress').innerHTML =
-      '<div style="background:#fff8e8;border:1px solid #e8d9a8;border-radius:13px;padding:14px 16px;margin-bottom:14px;">' +
-        '<b>'+inProgress.length+' campaign'+(inProgress.length>1?'s':'')+' in progress</b>' +
-        inProgress.map(c => '<div class="list-row" style="cursor:pointer;background:transparent;" onclick="magentResumeCampaign(\''+c.id+'\')">' +
-          '<span>'+esc((c.goal&&c.goal.objective)||'Untitled goal')+' <span class="note">'+c.done+' of '+c.total+' generated</span></span>' +
-          '<span class="note">Continue \u2192</span></div>').join('') +
-      '</div>';
-  }
 }
 function mktTask(ic,name,why,key){
   const fn = {plan:'monthlyPlanFlow',poster:"()=>contentFlow('Poster')",video:"()=>contentFlow('Video')",
     carousel:"()=>contentFlow('Carousel')",strategies:'strategyLibraryFlow',suggest:'suggestFlow',schedule:'scheduleFlow'}[key];
   return '<button class="task" onclick="flow('+fn+')"><div class="task-top"><b>'+ic+' '+name+'</b></div><span>'+why+'</span></button>';
 }
-
 /* ── Meta Strategy Library: real Custom Audiences built from real
    customer data (mw_transactions / mw_customer_profile), via
    create_custom_audience_from_segment / list_custom_audiences.
@@ -3097,10 +3081,23 @@ function magentShell(bodyHtml, actionsHtml){
 }
 function marketingAgentWizard(){ magentState.step = 0; magentStepGoal(); }
 
-// Step 1: Goal
-function magentStepGoal(){
+// Step 1: Goal - also the single real entry point for existing
+// campaigns now. Previously this lived as a separate "Campaigns" tile
+// on the Marketing hub; consolidated here instead, since the wizard
+// itself is where a person actually decides "continue something" vs
+// "start fresh" - one real choice, not two places to look.
+async function magentStepGoal(){
   magentState.step = 0;
+  el('p-flow').innerHTML = magentShell('<div class="loading-block"><span class="spin"></span></div>', '');
+  const cj = await call('list_wizard_campaigns', {});
+  const campaigns = cj.ok ? (cj.campaigns||[]) : [];
+  const campaignsBlock = campaigns.length
+    ? '<div class="sechead" style="margin-top:0;"><h2>Your campaigns</h2></div>' +
+      campaigns.map(campaignRow).join('') +
+      '<div class="sechead"><h2>Or start a new one</h2></div>'
+    : '';
   el('p-flow').innerHTML = magentShell(
+    campaignsBlock +
     '<p class="note" style="margin-bottom:14px;">What are you deciding now: the outcome you want. What happens next: Zen designs personas and an audience around it.</p>' +
     '<label class="lbl">Objective</label>' +
     '<select class="field" id="magGoalObjective" style="margin-bottom:10px;">' +
@@ -3116,6 +3113,13 @@ function magentStepGoal(){
     '<label class="lbl">Location / service area</label><input class="field" id="magGoalLocation" placeholder="e.g. Dubai Silicon Oasis, 8km radius" style="margin-bottom:10px;">',
     '<span></span><button class="btn btn-p" onclick="magentGoalNext()">Continue</button>'
   );
+}
+function campaignRow(c){
+  const label = (c.goal && c.goal.objective) || 'Untitled goal';
+  const when = c.updated_at ? new Date(c.updated_at).toLocaleDateString() : '';
+  return '<div class="list-row" style="cursor:pointer;" onclick="magentResumeCampaign(\''+c.id+'\')">' +
+    '<span><b>'+esc(label)+'</b><div class="sub">'+c.done+' of '+c.total+' generated \u00b7 '+esc(when)+'</div></span>' +
+    '<span class="badge'+(c.status==='complete'?' on':'')+'">'+(c.status==='complete'?'Complete \u2014 open':'Continue \u2192')+'</span></div>';
 }
 function magentGoalNext(){
   const budget = Number(el('magGoalBudget').value);
