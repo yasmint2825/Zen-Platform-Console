@@ -3479,6 +3479,15 @@ async function magentTurnIntoVideoForm(generationId){
     '<textarea class="field" id="vidPrompt" style="min-height:60px;margin-bottom:6px;" placeholder="Describe the motion/camera movement\u2026"></textarea>' +
     '<button class="btn btn-s btn-sm" onclick="magentWriteVideoPrompt()">\u2728 Let Zen write this</button>' +
     '<div id="vidPromptResult" style="margin-top:6px;"></div>' +
+    // Only meaningful for veo-3.1 - confirmed the other three models
+    // either don't respond to this at all (Seedance, confirmed
+    // directly) or don't document support for it (Grok). Shown/hidden
+    // dynamically rather than always visible, so it doesn't look like
+    // a control that does something for every model.
+    '<div id="vidNegPromptArea" style="display:none;margin-top:10px;">' +
+      '<label class="lbl">Avoid (this model only)</label>' +
+      '<textarea class="field" id="vidNegPrompt" style="min-height:40px;" placeholder="Specific things to visually avoid, e.g. body clipping through the chair\u2026"></textarea>' +
+    '</div>' +
     '<button class="btn btn-p btn-sm" style="margin-top:10px;" onclick="magentGenerateVideo()">Generate video</button>' +
     '<div id="vidGenResult" style="margin-top:10px;"></div>' +
     '</div>';
@@ -3493,6 +3502,8 @@ function magentVideoOptionsChanged(){
   if (safeDuration !== duration) el('vidDuration').value = safeDuration;
   const est = Math.round(safeDuration * model.estCostPerSecond * 100) / 100;
   el('vidCostNote').innerHTML = '<b>Estimated cost: $'+est.toFixed(2)+'</b> ('+safeDuration+'s at an estimated $'+model.estCostPerSecond+'/s for '+esc(model.label)+'). This is an estimate based on published rates, which vary by source \u2014 not a guarantee. Check your Replicate account for actual billed amounts.';
+  const negArea = el('vidNegPromptArea');
+  if (negArea) negArea.style.display = (modelId === 'google/veo-3.1') ? '' : 'none';
 }
 async function magentWriteVideoPrompt(){
   const modelId = el('vidModel').value;
@@ -3502,15 +3513,20 @@ async function magentWriteVideoPrompt(){
   btn.disabled = false; btn.textContent = '\u2728 Let Zen write this';
   if (!j.ok){ el('vidPromptResult').innerHTML = errBlock(j.error, 'magentTurnIntoVideoForm()'); return; }
   el('vidPrompt').value = j.motion_prompt;
+  const negField = el('vidNegPrompt');
+  if (negField && j.negative_prompt) negField.value = j.negative_prompt;
 }
 async function magentGenerateVideo(){
   const modelId = el('vidModel').value;
   const duration = Number(el('vidDuration').value) || 5;
   const prompt = (el('vidPrompt').value || '').trim();
+  const negativePromptField = el('vidNegPrompt');
+  const negative_prompt = (negativePromptField ? negativePromptField.value : '').trim();
   if (!prompt){ toast('Add a motion prompt first, or let Zen write one.', 'err'); return; }
   const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Starting\u2026';
   const j = await call('run_image_to_video', {
     generation_id: magentState.videoSourceGenerationId, prompt, model: modelId, duration, aspect_ratio: magentState.aspectRatio,
+    negative_prompt: negative_prompt || undefined,
   }, 45000);
   if (!j.ok){ btn.disabled = false; btn.textContent = 'Generate video'; el('vidGenResult').innerHTML = errBlock(j.error, 'magentTurnIntoVideoForm()'); return; }
   el('vidGenResult').innerHTML = '<div class="loading-block"><span class="spin"></span>Generating\u2026 real video generation can take several minutes.</div>';
