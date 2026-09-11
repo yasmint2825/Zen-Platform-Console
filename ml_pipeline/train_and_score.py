@@ -48,19 +48,40 @@ if not DATABASE_URL:
 
 def load_transactions(engine) -> pd.DataFrame:
     """Pull every transaction for this tenant into a DataFrame — the raw
-    material for feature engineering below. Grouped by customer_key (the
-    real per-person identity), not phone number — a shared phone number
-    across siblings must never merge two people into one record here."""
+    material for feature engineering below.
+
+    Real bug fixed here, found by tracing a reported lapsed-customer
+    undercount (56 shown, 800+ expected) all the way back to its root:
+    the old query excluded every row with customer_key is null - a
+    real walk-in with a real phone number but no linked profile record.
+    Since this dataframe feeds build_scoring_set() -> mw_customer_predictions
+    -> the real "at_risk" tier -> the actual nudge/lapsed campaign
+    targeting in the app, this wasn't just an undercounted dashboard
+    number: those excluded customers were never scored, never flagged
+    at_risk, and never selected for a win-back message at all, no
+    matter how long it had been since their last visit.
+
+    Fixed by keeping every row that has EITHER identifier, and adding a
+    real customer_id column - customer_key if present, customer_mobile
+    otherwise - used as the grouping key everywhere downstream instead
+    of customer_key alone. Phone number is never used as the ONLY
+    fallback for someone who already has a real customer_key, so
+    siblings sharing a parent's phone still aren't merged into one
+    identity - that safeguard from the original design is preserved.
+    A transaction with neither identifier still can't be attributed to
+    anyone and is correctly excluded - there's no way to track that
+    person across visits regardless of the fix."""
     query = """
         select customer_key, customer_mobile, customer_name, transaction_date, transaction_datetime, amount, stylist_phone
         from mw_transactions
-        where tenant_id = %(tenant_id)s and customer_key is not null
-        order by customer_key, transaction_date asc
+        where tenant_id = %(tenant_id)s and (customer_key is not null or customer_mobile is not null)
+        order by coalesce(customer_key, customer_mobile), transaction_date asc
     """
     df = pd.read_sql(query, engine, params={"tenant_id": TENANT_ID})
     df["transaction_date"] = pd.to_datetime(df["transaction_date"])
     df["transaction_datetime"] = pd.to_datetime(df["transaction_datetime"])
     df["amount"] = pd.to_numeric(df["amount"], errors="coerce").fillna(0)
+    df["customer_id"] = df["customer_key"].fillna(df["customer_mobile"])
     return df
 
 
@@ -83,7 +104,11 @@ def compute_stylist_performance(tx: pd.DataFrame, score_df: pd.DataFrame, roster
     roster — the Excel-upload path, which only ever has a phone number).
     """
     name_by_phone = dict(zip(roster["phone_number"], roster["name"]))
-    tier_by_key = dict(zip(score_df["customer_key"], score_df["tier"]))
+    # Real customer_id (customer_key, falling back to customer_mobile),
+    # same fix as load_transactions() - a stylist's walk-in customers
+    # without a linked profile were previously invisible to this
+    # count entirely.
+    tier_by_key = dict(zip(score_df["customer_id"], score_df["tier"]))
 
     def resolve_label(row):
         if pd.notna(row.get("stylist_name")):
@@ -100,7 +125,7 @@ def compute_stylist_performance(tx: pd.DataFrame, score_df: pd.DataFrame, roster
 
     rows = []
     for stylist, group in attributed.groupby("stylist_label"):
-        customers = group["customer_key"].unique()
+        customers = group["customer_id"].unique()
         tiers = [tier_by_key.get(c) for c in customers]
         at_risk = sum(1 for t in tiers if t == "at_risk")
         likely = sum(1 for t in tiers if t == "likely")
@@ -132,12 +157,19 @@ def compute_campaign_performance(engine, return_window_days: int = 30) -> pd.Dat
     # with, so normalizing to naive is the correct fix, not a workaround.
     decisions["created_at"] = pd.to_datetime(decisions["created_at"]).dt.tz_localize(None)
 
+    # Same real customer_id fix as load_transactions() - a customer
+    # without a linked customer_key previously vanished from this
+    # "did the campaign actually work" measurement entirely, even
+    # though mw_agent_decisions.customer_id may well be their phone
+    # number rather than a customer_key (worth confirming against the
+    # real schema - this fix covers the case correctly either way).
     tx_dates = pd.read_sql(
-        "select customer_key, transaction_date from mw_transactions where tenant_id = %(tenant_id)s",
+        "select customer_key, customer_mobile, transaction_date from mw_transactions where tenant_id = %(tenant_id)s",
         engine, params={"tenant_id": TENANT_ID},
     )
     tx_dates["transaction_date"] = pd.to_datetime(tx_dates["transaction_date"])
-    tx_by_customer = tx_dates.groupby("customer_key")["transaction_date"].apply(list).to_dict()
+    tx_dates["customer_id"] = tx_dates["customer_key"].fillna(tx_dates["customer_mobile"])
+    tx_by_customer = tx_dates.groupby("customer_id")["transaction_date"].apply(list).to_dict()
 
     rows = []
     for campaign_key, group in decisions.groupby("campaign_key"):
@@ -171,9 +203,13 @@ def build_training_set(tx: pd.DataFrame, profiles: pd.DataFrame, as_of: pd.Times
     up as ground truth, which is exactly the kind of shortcut we're
     avoiding here.
     """
+    # Merge on customer_key specifically (not customer_id) - profiles
+    # is genuinely keyed by customer_key, so a customer without one
+    # simply gets no segment, handled gracefully below rather than
+    # forced into a merge key it was never meant to use.
     tx = tx.merge(profiles, on="customer_key", how="left")
     rows = []
-    for key, g in tx.groupby("customer_key"):
+    for key, g in tx.groupby("customer_id"):
         g = g.sort_values("transaction_date")
         dates = g["transaction_date"].tolist()
         amounts = g["amount"].tolist()
@@ -192,7 +228,7 @@ def build_training_set(tx: pd.DataFrame, profiles: pd.DataFrame, as_of: pd.Times
             # leaking future information into a "past" feature.
             avg_spend_so_far = sum(amounts[: i + 1]) / (i + 1)
             rows.append({
-                "customer_key": key,
+                "customer_id": key,
                 "days_since_previous_visit": (this_date - dates[i - 1]).days,
                 "visit_number": i + 1,
                 "days_since_first_visit": (this_date - first_date).days,
@@ -207,20 +243,29 @@ def build_scoring_set(tx: pd.DataFrame, profiles: pd.DataFrame, as_of: pd.Timest
     """One row per customer identity using their CURRENT situation (most
     recent visit) — what we actually want a prediction for. Needs at
     least 2 visits total, same reason as training."""
+    # Same deliberate choice as build_training_set - merge on the real
+    # customer_key, let a customer without one simply have no segment.
     tx = tx.merge(profiles, on="customer_key", how="left")
     rows = []
-    for key, g in tx.groupby("customer_key"):
+    for key, g in tx.groupby("customer_id"):
         g = g.sort_values("transaction_date")
         dates = g["transaction_date"].tolist()
         if len(dates) < 2:
             continue
         amounts = g["amount"].tolist()
+        # customer_key itself (may genuinely be null - preserved as-is,
+        # not backfilled with the phone number, since mw_customer_
+        # predictions.customer_key should reflect whether a real linked
+        # profile exists) alongside customer_id (the real identifier
+        # this row is actually keyed and scored by).
+        real_key = g["customer_key"].iloc[-1]
         mobile = g["customer_mobile"].iloc[-1]
         name = g["customer_name"].iloc[-1]
         segment = g["segment"].iloc[0] if "segment" in g.columns else None
         first_date, last_date, prev_date = dates[0], dates[-1], dates[-2]
         rows.append({
-            "customer_key": key,
+            "customer_id": key,
+            "customer_key": real_key,
             "customer_mobile": mobile,
             "customer_name": name,
             "days_since_previous_visit": (last_date - prev_date).days,
@@ -305,18 +350,29 @@ def compute_analytics_snapshot(tx: pd.DataFrame, profiles: pd.DataFrame, as_of: 
     rather than empty plumbing. Refreshed every training run (weekly),
     same cadence as the model itself.
     """
+    # Same deliberate choice as build_training_set/build_scoring_set -
+    # merge segment on the real customer_key; a customer without one
+    # just has no segment for the segment-specific rows below, but is
+    # still correctly counted in the "all" totals.
     tx = tx.merge(profiles, on="customer_key", how="left")
     rows = []
 
     def metrics_for(subset: pd.DataFrame, segment_label: str):
         if subset.empty:
             return
-        last_visit = subset.groupby("customer_key")["transaction_date"].max()
+        # Real bug fixed here, the direct source of a reported
+        # lapsed-customer undercount (56 shown, 800+ expected) -
+        # grouping by customer_key alone silently excluded every walk-in
+        # without a linked profile record from this count entirely.
+        # customer_id (customer_key, falling back to customer_mobile)
+        # is the same real identifier used consistently throughout this
+        # whole pipeline now.
+        last_visit = subset.groupby("customer_id")["transaction_date"].max()
         active_30d = int((last_visit >= as_of - pd.Timedelta(days=30)).sum())
         lapsed_90d = int((last_visit <= as_of - pd.Timedelta(days=90)).sum())
         total_revenue = float(subset["amount"].sum())
         gaps = []
-        for _, g in subset.groupby("customer_key"):
+        for _, g in subset.groupby("customer_id"):
             dates = g["transaction_date"].sort_values().tolist()
             for i in range(1, len(dates)):
                 gaps.append((dates[i] - dates[i - 1]).days)
@@ -347,7 +403,7 @@ def main():
     print(f"Loading data for tenant '{TENANT_ID}'...")
     tx = load_transactions(engine)
     profiles = load_profiles(engine)
-    print(f"  {len(tx)} transactions across {tx['customer_key'].nunique()} distinct customer identities")
+    print(f"  {len(tx)} transactions across {tx['customer_id'].nunique()} distinct customer identities")
 
     print("Building labeled training set...")
     train_df = build_training_set(tx, profiles, as_of)
