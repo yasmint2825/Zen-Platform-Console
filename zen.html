@@ -2953,6 +2953,7 @@ function goalStrategyFlow(){
   el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="strategyLibraryFlow()" style="margin-bottom:16px;">\u2190 Back</button>' +
     '<h1 style="font-size:22px;">Build a strategy from a goal</h1>' +
     zen('Tell Zen what you want, not how to configure a campaign. It reasons over your real business data \u2014 revenue, at-risk customers, popular services \u2014 and proposes a full campaign architecture: distinct personas, real targeting, and a justified budget split.') +
+    '<div id="adIntelPanel"></div>' +
     '<label class="lbl">Objective</label>' +
     '<select class="field" id="goalObjective" style="max-width:220px;margin-bottom:10px;">' +
       '<option value="new_customers">Get more customers</option>' +
@@ -2963,6 +2964,40 @@ function goalStrategyFlow(){
     '<label class="lbl">Timeframe (days, optional)</label><input class="field" id="goalDays" type="number" placeholder="e.g. 30" style="max-width:200px;margin-bottom:14px;">' +
     '<button class="btn btn-p" onclick="goalPropose()">Design a strategy</button>' +
     '<div id="goalResult" style="margin-top:14px;"></div>';
+  loadAdIntelligence();
+}
+// Real evidence, shown directly - not just fed silently into the AI's
+// reasoning. The owner sees the actual numbers behind any targeting
+// recommendation, including which segments don't have enough real
+// data yet to draw a conclusion from.
+async function loadAdIntelligence(){
+  const panel = el('adIntelPanel');
+  const j = await call('get_ad_intelligence', { days: 90 }, 30000);
+  if (!j.ok){
+    // Not an error state worth alarming over - most commonly just
+    // means Meta isn't connected yet, which is a normal, expected
+    // state for a business new to running ads.
+    panel.innerHTML = '';
+    return;
+  }
+  const rowsFor = (arr, key, label) => {
+    const withData = (arr||[]).filter(r=>r.enough_data).slice(0,4);
+    if (!withData.length) return '<p class="note">'+label+': not enough real data yet.</p>';
+    return '<div style="margin-bottom:10px;"><b class="note" style="color:var(--ink);">'+label+'</b>' +
+      withData.map(r => '<div class="list-row" style="padding:4px 0;"><span>'+esc(String(r[key]))+'</span><span class="note">'+r.conversations+' conversations \u00b7 AED '+r.cost_per_conversation+'/each</span></div>').join('') +
+    '</div>';
+  };
+  panel.innerHTML =
+    '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-bottom:16px;">' +
+      '<b>Real ad intelligence \u2014 your account\u2019s actual last '+j.days_used+' days</b>' +
+      '<p class="note" style="margin:4px 0 10px;">Used automatically to ground the strategy below in what\u2019s actually worked, not just general assumptions.'+(j.demographic_capped?' Age/gender limited to Meta\u2019s '+j.demographic_days_used+'-day cap.':'')+'</p>' +
+      rowsFor(j.age, 'age', 'Best age groups') +
+      rowsFor(j.gender, 'gender', 'Best gender') +
+      rowsFor(j.region, 'region', 'Best regions') +
+      rowsFor(j.device, 'impression_device', 'Best devices') +
+      rowsFor(j.placement, 'publisher_platform', 'Best placements') +
+      (j.partial_errors ? '<p class="note" style="color:#a02020;margin-top:8px;">Some breakdowns didn\u2019t load: '+j.partial_errors.join('; ')+'</p>' : '') +
+    '</div>';
 }
 async function goalPropose(forceRegenerate){
   const goal_customers = Number(el('goalCustomers').value), budget_aed = Number(el('goalBudget').value);
@@ -3214,17 +3249,34 @@ async function magentStepCreativeMix(forceRegenerate){
   renderCreativeMix();
 }
 function conceptCard(c, idx){
-  const selected = magentState.selectedConcepts.includes(idx);
-  return '<div style="background:#fff;border:1px solid '+(selected?'var(--green)':'var(--line)')+';border-radius:13px;padding:12px 14px;margin-bottom:8px;cursor:pointer;" onclick="magentToggleConcept('+idx+')">' +
-    '<div style="display:flex;justify-content:space-between;"><b>'+esc((c.format||'').toUpperCase())+(c.persona_name?' \u2014 '+esc(c.persona_name):'')+'</b>'+(selected?'<span style="color:var(--green);">\u2713</span>':'')+'</div>' +
+  const pos = magentState.selectedConcepts.indexOf(idx);
+  const selected = pos > -1;
+  return '<div style="background:#fff;border:1px solid '+(selected?'var(--green)':'var(--line)')+';border-radius:13px;padding:12px 14px;margin-bottom:8px;">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="magentToggleConcept('+idx+')">' +
+      '<b>'+(selected?'<span class="badge on" style="margin-right:6px;">'+(pos+1)+'</span>':'')+esc((c.format||'').toUpperCase())+(c.persona_name?' \u2014 '+esc(c.persona_name):'')+'</b>'+(selected?'<span style="color:var(--green);">\u2713</span>':'') +
+    '</div>' +
     '<p class="note" style="margin:4px 0 0;">'+esc(c.angle||'')+'</p>' +
+    // Real reordering, not just selection - lets the person choose
+    // which concept starts the batch (e.g. the 8th one) rather than
+    // always processing in the order they happened to appear or get
+    // clicked. Only shown once selected and once there's more than
+    // one to actually reorder among.
+    (selected && magentState.selectedConcepts.length > 1 ? '<div style="margin-top:8px;display:flex;gap:6px;" onclick="event.stopPropagation()">' +
+      (pos > 0 ? '<button class="btn btn-ghost btn-sm" onclick="magentMoveConceptFirst('+idx+')">Make first</button><button class="btn btn-ghost btn-sm" onclick="magentMoveConceptUp('+idx+')">\u2191 Up</button>' : '') +
+      (pos < magentState.selectedConcepts.length-1 ? '<button class="btn btn-ghost btn-sm" onclick="magentMoveConceptDown('+idx+')">\u2193 Down</button>' : '') +
+    '</div>' : '') +
   '</div>';
 }
 function renderCreativeMix(){
+  // Real reordering needs the cards themselves to visually reorder,
+  // not just carry a badge number that contradicts where they sit on
+  // the page - selected concepts shown first, in the order chosen,
+  // then anything not yet selected below.
+  const order = [...magentState.selectedConcepts, ...magentState.concepts.map((_,i)=>i).filter(i=>!magentState.selectedConcepts.includes(i))];
   el('p-flow').innerHTML = magentShell(
     cacheNote(magentState.mixFromCache, magentState.mixGeneratedAt, 'magentStepCreativeMix(true)') +
-    zen('This is the recommended mix \u2014 use it as-is, or deselect anything that doesn\u2019t fit.') +
-    magentState.concepts.map((c,i) => conceptCard(c,i)).join(''),
+    zen('This is the recommended mix \u2014 use it as-is, or deselect anything that doesn\u2019t fit. Once you\u2019ve picked a few, use Make first / Up / Down to choose which one generates first \u2014 it doesn\u2019t have to be the order shown here.') +
+    order.map(i => conceptCard(magentState.concepts[i], i)).join(''),
     '<button class="btn btn-ghost" onclick="magentStepPersona()">Back</button><button class="btn btn-p" onclick="magentCreativeMixNext()">Continue</button>'
   );
 }
@@ -3233,17 +3285,51 @@ function magentToggleConcept(idx){
   if (i>-1) magentState.selectedConcepts.splice(i,1); else magentState.selectedConcepts.push(idx);
   renderCreativeMix();
 }
+function magentMoveConceptFirst(idx){
+  const i = magentState.selectedConcepts.indexOf(idx);
+  if (i<=0) return;
+  magentState.selectedConcepts.splice(i,1);
+  magentState.selectedConcepts.unshift(idx);
+  renderCreativeMix();
+}
+function magentMoveConceptUp(idx){
+  const i = magentState.selectedConcepts.indexOf(idx);
+  if (i<=0) return;
+  [magentState.selectedConcepts[i-1], magentState.selectedConcepts[i]] = [magentState.selectedConcepts[i], magentState.selectedConcepts[i-1]];
+  renderCreativeMix();
+}
+function magentMoveConceptDown(idx){
+  const i = magentState.selectedConcepts.indexOf(idx);
+  if (i<0 || i>=magentState.selectedConcepts.length-1) return;
+  [magentState.selectedConcepts[i+1], magentState.selectedConcepts[i]] = [magentState.selectedConcepts[i], magentState.selectedConcepts[i+1]];
+  renderCreativeMix();
+}
 async function magentCreativeMixNext(){
   if (!magentState.selectedConcepts.length){ toast('Select at least one concept to continue.', 'err'); return; }
+  // Real bug, confirmed from actual data: two campaign rows created
+  // 0.8 seconds apart - too close to be "went back and clicked again
+  // later", genuinely a rapid double-click/double-submit race. The
+  // earlier fix (checking magentState.campaignId) only protects
+  // AFTER the first request resolves - if a second click fires while
+  // that first request is still in flight, campaignId is still unset
+  // and both calls go through. Fixed properly: a synchronous flag set
+  // immediately, before any await, so a second click during the same
+  // in-flight request is blocked outright, not just after the fact.
+  if (magentState.creatingCampaign) return;
   magentState.conceptQueue = magentState.selectedConcepts.map(i => magentState.concepts[i]);
   magentState.conceptIndex = 0;
-  // Real, persistent campaign record from this point on - previously
-  // this whole run only existed in browser memory. Best-effort: if
-  // this write fails for any reason, the wizard still proceeds
-  // normally (magentState.campaignId just stays unset), it just won't
-  // be resumable later - never blocks the person from continuing.
-  const cj = await call('create_wizard_campaign', { goal: magentState.goal || null, personas: magentState.selectedPersonas.map(i => magentState.personas[i]), concepts: magentState.conceptQueue });
-  magentState.campaignId = cj.ok ? cj.campaign_id : null;
+  if (!magentState.campaignId){
+    magentState.creatingCampaign = true;
+    const btn = event && event.target;
+    if (btn){ btn.disabled = true; btn.dataset.origText = btn.textContent; btn.innerHTML = '<span class="spin"></span>Continuing\u2026'; }
+    try {
+      const cj = await call('create_wizard_campaign', { goal: magentState.goal || null, personas: magentState.selectedPersonas.map(i => magentState.personas[i]), concepts: magentState.conceptQueue });
+      magentState.campaignId = cj.ok ? cj.campaign_id : null;
+    } finally {
+      magentState.creatingCampaign = false;
+      if (btn){ btn.disabled = false; btn.textContent = btn.dataset.origText || 'Continue'; }
+    }
+  }
   magentStepVisualSource();
 }
 
@@ -3524,6 +3610,20 @@ async function magentRunGeneration(){
 // estimate before anything is spent, updates live as duration/model
 // change, and generation is async (real video takes minutes, not
 // seconds) - polls check_video_status rather than blocking.
+// Real, distinct video concepts - each genuinely changes how the
+// motion prompt gets written, not just a label. Dialogue-capable
+// models only (Veo 3.1, Seedance 2.0 - both confirmed to support real
+// lip-synced dialogue via quoted speech in the prompt) are offered
+// for the two talking concepts; Grok and Seedance 1 Lite don't have
+// confirmed dialogue support, so they're filtered out for those two
+// specifically rather than silently offered and likely disappoint.
+const VIDEO_CONCEPTS = [
+  { id: 'group_moment', label: 'Lively group moment', hint: 'Multiple people, natural warmth and energy - no dialogue.' },
+  { id: 'creative_aesthetic', label: 'Polished, emotional creative', hint: 'Slow, beautiful camera movement - a brand-film feel.' },
+  { id: 'ugc_testimonial_parent', label: 'Parent testimonial (UGC)', hint: 'A parent speaks to camera - real generated dialogue.', needsDialogue: true },
+  { id: 'ugc_testimonial_child', label: 'Child testimonial (UGC)', hint: 'A child speaks to camera - real generated dialogue.', needsDialogue: true },
+];
+const DIALOGUE_CAPABLE_MODELS = ['google/veo-3.1', 'bytedance/seedance-2.0'];
 async function magentTurnIntoVideoForm(generationId){
   const j = await call('list_video_models', {});
   const area = el('videoFormArea');
@@ -3532,6 +3632,16 @@ async function magentTurnIntoVideoForm(generationId){
   magentState.videoSourceGenerationId = generationId;
   area.innerHTML =
     '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-top:10px;">' +
+    '<label class="lbl">Concept</label>' +
+    '<select class="field" id="vidConcept" style="max-width:320px;margin-bottom:4px;" onchange="magentVideoConceptChanged()">' +
+      VIDEO_CONCEPTS.map(c => '<option value="'+c.id+'">'+esc(c.label)+'</option>').join('') +
+    '</select>' +
+    '<p class="note" id="vidConceptHint" style="margin:0 0 10px;"></p>' +
+    '<div id="vidDialogueArea" style="display:none;margin-bottom:10px;">' +
+      '<label class="lbl">What they say (optional \u2014 Zen writes a natural line if left blank)</label>' +
+      '<textarea class="field" id="vidDialogueLine" style="min-height:44px;" placeholder="e.g. My daughter actually looks forward to her haircuts now\u2026"></textarea>' +
+    '</div>' +
+    '<label style="font-size:13px;display:block;margin-bottom:10px;"><input type="checkbox" id="vidMusic" checked> Include soft background music</label>' +
     '<label class="lbl">Video model</label>' +
     '<select class="field" id="vidModel" style="max-width:280px;margin-bottom:8px;" onchange="magentVideoOptionsChanged()">' +
       j.models.map(m => '<option value="'+m.id+'">'+esc(m.label)+' \u2014 up to '+m.maxDuration+'s</option>').join('') +
@@ -3555,7 +3665,27 @@ async function magentTurnIntoVideoForm(generationId){
     '<button class="btn btn-p btn-sm" style="margin-top:10px;" onclick="magentGenerateVideo()">Generate video</button>' +
     '<div id="vidGenResult" style="margin-top:10px;"></div>' +
     '</div>';
+  magentVideoConceptChanged();
   magentVideoOptionsChanged();
+}
+function magentVideoConceptChanged(){
+  const conceptId = el('vidConcept').value;
+  const concept = VIDEO_CONCEPTS.find(c => c.id === conceptId);
+  el('vidConceptHint').textContent = concept ? concept.hint : '';
+  el('vidDialogueArea').style.display = (concept && concept.needsDialogue) ? '' : 'none';
+  // If a dialogue concept is chosen and the current model can't
+  // actually do dialogue, filter the model list down to ones that can
+  // - rather than let the person pick a model that will silently
+  // ignore the spoken line.
+  const modelSel = el('vidModel');
+  const needsDialogue = concept && concept.needsDialogue;
+  Array.from(modelSel.options).forEach(opt => {
+    opt.disabled = needsDialogue && !DIALOGUE_CAPABLE_MODELS.includes(opt.value);
+  });
+  if (needsDialogue && !DIALOGUE_CAPABLE_MODELS.includes(modelSel.value)) {
+    modelSel.value = DIALOGUE_CAPABLE_MODELS[0];
+    magentVideoOptionsChanged();
+  }
 }
 function magentVideoOptionsChanged(){
   const modelId = el('vidModel').value;
@@ -3572,8 +3702,14 @@ function magentVideoOptionsChanged(){
 async function magentWriteVideoPrompt(){
   const modelId = el('vidModel').value;
   const duration = Number(el('vidDuration').value) || 5;
+  const concept_type = el('vidConcept').value;
+  const dialogue_line = (el('vidDialogueLine') ? el('vidDialogueLine').value : '').trim();
+  const include_music = el('vidMusic').checked;
   const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Writing\u2026';
-  const j = await call('generate_video_motion_prompt', { generation_id: magentState.videoSourceGenerationId, duration, model: modelId });
+  const j = await call('generate_video_motion_prompt', {
+    generation_id: magentState.videoSourceGenerationId, duration, model: modelId,
+    concept_type, dialogue_line: dialogue_line || undefined, include_music,
+  });
   btn.disabled = false; btn.textContent = '\u2728 Let Zen write this';
   if (!j.ok){ el('vidPromptResult').innerHTML = errBlock(j.error, 'magentTurnIntoVideoForm()'); return; }
   el('vidPrompt').value = j.motion_prompt;
@@ -3601,7 +3737,10 @@ async function magentPollVideoStatus(predictionId, attempt){
   const j = await call('check_video_status', { prediction_id: predictionId });
   if (!j.ok){ el('vidGenResult').innerHTML = errBlock(j.error, 'magentTurnIntoVideoForm()'); return; }
   if (j.status === 'succeeded' && j.output_url){
-    el('vidGenResult').innerHTML = '<video src="'+esc(j.output_url)+'" controls style="width:260px;border-radius:13px;"></video><p class="note" style="margin-top:6px;color:var(--green);">\u2713 Video ready</p>';
+    magentState.lastVideoUrl = j.output_url;
+    el('vidGenResult').innerHTML = '<video src="'+esc(j.output_url)+'" controls style="width:260px;border-radius:13px;"></video><p class="note" style="margin-top:6px;color:var(--green);">\u2713 Video ready</p>' +
+      '<button class="btn btn-s btn-sm" style="margin-top:8px;" onclick="magentExtendVideoForm()">+ Extend this video</button>' +
+      '<div id="vidExtendArea" style="margin-top:8px;"></div>';
     return;
   }
   if (j.status === 'failed' || j.status === 'canceled'){
@@ -3609,6 +3748,65 @@ async function magentPollVideoStatus(predictionId, attempt){
     return;
   }
   setTimeout(() => magentPollVideoStatus(predictionId, attempt + 1), 8000);
+}
+// Real continuation, not a re-generation - the actual last frame of
+// the finished video becomes the starting point for a genuinely new
+// clip continuing the same scene, then both are stitched into one
+// file. Same model/aspect ratio as the original, kept consistent
+// automatically rather than re-asked.
+function magentExtendVideoForm(){
+  el('vidExtendArea').innerHTML =
+    '<label class="lbl">Extend by (seconds)</label>' +
+    '<select class="field" id="vidExtendDuration" style="max-width:140px;margin-bottom:8px;">' +
+      '<option value="5">5 seconds</option><option value="10">10 seconds</option>' +
+    '</select>' +
+    '<textarea class="field" id="vidExtendPrompt" style="min-height:50px;margin-bottom:6px;" placeholder="What happens next in the scene\u2026"></textarea>' +
+    '<button class="btn btn-p btn-sm" onclick="magentExtendVideo()">Extend</button>' +
+    '<div id="vidExtendResult" style="margin-top:8px;"></div>';
+}
+async function magentExtendVideo(){
+  const additional_duration = Number(el('vidExtendDuration').value) || 5;
+  const prompt = (el('vidExtendPrompt').value || '').trim();
+  if (!prompt){ toast('Describe what happens next first.', 'err'); return; }
+  const modelId = el('vidModel').value;
+  const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Extracting last frame\u2026';
+  const j = await call('extend_video_start', {
+    generation_id: magentState.videoSourceGenerationId, additional_duration, prompt, model: modelId, aspect_ratio: magentState.aspectRatio,
+  }, 45000);
+  if (!j.ok){ btn.disabled = false; btn.textContent = 'Extend'; el('vidExtendResult').innerHTML = errBlock(j.error, ''); return; }
+  el('vidExtendResult').innerHTML = '<div class="loading-block"><span class="spin"></span>Generating the continuation\u2026</div>';
+  magentPollExtension(j.prediction_id, j.original_video_url, 0);
+}
+async function magentPollExtension(predictionId, originalUrl, attempt){
+  if (attempt > 40){ el('vidExtendResult').innerHTML = '<p class="note">Still processing after a while \u2014 check back shortly.</p>'; return; }
+  const j = await call('check_video_status', { prediction_id: predictionId });
+  if (!j.ok){ el('vidExtendResult').innerHTML = errBlock(j.error, ''); return; }
+  if (j.status === 'succeeded' && j.output_url){
+    el('vidExtendResult').innerHTML = '<div class="loading-block"><span class="spin"></span>Stitching the full video together\u2026</div>';
+    const sj = await call('stitch_extended_video', { original_video_url: originalUrl, continuation_video_url: j.output_url });
+    if (!sj.ok){ el('vidExtendResult').innerHTML = errBlock(sj.error, ''); return; }
+    magentPollStitch(sj.prediction_id, 0);
+    return;
+  }
+  if (j.status === 'failed' || j.status === 'canceled'){
+    el('vidExtendResult').innerHTML = errBlock('Extension '+j.status+(j.error?': '+j.error:''), '');
+    return;
+  }
+  setTimeout(() => magentPollExtension(predictionId, originalUrl, attempt + 1), 8000);
+}
+async function magentPollStitch(predictionId, attempt){
+  if (attempt > 40){ el('vidExtendResult').innerHTML = '<p class="note">Still stitching after a while \u2014 check back shortly.</p>'; return; }
+  const j = await call('check_video_status', { prediction_id: predictionId });
+  if (!j.ok){ el('vidExtendResult').innerHTML = errBlock(j.error, ''); return; }
+  if (j.status === 'succeeded' && j.output_url){
+    el('vidExtendResult').innerHTML = '<video src="'+esc(j.output_url)+'" controls style="width:260px;border-radius:13px;"></video><p class="note" style="margin-top:6px;color:var(--green);">\u2713 Extended video ready</p>';
+    return;
+  }
+  if (j.status === 'failed' || j.status === 'canceled'){
+    el('vidExtendResult').innerHTML = errBlock('Stitching '+j.status+(j.error?': '+j.error:''), '');
+    return;
+  }
+  setTimeout(() => magentPollStitch(predictionId, attempt + 1), 8000);
 }
 // Carousel: real, multiple coordinated slides, not the same image
 // repeated. Fixed 3 slides for now - each gets a different angle
@@ -4058,13 +4256,70 @@ function suggestFlow(){
     zen('Video posts are getting 2\u00d7 the engagement of posters right now. I\u2019d suggest a <b>9-second transformation reel</b> for boys\u2019 haircuts \u2014 your strongest concept is starting to fatigue after 19 days.') +
     '<button class="btn btn-p" style="margin-top:14px;" onclick="contentFlow(\'Video\')">Create this</button>';
 }
-function scheduleFlow(){
+// Real, tenant-wide content view - previously rendered entirely from
+// DATA.posts, a hardcoded 4-item demo array with no connection to the
+// real database at all. A real "Save for approval" click had nowhere
+// to actually be seen afterward. Grouped by real status so an
+// approved-but-not-yet-scheduled item is genuinely findable.
+async function scheduleFlow(){
   el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
-    '<h1 style="font-size:22px;">Publishing schedule</h1><p class="note" style="margin-top:4px;">Tap any post to preview or change it.</p>' +
-    '<div class="cal">' + Array.from({length:14},(_,i)=>{
-      const has = DATA.posts.find(p=>p.date.includes(String(i+1)));
-      return '<div class="cal-day"><div class="d">'+(i+1)+'</div>' + (has?'<div class="item '+(has.status==='draft'?'draft':'')+'" onclick="flow(()=>contentDetail(\''+has.id+'\'))">'+has.format+'</div>':'') + '</div>';
-    }).join('') + '</div>';
+    '<h1 style="font-size:22px;">Publishing schedule</h1><div class="loading-block"><span class="spin"></span></div>';
+  const j = await call('list_all_content_items', {});
+  if (!j.ok){ el('p-flow').innerHTML = errBlock(j.error, 'scheduleFlow()'); return; }
+  const items = j.items || [];
+  const groups = [
+    ['approved', 'Approved \u2014 ready to schedule or publish'],
+    ['scheduled', 'Scheduled'],
+    ['creative_ready', 'Awaiting review'],
+    ['published', 'Published'],
+  ];
+  el('p-flow').innerHTML =
+    '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:22px;">Publishing schedule</h1>' +
+    (items.length === 0 ? '<p class="note" style="margin-top:10px;">Nothing here yet.</p>' : '') +
+    groups.map(([status, label]) => {
+      const inGroup = items.filter(it => it.status === status);
+      if (!inGroup.length) return '';
+      return '<div class="sechead"><h2>'+label+' ('+inGroup.length+')</h2></div>' +
+        inGroup.map(scheduleItemRow).join('');
+    }).join('');
+}
+function scheduleItemRow(it){
+  const when = it.scheduled_date ? new Date(it.scheduled_date).toLocaleString() : (it.created_at ? new Date(it.created_at).toLocaleDateString() : '');
+  return '<div class="list-row" style="cursor:pointer;" onclick="scheduleItemDetail(\''+it.id+'\')">' +
+    '<div style="display:flex;gap:12px;align-items:center;">' +
+      (it.generated_image_url ? '<img src="'+esc(it.generated_image_url)+'" style="width:44px;height:44px;object-fit:cover;border-radius:8px;" loading="lazy">' : thumb(it.item_type||'image')) +
+      '<div><b>'+esc(it.title||'Untitled')+'</b><div class="sub">'+esc(it.item_type||'')+' \u00b7 '+esc(when)+'</div></div>' +
+    '</div>' +
+    '<span class="badge'+(it.status==='published'?' on':'')+'">'+esc(it.status)+'</span></div>';
+}
+async function scheduleItemDetail(id){
+  el('p-flow').innerHTML = '<div class="loading-block"><span class="spin"></span></div>';
+  const j = await call('list_all_content_items', {});
+  const it = (j.ok ? j.items : []).find(x => x.id === id);
+  if (!it){ toast('Not found', 'err'); flow(scheduleFlow); return; }
+  el('p-flow').innerHTML =
+    '<button class="btn btn-ghost btn-sm" onclick="flow(scheduleFlow)" style="margin-bottom:16px;">\u2190 Back</button>' +
+    (it.generated_image_url ? '<img src="'+esc(it.generated_image_url)+'" style="width:100%;max-width:320px;border-radius:13px;margin-bottom:12px;">' : '') +
+    '<h1 style="font-size:20px;">'+esc(it.title||'Untitled')+'</h1>' +
+    '<p class="note" style="margin:6px 0 14px;">'+esc(it.caption||'')+'</p>' +
+    '<div class="list">'+rowKV('Status', it.status)+rowKV('Type', it.item_type||'')+(it.scheduled_date?rowKV('Scheduled', new Date(it.scheduled_date).toLocaleString()):'')+'</div>' +
+    '<div style="margin-top:14px;">' +
+      (it.status === 'approved' ? '<input class="field" type="datetime-local" id="schedWhen" style="max-width:260px;margin-bottom:8px;"><button class="btn btn-p btn-sm" onclick="scheduleThisItem(\''+id+'\')">Schedule</button> <button class="btn btn-s btn-sm" onclick="publishThisItemNow(\''+id+'\')">Publish now</button>' : '') +
+    '</div>' +
+    '<div id="schedItemResult" style="margin-top:10px;"></div>';
+}
+async function scheduleThisItem(id){
+  const when = el('schedWhen').value;
+  if (!when){ toast('Pick a date and time first.', 'err'); return; }
+  const j = await call('schedule_content_plan_item', { id, scheduled_date: new Date(when).toISOString() });
+  if (!j.ok){ el('schedItemResult').innerHTML = errBlock(j.error, ''); return; }
+  toast('Scheduled', 'ok'); flow(scheduleFlow);
+}
+async function publishThisItemNow(id){
+  const j = await call('publish_content_plan_item_now', { id });
+  if (!j.ok){ el('schedItemResult').innerHTML = errBlock(j.error, ''); return; }
+  toast('Published', 'ok'); flow(scheduleFlow);
 }
 </script>
 <script>
