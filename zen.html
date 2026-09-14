@@ -563,6 +563,7 @@ label.lbl{display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:v
       <button class="side-btn" data-p="campaigns" onclick="go('campaigns')"><span class="ic">◈</span>Campaigns<span class="cnt" id="navCampBadge" style="display:none;"></span></button>
       <button class="side-btn" data-p="zenwhatsapp" onclick="go('zenwhatsapp')"><span class="ic">💬</span>ZenWhatsApp<span class="cnt" id="navWaBadge" style="display:none;"></span></button>
       <button class="side-btn" data-p="marketing" onclick="go('marketing')"><span class="ic">✦</span>Marketing</button>
+      <button class="side-btn" data-p="promotions" onclick="go('promotions')"><span class="ic">▲</span>Promotions</button>
       <button class="side-btn" data-p="insights" onclick="go('insights')"><span class="ic">◎</span>Insights</button>
       <button class="side-btn" data-p="settings" onclick="go('settings')"><span class="ic">⚙</span>Settings</button>
     </div>
@@ -583,6 +584,7 @@ label.lbl{display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:v
     <section class="page" id="p-campaigns"></section>
     <section class="page" id="p-zenwhatsapp"></section>
     <section class="page" id="p-marketing"></section>
+    <section class="page" id="p-promotions"></section>
     <section class="page" id="p-insights"></section>
     <section class="page" id="p-settings"></section>
     <section class="page" id="p-flow"></section>
@@ -1432,7 +1434,7 @@ function go(name){
   document.querySelectorAll('.side-btn').forEach(b=>b.classList.toggle('active', b.dataset.p===name));
   document.body.classList.remove('menu-open');
   window.scrollTo({top:0,behavior:'smooth'});
-  ({home,campaigns,zenwhatsapp,marketing,insights,settings})[name] && ({home,campaigns,zenwhatsapp,marketing,insights,settings})[name]();
+  ({home,campaigns,zenwhatsapp,marketing,promotions,insights,settings})[name] && ({home,campaigns,zenwhatsapp,marketing,promotions,insights,settings})[name]();
 }
 function flow(fn){
   if (WA_REFRESH_TIMER){ clearInterval(WA_REFRESH_TIMER); WA_REFRESH_TIMER = null; }
@@ -2757,6 +2759,303 @@ function campaignDetail(id){
    specific steps only where they genuinely differ.
    Covers Prototype Flows 9–14.
    ═══════════════════════════════════════════════════════════════ */
+// Real, dedicated Promotions tab - fixes the actual gap: promoting a
+// post previously only lived inside one post's own detail screen,
+// reachable only through Publishing schedule. This lists every
+// published post with its real promotion status, in one standalone
+// place, regardless of how or when it was posted.
+// Real sub-tabs, matching the pattern already used for Brand &
+// Strategy - "Promotions" is the home for both turning a post into an
+// ad, and managing the real ad sets that result, rather than splitting
+// these across separate top-level destinations.
+function promotionsTabBar(active){
+  const tabs = [['posts','From your posts'],['adsets','Ad sets']];
+  return '<div class="subtabs">' + tabs.map(t =>
+    '<button class="'+(t[0]===active?'active':'')+'" onclick="promotions(\''+t[0]+'\')">'+t[1]+'</button>').join('') + '</div>';
+}
+async function promotions(tab){
+  tab = tab || 'posts';
+  STATE.lastPage='promotions';
+  const p = el('p-promotions');
+  p.innerHTML =
+    '<div class="topline"><div class="pagetitle"><div class="kicker">Promotions</div><h1>Turn a post into a real ad.</h1>' +
+    '<p>Every published post, in one place \u2014 promote anything that isn\u2019t already running, or manage what\u2019s already set up in Meta.</p></div></div>' +
+    promotionsTabBar(tab) +
+    '<div id="promotionsBody"><div class="loading-block"><span class="spin"></span></div></div>';
+  if (tab === 'adsets') { renderAdSetsTab(); return; }
+
+  const j = await call('list_promotable_content', {});
+  if (!j.ok){ el('promotionsBody').innerHTML = errBlock(j.error, 'promotions()'); return; }
+  const items = j.items || [];
+  el('promotionsBody').innerHTML =
+    '<div id="promotionsRows">' +
+    (items.length === 0
+      ? '<p class="note" style="margin-top:10px;">Nothing published yet \u2014 once you post something, it\u2019ll show up here to promote.</p>'
+      : items.map(promotionRow).join('')) +
+    '</div>' +
+    '<div id="promotePostArea" style="margin-top:14px;"></div>';
+}
+function promotionRow(it){
+  const lp = it.latest_promotion;
+  const statusBadge = !lp ? '<span class="badge">Not promoted</span>'
+    : lp.status === 'ready' ? '<span class="badge on">Running (paused)</span>'
+    : lp.status === 'processing' ? '<span class="badge warn">Processing\u2026</span>'
+    : '<span class="badge warn">Failed \u2014 try again</span>';
+  const when = it.created_at ? new Date(it.created_at).toLocaleDateString() : '';
+  return '<div class="list-row" style="align-items:center;">' +
+    '<div style="display:flex;gap:12px;align-items:center;">' +
+      (it.generated_url ? '<img src="'+esc(it.generated_url)+'" style="width:44px;height:44px;object-fit:cover;border-radius:8px;" loading="lazy">' : thumb(it.item_type||'image')) +
+      '<div><b>'+esc(it.title||'Untitled')+'</b><div class="sub">'+esc(it.item_type||'')+' \u00b7 '+esc(when)+'</div></div>' +
+    '</div>' +
+    '<div style="display:flex;gap:8px;align-items:center;">' + statusBadge +
+      (!lp || lp.status === 'failed'
+        ? '<button class="btn btn-s btn-sm" onclick="promotePostForm(\''+it.id+'\')">Promote</button>'
+        : '') +
+    '</div></div>';
+}
+// Real ad sets, fetched from Meta - reuses recommend_ad_actions'
+// already-tested classification (verdict/why, comparable-group
+// averaging, fair-run gating) rather than building a second, separate
+// fetch that could quietly drift out of sync with what the
+// recommendation engine actually judges each ad set on.
+async function renderAdSetsTab(){
+  const body = el('promotionsBody');
+  body.innerHTML = '<div class="loading-block"><span class="spin"></span>Reading your real ad account\u2026</div>';
+  const [recJ, intelJ, audJ] = await Promise.all([
+    call('recommend_ad_actions', { days: 30 }),
+    call('get_ad_intelligence', { days: 90 }),
+    call('list_custom_audiences', {}),
+  ]);
+  if (!recJ.ok){ body.innerHTML = errBlock(recJ.error, 'promotions()'); return; }
+  const rows = recJ.all || [];
+  ADSETS_CAMPAIGNS_CACHE = [...new Map(rows.filter(r=>r.campaign).map(r=>[r.campaign, {id:null,name:r.campaign}])).values()];
+  AD_INTEL_CACHE = intelJ.ok ? intelJ : null;
+  AD_AUDIENCES_CACHE = audJ.ok ? (audJ.audiences||[]) : [];
+  body.innerHTML =
+    renderAdIntelBox(AD_INTEL_CACHE) +
+    '<div class="sechead" style="margin-top:16px;"><h2>Your ad sets</h2></div>' +
+    '<button class="btn btn-p btn-sm" style="margin-bottom:14px;" onclick="newAdSetForm()">+ Create a new ad set</button>' +
+    '<div id="newAdSetArea"></div>' +
+    (rows.length === 0
+      ? '<p class="note">No ad sets in this account yet.</p>'
+      : rows.map(adSetRow).join(''));
+}
+let ADSETS_CAMPAIGNS_CACHE = [];
+let AD_INTEL_CACHE = null;
+let AD_AUDIENCES_CACHE = [];
+// Real, always-visible intelligence box - the actual gap raised: this
+// data existed but was buried inside a create-ad-set form, not shown
+// anywhere on its own. Every number here is real, pulled straight from
+// get_ad_intelligence - honest about "not enough data yet" rather than
+// filling in a guess to look complete.
+function renderAdIntelBox(intel){
+  if (!intel){
+    return '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;">' +
+      '<b>What\u2019s working for you</b><p class="note" style="margin-top:6px;">No real ad intelligence yet \u2014 connect Meta ads and run a campaign for a while, and this fills in with your account\u2019s actual results.</p></div>';
+  }
+  // Real gap fixed here: "not enough data" was shown identically
+  // whether a segment genuinely had too little volume, or the
+  // underlying Meta fetch for that dimension actually failed - the
+  // person had no way to tell those apart. Now shows the real
+  // impression count behind the verdict (so "38 impressions, need
+  // 500+" is visible instead of a bare "not enough data"), and
+  // surfaces any real fetch error explicitly rather than silently
+  // folding it into the same generic message.
+  const topOf = (arr, key, label) => {
+    const rows = arr || [];
+    const real = rows.filter(r=>r.enough_data).slice(0,3);
+    if (real.length) return '<div><b class="note" style="color:var(--ink);">'+label+'</b>' +
+      real.map(r=>'<div class="list-row" style="padding:3px 0;"><span>'+esc(String(r[key]))+'</span><span class="note">'+r.conversations+' conv. \u00b7 AED '+r.cost_per_conversation+'</span></div>').join('') +
+    '</div>';
+    // Show the real numbers behind "not enough" rather than a bare
+    // claim - the highest-impression row, if any exist at all.
+    const highest = [...rows].sort((a,b)=>(Number(b.impressions)||0)-(Number(a.impressions)||0))[0];
+    const detail = highest
+      ? 'Highest so far: '+esc(String(highest[key]))+' with '+(highest.impressions||0)+' impressions (need '+(window.AD_INTEL_MIN||500)+'+ to trust a segment).'
+      : 'No data at all for this yet.';
+    return '<div><b class="note" style="color:var(--ink);">'+label+'</b><p class="note" style="margin:2px 0 0;">'+detail+'</p></div>';
+  };
+  window.AD_INTEL_MIN = intel.min_impressions_for_signal || 500;
+  const errorBanner = intel.partial_errors
+    ? '<p class="note" style="color:#a02020;margin:0 0 8px;">Some breakdowns didn\u2019t load: '+esc(intel.partial_errors.join('; '))+'</p>'
+    : '';
+  return '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;">' +
+    '<b>What\u2019s working for you</b><p class="note" style="margin:2px 0 10px;">Real results from your account\u2019s last '+intel.days_used+' days.</p>' +
+    errorBanner +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 20px;">' +
+      topOf(intel.age,'age','Best age groups') + topOf(intel.gender,'gender','Best gender') +
+      topOf(intel.region,'region','Best regions') + topOf(intel.device,'impression_device','Best devices') +
+      topOf(intel.placement,'publisher_platform','Best placements') +
+    '</div>' +
+  '</div>';
+}
+function adSetRow(r){
+  const statusBadge = r.status === 'ACTIVE' ? '<span class="badge on">Active</span>' : r.status === 'PAUSED' ? '<span class="badge">Paused</span>' : '<span class="badge warn">'+esc(r.status)+'</span>';
+  return '<div class="list-row" style="align-items:flex-start;flex-direction:column;gap:4px;">' +
+    '<div style="display:flex;justify-content:space-between;width:100%;">' +
+      '<span><b>'+esc(r.name)+'</b><div class="sub">'+esc(r.campaign||'')+' \u00b7 AED '+esc(r.daily_budget!=null?r.daily_budget:'\u2014')+'/day</div></span>' +
+      statusBadge +
+    '</div>' +
+    '<p class="note" style="margin:2px 0 0;">'+esc(r.why||'')+'</p>' +
+  '</div>';
+}
+// Real campaign archetypes, grounded in current, converging Meta
+// agency practice (verified across multiple independent, recent
+// sources before building this) rather than invented labels:
+// prospecting/cold and retargeting/warm are run as genuinely separate
+// campaigns with one clear job each; a "high-value" audience is built
+// by targeting your actual best customers directly, not a vague
+// interest guess; excluding existing customers from cold campaigns is
+// standard, confirmed practice. Each archetype here maps to a real,
+// already-built Custom Audience where one exists, or real broad
+// targeting grounded in this account's own intelligence where it
+// doesn't - never a generic default dressed up as a strategy.
+const AD_ARCHETYPES = [
+  { key: 'new_families', name: 'Reach new families', icon: '\u25c8',
+    why: 'Prospecting - broad targeting to find people who don\u2019t know you yet. Standard practice: excludes your own recent customers where a real audience for that exists, so budget goes toward genuinely new people.',
+    segment: null },
+  { key: 'high_value', name: 'Target high-value families', icon: '\u2666',
+    why: 'Retargets your own top-spending customers directly - built from real visit/spend history, not a generic "looks like a parent" guess. The real seed-quality principle: a targeting audience is only as good as who it\u2019s built from.',
+    segment: 'high_value' },
+  { key: 'lapsed', name: 'Re-target lapsed customers', icon: '\u21bb',
+    why: 'A real win-back audience - people who haven\u2019t been in for 90+ days, built from your actual visit history. Retargeting audiences like this typically convert far more efficiently than cold prospecting.',
+    segment: 'lapsed' },
+  { key: 'birthday_soon', name: 'Birthday package promoter', icon: '\u2605',
+    why: 'Targets customers with a child\u2019s birthday in the next 30 days - real timing relevance, not a seasonal guess.',
+    segment: 'birthday_soon' },
+];
+function newAdSetForm(){
+  el('newAdSetArea').innerHTML =
+    '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-bottom:14px;">' +
+    '<label class="lbl">What kind of campaign is this?</label>' +
+    '<div id="adArchetypeGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">' +
+      AD_ARCHETYPES.map((a,i) => '<button type="button" class="task" data-arch="'+a.key+'" style="text-align:left;padding:10px 12px;'+(i===0?'border-color:var(--green);':'')+'" onclick="selectAdArchetype(\''+a.key+'\')">' +
+        '<div class="task-top"><b>'+a.icon+' '+esc(a.name)+'</b></div><span style="font-size:11.5px;">'+esc(a.why)+'</span></button>').join('') +
+    '</div>' +
+    '<div id="newAdSetAudienceNote" style="margin-bottom:10px;"></div>' +
+    '<div id="newAdSetIntel" style="margin-bottom:10px;"></div>' +
+    '<label class="lbl">Ad set name</label><input class="field" id="newAdSetName" style="margin-bottom:8px;">' +
+    '<label class="lbl">Campaign</label>' +
+    '<select class="field" id="newAdSetCampaign" style="margin-bottom:8px;" onchange="newAdSetCampaignChanged()">' +
+      '<option value="__new__">+ Create a new campaign</option>' +
+      ADSETS_CAMPAIGNS_CACHE.map(c => '<option value="'+esc(c.name)+'">'+esc(c.name)+'</option>').join('') +
+    '</select>' +
+    '<div id="newAdSetCampaignNameArea">' +
+      '<label class="lbl">New campaign name</label><input class="field" id="newAdSetCampaignName" style="margin-bottom:8px;">' +
+      '<label class="lbl">Objective</label>' +
+      '<select class="field" id="newAdSetObjective" style="margin-bottom:8px;">' +
+        '<option value="engagement">Engagement (WhatsApp conversations \u2014 recommended)</option>' +
+        '<option value="awareness">Awareness</option>' +
+      '</select>' +
+    '</div>' +
+    '<label class="lbl">Daily budget (AED)</label><input class="field" type="number" id="newAdSetBudget" style="max-width:180px;margin-bottom:8px;">' +
+    '<div id="newAdSetGeoFields">' +
+      '<label class="lbl">Age range<span id="newAdSetAgeSource"></span></label>' +
+      '<div style="display:flex;gap:8px;margin-bottom:8px;">' +
+        '<input class="field" type="number" id="newAdSetAgeMin" value="18" style="max-width:90px;">' +
+        '<input class="field" type="number" id="newAdSetAgeMax" value="65" style="max-width:90px;">' +
+      '</div>' +
+      '<label class="lbl">Radius (km, optional)</label><input class="field" type="number" id="newAdSetRadius" style="max-width:150px;margin-bottom:8px;">' +
+    '</div>' +
+    '<button class="btn btn-p btn-sm" onclick="newAdSetCreate()">Create \u2014 paused</button>' +
+    '<div id="newAdSetResult" style="margin-top:10px;"></div>' +
+    '</div>';
+  selectAdArchetype(AD_ARCHETYPES[0].key);
+}
+let SELECTED_AD_ARCHETYPE = null;
+// Selecting an archetype is what actually applies the intelligence -
+// not just showing it nearby. A segment-backed archetype switches
+// targeting entirely to that real Custom Audience and hides the
+// generic age/region fields, since they wouldn't apply; a prospecting
+// archetype shows this account's own real best-performing age/region/
+// placement and pre-fills from it, rather than a blank default.
+function selectAdArchetype(key){
+  SELECTED_AD_ARCHETYPE = key;
+  document.querySelectorAll('#adArchetypeGrid [data-arch]').forEach(b => {
+    b.style.borderColor = b.dataset.arch === key ? 'var(--green)' : 'var(--line)';
+  });
+  const arch = AD_ARCHETYPES.find(a => a.key === key);
+  const audNote = el('newAdSetAudienceNote');
+  const geoFields = el('newAdSetGeoFields');
+  if (arch.segment){
+    const real = AD_AUDIENCES_CACHE.find(a => a.segment === arch.segment);
+    geoFields.style.display = 'none';
+    audNote.innerHTML = real
+      ? '<div style="background:#f7f9f7;border-radius:10px;padding:10px 12px;"><p class="note" style="margin:0;color:var(--ink);"><b>Using your real audience:</b> "'+esc(real.name)+'" \u2014 '+(real.live_size_lower!=null?real.live_size_lower+'+ people, ':'')+'already built in Meta.</p></div>'
+      : '<div style="background:#fff8e8;border-radius:10px;padding:10px 12px;"><p class="note" style="margin:0;">This audience hasn\u2019t been built yet. <a href="#" onclick="event.preventDefault();flow(()=>strategyLibraryFlow())">Build it from a customer segment</a> first, then come back here.</p></div>';
+  } else {
+    geoFields.style.display = '';
+    audNote.innerHTML = '';
+    loadNewAdSetIntel();
+  }
+}
+// The real gap, now closed: creating an ad set previously had zero
+// connection to get_ad_intelligence - an owner just got blank 18-65
+// defaults with no link to what the account's own real data shows
+// works. Reuses the intelligence already fetched for the box above
+// this form, rather than a second, redundant call.
+function loadNewAdSetIntel(){
+  const box = el('newAdSetIntel');
+  const j = AD_INTEL_CACHE;
+  if (!j){
+    box.innerHTML = '<p class="note">No real ad intelligence yet for this account \u2014 defaults below are unguided until you have some ad history.</p>';
+    return;
+  }
+  const bestAge = (j.age||[]).find(r => r.enough_data);
+  const bestRegion = (j.region||[]).find(r => r.enough_data);
+  const bestPlacement = (j.placement||[]).find(r => r.enough_data);
+  if (!bestAge && !bestRegion && !bestPlacement){
+    box.innerHTML = '<p class="note">Not enough real ad history yet to suggest targeting \u2014 defaults below are unguided for now.</p>';
+    return;
+  }
+  const bits = [];
+  if (bestAge) bits.push('best age group: <b>'+esc(bestAge.age)+'</b> ('+bestAge.conversations+' conversations at AED '+bestAge.cost_per_conversation+' each)');
+  if (bestRegion) bits.push('best region: <b>'+esc(bestRegion.region)+'</b>');
+  if (bestPlacement) bits.push('best placement: <b>'+esc(bestPlacement.publisher_platform)+'</b>');
+  box.innerHTML = '<div style="background:#f7f9f7;border-radius:10px;padding:10px 12px;">' +
+    '<p class="note" style="margin:0;color:var(--ink);"><b>From your real ad intelligence:</b> '+bits.join(' \u00b7 ')+'.</p>' +
+  '</div>';
+  if (bestAge && /^\d+-\d+$/.test(bestAge.age)){
+    const [lo, hi] = bestAge.age.split('-');
+    el('newAdSetAgeMin').value = lo;
+    el('newAdSetAgeMax').value = hi;
+    el('newAdSetAgeSource').innerHTML = ' <span class="note" style="font-weight:400;">(pre-filled from your real data \u2014 edit freely)</span>';
+  }
+}
+function newAdSetCampaignChanged(){
+  el('newAdSetCampaignNameArea').style.display = el('newAdSetCampaign').value === '__new__' ? '' : 'none';
+}
+async function newAdSetCreate(){
+  const name = (el('newAdSetName').value||'').trim();
+  const budget_aed = Number(el('newAdSetBudget').value);
+  if (!name || !budget_aed){ toast('Ad set name and daily budget are both required.', 'err'); return; }
+  const campaignChoice = el('newAdSetCampaign').value;
+  const isNewCampaign = campaignChoice === '__new__';
+  if (isNewCampaign && !(el('newAdSetCampaignName').value||'').trim()){ toast('Name the new campaign, or pick an existing one.', 'err'); return; }
+  // Where this actually connects: a segment-backed archetype sends the
+  // real Meta audience id straight through as the real targeting,
+  // replacing age/region entirely - not just shown as a suggestion
+  // beside fields that get ignored.
+  const arch = AD_ARCHETYPES.find(a => a.key === SELECTED_AD_ARCHETYPE);
+  const realAudience = arch && arch.segment ? AD_AUDIENCES_CACHE.find(a => a.segment === arch.segment) : null;
+  if (arch && arch.segment && !realAudience){ toast('Build this audience first from the Meta ad strategies screen.', 'err'); return; }
+  const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Creating in Meta\u2026';
+  const res = el('newAdSetResult');
+  const j = await call('create_meta_ad_set', {
+    name, budget_aed,
+    campaign_name: isNewCampaign ? el('newAdSetCampaignName').value.trim() : undefined,
+    objective: isNewCampaign ? el('newAdSetObjective').value : undefined,
+    existing_campaign_id: isNewCampaign ? undefined : campaignChoice,
+    custom_audience_id: realAudience ? realAudience.meta_audience_id : undefined,
+    targeting_age_min: realAudience ? undefined : (Number(el('newAdSetAgeMin').value)||18),
+    targeting_age_max: realAudience ? undefined : (Number(el('newAdSetAgeMax').value)||65),
+    targeting_radius_km: realAudience ? undefined : (Number(el('newAdSetRadius').value)||undefined),
+  }, 45000);
+  btn.disabled = false; btn.textContent = 'Create \u2014 paused';
+  if (!j.ok){ res.innerHTML = errBlock(j.error, ''); return; }
+  res.innerHTML = '<p class="note" style="color:var(--green);">\u2713 '+esc(j.note||'Created, paused.')+'</p>';
+  setTimeout(() => renderAdSetsTab(), 1200);
+}
 function marketing(){
   STATE.lastPage='marketing';
   const p = el('p-marketing');
@@ -3599,11 +3898,58 @@ async function magentRunGeneration(){
   el('p-flow').innerHTML = magentShell(
     '<img src="'+esc(genRes.output_url)+'" style="width:260px;aspect-ratio:1;object-fit:cover;border-radius:13px;margin-bottom:12px;" loading="lazy">' +
     '<p class="note">'+esc(concept.format)+' for '+esc(persona?persona.name:'your audience')+'</p>' +
-    '<button class="btn btn-s btn-sm" style="margin-top:8px;" onclick="magentTurnIntoVideoForm(\''+genRes.generation_id+'\')">\ud83c\udfa5 Turn this into a video</button>' +
-    '<div id="videoFormArea"></div>',
+    '<button class="btn btn-s btn-sm" style="margin-top:8px;" onclick="magentTurnIntoVideoForm(\''+genRes.generation_id+'\')">\ud83c\udfa5 Turn this into a video</button> ' +
+    '<button class="btn btn-s btn-sm" style="margin-top:8px;" onclick="beforeAfterForm(\''+genRes.generation_id+'\',\''+esc(genRes.output_url)+'\')">\u2702\ufe0f Generate before/after</button>' +
+    '<div id="videoFormArea"></div>' +
+    '<div id="beforeAfterArea"></div>',
     '<button class="btn btn-ghost" onclick="magentStepVisualSource()">Regenerate</button>' +
     '<button class="btn btn-p" onclick="magentStepPublish(\''+genRes.generation_id+'\',\''+esc((concept.message||'Post').replace(/\'/g,''))+'\')">Continue</button>'
   );
+}
+// Real before/after - the same person shown with a different
+// hairstyle, not a new generation of a different-looking person. Uses
+// Nano Banana's real image-editing capability specifically, since
+// that's what actually preserves identity between the two images.
+function beforeAfterForm(generationId, beforeUrl){
+  el('beforeAfterArea').innerHTML =
+    '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-top:10px;">' +
+    '<label class="lbl">New hairstyle</label>' +
+    '<textarea class="field" id="baHairstyle" style="min-height:50px;margin-bottom:8px;" placeholder="e.g. shoulder-length loose curls, warm brown balayage\u2026"></textarea>' +
+    '<button class="btn btn-s btn-sm" onclick="beforeAfterWritePrompt(\''+generationId+'\')">\u2728 Let Zen write the edit instruction</button>' +
+    '<textarea class="field" id="baEditPrompt" style="min-height:50px;margin:8px 0;" placeholder="Or write the edit instruction directly\u2026"></textarea>' +
+    '<button class="btn btn-p btn-sm" onclick="beforeAfterGenerate(\''+generationId+'\',\''+beforeUrl+'\')">Generate \'after\' image</button>' +
+    '<div id="beforeAfterResult" style="margin-top:10px;"></div>' +
+    '</div>';
+}
+async function beforeAfterWritePrompt(generationId){
+  const new_hairstyle_description = (el('baHairstyle').value||'').trim();
+  if (!new_hairstyle_description){ toast('Describe the new hairstyle first.', 'err'); return; }
+  const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Writing\u2026';
+  const j = await call('generate_before_after_prompt', { before_generation_id: generationId, new_hairstyle_description });
+  btn.disabled = false; btn.textContent = '\u2728 Let Zen write the edit instruction';
+  if (!j.ok){ el('beforeAfterResult').innerHTML = errBlock(j.error, ''); return; }
+  el('baEditPrompt').value = j.edit_prompt;
+}
+async function beforeAfterGenerate(generationId, beforeUrl){
+  const edit_prompt = (el('baEditPrompt').value||'').trim();
+  if (!edit_prompt){ toast('Add an edit instruction first, or let Zen write one.', 'err'); return; }
+  const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Generating\u2026';
+  const res = el('beforeAfterResult');
+  // Forces Nano Banana specifically - the only model here with real,
+  // verified image-editing/identity-preservation capability. A
+  // different model would very likely just generate a new, different-
+  // looking person rather than edit this one.
+  const j = await call('run_generation', {
+    compiled_prompt: edit_prompt, model: 'google/nano-banana-2-lite',
+    reference_asset_urls: [beforeUrl], aspect_ratio: 'match_input_image',
+  }, 45000);
+  btn.disabled = false; btn.textContent = 'Generate \'after\' image';
+  if (!j.ok){ res.innerHTML = errBlock(j.error, ''); return; }
+  res.innerHTML =
+    '<div style="display:flex;gap:10px;margin-top:6px;">' +
+      '<div><p class="note" style="margin:0 0 4px;">Before</p><img src="'+esc(beforeUrl)+'" style="width:150px;aspect-ratio:1;object-fit:cover;border-radius:10px;"></div>' +
+      '<div><p class="note" style="margin:0 0 4px;">After</p><img src="'+esc(j.output_url)+'" style="width:150px;aspect-ratio:1;object-fit:cover;border-radius:10px;"></div>' +
+    '</div>';
 }
 // Real image-to-video, converting the actual generated image above -
 // not a separate, unrelated generation. Cost is shown as a labeled
@@ -4286,10 +4632,14 @@ async function scheduleFlow(){
 }
 function scheduleItemRow(it){
   const when = it.scheduled_date ? new Date(it.scheduled_date).toLocaleString() : (it.created_at ? new Date(it.created_at).toLocaleDateString() : '');
+  // Real fix: a carousel's thumbnail here was always its single
+  // linked cover generation - now shows the real slide count too, so
+  // it doesn't quietly look like a single-image post in this list.
+  const slideBadge = it.is_carousel ? ' \u00b7 '+(it.carousel_slides ? it.carousel_slides.length : (it.slide_count||'?'))+' slides' : '';
   return '<div class="list-row" style="cursor:pointer;" onclick="scheduleItemDetail(\''+it.id+'\')">' +
     '<div style="display:flex;gap:12px;align-items:center;">' +
       (it.generated_image_url ? '<img src="'+esc(it.generated_image_url)+'" style="width:44px;height:44px;object-fit:cover;border-radius:8px;" loading="lazy">' : thumb(it.item_type||'image')) +
-      '<div><b>'+esc(it.title||'Untitled')+'</b><div class="sub">'+esc(it.item_type||'')+' \u00b7 '+esc(when)+'</div></div>' +
+      '<div><b>'+esc(it.title||'Untitled')+'</b><div class="sub">'+esc(it.item_type||'')+esc(slideBadge)+' \u00b7 '+esc(when)+'</div></div>' +
     '</div>' +
     '<span class="badge'+(it.status==='published'?' on':'')+'">'+esc(it.status)+'</span></div>';
 }
@@ -4298,16 +4648,95 @@ async function scheduleItemDetail(id){
   const j = await call('list_all_content_items', {});
   const it = (j.ok ? j.items : []).find(x => x.id === id);
   if (!it){ toast('Not found', 'err'); flow(scheduleFlow); return; }
+  // Real bug fixed here, reported directly: a saved-for-approval
+  // carousel only ever showed its single linked cover image on this
+  // screen - the other real slides, stored separately, were never
+  // fetched or shown at all. Now shows every real slide when this
+  // item is genuinely a carousel, falling back to the single image
+  // exactly as before for anything that isn't.
+  const mediaBlock = it.is_carousel && it.carousel_slides && it.carousel_slides.length
+    ? '<div style="display:flex;gap:8px;overflow-x:auto;margin-bottom:12px;">' +
+        it.carousel_slides.map(s => '<img src="'+esc(s.image_url||'')+'" style="width:150px;height:150px;object-fit:cover;border-radius:10px;flex-shrink:0;" loading="lazy">').join('') +
+      '</div>' +
+      '<p class="note" style="margin:0 0 10px;">Carousel \u2014 '+it.carousel_slides.length+' slides</p>'
+    : (it.generated_image_url ? '<img src="'+esc(it.generated_image_url)+'" style="width:100%;max-width:320px;border-radius:13px;margin-bottom:12px;">' : '');
   el('p-flow').innerHTML =
     '<button class="btn btn-ghost btn-sm" onclick="flow(scheduleFlow)" style="margin-bottom:16px;">\u2190 Back</button>' +
-    (it.generated_image_url ? '<img src="'+esc(it.generated_image_url)+'" style="width:100%;max-width:320px;border-radius:13px;margin-bottom:12px;">' : '') +
+    mediaBlock +
     '<h1 style="font-size:20px;">'+esc(it.title||'Untitled')+'</h1>' +
     '<p class="note" style="margin:6px 0 14px;">'+esc(it.caption||'')+'</p>' +
     '<div class="list">'+rowKV('Status', it.status)+rowKV('Type', it.item_type||'')+(it.scheduled_date?rowKV('Scheduled', new Date(it.scheduled_date).toLocaleString()):'')+'</div>' +
     '<div style="margin-top:14px;">' +
       (it.status === 'approved' ? '<input class="field" type="datetime-local" id="schedWhen" style="max-width:260px;margin-bottom:8px;"><button class="btn btn-p btn-sm" onclick="scheduleThisItem(\''+id+'\')">Schedule</button> <button class="btn btn-s btn-sm" onclick="publishThisItemNow(\''+id+'\')">Publish now</button>' : '') +
+      // Real, standalone "promote this post" - works in isolation from
+      // a specific already-published piece, not tied to the goal
+      // wizard. Only offered once it's actually published - promoting
+      // something not yet live would attach a creative that doesn't
+      // correspond to anything real yet.
+      (it.status === 'published' ? '<button class="btn btn-p btn-sm" onclick="promotePostForm(\''+id+'\')">Promote this post</button>' : '') +
     '</div>' +
-    '<div id="schedItemResult" style="margin-top:10px;"></div>';
+    '<div id="schedItemResult" style="margin-top:10px;"></div>' +
+    '<div id="promotePostArea" style="margin-top:14px;"></div>';
+}
+function promotePostForm(id){
+  el('promotePostArea').innerHTML =
+    '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;">' +
+    '<label class="lbl">Daily budget (AED)</label><input class="field" type="number" id="promoBudget" placeholder="e.g. 50" style="max-width:180px;margin-bottom:8px;">' +
+    '<label class="lbl">Age range</label>' +
+    '<div style="display:flex;gap:8px;margin-bottom:8px;">' +
+      '<input class="field" type="number" id="promoAgeMin" value="18" style="max-width:90px;">' +
+      '<input class="field" type="number" id="promoAgeMax" value="65" style="max-width:90px;">' +
+    '</div>' +
+    '<label class="lbl">Radius (km, optional \u2014 defaults to all of UAE)</label><input class="field" type="number" id="promoRadius" placeholder="e.g. 10" style="max-width:150px;margin-bottom:8px;">' +
+    '<button class="btn btn-p btn-sm" onclick="promotePostRun(\''+id+'\')">Create in Meta \u2014 paused</button>' +
+    '<div id="promotePostResult" style="margin-top:10px;"></div>' +
+    '</div>';
+}
+async function promotePostRun(id){
+  const budget_aed = Number(el('promoBudget').value);
+  if (!budget_aed){ toast('A daily budget is required.', 'err'); return; }
+  const targeting_age_min = Number(el('promoAgeMin').value) || 18;
+  const targeting_age_max = Number(el('promoAgeMax').value) || 65;
+  const targeting_radius_km = Number(el('promoRadius').value) || undefined;
+  const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Creating in Meta\u2026';
+  const res = el('promotePostResult');
+  const j = await call('promote_post', { content_plan_item_id: id, budget_aed, targeting_age_min, targeting_age_max, targeting_radius_km }, 45000);
+  if (!j.ok){ btn.disabled = false; btn.textContent = 'Create in Meta \u2014 paused'; res.innerHTML = errBlock(j.error, ''); return; }
+  if (j.status === 'ready'){
+    res.innerHTML = '<p class="note" style="color:var(--green);">\u2713 '+esc(j.note||'Created, paused.')+'</p>';
+    if (STATE.lastPage === 'promotions') flow_refreshPromotionsQuiet();
+    return;
+  }
+  // Video path - genuinely async on Meta's side, so this polls for
+  // real readiness rather than claim success before the ad actually
+  // exists.
+  res.innerHTML = '<div class="loading-block"><span class="spin"></span>Meta is processing the video\u2026 this can take a few minutes.</div>';
+  promotePollVideo(j.video_id, j.adset_id, j.caption, 0);
+}
+async function promotePollVideo(videoId, adsetId, caption, attempt){
+  const res = el('promotePostResult');
+  if (attempt > 40){ res.innerHTML = '<p class="note">Still processing after a while \u2014 check back shortly, or view it directly in Meta Ads Manager.</p>'; return; }
+  const j = await call('check_promote_video_status', { video_id: videoId, adset_id: adsetId, caption });
+  if (!j.ok){ res.innerHTML = errBlock(j.error, ''); return; }
+  if (j.status === 'ready'){
+    res.innerHTML = '<p class="note" style="color:var(--green);">\u2713 '+esc(j.note||'Created, paused.')+'</p>';
+    if (STATE.lastPage === 'promotions') flow_refreshPromotionsQuiet();
+    return;
+  }
+  if (j.status === 'failed'){
+    res.innerHTML = errBlock('Meta could not process this video.', '');
+    return;
+  }
+  setTimeout(() => promotePollVideo(videoId, adsetId, caption, attempt + 1), 8000);
+}
+// Refreshes just the list underneath, without touching the visible
+// success message or resetting the open form - a plain promotions()
+// call would wipe both.
+async function flow_refreshPromotionsQuiet(){
+  const j = await call('list_promotable_content', {});
+  if (j.ok) el('promotionsRows').innerHTML = (j.items||[]).length === 0
+    ? '<p class="note" style="margin-top:10px;">Nothing published yet \u2014 once you post something, it\u2019ll show up here to promote.</p>'
+    : j.items.map(promotionRow).join('');
 }
 async function scheduleThisItem(id){
   const when = el('schedWhen').value;
@@ -5785,10 +6214,12 @@ async function connectionsPanel(){
     '<div class="sechead"><h2>Meta Ads</h2></div>' +
     '<div class="list"><div class="list-row"><b>Meta Ads</b><span class="badge'+(ads.ok&&ads.connected?' on':' warn')+'">'+(ads.ok&&ads.connected?'Connected':'Not connected')+'</span></div></div>' +
     (ads.ok && ads.connected
-      ? insLineBlock([['Ad account', ads.ad_account_id||'\u2014'],['Last updated', ads.updated_at?new Date(ads.updated_at).toLocaleDateString():'\u2014']]) +
-        '<button class="btn btn-s btn-sm" style="margin-top:8px;" onclick="flow(adsPerformancePanel)">See ad performance</button>'
+      ? insLineBlock([['Ad account', ads.ad_account_id||'\u2014'],['Facebook Page ID', ads.page_id||'\u2014 (needed to promote a post)'],['Last updated', ads.updated_at?new Date(ads.updated_at).toLocaleDateString():'\u2014']]) +
+        '<button class="btn btn-s btn-sm" style="margin-top:8px;" onclick="flow(adsPerformancePanel)">See ad performance</button>' +
+        '<button class="btn btn-s btn-sm" style="margin-top:8px;margin-left:6px;" onclick="metaAdsShowCredForm()">Update credentials</button>'
       : '<p class="note">'+(ads.ok ? 'Connect a Meta Ads account to see real ad spend and results here.' : esc(ads.error))+'</p>'
-        + '<button class="btn btn-s btn-sm" style="margin-top:8px;" onclick="toast(\'The Meta Ads connection flow would open here.\')">Connect Meta Ads</button>') +
+        + '<button class="btn btn-s btn-sm" style="margin-top:8px;" onclick="metaAdsShowCredForm()">Connect Meta Ads</button>') +
+    '<div id="metaAdsCredForm"></div><div id="metaAdsSaveResult" style="margin-top:8px;"></div>' +
 
     '<div class="sechead"><h2>Image generation (Replicate)</h2></div>' +
     '<div class="list"><div class="list-row"><b>Replicate</b><span class="badge on">Always on</span></div></div>' +
@@ -5828,6 +6259,28 @@ async function igTestConnection(){
   el('igTestResult').innerHTML = j.ok
     ? '<p class="note" style="color:var(--green);">\u2713 Connection verified.</p>'
     : errBlock(j.error, 'connectionsPanel()');
+}
+function metaAdsShowCredForm(){
+  el('metaAdsCredForm').innerHTML =
+    '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-top:10px;">' +
+    '<label class="lbl">Ad account ID</label><input class="field" id="metaAdsAcctId" placeholder="e.g. 638838775406298 or act_638838775406298" style="margin-bottom:8px;">' +
+    '<label class="lbl">Facebook Page ID</label><input class="field" id="metaAdsPageId" placeholder="Needed to promote an existing post as an ad" style="margin-bottom:8px;">' +
+    '<label class="lbl">Access token</label><input class="field" id="metaAdsToken" type="password" style="margin-bottom:8px;">' +
+    '<button class="btn btn-p btn-sm" onclick="metaAdsSaveCredentials()">Save</button>' +
+    '<div id="metaAdsCredSaveResult" style="margin-top:8px;"></div>' +
+    '</div>';
+}
+async function metaAdsSaveCredentials(){
+  const ad_account_id = (el('metaAdsAcctId').value||'').trim();
+  const page_id = (el('metaAdsPageId').value||'').trim();
+  const access_token = (el('metaAdsToken').value||'').trim();
+  if (!ad_account_id || !access_token){ toast('Ad account ID and access token are both required.', 'err'); return; }
+  const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Saving\u2026';
+  const j = await call('save_meta_ads_credentials', { ad_account_id, access_token, page_id: page_id || undefined });
+  btn.disabled = false; btn.textContent = 'Save';
+  if (!j.ok){ el('metaAdsCredSaveResult').innerHTML = errBlock(j.error, 'connectionsPanel()'); return; }
+  toast('Saved', 'ok');
+  flow(connectionsPanel);
 }
 async function adsPerformancePanel(){
   el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flow(connectionsPanel)" style="margin-bottom:16px;">\u2190 Back</button>' +
@@ -6032,12 +6485,24 @@ async function brandDnaTab(){
   }
   brandDnaSetupForm();
 }
-function brandDnaSetupForm(){
+async function brandDnaSetupForm(){
+  const vj = await call('list_marketing_verticals', {});
+  const verticals = vj.ok ? vj.verticals : [];
   el('bsTabBody').innerHTML =
     zen('Answer in plain language \u2014 Zen turns this into structured rules it checks on every generated image.') +
     '<div class="list" style="margin-top:10px;">' +
       '<label class="lbl">Business name</label><input class="field" id="dnaName" style="margin-bottom:10px;">' +
-      '<label class="lbl">Industry</label><input class="field" id="dnaIndustry" style="margin-bottom:10px;">' +
+      '<label class="lbl">Industry</label><input class="field" id="dnaIndustry" style="margin-bottom:10px;" placeholder="e.g. children\u2019s hair salon">' +
+      // Real, explicit choice - this is what actually decides which
+      // playbooks/personas apply, not the free-text industry field
+      // above it. Kept as a separate, required-feeling field rather
+      // than inferred from industry, since a keyword guess shouldn\u2019t
+      // be the thing deciding an entire strategy framework.
+      '<label class="lbl">Business type</label>' +
+      '<select class="field" id="dnaVertical" style="margin-bottom:10px;">' +
+        '<option value="">Not sure / none of these yet</option>' +
+        verticals.map(v => '<option value="'+esc(v.key)+'">'+esc(v.name)+'</option>').join('') +
+      '</select>' +
       '<label class="lbl">Business description</label><textarea class="field" id="dnaDesc" style="min-height:60px;margin-bottom:10px;"></textarea>' +
       '<label class="lbl">Target audience</label><input class="field" id="dnaAudience" style="margin-bottom:10px;">' +
       '<label class="lbl">Visual style notes</label><textarea class="field" id="dnaVisual" style="min-height:50px;margin-bottom:10px;"></textarea>' +
@@ -6056,6 +6521,7 @@ async function proposeBrandDna(){
   const j = await call('propose_brand_dna', {
     business_name, business_description,
     industry: el('dnaIndustry').value.trim(),
+    vertical_key: el('dnaVertical').value || undefined,
     target_audience: el('dnaAudience').value.trim(),
     visual_notes: el('dnaVisual').value.trim(),
     environment_notes: el('dnaEnv').value.trim(),
