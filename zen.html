@@ -3128,7 +3128,7 @@ async function strategyLibraryFlow(){
       const strat = STRATEGIES.find(s=>s.key===a.segment);
       const sizeText = a.live_size_lower!=null ? money(a.live_size_lower)+'\u2013'+money(a.live_size_upper) : money(a.uploaded_count)+' uploaded';
       return '<div class="list-row"><span><b>'+esc(a.name)+'</b><div class="sub">'+esc(strat?strat.name:a.segment)+' \u00b7 '+sizeText+' \u00b7 '+esc(a.delivery_status||'')+'</div></span>' +
-        (a.segment!=='lookalike' ? '<button class="btn btn-s btn-sm" onclick="audienceLookalike(\''+a.meta_audience_id+'\',\''+esc((a.name||'').replace(/\'/g,''))+'\')">Build lookalike</button> ' : '') +
+        (a.segment!=='lookalike' && a.meta_audience_id ? '<button class="btn btn-s btn-sm" onclick="audienceLookalike(\''+a.meta_audience_id+'\',\''+esc((a.name||'').replace(/\'/g,''))+'\')">Build lookalike</button> ' : '') +
         '<button class="btn btn-s btn-sm" style="color:#a02020;" onclick="audienceDelete(\''+a.meta_audience_id+'\',\''+esc((a.name||'').replace(/\'/g,''))+'\')">Delete</button></div>';
     }).join('') + '</div>' +
     '<button class="btn btn-s btn-sm" style="margin-top:10px;color:#a02020;" onclick="audienceDeleteAll()">Delete all '+list.length+'</button>'
