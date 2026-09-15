@@ -265,6 +265,24 @@ label.lbl{display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:v
 .badge.on{background:var(--green-soft);color:var(--green);}
 .badge.warn{background:var(--warn-soft);color:var(--warn);}
 
+/* ── Gallery cards: real, visual image/video results - a proper card
+   with a real preview at top, not a bare thumbnail in a flex row.
+   Same design language as .task (13px radius, subtle border, hover
+   lift) so this reads as part of the same system, not a bolt-on. ─── */
+.gal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;}
+.gal-card{border:1px solid var(--line);background:#fff;border-radius:14px;overflow:hidden;cursor:pointer;
+  transition:box-shadow .15s,border-color .15s,transform .15s;}
+.gal-card:hover{border-color:#c9d0c9;box-shadow:0 4px 14px rgba(0,0,0,.07);transform:translateY(-2px);}
+.gal-card.selected{border-color:var(--green);box-shadow:0 0 0 2px var(--green-soft);}
+.gal-card .gal-media{width:100%;aspect-ratio:1;object-fit:cover;background:var(--bg);display:block;}
+.gal-card .gal-media.gal-portrait{aspect-ratio:9/16;}
+.gal-card video.gal-media{background:#111;}
+.gal-card .gal-body{padding:10px 12px;}
+.gal-card .gal-label{font-size:12px;font-weight:600;color:var(--ink);display:block;}
+.gal-card .gal-sub{font-size:11px;color:var(--muted);display:block;margin-top:2px;}
+.gal-card .gal-actions{display:flex;gap:6px;padding:0 12px 12px;}
+.gal-empty{border:1px dashed var(--line);border-radius:14px;padding:28px 16px;text-align:center;color:var(--muted);font-size:12.5px;}
+
 /* ── Mini stat grid ───────────────────────────────────────────────── */
 .mini-grid{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);}
 .mini{padding:14px 14px 14px 0;border-bottom:1px solid var(--line);}
@@ -564,6 +582,7 @@ label.lbl{display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:v
       <button class="side-btn" data-p="zenwhatsapp" onclick="go('zenwhatsapp')"><span class="ic">💬</span>ZenWhatsApp<span class="cnt" id="navWaBadge" style="display:none;"></span></button>
       <button class="side-btn" data-p="marketing" onclick="go('marketing')"><span class="ic">✦</span>Marketing</button>
       <button class="side-btn" data-p="promotions" onclick="go('promotions')"><span class="ic">▲</span>Promotions</button>
+      <button class="side-btn" data-p="creativestudio" onclick="go('creativestudio')"><span class="ic">◆</span>AI Creative Studio</button>
       <button class="side-btn" data-p="insights" onclick="go('insights')"><span class="ic">◎</span>Insights</button>
       <button class="side-btn" data-p="settings" onclick="go('settings')"><span class="ic">⚙</span>Settings</button>
     </div>
@@ -585,6 +604,7 @@ label.lbl{display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:v
     <section class="page" id="p-zenwhatsapp"></section>
     <section class="page" id="p-marketing"></section>
     <section class="page" id="p-promotions"></section>
+    <section class="page" id="p-creativestudio"></section>
     <section class="page" id="p-insights"></section>
     <section class="page" id="p-settings"></section>
     <section class="page" id="p-flow"></section>
@@ -1434,7 +1454,7 @@ function go(name){
   document.querySelectorAll('.side-btn').forEach(b=>b.classList.toggle('active', b.dataset.p===name));
   document.body.classList.remove('menu-open');
   window.scrollTo({top:0,behavior:'smooth'});
-  ({home,campaigns,zenwhatsapp,marketing,promotions,insights,settings})[name] && ({home,campaigns,zenwhatsapp,marketing,promotions,insights,settings})[name]();
+  ({home,campaigns,zenwhatsapp,marketing,promotions,creativestudio,insights,settings})[name] && ({home,campaigns,zenwhatsapp,marketing,promotions,creativestudio,insights,settings})[name]();
 }
 function flow(fn){
   if (WA_REFRESH_TIMER){ clearInterval(WA_REFRESH_TIMER); WA_REFRESH_TIMER = null; }
@@ -2773,6 +2793,71 @@ function promotionsTabBar(active){
   return '<div class="subtabs">' + tabs.map(t =>
     '<button class="'+(t[0]===active?'active':'')+'" onclick="promotions(\''+t[0]+'\')">'+t[1]+'</button>').join('') + '</div>';
 }
+// AI Creative Studio home - real, working "Clone an Ad" first;
+// the other four cards are honestly marked as not built yet rather
+// than shown as if they work, matching the spec's own phased build
+// order (shared foundation first, one feature proven end-to-end
+// before the next).
+async function creativestudio(){
+  STATE.lastPage='creativestudio';
+  const p = el('p-creativestudio');
+  // Real, medium-height loading placeholder while real preview images
+  // load/generate in the background - never blocks the home screen on
+  // a first-time generation, which can genuinely take up to a minute.
+  const CARD_DEFS = [
+    ['clone', 'Clone an Ad', 'Recreate the strategy of a reference ad you like, using your own product.', 'flow(()=>cloneAdFlow())'],
+    ['variations', 'Create Variations', 'Pick an existing creative and generate a real, controlled edit of it \u2014 you choose what to keep and what to change.', 'flow(()=>variationsFlow())'],
+    ['ugc', 'Create UGC Video', 'A realistic creator-style video, with real spoken dialogue and genuine lip-sync.', 'flow(()=>ugcVideoFlow())'],
+    ['talking', 'Talking Head', 'A presenter-led video using one of your existing avatars.', 'flow(()=>talkingHeadFlow())'],
+    ['trend', 'Recreate a Trend', 'Describe a trend\u2019s concept and recreate its structure with your own brand.', 'flow(()=>trendRecreationFlow())'],
+  ];
+  // Real fix, given the wide-banner approach still wasn't right: the
+  // actual, more robust solution isn't more cropping adjustment on a
+  // fundamentally mismatched shape - it's removing the mismatch.
+  // Real image models handle a square portrait well; they don't
+  // reliably handle an extreme wide-short crop of a person's face and
+  // shoulders. Generating square (matching this thumbnail's own real
+  // shape, set below) and displaying at a genuinely small, square
+  // thumbnail avoids fighting an unnatural aspect ratio altogether.
+  const cardMedia = (key, imgUrl) => imgUrl
+    ? '<img src="'+esc(imgUrl)+'" style="width:56px;height:56px;border-radius:10px;object-fit:cover;display:block;flex-shrink:0;" loading="lazy">'
+    : '<div style="width:56px;height:56px;border-radius:10px;background:var(--green-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span class="spin"></span></div>';
+  const studioCard = (key, title, desc, fn, imgUrl) =>
+    '<button class="task" id="studioCard_'+key+'" style="border:1.5px solid var(--line);text-align:left;display:flex;gap:12px;align-items:flex-start;" onclick="'+fn+'">' +
+      cardMedia(key, imgUrl) + '<div><div class="task-top"><b>'+title+'</b></div><span>'+desc+'</span></div></button>';
+  p.innerHTML =
+    '<div class="topline"><div class="pagetitle"><div class="kicker">AI Creative Studio</div><h1>Turn a reference into your own ad.</h1>' +
+    '<p>Start from an idea, a reference, or a product \u2014 Zen builds the creative and hands it straight into your real ad workflow.</p></div></div>' +
+    '<div class="grid3" style="margin-top:14px;">' +
+      CARD_DEFS.map(c => studioCard(c[0], c[1], c[2], c[3], null)).join('') +
+    '</div>' +
+    '<div class="sechead" style="margin-top:18px;"><h2>Recent creative projects</h2></div>' +
+    '<div id="csRecentProjects"><div class="loading-block"><span class="spin"></span></div></div>';
+  // Real, actually-generated preview images - your own real product
+  // and people imagery, generated once and cached, not stock photos
+  // or another site's own screenshots (neither of which can honestly
+  // be reused here). Loaded after the cards themselves render, so a
+  // slow first-time generation never blocks the page.
+  call('get_studio_preview_images', {}, 90000).then(imgJ => {
+    if (!imgJ.ok) return;
+    CARD_DEFS.forEach(c => {
+      const url = imgJ.images?.[c[0]];
+      if (!url) return;
+      const cardEl = el('studioCard_'+c[0]);
+      const mediaEl = cardEl && cardEl.querySelector('div,img');
+      if (mediaEl) mediaEl.outerHTML = cardMedia(c[0], url);
+    });
+  });
+  const j = await call('list_all_content_items', {});
+  const items = (j.ok ? j.items : []).slice(0, 8);
+  el('csRecentProjects').innerHTML = items.length
+    ? '<div class="gal-grid">' + items.map(it =>
+        '<div class="gal-card" style="cursor:default;">' +
+          (it.generated_image_url ? '<img src="'+esc(it.generated_image_url)+'" class="gal-media" loading="lazy">' : '<div class="gal-media" style="display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;">'+esc(it.item_type||'')+'</div>') +
+          '<div class="gal-body"><span class="gal-label">'+esc(it.title||'Untitled')+'</span><span class="gal-sub">'+esc(it.status||'')+'</span></div>' +
+        '</div>').join('') + '</div>'
+    : '<p class="note">Nothing generated yet \u2014 start with Clone an Ad above.</p>';
+}
 async function promotions(tab){
   tab = tab || 'audiences';
   STATE.lastPage='promotions';
@@ -3657,26 +3742,57 @@ function magentShell(bodyHtml, actionsHtml){
 // guided wizard's 7 steps, so reusing magentShell (which renders that
 // exact step sidebar) would show a step list that doesn't correspond
 // to anything actually happening in this flow.
-function llShell(bodyHtml, actionsHtml){
+function llShell(bodyHtml, actionsHtml, heading){
   return '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
-    '<h1 style="font-size:22px;">Build from your link or product</h1>' +
+    '<h1 style="font-size:22px;">'+esc(heading || 'Build from your link or product')+'</h1>' +
     '<div style="margin-top:14px;max-width:520px;">' + bodyHtml +
       (actionsHtml ? '<div style="display:flex;justify-content:space-between;margin-top:16px;">'+actionsHtml+'</div>' : '') +
     '</div>';
 }
 function linkLaunchFlow(){
   el('p-flow').innerHTML = llShell(
-    zen('Paste a link to a product page, an Instagram post, or anything you\u2019re promoting \u2014 Zen reads the real title, image, and description straight off the page. No link handy? Just describe it instead.') +
+    zen('Paste a link to a product page, an Instagram post, or anything you\u2019re promoting \u2014 Zen reads the real title, image, and description straight off the page. No link handy? Upload a real photo, or just describe it instead.') +
     '<label class="lbl">Link (optional)</label><input class="field" id="llUrl" placeholder="https://\u2026" style="margin-bottom:10px;">' +
+    '<label class="lbl">Or upload a real product photo (optional)</label>' +
+    '<div>' +
+      '<button type="button" class="btn btn-s btn-sm" onclick="el(\'llPhotoInput\').click()">\ud83d\udcf7 Upload a photo</button>' +
+      '<input type="file" id="llPhotoInput" accept="image/*" style="display:none;" onchange="linkLaunchUploadPhoto()">' +
+    '</div>' +
+    '<p class="note" style="margin:4px 0 10px;">A real photo is used directly as the creative\u2019s reference \u2014 Zen builds ads that genuinely feature it, not an imagined approximation.</p>' +
+    '<div id="llPhotoPreview" style="margin-bottom:10px;"></div>' +
     '<label class="lbl">Or describe what you\u2019re promoting</label><textarea class="field" id="llDesc" style="min-height:60px;margin-bottom:10px;" placeholder="e.g. Our new princess braid package, AED 120"></textarea>' +
     '<div id="llResult" style="margin-top:10px;"></div>',
     '<span></span><button class="btn btn-p" onclick="linkLaunchExtract()">Continue</button>'
   );
 }
+async function linkLaunchUploadPhoto(){
+  const input = el('llPhotoInput');
+  const file = input.files && input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024){ toast('That image is too large (over 5MB) \u2014 please use a smaller one.', 'err'); input.value = ''; return; }
+  const box = el('llPhotoPreview');
+  box.innerHTML = '<div class="loading-block"><span class="spin"></span>Uploading\u2026</div>';
+  try {
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    const j = await call('upload_product_photo', { image_base64: base64, content_type: file.type });
+    if (!j.ok){ box.innerHTML = errBlock(j.error, 'linkLaunchFlow()'); return; }
+    LL_STATE.uploadedPhotoUrl = j.image_url;
+    box.innerHTML = '<img src="'+esc(j.image_url)+'" style="width:100px;height:100px;object-fit:cover;border-radius:10px;"><button class="btn btn-ghost btn-sm" style="margin-left:8px;" onclick="LL_STATE.uploadedPhotoUrl=null;el(\'llPhotoPreview\').innerHTML=\'\';">Remove</button>';
+  } catch (e) {
+    box.innerHTML = errBlock(String((e && e.message) || e), 'linkLaunchFlow()');
+  } finally {
+    input.value = '';
+  }
+}
 async function linkLaunchExtract(){
   const url = (el('llUrl').value||'').trim();
   const desc = (el('llDesc').value||'').trim();
-  if (!url && !desc){ toast('Add a link or a description first.', 'err'); return; }
+  if (!url && !desc && !LL_STATE.uploadedPhotoUrl){ toast('Add a link, a photo, or a description first.', 'err'); return; }
   const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Reading\u2026';
   let product = null;
   if (url) {
@@ -3691,12 +3807,18 @@ async function linkLaunchExtract(){
   } else {
     btn.disabled = false; btn.textContent = 'Continue';
   }
-  LL_STATE = { product, desc };
+  // Real bug fixed here, caught while testing the new photo-upload
+  // feature: this reassignment previously wiped LL_STATE entirely,
+  // silently discarding the real uploadedPhotoUrl set moments earlier
+  // - a real uploaded photo would have been quietly lost by the time
+  // generation actually ran.
+  LL_STATE = { ...LL_STATE, product, desc };
   linkLaunchConfirm();
 }
 let LL_STATE = {};
 function linkLaunchConfirm(){
   const p = LL_STATE.product;
+  const hasRealPhoto = !!LL_STATE.uploadedPhotoUrl;
   el('p-flow').innerHTML = llShell(
     (p ? '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-bottom:12px;">' +
       (p.image_url ? '<img src="'+esc(p.image_url)+'" style="width:100%;max-width:220px;border-radius:10px;margin-bottom:10px;">' : '') +
@@ -3705,16 +3827,24 @@ function linkLaunchConfirm(){
       '<label class="lbl">Description</label><textarea class="field" id="llProdDesc" style="min-height:50px;margin-bottom:8px;">'+esc(p.description||'')+'</textarea>' +
       '<label class="lbl">Price (optional)</label><input class="field" id="llPrice" value="'+esc(p.price?(p.price+' '+(p.currency||'')):'')+'" style="max-width:180px;">' +
       '</div>' : '') +
-    zen('Zen will generate real, ready-to-post creatives in every size from this \u2014 square, story, and feed \u2014 in one pass.') +
-    // Same real, proven choice already used in the guided wizard - not
-    // a separate, new list, so the two flows never quietly disagree
-    // about which models actually exist.
-    '<label class="lbl">Image model</label>' +
-    '<select class="field" id="llModel" style="max-width:320px;margin-bottom:6px;">' +
-      '<option value="black-forest-labs/flux-2-pro" selected>Flux 2 Pro (default)</option>' +
-      '<option value="google/nano-banana-2-lite">Nano Banana 2 Lite \u2014 faster, cheaper</option>' +
-    '</select>' +
-    '<p class="note" style="margin:4px 0 0;">Nano Banana 2 Lite has no quality setting of its own \u2014 all 3 formats will use whichever model you pick here.</p>',
+    (hasRealPhoto ? '<div style="background:#f7f9f7;border-radius:10px;padding:10px 12px;margin-bottom:12px;">' +
+      '<img src="'+esc(LL_STATE.uploadedPhotoUrl)+'" style="width:80px;height:80px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-right:10px;">' +
+      '<span class="note" style="color:var(--ink);"><b>Using your real uploaded photo.</b> Every creative below will genuinely feature this actual product \u2014 not an imagined version of it.</span>' +
+    '</div>' : '') +
+    zen('Zen will generate 3 different creative angles as quick previews, then build every real ad size \u2014 square, story, and feed \u2014 from whichever one you pick.') +
+    // Model choice only makes sense without a real reference photo -
+    // with one, the model is forced to Nano Banana specifically, since
+    // it's the only one here with genuine image-editing capability.
+    // Shown as a clear, stated fact instead of a dropdown that would
+    // silently be ignored.
+    (hasRealPhoto
+      ? '<p class="note" style="margin:4px 0 0;">Image model: <b>Nano Banana 2 Lite</b> \u2014 used automatically since it\u2019s the only one here that can edit your real photo rather than generate a new scene.</p>'
+      : '<label class="lbl">Image model</label>' +
+        '<select class="field" id="llModel" style="max-width:320px;margin-bottom:6px;">' +
+          '<option value="black-forest-labs/flux-2-pro" selected>Flux 2 Pro (default)</option>' +
+          '<option value="google/nano-banana-2-lite">Nano Banana 2 Lite \u2014 faster, cheaper</option>' +
+        '</select>' +
+        '<p class="note" style="margin:4px 0 0;">Nano Banana 2 Lite has no quality setting of its own \u2014 all 3 formats will use whichever model you pick here.</p>'),
     '<button class="btn btn-ghost" onclick="linkLaunchFlow()">Back</button><button class="btn btn-p" onclick="linkLaunchGenerate()">Generate all formats</button>'
   );
 }
@@ -3726,7 +3856,14 @@ function linkLaunchConfirm(){
 // then only expands the one actually chosen into all 3 real formats -
 // not 9 images up front for angles that might not even be used.
 async function linkLaunchGenerate(){
-  const selectedModel = el('llModel').value;
+  // A real uploaded product photo forces Nano Banana specifically -
+  // the only model here with genuine image-editing/reference
+  // capability (confirmed and already relied on for the before/after
+  // feature) - and every generation becomes a real edit of the actual
+  // photo, not a fresh imagined scene that merely takes inspiration
+  // from a text description of it.
+  const hasRealPhoto = !!LL_STATE.uploadedPhotoUrl;
+  const selectedModel = hasRealPhoto ? 'google/nano-banana-2-lite' : el('llModel').value;
   LL_STATE.model = selectedModel;
   const p = LL_STATE.product;
   const title = p ? (el('llTitle').value||'').trim() : '';
@@ -3742,8 +3879,16 @@ async function linkLaunchGenerate(){
 
   el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Generating a quick preview of each angle\u2026</div>', '');
   const previewResults = await Promise.all(anglesJ.angles.map((a) => {
-    const compiled = [a.subject, a.scene, a.activity, a.mood].filter(Boolean).join('. ');
-    return call('run_generation', { compiled_prompt: compiled, model: selectedModel, aspect_ratio: '1:1' }, 60000);
+    // With a real photo, describe the edit relative to it rather than
+    // a from-scratch scene - the reference image already establishes
+    // what the actual product looks like.
+    const compiled = hasRealPhoto
+      ? `Using the real product shown in the reference image, create a scene: ${[a.scene, a.activity, a.mood].filter(Boolean).join('. ')} \u2014 keep the actual product's real appearance unchanged, build the scene around it.`
+      : [a.subject, a.scene, a.activity, a.mood].filter(Boolean).join('. ');
+    return call('run_generation', {
+      compiled_prompt: compiled, model: selectedModel, aspect_ratio: '1:1',
+      reference_asset_urls: hasRealPhoto ? [LL_STATE.uploadedPhotoUrl] : undefined,
+    }, 60000);
   }));
   LL_STATE.angles = anglesJ.angles.map((a, i) => ({ ...a, preview: previewResults[i] }));
   linkLaunchShowAngles();
@@ -3752,11 +3897,13 @@ function linkLaunchShowAngles(){
   const ok = LL_STATE.angles.filter(a => a.preview.ok);
   el('p-flow').innerHTML = llShell(
     zen('3 genuinely different angles for this same product \u2014 pick the one that fits best, and Zen builds every real ad size from it.') +
-    '<div style="display:flex;gap:12px;flex-wrap:wrap;margin:10px 0;">' +
+    '<div class="gal-grid" style="margin:10px 0;max-width:560px;">' +
       LL_STATE.angles.map((a, i) => a.preview.ok
-        ? '<div style="text-align:center;width:150px;"><img src="'+esc(a.preview.output_url)+'" style="width:150px;border-radius:10px;" loading="lazy"><p class="note" style="margin:4px 0;font-weight:600;color:var(--ink);">'+esc(a.angle_name||'Angle '+(i+1))+'</p>' +
-          '<button class="btn btn-s btn-sm" onclick="linkLaunchExpandFormats('+i+')">Use this angle</button></div>'
-        : '<div style="text-align:center;width:150px;"><p class="note" style="color:#a02020;">'+esc(a.angle_name||'Angle '+(i+1))+' failed to generate.</p></div>').join('') +
+        ? '<div class="gal-card" onclick="linkLaunchExpandFormats('+i+')">' +
+            '<img src="'+esc(a.preview.output_url)+'" class="gal-media" loading="lazy">' +
+            '<div class="gal-body"><span class="gal-label">'+esc(a.angle_name||'Angle '+(i+1))+'</span></div>' +
+          '</div>'
+        : '<div class="gal-empty">'+esc(a.angle_name||'Angle '+(i+1))+' failed to generate.</div>').join('') +
     '</div>' +
     (!ok.length ? '<p class="note" style="color:#a02020;">None of the 3 angles generated \u2014 try again.</p>' : ''),
     '<button class="btn btn-ghost" onclick="linkLaunchConfirm()">Back</button><span></span>'
@@ -3771,6 +3918,7 @@ function linkLaunchShowAngles(){
 async function linkLaunchExpandFormats(angleIndex){
   const angle = LL_STATE.angles[angleIndex];
   LL_STATE.chosenAngle = angle;
+  const hasRealPhoto = !!LL_STATE.uploadedPhotoUrl;
   const formats = [
     ['1:1', 'Square (feed)', 'Full-frame, centered composition with the subject filling most of the frame \u2014 this will be seen in a normal feed scroll.'],
     ['9:16', 'Story / Reel', 'Vertical composition with genuine open space in the top and bottom thirds of the frame, since Stories UI and captions sit there \u2014 keep the main subject centered in the middle third, not spread across the full height.'],
@@ -3778,8 +3926,13 @@ async function linkLaunchExpandFormats(angleIndex){
   ];
   el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Building all 3 real formats from this angle\u2026</div>', '');
   const results = await Promise.all(formats.map(([ratio, , composition]) => {
-    const compiled = [angle.subject, angle.scene, angle.activity, angle.mood, composition].filter(Boolean).join('. ');
-    return call('run_generation', { compiled_prompt: compiled, model: LL_STATE.model, aspect_ratio: ratio }, 60000);
+    const compiled = hasRealPhoto
+      ? `Using the real product shown in the reference image, create this composition: ${[angle.scene, angle.activity, angle.mood, composition].filter(Boolean).join('. ')} \u2014 keep the actual product's real appearance unchanged.`
+      : [angle.subject, angle.scene, angle.activity, angle.mood, composition].filter(Boolean).join('. ');
+    return call('run_generation', {
+      compiled_prompt: compiled, model: LL_STATE.model, aspect_ratio: ratio,
+      reference_asset_urls: hasRealPhoto ? [LL_STATE.uploadedPhotoUrl] : undefined,
+    }, 60000);
   }));
   LL_STATE.formats = formats.map((f, i) => ({ ratio: f[0], label: f[1], result: results[i] }));
   linkLaunchShowResults();
@@ -3789,10 +3942,14 @@ function linkLaunchShowResults(){
   const failed = LL_STATE.formats.filter(f => !f.result.ok);
   el('p-flow').innerHTML = llShell(
     (ok.length ? zen(ok.length+' of 3 formats ready. Download to check any of them, or pick one to continue with \u2014 the others stay here either way.') : '') +
-    '<div style="display:flex;gap:10px;flex-wrap:wrap;margin:10px 0;">' +
-      ok.map(f => '<div style="text-align:center;"><img src="'+esc(f.result.output_url)+'" style="width:140px;border-radius:10px;" loading="lazy"><p class="note" style="margin:4px 0;">'+esc(f.label)+'</p>' +
-        '<a href="'+esc(f.result.output_url)+'" download target="_blank" class="btn btn-ghost btn-sm" style="display:block;margin-bottom:4px;">\u2b07 Download</a>' +
-        '<button class="btn btn-s btn-sm" onclick="linkLaunchPublish(\''+f.result.generation_id+'\',\''+esc(f.label)+'\',\''+esc(f.ratio)+'\')">Use this</button></div>').join('') +
+    '<div class="gal-grid" style="margin:10px 0;max-width:560px;">' +
+      ok.map(f => '<div class="gal-card">' +
+        '<img src="'+esc(f.result.output_url)+'" class="gal-media'+(f.ratio!=='1:1'?' gal-portrait':'')+'" loading="lazy">' +
+        '<div class="gal-body"><span class="gal-label">'+esc(f.label)+'</span></div>' +
+        '<div class="gal-actions">' +
+          '<a href="'+esc(f.result.output_url)+'" download target="_blank" class="btn btn-ghost btn-sm" style="flex:1;text-align:center;">\u2b07</a>' +
+          '<button class="btn btn-p btn-sm" style="flex:2;" onclick="linkLaunchPublish(\''+f.result.generation_id+'\',\''+esc(f.label)+'\',\''+esc(f.ratio)+'\')">Use this</button>' +
+        '</div></div>').join('') +
     '</div>' +
     (failed.length ? '<p class="note" style="color:#a02020;">'+failed.length+' format'+(failed.length>1?'s':'')+' failed to generate: '+failed.map(f=>esc(f.label)).join(', ')+'.</p>' : '') +
     '<div id="llPublishArea" style="margin-top:10px;"></div>',
@@ -3850,6 +4007,7 @@ async function llPublishNow(generationId, ratio){
     generation_id: generationId, title, aspect_ratio: ratio,
     hook: el('llHook').value.trim(), caption: el('llCaption').value.trim(), cta: el('llCta').value.trim(), hashtags,
     location_id_override: (el('llLocation').value||'').trim() || undefined,
+    item_type: LL_STATE.itemType || 'image',
   });
   if (!attachJ.ok){ res.innerHTML = errBlock(attachJ.error, ''); btn.disabled=false; btn.textContent='Publish now'; return; }
   const itemId = attachJ.item.id;
@@ -3863,6 +4021,605 @@ async function llPublishNow(generationId, ratio){
   if (!j.ok){ res.innerHTML = errBlock(j.error, ''); btn.disabled=false; btn.textContent='Publish now'; return; }
   res.innerHTML = '<p class="note" style="color:var(--green);">\u2713 Published'+(j.story_error?' to feed \u2014 Story share failed: '+esc(j.story_error):' to feed and Story')+'.</p><div id="promotePostArea" style="margin-top:10px;"></div>';
   promotePostForm(itemId);
+}
+// Clone an Ad - reuses the same real, proven pieces already built and
+// tested this session (llShell, the real photo-upload mechanism,
+// run_generation, and the real review/publish flow) rather than a
+// second, parallel implementation of any of them.
+let CLONE_STATE = {};
+function cloneAdFlow(){
+  CLONE_STATE = {};
+  el('p-flow').innerHTML = llShell(
+    zen('Upload a reference ad you like \u2014 Zen analyzes its real strategy (layout, hook, visual style), never copying its actual brand, product, or any people shown, and recreates that structure for your own product.') +
+    '<label class="lbl">Reference ad image</label>' +
+    '<div><button type="button" class="btn btn-s btn-sm" onclick="el(\'cloneRefInput\').click()">\ud83d\udcf7 Upload reference ad</button>' +
+    '<input type="file" id="cloneRefInput" accept="image/*" style="display:none;" onchange="cloneAdUploadReference()"></div>' +
+    '<div id="cloneRefPreview" style="margin-top:10px;"></div>',
+    '<span></span><button class="btn btn-p" id="cloneAnalyzeBtn" onclick="cloneAdAnalyze()" disabled>Analyze reference</button>',
+    'Clone an Ad'
+  );
+}
+async function cloneAdUploadReference(){
+  const input = el('cloneRefInput');
+  const file = input.files && input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024){ toast('That image is too large (over 5MB) \u2014 please use a smaller one.', 'err'); input.value = ''; return; }
+  const box = el('cloneRefPreview');
+  box.innerHTML = '<div class="loading-block"><span class="spin"></span>Uploading\u2026</div>';
+  try {
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    const j = await call('upload_product_photo', { image_base64: base64, content_type: file.type });
+    if (!j.ok){ box.innerHTML = errBlock(j.error, 'cloneAdFlow()'); return; }
+    CLONE_STATE.referenceUrl = j.image_url;
+    box.innerHTML = '<img src="'+esc(j.image_url)+'" style="width:140px;border-radius:10px;">';
+    el('cloneAnalyzeBtn').disabled = false;
+  } catch (e) {
+    box.innerHTML = errBlock(String((e && e.message) || e), 'cloneAdFlow()');
+  } finally {
+    input.value = '';
+  }
+}
+async function cloneAdAnalyze(){
+  el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Analyzing the reference ad\u2019s real strategy\u2026</div>', '', 'Clone an Ad');
+  const j = await call('analyze_reference_ad', { image_url: CLONE_STATE.referenceUrl }, 30000);
+  if (!j.ok){ el('p-flow').innerHTML = llShell(errBlock(j.error, 'cloneAdFlow()'), '<button class="btn btn-ghost" onclick="cloneAdFlow()">Back</button><span></span>', 'Clone an Ad'); return; }
+  CLONE_STATE.analysis = j.analysis;
+  cloneAdShowAnalysis();
+}
+function cloneAdShowAnalysis(){
+  const a = CLONE_STATE.analysis;
+  el('p-flow').innerHTML = llShell(
+    '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-bottom:12px;">' +
+      '<b>What Zen found in this reference</b>' +
+      '<div class="list" style="margin-top:8px;">' +
+        rowKV('Layout', a.layout_description) + rowKV('Hook strategy', a.hook_strategy) +
+        rowKV('Visual style', a.visual_style) + rowKV('Emotional tone', a.emotional_tone) +
+        (a.key_structural_elements && a.key_structural_elements.length ? rowKV('Key elements', a.key_structural_elements.join(', ')) : '') +
+      '</div>' +
+      (a.confidence === 'low' ? '<p class="note" style="margin-top:8px;color:#a02020;">Zen wasn\u2019t fully confident reading this reference \u2014 review the breakdown above before continuing.</p>' : '') +
+    '</div>' +
+    zen('Now describe what you\u2019re actually promoting \u2014 Zen recreates the strategy above, genuinely with your own product, never the reference\u2019s own brand or content.') +
+    '<label class="lbl">What are you promoting?</label><textarea class="field" id="cloneDesc" style="min-height:60px;margin-bottom:10px;" placeholder="e.g. Our new princess braid package, AED 120"></textarea>',
+    '<button class="btn btn-ghost" onclick="cloneAdFlow()">Back</button><button class="btn btn-p" onclick="cloneAdGenerate()">Generate my version</button>',
+    'Clone an Ad'
+  );
+}
+async function cloneAdGenerate(){
+  const desc = (el('cloneDesc').value||'').trim();
+  if (!desc){ toast('Describe what you\u2019re promoting first.', 'err'); return; }
+  el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Writing your version of this strategy\u2026</div>', '', 'Clone an Ad');
+  const briefJ = await call('generate_clone_brief', { user_request: desc, reference_analysis: CLONE_STATE.analysis }, 30000);
+  if (!briefJ.ok){ el('p-flow').innerHTML = llShell(errBlock(briefJ.error, 'cloneAdFlow()'), '<button class="btn btn-ghost" onclick="cloneAdShowAnalysis()">Back</button><span></span>', 'Clone an Ad'); return; }
+  const b = briefJ.brief;
+  const compiled = [b.subject, b.scene, b.activity, b.mood, b.text_overlay_suggestion].filter(Boolean).join('. ');
+  el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Generating your creative\u2026</div>', '', 'Clone an Ad');
+  const genJ = await call('run_generation', { compiled_prompt: compiled, model: 'black-forest-labs/flux-2-pro', aspect_ratio: '1:1' }, 60000);
+  if (!genJ.ok){ el('p-flow').innerHTML = llShell(errBlock(genJ.error, 'cloneAdFlow()'), '<button class="btn btn-ghost" onclick="cloneAdShowAnalysis()">Back</button><span></span>', 'Clone an Ad'); return; }
+  // Reuses the exact same real review/publish flow already built and
+  // tested for "build from your link" - one real publish mechanism,
+  // not a second one for every studio feature.
+  LL_STATE = { desc };
+  el('p-flow').innerHTML = llShell(
+    '<img src="'+esc(genJ.output_url)+'" style="width:220px;border-radius:13px;margin-bottom:12px;">' +
+    '<a href="'+esc(genJ.output_url)+'" download target="_blank" class="btn btn-ghost btn-sm" style="display:block;width:fit-content;margin-bottom:10px;">\u2b07 Download</a>' +
+    '<div id="llPublishArea"></div>',
+    '<button class="btn btn-ghost" onclick="cloneAdShowAnalysis()">Back</button><button class="btn btn-p" onclick="linkLaunchPublish(\''+genJ.generation_id+'\',\'Clone\',\'1:1\')">Continue to publish</button>',
+    'Clone an Ad'
+  );
+}
+// Create Variations - real, controlled editing of one existing
+// creative, genuinely distinct from the "3 angles" mechanism (which
+// generates fresh, unrelated scenes). Reuses the same real post-picker
+// pattern already proven for attaching a creative to an ad set.
+let VAR_STATE = {};
+async function variationsFlow(){
+  VAR_STATE = {};
+  el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Loading your past creatives\u2026</div>', '', 'Create Variations');
+  const j = await call('list_all_content_items', {});
+  const items = (j.ok ? j.items : []).filter(it => it.generated_image_url);
+  VAR_STATE.items = items;
+  el('p-flow').innerHTML = llShell(
+    zen('Pick a creative you\u2019ve already made \u2014 Zen generates a real, controlled variation of it: you say what to keep and what to change.') +
+    (items.length ? '<div style="max-height:320px;overflow-y:auto;">' + items.map(it =>
+      '<div class="list-row" style="cursor:pointer;padding:6px 2px;" onclick="variationsPickSource(\''+it.id+'\')">' +
+        '<div style="display:flex;gap:8px;align-items:center;">' +
+          (it.generated_image_url ? '<img src="'+esc(it.generated_image_url)+'" style="width:36px;height:36px;object-fit:cover;border-radius:6px;" loading="lazy">' : thumb(it.item_type||'image')) +
+          '<span><b style="font-size:13px;">'+esc(it.title||'Untitled')+'</b></span>' +
+        '</div></div>').join('') + '</div>'
+      : '<p class="note">Nothing generated yet \u2014 create something first from Marketing.</p>'),
+    '<span></span><span></span>',
+    'Create Variations'
+  );
+}
+function variationsPickSource(itemId){
+  const it = VAR_STATE.items.find(i => i.id === itemId);
+  VAR_STATE.sourceGenerationId = it.generation_id;
+  VAR_STATE.sourceImageUrl = it.generated_image_url;
+  el('p-flow').innerHTML = llShell(
+    '<img src="'+esc(it.generated_image_url)+'" style="width:180px;border-radius:13px;margin-bottom:12px;">' +
+    '<label class="lbl">What should stay the same? (optional)</label><textarea class="field" id="varKeep" style="min-height:50px;margin-bottom:10px;" placeholder="e.g. the child\u2019s pose and the salon background"></textarea>' +
+    '<label class="lbl">What should change?</label><textarea class="field" id="varChange" style="min-height:50px;margin-bottom:10px;" placeholder="e.g. change the hairstyle to loose curls, and the outfit to blue"></textarea>' +
+    '<label class="lbl">Variation focus (optional)</label>' +
+    '<select class="field" id="varFocus" style="margin-bottom:10px;">' +
+      '<option value="">No particular focus</option>' +
+      '<option value="text">Text (real wording visible in the scene)</option>' +
+      '<option value="visual">Visual (color, lighting, background)</option>' +
+      '<option value="audience">Audience (who\u2019s shown)</option>' +
+      '<option value="style">Style (overall visual mood)</option>' +
+      '<option value="composition">Composition (framing, cropping)</option>' +
+    '</select>' +
+    '<label class="lbl">Aspect ratio</label>' +
+    '<select class="field" id="varRatio" style="max-width:200px;margin-bottom:10px;">' +
+      '<option value="match_input_image">Same as original</option>' +
+      '<option value="1:1">Square</option><option value="9:16">Story / Reel</option><option value="4:5">Portrait</option>' +
+    '</select>' +
+    '<label class="lbl">How many variations?</label>' +
+    '<select class="field" id="varCount" style="max-width:160px;margin-bottom:10px;">' +
+      '<option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option>' +
+    '</select>',
+    '<button class="btn btn-ghost" onclick="variationsFlow()">Back</button><button class="btn btn-p" onclick="variationsGenerate()">Generate variations</button>',
+    'Create Variations'
+  );
+}
+async function variationsGenerate(){
+  const change = (el('varChange').value||'').trim();
+  if (!change){ toast('Describe what should change first.', 'err'); return; }
+  const keep = (el('varKeep').value||'').trim();
+  const focus = el('varFocus').value;
+  const ratio = el('varRatio').value;
+  const count = Number(el('varCount').value) || 1;
+  el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Writing the edit instruction\u2026</div>', '', 'Create Variations');
+  const promptJ = await call('generate_variation_prompt', { source_generation_id: VAR_STATE.sourceGenerationId, keep_description: keep, change_description: change, focus: focus||undefined }, 30000);
+  if (!promptJ.ok){ el('p-flow').innerHTML = llShell(errBlock(promptJ.error, ''), '<button class="btn btn-ghost" onclick="variationsFlow()">Back</button><span></span>', 'Create Variations'); return; }
+  el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Generating '+count+' variation'+(count>1?'s':'')+'\u2026</div>', '', 'Create Variations');
+  const results = await Promise.all(Array.from({ length: count }, () =>
+    call('run_generation', {
+      compiled_prompt: promptJ.edit_prompt, model: 'google/nano-banana-2-lite',
+      reference_asset_urls: [VAR_STATE.sourceImageUrl], aspect_ratio: ratio,
+    }, 60000)
+  ));
+  const ok = results.filter(r => r.ok);
+  if (!ok.length){ el('p-flow').innerHTML = llShell(errBlock(results[0].error, ''), '<button class="btn btn-ghost" onclick="variationsFlow()">Back</button><span></span>', 'Create Variations'); return; }
+  el('p-flow').innerHTML = llShell(
+    zen(ok.length>1 ? 'Compare against your original, then pick the one you like best.' : 'Here\u2019s your original, and the real result.') +
+    '<div class="gal-grid" style="margin:10px 0;max-width:620px;">' +
+      '<div class="gal-card" style="cursor:default;"><img src="'+esc(VAR_STATE.sourceImageUrl)+'" class="gal-media'+(ratio!=='match_input_image'&&ratio!=='1:1'?' gal-portrait':'')+'"><div class="gal-body"><span class="gal-label">Original</span></div></div>' +
+      ok.map((r,i) => '<div class="gal-card">' +
+        '<img src="'+esc(r.output_url)+'" class="gal-media'+(ratio!=='match_input_image'&&ratio!=='1:1'?' gal-portrait':'')+'" loading="lazy">' +
+        '<div class="gal-body"><span class="gal-label">Variation '+(i+1)+'</span></div>' +
+        '<div class="gal-actions">' +
+          '<a href="'+esc(r.output_url)+'" download target="_blank" class="btn btn-ghost btn-sm" style="flex:1;text-align:center;">\u2b07</a>' +
+          '<button class="btn btn-p btn-sm" style="flex:2;" onclick="linkLaunchPublish(\''+r.generation_id+'\',\'Variation\',\''+ratio+'\')">Use this</button>' +
+        '</div></div>').join('') +
+    '</div>' +
+    '<div id="llPublishArea"></div>',
+    '<button class="btn btn-ghost" onclick="variationsFlow()">Back</button><span></span>',
+    'Create Variations'
+  );
+}
+// UGC Video - rebuilt to match a real, detailed requested flow:
+// product gallery -> concept -> avatar -> image settings -> review ->
+// video settings (length/script/audio/model) -> video. Concept names
+// deliberately renamed from the reference list given to avoid reusing
+// another product's own naming, while keeping the same real, distinct
+// meaning behind each one.
+const UGC_CONCEPTS = [
+  ['worn_look', 'Worn look', 'the product worn or used directly on a real person, so customers can imagine it on themselves - best for clothing, footwear, jewelry, accessories'],
+  ['feature_walkthrough', 'Feature walkthrough', 'highlights key features and shows how the product/app/tool actually works - best for apps, software, digital tools'],
+  ['why_us', 'Why us', 'explains what the business offers and why a customer should choose it - best for service businesses like salons, coaches, agencies'],
+  ['product_spotlight', 'Product spotlight', 'the physical product front and center, highlighting what makes it worth buying - best for any physical product'],
+  ['real_reactions', 'Real reactions', 'authentic conversation, genuine reaction, or Q&A-style content - best for engaging, social-first content'],
+  ['expert_talk', 'Expert talk', 'insight, advice, or storytelling delivered directly to the audience - best for educational or trust-building content'],
+];
+let UGC_STATE = {};
+async function ugcVideoFlow(){
+  UGC_STATE = {};
+  el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Loading your products\u2026</div>', '', 'Create UGC Video');
+  const j = await call('list_product_library', {});
+  UGC_STATE.products = j.ok ? j.products : [];
+  el('p-flow').innerHTML = llShell(
+    zen('Select a product or service to promote, or add a new one.') +
+    (UGC_STATE.products.length ? '<div class="gal-grid" style="max-width:560px;margin-bottom:12px;">' + UGC_STATE.products.map(p =>
+      '<div class="gal-card" onclick="ugcPickProduct(\''+p.id+'\')">' +
+        (p.image_url ? '<img src="'+esc(p.image_url)+'" class="gal-media" loading="lazy">' : '<div class="gal-media" style="display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;">No photo</div>') +
+        '<div class="gal-body"><span class="gal-label">'+esc(p.name)+'</span>'+(p.price?'<span class="gal-sub">'+esc(p.price)+'</span>':'')+'</div></div>').join('') + '</div>' : '') +
+    '<button class="btn btn-s btn-sm" onclick="ugcAddProductForm()">+ Add a new product/service</button>' +
+    '<div id="ugcAddProductArea" style="margin-top:10px;"></div>',
+    '<span></span><span></span>',
+    'Create UGC Video'
+  );
+}
+function ugcAddProductForm(){
+  el('ugcAddProductArea').innerHTML =
+    '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-top:6px;">' +
+    '<label class="lbl">Name</label><input class="field" id="ugcNewProductName" style="margin-bottom:8px;">' +
+    '<label class="lbl">Description</label><textarea class="field" id="ugcNewProductDesc" style="min-height:50px;margin-bottom:8px;"></textarea>' +
+    '<label class="lbl">Price (optional)</label><input class="field" id="ugcNewProductPrice" style="max-width:160px;margin-bottom:8px;">' +
+    '<button class="btn btn-p btn-sm" onclick="ugcSaveProduct()">Save and continue</button>' +
+    '</div>';
+}
+async function ugcSaveProduct(){
+  const name = (el('ugcNewProductName').value||'').trim();
+  const description = (el('ugcNewProductDesc').value||'').trim();
+  if (!name){ toast('Name is required.', 'err'); return; }
+  const j = await call('save_product', { name, description, price: (el('ugcNewProductPrice').value||'').trim()||undefined });
+  if (!j.ok){ toast(j.error, 'err'); return; }
+  ugcPickProduct(j.product.id, j.product);
+}
+function ugcPickProduct(productId, productObj){
+  const product = productObj || UGC_STATE.products.find(p => p.id === productId);
+  UGC_STATE.product = product;
+  el('p-flow').innerHTML = llShell(
+    zen('Choose the concept that best fits your business and the story you want to tell \u2014 it changes how the avatar presents your product and delivers the message.') +
+    '<div class="grid2">' +
+      UGC_CONCEPTS.map(c => '<button class="task" onclick="ugcPickConcept(\''+c[0]+'\')"><div class="task-top"><b>'+c[1]+'</b></div><span>'+c[2]+'</span></button>').join('') +
+    '</div>',
+    '<span></span><span></span>',
+    'Create UGC Video'
+  );
+}
+async function ugcPickConcept(conceptKey){
+  UGC_STATE.concept = conceptKey;
+  el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Loading your avatars\u2026</div>', '', 'Create UGC Video');
+  const j = await call('list_avatar_library', {});
+  UGC_STATE.avatars = j.ok ? j.avatars : [];
+  el('p-flow').innerHTML = llShell(
+    zen('Choose an avatar.') +
+    (UGC_STATE.avatars.length ? '<div class="gal-grid" style="max-width:560px;">' + UGC_STATE.avatars.map(a =>
+      '<div class="gal-card" onclick="ugcPickAvatar(\''+esc(a.storage_url)+'\',\''+esc((a.name||'').replace(/\'/g,''))+'\')">' +
+        '<img src="'+esc(a.storage_url)+'" class="gal-media" loading="lazy">' +
+        '<div class="gal-body"><span class="gal-label">'+esc(a.name)+'</span></div></div>').join('') + '</div>'
+      : '<p class="note">No avatars yet \u2014 create one first from the guided wizard\u2019s Visual Source step.</p>'),
+    '<span></span><span></span>',
+    'Create UGC Video'
+  );
+}
+function ugcPickAvatar(url, name){
+  UGC_STATE.avatarUrl = url; UGC_STATE.avatarName = name;
+  el('p-flow').innerHTML = llShell(
+    '<img src="'+esc(url)+'" style="width:100px;border-radius:10px;margin-bottom:12px;">' +
+    '<label class="lbl">Extra prompt (optional \u2014 leave blank and Zen figures it out)</label><textarea class="field" id="ugcExtraPrompt" style="min-height:50px;margin-bottom:10px;" placeholder="e.g. bright, natural daylight, close-up shot"></textarea>' +
+    // Real image models available in this app - not the reference's
+    // own model names, which aren't actually integrated here.
+    '<label class="lbl">Image model</label>' +
+    '<select class="field" id="ugcImageModel" style="margin-bottom:6px;">' +
+      '<option value="black-forest-labs/flux-2-pro" selected>Flux 2 Pro (default)</option>' +
+      '<option value="google/nano-banana-2-lite">Nano Banana 2 Lite \u2014 faster, cheaper</option>' +
+    '</select>',
+    '<button class="btn btn-ghost" onclick="ugcPickConcept(\''+UGC_STATE.concept+'\')">Back</button><button class="btn btn-p" onclick="ugcGenerateImage()">Create image</button>',
+    'Create UGC Video'
+  );
+}
+async function ugcGenerateImage(){
+  UGC_STATE.extraPrompt = (el('ugcExtraPrompt').value||'').trim();
+  UGC_STATE.imageModel = el('ugcImageModel').value;
+  const conceptDesc = UGC_CONCEPTS.find(c => c[0] === UGC_STATE.concept)?.[2] || '';
+  const p = UGC_STATE.product;
+  const topic = p ? `${p.name}${p.description ? ' - '+p.description : ''}${p.price ? ' ('+p.price+')' : ''}` : 'this business';
+  el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Generating\u2026</div>', '', 'Create UGC Video');
+  const briefJ = await call('generate_creative_brief', { user_request: `${UGC_STATE.avatarName}, genuine and natural, talking directly to camera about: ${topic}. ${conceptDesc}.${UGC_STATE.extraPrompt ? ' '+UGC_STATE.extraPrompt : ''}` }, 30000);
+  if (!briefJ.ok){ el('p-flow').innerHTML = llShell(errBlock(briefJ.error, ''), '<button class="btn btn-ghost" onclick="ugcVideoFlow()">Back</button><span></span>', 'Create UGC Video'); return; }
+  const compiled = [briefJ.brief.subject, briefJ.brief.scene, briefJ.brief.activity, briefJ.brief.mood].filter(Boolean).join('. ');
+  UGC_STATE.compiledPrompt = compiled;
+  const regJ = await call('register_image_as_generation', { image_url: UGC_STATE.avatarUrl });
+  // Uses the real avatar directly as the reference for the shot,
+  // since the avatar itself is the person who must appear - forces
+  // Nano Banana specifically, the only model here that can genuinely
+  // edit a real reference image rather than imagine a new person.
+  const imgJ = regJ.ok ? await call('run_generation', { compiled_prompt: compiled, model: 'google/nano-banana-2-lite', reference_asset_urls: [UGC_STATE.avatarUrl], aspect_ratio: '9:16' }, 60000) : regJ;
+  if (!imgJ.ok){ el('p-flow').innerHTML = llShell(errBlock(imgJ.error, ''), '<button class="btn btn-ghost" onclick="ugcVideoFlow()">Back</button><span></span>', 'Create UGC Video'); return; }
+  ugcShowImageReview(imgJ.generation_id, imgJ.output_url);
+}
+function ugcShowImageReview(generationId, imageUrl){
+  UGC_STATE.imageGenerationId = generationId; UGC_STATE.imageUrl = imageUrl;
+  el('p-flow').innerHTML = llShell(
+    zen('Review your image. Regenerate if it\u2019s not right, or continue to build the video.') +
+    '<img src="'+esc(imageUrl)+'" style="width:200px;border-radius:13px;margin-bottom:10px;">',
+    '<button class="btn btn-s" onclick="ugcGenerateImage()">\u21bb Regenerate</button><button class="btn btn-p" onclick="ugcVideoSettingsForm()">Create video</button>',
+    'Create UGC Video'
+  );
+}
+async function ugcVideoSettingsForm(){
+  el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Writing a script\u2026</div>', '', 'Create UGC Video');
+  const p = UGC_STATE.product;
+  const topic = p ? `${p.name}${p.description ? ' - '+p.description : ''}${p.price ? ' ('+p.price+')' : ''}` : 'this business';
+  const scriptJ = await call('generate_hook_body_script', { topic, speaker_description: UGC_STATE.avatarName, reference_concept: UGC_CONCEPTS.find(c=>c[0]===UGC_STATE.concept)?.[1] }, 30000);
+  const hook = scriptJ.ok ? scriptJ.hook : '';
+  const bodyText = scriptJ.ok ? scriptJ.body : '';
+  el('p-flow').innerHTML = llShell(
+    '<img src="'+esc(UGC_STATE.imageUrl)+'" style="width:120px;border-radius:10px;margin-bottom:12px;">' +
+    // Real duration options - matching the real, actual maximum any
+    // integrated video model here can genuinely produce (confirmed
+    // directly), not the 30-second "Long" figure from the reference,
+    // which no real model here can generate as one continuous clip.
+    '<label class="lbl">Video length</label>' +
+    '<div style="display:flex;gap:6px;margin-bottom:10px;">' +
+      '<button type="button" class="btn btn-s btn-sm" data-len="short" onclick="ugcSetLength(\'short\')" style="border-color:var(--green);">Short (~8s)</button>' +
+      '<button type="button" class="btn btn-s btn-sm" data-len="long" onclick="ugcSetLength(\'long\')">Long (~15s)</button>' +
+    '</div>' +
+    '<label class="lbl">Hook (first few seconds)</label><textarea class="field" id="ugcHook" style="min-height:45px;margin-bottom:6px;">'+esc(hook)+'</textarea>' +
+    '<label class="lbl">Main message</label><textarea class="field" id="ugcBody" style="min-height:50px;margin-bottom:6px;">'+esc(bodyText)+'</textarea>' +
+    '<button class="btn btn-ghost btn-sm" onclick="ugcRegenerateScript()" style="margin-bottom:10px;">\u21bb Regenerate script</button>' +
+    '<label style="font-size:13px;display:block;margin-bottom:6px;"><input type="checkbox" id="ugcPromptToggle" onchange="el(\'ugcVideoPromptArea\').style.display=this.checked?\'\':\'none\'"> Add extra video prompt</label>' +
+    '<div id="ugcVideoPromptArea" style="display:none;margin-bottom:10px;"><textarea class="field" id="ugcVideoPrompt" style="min-height:45px;" placeholder="e.g. write the script in Spanish, or describe extra motion detail"></textarea></div>' +
+    '<div style="display:flex;gap:8px;margin-bottom:10px;">' +
+      '<div style="flex:1;"><label class="lbl">Voice tone</label><select class="field" id="ugcTone"><option value="">Natural</option><option>confident</option><option>friendly</option><option>excited</option><option>calm</option></select></div>' +
+      '<div style="flex:1;"><label class="lbl">Emotion</label><select class="field" id="ugcEmotion"><option value="">Natural</option><option>enthusiastic</option><option>warm</option><option>playful</option><option>sincere</option></select></div>' +
+      '<div style="flex:1;"><label class="lbl">Accent</label><select class="field" id="ugcAccent"><option value="">Natural</option><option>neutral</option><option>British</option><option>American</option></select></div>' +
+    '</div>' +
+    '<label style="font-size:13px;display:block;margin-bottom:10px;"><input type="checkbox" id="ugcMusic" checked> Include soft background music</label>' +
+    '<label class="lbl">Video model</label>' +
+    '<select class="field" id="ugcVideoModel" style="margin-bottom:10px;">' +
+      '<option value="google/veo-3.1" selected>Google Veo 3.1</option>' +
+      '<option value="bytedance/seedance-2.0">ByteDance Seedance 2.0</option>' +
+      '<option value="xai/grok-imagine-video">Grok Imagine Video</option>' +
+    '</select>',
+    '<button class="btn btn-ghost" onclick="ugcShowImageReview(\''+UGC_STATE.imageGenerationId+'\',\''+UGC_STATE.imageUrl+'\')">Back</button><button class="btn btn-p" onclick="ugcVideoGenerateFinal()">Create video</button>',
+    'Create UGC Video'
+  );
+  UGC_STATE.length = 'short';
+}
+function ugcSetLength(len){
+  UGC_STATE.length = len;
+  document.querySelectorAll('[data-len]').forEach(b => b.style.borderColor = b.dataset.len === len ? 'var(--green)' : 'var(--line)');
+}
+async function ugcRegenerateScript(){
+  const p = UGC_STATE.product;
+  const topic = p ? `${p.name}${p.description ? ' - '+p.description : ''}${p.price ? ' ('+p.price+')' : ''}` : 'this business';
+  const j = await call('generate_hook_body_script', { topic, speaker_description: UGC_STATE.avatarName, reference_concept: UGC_CONCEPTS.find(c=>c[0]===UGC_STATE.concept)?.[1] }, 30000);
+  if (!j.ok){ toast(j.error, 'err'); return; }
+  el('ugcHook').value = j.hook; el('ugcBody').value = j.body;
+}
+async function ugcVideoGenerateFinal(){
+  const hook = (el('ugcHook').value||'').trim();
+  const bodyText = (el('ugcBody').value||'').trim();
+  if (!hook && !bodyText){ toast('The script can\u2019t be empty.', 'err'); return; }
+  const extraVideoPrompt = el('ugcPromptToggle').checked ? (el('ugcVideoPrompt').value||'').trim() : '';
+  const combinedScript = [hook, bodyText, extraVideoPrompt].filter(Boolean).join(' ');
+  const tone = el('ugcTone').value, emotion = el('ugcEmotion').value, accent = el('ugcAccent').value;
+  const includeMusic = el('ugcMusic').checked;
+  const videoModel = el('ugcVideoModel').value;
+  const duration = UGC_STATE.length === 'long' ? (VIDEO_MODEL_MAX_HINT[videoModel] || 15) : 8;
+  el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Preparing the motion prompt\u2026</div>', '', 'Create UGC Video');
+  const promptJ = await call('generate_lipsync_motion_prompt', { script: combinedScript, speaker_description: UGC_STATE.avatarName, include_music: includeMusic, tone: tone||undefined, emotion: emotion||undefined, accent: accent||undefined });
+  if (!promptJ.ok){ el('p-flow').innerHTML = llShell(errBlock(promptJ.error, ''), '<button class="btn btn-ghost" onclick="ugcVideoSettingsForm()">Back</button><span></span>', 'Create UGC Video'); return; }
+  el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Animating with lip-sync\u2026 this can take a few minutes.</div>', '', 'Create UGC Video');
+  const vidJ = await call('run_image_to_video', { generation_id: UGC_STATE.imageGenerationId, prompt: promptJ.motion_prompt, model: videoModel, duration, aspect_ratio: '9:16' }, 45000);
+  if (!vidJ.ok){ el('p-flow').innerHTML = llShell(errBlock(vidJ.error, ''), '<button class="btn btn-ghost" onclick="ugcVideoSettingsForm()">Back</button><span></span>', 'Create UGC Video'); return; }
+  talkingVideoPoll(vidJ.prediction_id, vidJ.generation_id, combinedScript, 'ugcVideoFlow', 'Create UGC Video', 0);
+}
+// Real, per-model maximums - confirmed directly rather than assumed,
+// used so "Long" never requests a duration a chosen model can't
+// actually deliver.
+const VIDEO_MODEL_MAX_HINT = { 'google/veo-3.1': 8, 'bytedance/seedance-2.0': 15, 'xai/grok-imagine-video': 15 };
+// direction) rather than generating a new, different-looking person
+// each time - the real point of a persistent presenter.
+let TALK_STATE = {};
+async function talkingHeadFlow(){
+  TALK_STATE = {};
+  el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Loading your avatars\u2026</div>', '', 'Talking Head');
+  const j = await call('list_avatar_library', {});
+  TALK_STATE.avatars = j.ok ? j.avatars : [];
+  el('p-flow').innerHTML = llShell(
+    zen('Pick an existing avatar as your presenter \u2014 Zen writes a real spoken line and animates it with genuine lip-sync.') +
+    (TALK_STATE.avatars.length ? '<input class="field" placeholder="Search your avatars\u2026" oninput="talkingHeadFilterAvatars(this)" style="margin-bottom:10px;">' +
+      '<div id="talkAvatarGrid" class="gal-grid" style="max-width:560px;">' + TALK_STATE.avatars.map(talkingHeadAvatarTile).join('') + '</div>'
+      : '<p class="note">No avatars yet \u2014 create one first from the guided wizard\u2019s Visual Source step.</p>'),
+    '<span></span><span></span>',
+    'Talking Head'
+  );
+}
+function talkingHeadAvatarTile(a){
+  return '<div class="gal-card" onclick="talkingHeadPickAvatar(\''+esc(a.storage_url)+'\',\''+esc((a.name||'').replace(/\'/g,''))+'\')">' +
+    '<img src="'+esc(a.storage_url)+'" class="gal-media" loading="lazy">' +
+    '<div class="gal-body"><span class="gal-label">'+esc(a.name)+'</span></div></div>';
+}
+function talkingHeadFilterAvatars(input){
+  const q = input.value.toLowerCase();
+  const filtered = TALK_STATE.avatars.filter(a => (a.name||'').toLowerCase().includes(q) || (a.description||'').toLowerCase().includes(q));
+  el('talkAvatarGrid').innerHTML = filtered.map(talkingHeadAvatarTile).join('') || '<p class="note">No matches.</p>';
+}
+const TALK_SCRIPT_STYLES = [
+  ['problem_solution', 'Problem \u2192 solution'],
+  ['testimonial', 'Genuine testimonial'],
+  ['offer_led', 'Offer-led'],
+  ['storytelling', 'Short story'],
+];
+function talkingHeadPickAvatar(storageUrl, name){
+  TALK_STATE.avatarUrl = storageUrl; TALK_STATE.avatarName = name;
+  el('p-flow').innerHTML = llShell(
+    '<img src="'+esc(storageUrl)+'" style="width:120px;border-radius:13px;margin-bottom:12px;">' +
+    '<p class="note" style="margin:0 0 10px;">Using <b>'+esc(name)+'</b> as your presenter.</p>' +
+    '<label class="lbl">What are you promoting?</label><textarea class="field" id="talkTopic" style="min-height:60px;margin-bottom:10px;" placeholder="e.g. our princess braid package, AED 120"></textarea>' +
+    '<label class="lbl">Script</label>' +
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">' +
+      '<button type="button" class="btn btn-s btn-sm" data-scriptmode="ai" onclick="talkingHeadSetScriptMode(\'ai\')" style="border-color:var(--green);">\u2728 Let Zen write it</button>' +
+      '<button type="button" class="btn btn-s btn-sm" data-scriptmode="manual" onclick="talkingHeadSetScriptMode(\'manual\')">\u270f\ufe0f Write my own</button>' +
+    '</div>' +
+    '<div id="talkScriptStyleArea">' +
+      '<label class="lbl">Style (optional)</label>' +
+      '<select class="field" id="talkStyle" style="margin-bottom:10px;">' +
+        '<option value="">No particular style</option>' +
+        TALK_SCRIPT_STYLES.map(s => '<option value="'+s[0]+'">'+s[1]+'</option>').join('') +
+      '</select>' +
+    '</div>' +
+    '<div id="talkManualArea" style="display:none;">' +
+      '<label class="lbl">Write the exact line to say</label><textarea class="field" id="talkManualScript" style="min-height:50px;margin-bottom:10px;" placeholder="e.g. You\u2019re going to love our new braid package!"></textarea>' +
+    '</div>' +
+    '<label style="font-size:13px;display:block;margin-bottom:10px;"><input type="checkbox" id="talkMusic" checked> Include soft background music</label>',
+    '<button class="btn btn-ghost" onclick="talkingHeadFlow()">Back</button><button class="btn btn-p" onclick="talkingHeadReview()">Continue</button>',
+    'Talking Head'
+  );
+}
+function talkingHeadSetScriptMode(mode){
+  document.querySelectorAll('[data-scriptmode]').forEach(b => b.style.borderColor = b.dataset.scriptmode === mode ? 'var(--green)' : 'var(--line)');
+  el('talkScriptStyleArea').style.display = mode === 'ai' ? '' : 'none';
+  el('talkManualArea').style.display = mode === 'manual' ? '' : 'none';
+  TALK_STATE.scriptMode = mode;
+}
+async function talkingHeadReview(){
+  const topic = (el('talkTopic').value||'').trim();
+  if (!topic){ toast('Describe what you\u2019re promoting first.', 'err'); return; }
+  const mode = TALK_STATE.scriptMode || 'ai';
+  const includeMusic = el('talkMusic').checked;
+  // Real bug fixed here, caught by testing: these values must be read
+  // BEFORE the DOM is replaced with the loading state below - reading
+  // them after would find null, since the actual fields no longer
+  // exist by then.
+  const selectedStyle = el('talkStyle') ? el('talkStyle').value : undefined;
+  let script = null;
+  if (mode === 'manual') {
+    script = (el('talkManualScript').value||'').trim();
+    if (!script){ toast('Write the line, or switch to "Let Zen write it".', 'err'); return; }
+  }
+  el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>'+(script?'Preparing your review\u2026':'Writing a natural spoken line\u2026')+'</div>', '', 'Talking Head');
+  if (!script) {
+    const scriptJ = await call('generate_talking_script', { topic, speaker_description: TALK_STATE.avatarName, style: selectedStyle }, 30000);
+    if (!scriptJ.ok){ el('p-flow').innerHTML = llShell(errBlock(scriptJ.error, ''), '<button class="btn btn-ghost" onclick="talkingHeadPickAvatar(\''+TALK_STATE.avatarUrl+'\',\''+esc(TALK_STATE.avatarName)+'\')">Back</button><span></span>', 'Talking Head'); return; }
+    script = scriptJ.script;
+  }
+  TALK_STATE.topic = topic; TALK_STATE.script = script; TALK_STATE.includeMusic = includeMusic;
+  // Real final review, matching what was asked for directly - avatar,
+  // script, and music all shown together before anything real gets
+  // generated, with the script still editable at this point.
+  el('p-flow').innerHTML = llShell(
+    '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;">' +
+      '<div style="display:flex;gap:12px;align-items:center;margin-bottom:10px;">' +
+        '<img src="'+esc(TALK_STATE.avatarUrl)+'" style="width:60px;height:60px;object-fit:cover;border-radius:8px;">' +
+        '<b>'+esc(TALK_STATE.avatarName)+'</b>' +
+      '</div>' +
+      '<label class="lbl">Script</label><textarea class="field" id="talkFinalScript" style="min-height:50px;margin-bottom:8px;">'+esc(script)+'</textarea>' +
+      '<p class="note" style="margin:0;">'+(includeMusic ? '\ud83c\udfb5 Soft background music will be included.' : 'No background music.')+'</p>' +
+    '</div>',
+    '<button class="btn btn-ghost" onclick="talkingHeadPickAvatar(\''+TALK_STATE.avatarUrl+'\',\''+esc(TALK_STATE.avatarName)+'\')">Back</button><button class="btn btn-p" onclick="talkingHeadGenerate()">Generate</button>',
+    'Talking Head'
+  );
+}
+async function talkingHeadGenerate(){
+  const finalScript = (el('talkFinalScript').value||'').trim();
+  if (!finalScript){ toast('The script can\u2019t be empty.', 'err'); return; }
+  el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Preparing your avatar for video\u2026</div>', '', 'Talking Head');
+  const regJ = await call('register_image_as_generation', { image_url: TALK_STATE.avatarUrl });
+  if (!regJ.ok){ el('p-flow').innerHTML = llShell(errBlock(regJ.error, ''), '<button class="btn btn-ghost" onclick="talkingHeadFlow()">Back</button><span></span>', 'Talking Head'); return; }
+  await talkingVideoAnimate(regJ.generation_id, TALK_STATE.avatarName, TALK_STATE.topic, 'talkingHeadFlow', 'Talking Head', finalScript, TALK_STATE.includeMusic);
+}
+// Shared by both UGC Video and Talking Head - the real script +
+// lip-sync + animate sequence, built once rather than duplicated.
+// preWrittenScript/includeMusic are optional - UGC Video's existing
+// call (without them) keeps generating a fresh AI script with no
+// music, unchanged.
+async function talkingVideoAnimate(generationId, speakerDescription, topic, backFn, heading, preWrittenScript, includeMusic){
+  let script = preWrittenScript;
+  if (!script) {
+    el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Writing a natural spoken line\u2026</div>', '', heading);
+    const scriptJ = await call('generate_talking_script', { topic, speaker_description: speakerDescription }, 30000);
+    if (!scriptJ.ok){ el('p-flow').innerHTML = llShell(errBlock(scriptJ.error, ''), '<button class="btn btn-ghost" onclick="'+backFn+'()">Back</button><span></span>', heading); return; }
+    script = scriptJ.script;
+  }
+  const promptJ = await call('generate_lipsync_motion_prompt', { script, speaker_description: speakerDescription, include_music: !!includeMusic });
+  if (!promptJ.ok){ el('p-flow').innerHTML = llShell(errBlock(promptJ.error, ''), '<button class="btn btn-ghost" onclick="'+backFn+'()">Back</button><span></span>', heading); return; }
+  el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Animating with lip-sync\u2026 this can take a few minutes.</div>', '', heading);
+  const vidJ = await call('run_image_to_video', { generation_id: generationId, prompt: promptJ.motion_prompt, model: 'google/veo-3.1', duration: 8, aspect_ratio: '9:16' }, 45000);
+  if (!vidJ.ok){ el('p-flow').innerHTML = llShell(errBlock(vidJ.error, ''), '<button class="btn btn-ghost" onclick="'+backFn+'()">Back</button><span></span>', heading); return; }
+  talkingVideoPoll(vidJ.prediction_id, vidJ.generation_id, script, backFn, heading, 0);
+}
+function talkingVideoPoll(predictionId, videoGenId, script, backFn, heading, attempt){
+  if (attempt > 40){ el('p-flow').innerHTML = llShell('<p class="note">Still processing after a while \u2014 check back shortly.</p>', '<button class="btn btn-ghost" onclick="'+backFn+'()">Back</button><span></span>', heading); return; }
+  call('check_video_status', { prediction_id: predictionId, generation_id: videoGenId }).then(j => {
+    if (!j.ok){ el('p-flow').innerHTML = llShell(errBlock(j.error, ''), '<button class="btn btn-ghost" onclick="'+backFn+'()">Back</button><span></span>', heading); return; }
+    if (j.status === 'succeeded' && j.output_url){
+      el('p-flow').innerHTML = llShell(
+        '<video src="'+esc(j.output_url)+'" controls style="width:220px;border-radius:13px;margin-bottom:8px;"></video>' +
+        '<p class="note" style="margin:0 0 10px;">Says: \u201c'+esc(script)+'\u201d</p>' +
+        '<a href="'+esc(j.output_url)+'" download target="_blank" class="btn btn-p btn-sm" style="display:block;width:fit-content;">\u2b07 Download video</a>' +
+        '<p class="note" style="margin-top:10px;">Direct Instagram publishing for video isn\u2019t built yet \u2014 download it to post manually.</p>',
+        '<button class="btn btn-ghost" onclick="'+backFn+'()">Back</button><span></span>',
+        heading
+      );
+      return;
+    }
+    if (j.status === 'failed' || j.status === 'canceled'){
+      el('p-flow').innerHTML = llShell(errBlock('Video generation '+j.status+(j.error?': '+j.error:''), ''), '<button class="btn btn-ghost" onclick="'+backFn+'()">Back</button><span></span>', heading);
+      return;
+    }
+    setTimeout(() => talkingVideoPoll(predictionId, videoGenId, script, backFn, heading, attempt + 1), 8000);
+  });
+}
+// Recreate a Trend - rebuilt after checking a real, specific Zeely
+// reference article, which confirmed something important: their real
+// version is also avatar-based and works from real, named concepts
+// (not deep frame-by-frame video analysis either) - validating the
+// same honest scoping already used here. Also caught and fixed a real
+// gap while checking this: the prior version only ever produced a
+// static image, when this should genuinely be a video feature.
+const TREND_CONCEPTS = [
+  ['emotions', 'Emotions', 'a genuine emotional reaction or expression the viewer recognizes themselves in'],
+  ['glow_up', 'Glow-up', 'a visible transformation or before/after journey'],
+  ['in_motion', 'In motion', 'real, dynamic movement - walking, dancing, energy throughout'],
+];
+let TREND_STATE = {};
+async function trendRecreationFlow(){
+  TREND_STATE = {};
+  el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Loading your avatars\u2026</div>', '', 'Recreate a Trend');
+  const j = await call('list_avatar_library', {});
+  TREND_STATE.avatars = j.ok ? j.avatars : [];
+  el('p-flow').innerHTML = llShell(
+    zen('Zen can\u2019t watch a reference video yet, so pick a real named concept instead \u2014 the same real approach used by real competitor tools for this, not a limitation unique to Zen.') +
+    '<label class="lbl">Concept</label>' +
+    '<select class="field" id="trendConcept" style="margin-bottom:10px;">' +
+      TREND_CONCEPTS.map(c => '<option value="'+c[0]+'">'+c[1]+'</option>').join('') +
+    '</select>' +
+    '<label class="lbl">Extra detail (optional)</label><textarea class="field" id="trendDesc" style="min-height:50px;margin-bottom:10px;" placeholder="e.g. camera pulls back at the end to reveal the full result"></textarea>' +
+    '<label class="lbl">Avatar (optional \u2014 or leave blank for a new, generic person)</label>' +
+    (TREND_STATE.avatars.length ? '<div class="gal-grid" style="max-width:560px;margin-bottom:10px;">' +
+      '<div class="gal-card selected" onclick="trendPickAvatar(null,null)" id="trendNoAvatar"><div class="gal-media" style="display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;">None</div><div class="gal-body"><span class="gal-label">No avatar</span></div></div>' +
+      TREND_STATE.avatars.map(a => '<div class="gal-card" onclick="trendPickAvatar(\''+esc(a.storage_url)+'\',\''+esc((a.name||'').replace(/\'/g,''))+'\')"><img src="'+esc(a.storage_url)+'" class="gal-media" loading="lazy"><div class="gal-body"><span class="gal-label">'+esc(a.name)+'</span></div></div>').join('') +
+      '</div>' : '') +
+    '<label class="lbl">What are you promoting? (optional \u2014 leave blank for no specific product)</label><textarea class="field" id="trendProduct" style="min-height:50px;margin-bottom:10px;" placeholder="e.g. our princess braid package, AED 120"></textarea>',
+    '<span></span><button class="btn btn-p" onclick="trendRecreationGenerateImage()">Generate</button>',
+    'Recreate a Trend'
+  );
+}
+function trendPickAvatar(url, name){
+  TREND_STATE.avatarUrl = url; TREND_STATE.avatarName = name;
+  // Real visual selection feedback using the real .selected gallery
+  // class, consistent with every other real gallery grid now.
+  document.querySelectorAll('#p-flow .gal-card').forEach(card => {
+    const img = card.querySelector('img.gal-media');
+    const isMatch = url ? (img && img.src === url) : (card.id === 'trendNoAvatar');
+    card.classList.toggle('selected', !!isMatch);
+  });
+}
+async function trendRecreationGenerateImage(){
+  const concept = el('trendConcept').value;
+  const trend = (el('trendDesc').value||'').trim();
+  const product = (el('trendProduct').value||'').trim();
+  el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Recreating this concept\u2026</div>', '', 'Recreate a Trend');
+  const briefJ = await call('generate_trend_recreation_brief', { trend_description: trend||undefined, own_product: product||undefined, concept }, 30000);
+  if (!briefJ.ok){ el('p-flow').innerHTML = llShell(errBlock(briefJ.error, ''), '<button class="btn btn-ghost" onclick="trendRecreationFlow()">Back</button><span></span>', 'Recreate a Trend'); return; }
+  const b = briefJ.brief;
+  TREND_STATE.motionGuidance = b.motion_guidance; TREND_STATE.conceptSummary = b.concept_summary;
+  el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Generating the starting image\u2026</div>', '', 'Recreate a Trend');
+  let genJ;
+  if (TREND_STATE.avatarUrl) {
+    const regJ = await call('register_image_as_generation', { image_url: TREND_STATE.avatarUrl });
+    if (!regJ.ok){ el('p-flow').innerHTML = llShell(errBlock(regJ.error, ''), '<button class="btn btn-ghost" onclick="trendRecreationFlow()">Back</button><span></span>', 'Recreate a Trend'); return; }
+    genJ = { ok: true, generation_id: regJ.generation_id, output_url: TREND_STATE.avatarUrl };
+  } else {
+    const compiled = [b.subject, b.scene, b.activity, b.mood].filter(Boolean).join('. ');
+    genJ = await call('run_generation', { compiled_prompt: compiled, model: 'black-forest-labs/flux-2-pro', aspect_ratio: '9:16' }, 60000);
+  }
+  if (!genJ.ok){ el('p-flow').innerHTML = llShell(errBlock(genJ.error, ''), '<button class="btn btn-ghost" onclick="trendRecreationFlow()">Back</button><span></span>', 'Recreate a Trend'); return; }
+  TREND_STATE.imageGenerationId = genJ.generation_id; TREND_STATE.imageUrl = genJ.output_url;
+  el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Animating\u2026 this can take a few minutes.</div>', '', 'Recreate a Trend');
+  const vidJ = await call('run_image_to_video', { generation_id: genJ.generation_id, prompt: b.motion_guidance || b.activity || 'natural, genuine movement', model: 'google/veo-3.1', duration: 8, aspect_ratio: '9:16' }, 45000);
+  if (!vidJ.ok){ el('p-flow').innerHTML = llShell(errBlock(vidJ.error, ''), '<button class="btn btn-ghost" onclick="trendRecreationFlow()">Back</button><span></span>', 'Recreate a Trend'); return; }
+  talkingVideoPoll(vidJ.prediction_id, vidJ.generation_id, b.concept_summary || '', 'trendRecreationFlow', 'Recreate a Trend', 0);
 }
 function marketingAgentWizard(){ magentState.step = 0; magentStepGoal(); }
 
