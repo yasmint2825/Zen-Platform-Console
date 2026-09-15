@@ -2769,31 +2769,50 @@ function campaignDetail(id){
 // ad, and managing the real ad sets that result, rather than splitting
 // these across separate top-level destinations.
 function promotionsTabBar(active){
-  const tabs = [['posts','From your posts'],['adsets','Ad sets']];
+  const tabs = [['audiences','Audiences'],['posts','Posts'],['adsets','Ad sets'],['performance','Performance']];
   return '<div class="subtabs">' + tabs.map(t =>
     '<button class="'+(t[0]===active?'active':'')+'" onclick="promotions(\''+t[0]+'\')">'+t[1]+'</button>').join('') + '</div>';
 }
 async function promotions(tab){
-  tab = tab || 'posts';
+  tab = tab || 'audiences';
   STATE.lastPage='promotions';
   const p = el('p-promotions');
   p.innerHTML =
-    '<div class="topline"><div class="pagetitle"><div class="kicker">Promotions</div><h1>Turn a post into a real ad.</h1>' +
-    '<p>Every published post, in one place \u2014 promote anything that isn\u2019t already running, or manage what\u2019s already set up in Meta.</p></div></div>' +
+    '<div class="topline"><div class="pagetitle"><div class="kicker">Promotions</div><h1>Reach the right people with the right ad.</h1>' +
+    '<p>Who to target, what to show them, and how it\u2019s doing \u2014 one real home for the whole ad workflow, not four separate places.</p></div></div>' +
     promotionsTabBar(tab) +
     '<div id="promotionsBody"><div class="loading-block"><span class="spin"></span></div></div>';
   if (tab === 'adsets') { renderAdSetsTab(); return; }
+  if (tab === 'audiences') { renderAudiencesTab(); return; }
+  if (tab === 'performance') { renderPerformanceTab(); return; }
 
+  // Posts tab - organic-to-paid folded in as a real filter on this
+  // same list, not a separate destination, since it's the same real
+  // published-content list, just narrowed to what already proved
+  // itself organically.
   const j = await call('list_promotable_content', {});
   if (!j.ok){ el('promotionsBody').innerHTML = errBlock(j.error, 'promotions()'); return; }
   const items = j.items || [];
   el('promotionsBody').innerHTML =
+    '<button class="btn btn-s btn-sm" style="margin-bottom:12px;" onclick="showOrganicWinnersInline()">\ud83d\udcc8 Show my best organic performers first</button>' +
+    '<div id="organicWinnersInline"></div>' +
     '<div id="promotionsRows">' +
     (items.length === 0
       ? '<p class="note" style="margin-top:10px;">Nothing published yet \u2014 once you post something, it\u2019ll show up here to promote.</p>'
       : items.map(promotionRow).join('')) +
     '</div>' +
     '<div id="promotePostArea" style="margin-top:14px;"></div>';
+}
+async function showOrganicWinnersInline(){
+  const box = el('organicWinnersInline');
+  box.innerHTML = '<div class="loading-block"><span class="spin"></span>Checking your real post history\u2026</div>';
+  const j = await call('detect_organic_winners', {});
+  if (!j.ok){ box.innerHTML = errBlock(j.error, ''); return; }
+  if (!j.winners || !j.winners.length){ box.innerHTML = '<p class="note">'+esc(j.note||'Nothing has cleared the bar yet \u2014 organic winners need real reach and at least 3x your account\u2019s own recent average.')+'</p>'; return; }
+  box.innerHTML = '<div style="background:#f7f9f7;border-radius:10px;padding:10px 12px;margin-bottom:12px;">' +
+    '<p class="note" style="margin:0 0 8px;color:var(--ink);"><b>Real organic winners</b> \u2014 cleared both a real minimum reach and 3x your own recent baseline.</p>' +
+    j.winners.map(w => '<div class="list-row" style="padding:4px 0;"><span>'+esc(w.multiple_of_baseline)+'x baseline \u2014 '+esc(w.caption||'(no caption)').slice(0,50)+'</span><span class="note">'+esc(w.reach)+' reach</span></div>').join('') +
+  '</div>';
 }
 function promotionRow(it){
   const lp = it.latest_promotion;
@@ -2818,6 +2837,88 @@ function promotionRow(it){
 // averaging, fair-run gating) rather than building a second, separate
 // fetch that could quietly drift out of sync with what the
 // recommendation engine actually judges each ad set on.
+// Real merge of what used to be a separate "Meta ad strategies" tab -
+// building a new audience and seeing what's already built are the
+// same real workflow, not two different destinations.
+async function renderAudiencesTab(){
+  const body = el('promotionsBody');
+  body.innerHTML = '<div class="loading-block"><span class="spin"></span></div>';
+  const j = await call('list_custom_audiences', {});
+  if (!j.ok){ body.innerHTML = errBlock(j.error, 'promotions()'); return; }
+  const list = j.audiences || [];
+  AD_AUDIENCES_CACHE = list;
+  body.innerHTML =
+    '<div class="sechead" style="margin-top:0;"><h2>Build a new audience</h2></div>' +
+    '<div class="grid2">' +
+      STRATEGIES.map(s => '<button class="task" onclick="flow(()=>strategyDetail(\''+s.key+'\'))"><div class="task-top"><b>'+s.icon+' '+esc(s.name)+'</b></div><span>'+esc(s.desc)+'</span></button>').join('') +
+    '</div>' +
+    '<div class="sechead"><h2>Audiences you\u2019ve built</h2></div>' +
+    (list.length ? (
+      '<div class="list">' + list.map(a => {
+        const strat = STRATEGIES.find(s=>s.key===a.segment);
+        const sizeText = a.live_size_lower!=null ? money(a.live_size_lower)+'\u2013'+money(a.live_size_upper) : money(a.uploaded_count)+' uploaded';
+        return '<div class="list-row"><span><b>'+esc(a.name)+'</b><div class="sub">'+esc(strat?strat.name:a.segment)+' \u00b7 '+sizeText+' \u00b7 '+esc(a.delivery_status||'')+'</div></span>' +
+          (a.segment!=='lookalike' && a.meta_audience_id ? '<button class="btn btn-s btn-sm" onclick="audienceLookalike(\''+a.meta_audience_id+'\',\''+esc((a.name||'').replace(/\'/g,''))+'\')">Build lookalike</button> ' : '') +
+          '<button class="btn btn-s btn-sm" style="color:#a02020;" onclick="audienceDelete(\''+a.meta_audience_id+'\',\''+esc((a.name||'').replace(/\'/g,''))+'\')">Delete</button></div>';
+      }).join('') + '</div>' +
+      '<button class="btn btn-s btn-sm" style="margin-top:10px;color:#a02020;" onclick="audienceDeleteAll()">Delete all '+list.length+'</button>'
+    ) : '<p class="note">None yet \u2014 pick a strategy above to build your first real audience.</p>');
+}
+// Real merge of what used to be two separate places showing
+// overlapping real numbers - the account-wide bookings/ROAS summary,
+// and the full per-ad attribution table. One real destination now,
+// summary first, detail underneath.
+function renderBookingsBox(attr){
+  if (!attr) return '';
+  if (!attr.spend_available) {
+    return '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-bottom:14px;">' +
+      '<b>Bookings & return from ads</b><p class="note" style="margin-top:6px;">Not available yet \u2014 '+esc(attr.spend_note||'ad spend isn\u2019t connected yet.')+'</p></div>';
+  }
+  if (!attr.totals || !attr.totals.conversations) {
+    return '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-bottom:14px;">' +
+      '<b>Bookings & return from ads</b><p class="note" style="margin-top:6px;">No conversations from ads yet \u2014 this fills in once someone taps a WhatsApp ad and messages you.</p></div>';
+  }
+  const t = attr.totals;
+  return '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-bottom:14px;">' +
+    '<b>Bookings & return from ads</b><p class="note" style="margin:2px 0 10px;">The real bottom line: out of '+t.conversations+' people who messaged you from an ad, '+t.visited+' actually came in and paid, over the last '+attr.days+' days.</p>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 20px;">' +
+      '<div><b class="note" style="color:var(--ink);">Cost per real booking</b><p class="note" style="margin:2px 0 0;">' +
+        (attr.cost_per_visit!=null ? 'AED '+attr.cost_per_visit+' \u2014 that\u2019s what you spent, on average, for each customer who actually showed up and paid.' : 'Not enough bookings matched to ads yet to calculate this.') +
+      '</p></div>' +
+      '<div><b class="note" style="color:var(--ink);">Return on ad spend (ROAS)</b><p class="note" style="margin:2px 0 0;">' +
+        (attr.return_on_spend!=null ? 'For every AED 1 spent on ads, you got back <b>AED '+attr.return_on_spend+'</b> in real revenue.'+(attr.return_on_spend>=1?' That\u2019s more than you spent.':' That\u2019s less than you spent so far.') : 'Not enough revenue matched to ads yet to calculate this.') +
+      '</p></div>' +
+    '</div>' +
+  '</div>';
+}
+async function renderPerformanceTab(){
+  const body = el('promotionsBody');
+  body.innerHTML = '<div class="loading-block"><span class="spin"></span></div>';
+  const j = await call('get_ad_attribution', { days: 30 });
+  if (!j.ok){ body.innerHTML = errBlock(j.error, 'promotions()'); return; }
+  const tableHtml = (!j.ads || !j.ads.length)
+    ? '<p class="note">'+esc(j.note||'No ad conversations yet.')+'</p>'
+    : '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">' +
+      '<tr style="color:var(--muted);font-size:10.5px;text-align:left;">' +
+        '<th style="padding:4px 6px;">Ad</th><th style="padding:4px 6px;text-align:right;">Qualified</th>' +
+        '<th style="padding:4px 6px;text-align:right;">Visited</th><th style="padding:4px 6px;text-align:right;">Repeat</th>' +
+        '<th style="padding:4px 6px;text-align:right;">Revenue</th><th style="padding:4px 6px;text-align:right;">Real LTV</th>' +
+        '<th style="padding:4px 6px;text-align:right;">LTV ROAS</th><th></th></tr>' +
+      j.ads.map(a => '<tr style="border-top:1px solid var(--line);">' +
+        '<td style="padding:5px 6px;"><b>'+esc(a.headline||a.ad_id)+'</b></td>' +
+        '<td style="padding:5px 6px;text-align:right;">'+(a.qualified_rate!=null?a.qualified_rate+'%':'\u2014')+' <span class="note">('+a.qualified+'/'+a.conversations+')</span></td>' +
+        '<td style="padding:5px 6px;text-align:right;">'+(a.visit_rate!=null?a.visit_rate+'%':'\u2014')+'</td>' +
+        '<td style="padding:5px 6px;text-align:right;">'+money(a.repeat_customers)+'</td>' +
+        '<td style="padding:5px 6px;text-align:right;">AED '+money(a.revenue)+'</td>' +
+        '<td style="padding:5px 6px;text-align:right;"><b>AED '+money(a.ltv_total)+'</b></td>' +
+        '<td style="padding:5px 6px;text-align:right;'+(a.ltv_return_on_spend>=1?'color:var(--green);font-weight:600;':'')+'">'+(a.ltv_return_on_spend!=null?a.ltv_return_on_spend+'x':'\u2014')+'</td>' +
+        '<td style="padding:5px 6px;"><button class="btn btn-s btn-sm" onclick=\'attributionRecord('+JSON.stringify(a.headline||a.ad_id)+','+JSON.stringify(a)+')\'>Record finding</button></td>' +
+      '</tr>').join('') +
+      '</table></div>' +
+      '<p class="note" style="margin-top:8px;">Real LTV sums each unique customer\u2019s actual full transaction history, not just what they spent in the two weeks after this conversation \u2014 the number that actually answers \u201cwas this ad worth it\u201d for a business built on repeat visits.</p>';
+  body.innerHTML = renderBookingsBox(j) +
+    '<div class="sechead" style="margin-top:0;"><h2>Per-ad performance</h2></div>' + tableHtml;
+}
 async function renderAdSetsTab(){
   const body = el('promotionsBody');
   body.innerHTML = '<div class="loading-block"><span class="spin"></span>Reading your real ad account\u2026</div>';
@@ -2834,7 +2935,10 @@ async function renderAdSetsTab(){
   body.innerHTML =
     renderAdIntelBox(AD_INTEL_CACHE) +
     '<div class="sechead" style="margin-top:16px;"><h2>Your ad sets</h2></div>' +
-    '<button class="btn btn-p btn-sm" style="margin-bottom:14px;" onclick="newAdSetForm()">+ Create a new ad set</button>' +
+    '<button class="btn btn-p btn-sm" style="margin-bottom:14px;" onclick="newAdSetForm()">+ Create a new ad set</button> ' +
+    '<button class="btn btn-s btn-sm" style="margin-bottom:14px;" onclick="flow(()=>goalStrategyFlow())">\u25c8 Build from a goal instead</button> ' +
+    '<button class="btn btn-s btn-sm" style="margin-bottom:14px;" onclick="recommendNewAdSet()">\u2728 Recommend a new ad set</button>' +
+    '<div id="adSetRecommendArea"></div>' +
     '<div id="newAdSetArea"></div>' +
     (rows.length === 0
       ? '<p class="note">No ad sets in this account yet.</p>'
@@ -2857,47 +2961,122 @@ function renderAdIntelBox(intel){
   // whether a segment genuinely had too little volume, or the
   // underlying Meta fetch for that dimension actually failed - the
   // person had no way to tell those apart. Now shows the real
-  // impression count behind the verdict (so "38 impressions, need
-  // 500+" is visible instead of a bare "not enough data"), and
-  // surfaces any real fetch error explicitly rather than silently
-  // folding it into the same generic message.
-  const topOf = (arr, key, label) => {
+  // Real bug fixed here, spotted directly: the placement breakdown
+  // genuinely combines two real Meta dimensions (publisher_platform +
+  // platform_position) - "Instagram Feed" and "Instagram Stories" are
+  // two real, different rows with different real performance - but
+  // this only ever displayed publisher_platform, so two genuinely
+  // different placements both showed as just "instagram", looking
+  // like an exact duplicate. labelFn lets each dimension build its own
+  // real, complete label instead of always reading one fixed field.
+  const topOf = (arr, labelFn, title) => {
     const rows = arr || [];
     const real = rows.filter(r=>r.enough_data).slice(0,3);
-    if (real.length) return '<div><b class="note" style="color:var(--ink);">'+label+'</b>' +
-      real.map(r=>'<div class="list-row" style="padding:3px 0;"><span>'+esc(String(r[key]))+'</span><span class="note">'+r.conversations+' conv. \u00b7 AED '+r.cost_per_conversation+'</span></div>').join('') +
+    if (real.length) return '<div><b class="note" style="color:var(--ink);">'+title+'</b>' +
+      real.map(r=>'<div class="list-row" style="padding:3px 0;"><b style="font-weight:600;">'+esc(labelFn(r))+'</b><span class="note">'+r.conversations+' people replied \u2014 AED '+r.cost_per_conversation+' each</span></div>').join('') +
     '</div>';
-    // Show the real numbers behind "not enough" rather than a bare
-    // claim - the highest-impression row, if any exist at all.
     const highest = [...rows].sort((a,b)=>(Number(b.impressions)||0)-(Number(a.impressions)||0))[0];
     const detail = highest
-      ? 'Highest so far: '+esc(String(highest[key]))+' with '+(highest.impressions||0)+' impressions (need '+(window.AD_INTEL_MIN||500)+'+ to trust a segment).'
-      : 'No data at all for this yet.';
-    return '<div><b class="note" style="color:var(--ink);">'+label+'</b><p class="note" style="margin:2px 0 0;">'+detail+'</p></div>';
+      ? 'Not enough shown to '+esc(labelFn(highest))+' yet to trust the result (only '+(highest.impressions||0)+' people have seen an ad so far).'
+      : 'No results here yet.';
+    return '<div><b class="note" style="color:var(--ink);">'+title+'</b><p class="note" style="margin:2px 0 0;">'+detail+'</p></div>';
   };
   window.AD_INTEL_MIN = intel.min_impressions_for_signal || 500;
   const errorBanner = intel.partial_errors
     ? '<p class="note" style="color:#a02020;margin:0 0 8px;">Some breakdowns didn\u2019t load: '+esc(intel.partial_errors.join('; '))+'</p>'
     : '';
+  const placementLabel = (r) => r.platform_position ? capitalize(r.publisher_platform)+' \u2014 '+capitalize(r.platform_position) : capitalize(r.publisher_platform);
   return '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;">' +
-    '<b>What\u2019s working for you</b><p class="note" style="margin:2px 0 10px;">Real results from your account\u2019s last '+intel.days_used+' days.</p>' +
+    '<b>What\u2019s working for you</b><p class="note" style="margin:2px 0 10px;">Based on real replies to your ads over the last '+intel.days_used+' days. "People replied" means someone messaged you on WhatsApp after seeing the ad.</p>' +
     errorBanner +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 20px;">' +
-      topOf(intel.age,'age','Best age groups') + topOf(intel.gender,'gender','Best gender') +
-      topOf(intel.region,'region','Best regions') + topOf(intel.device,'impression_device','Best devices') +
-      topOf(intel.placement,'publisher_platform','Best placements') +
+      topOf(intel.age, r=>r.age, 'Best age groups') + topOf(intel.gender, r=>capitalize(r.gender), 'Best gender') +
+      topOf(intel.region, r=>r.region, 'Best areas') + topOf(intel.device, r=>capitalize(r.impression_device), 'Best devices') +
+      topOf(intel.placement, placementLabel, 'Best places your ad showed up') +
     '</div>' +
   '</div>';
 }
+function capitalize(s){ return s ? String(s).charAt(0).toUpperCase()+String(s).slice(1) : s; }
 function adSetRow(r){
-  const statusBadge = r.status === 'ACTIVE' ? '<span class="badge on">Active</span>' : r.status === 'PAUSED' ? '<span class="badge">Paused</span>' : '<span class="badge warn">'+esc(r.status)+'</span>';
+  const isActive = r.status === 'ACTIVE';
+  const statusBadge = isActive ? '<span class="badge on">Active</span>' : r.status === 'PAUSED' ? '<span class="badge">Paused</span>' : '<span class="badge warn">'+esc(r.status)+'</span>';
   return '<div class="list-row" style="align-items:flex-start;flex-direction:column;gap:4px;">' +
     '<div style="display:flex;justify-content:space-between;width:100%;">' +
       '<span><b>'+esc(r.name)+'</b><div class="sub">'+esc(r.campaign||'')+' \u00b7 AED '+esc(r.daily_budget!=null?r.daily_budget:'\u2014')+'/day</div></span>' +
       statusBadge +
     '</div>' +
-    '<p class="note" style="margin:2px 0 0;">'+esc(r.why||'')+'</p>' +
+    '<p class="note" style="margin:2px 0 6px;">'+esc(r.why||'')+'</p>' +
+    // Real, state-aware actions - what makes sense depends on whether
+    // this ad set is currently running, not one generic "manage"
+    // button standing in for three different real actions.
+    '<div style="display:flex;gap:6px;">' +
+      (isActive
+        ? '<button class="btn btn-s btn-sm" onclick="adSetToggleStatus(\''+r.id+'\',\'PAUSED\')">Pause</button>'
+        : '<button class="btn btn-s btn-sm" onclick="adSetToggleStatus(\''+r.id+'\',\'ACTIVE\')">Reactivate</button>') +
+      '<button class="btn btn-s btn-sm" onclick="adSetPickCreative(\''+r.id+'\')">Add / change creative</button>' +
+    '</div>' +
+    '<div id="adSetAction_'+r.id+'" style="width:100%;"></div>' +
   '</div>';
+}
+async function adSetToggleStatus(adsetId, newStatus){
+  const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
+  const j = await call('set_meta_adset_status', { adset_id: adsetId, status: newStatus });
+  if (!j.ok){ toast(j.error, 'err'); btn.disabled = false; return; }
+  toast(newStatus === 'ACTIVE' ? 'Reactivated' : 'Paused', 'ok');
+  renderAdSetsTab();
+}
+// Real, reusable picker - any real post, new or old, not just
+// whatever was published most recently. The same real underlying
+// mechanism ("attach a real creative to a real ad set") that both
+// promote_post (brand-new ad set) and this (an existing one) rely on.
+let ADSET_PICKER_ITEMS_CACHE = null;
+async function adSetPickCreative(adsetId){
+  const box = el('adSetAction_'+adsetId);
+  box.innerHTML = '<div class="loading-block"><span class="spin"></span>Loading your posts\u2026</div>';
+  if (!ADSET_PICKER_ITEMS_CACHE){
+    const j = await call('list_all_content_items', { status: 'published' });
+    ADSET_PICKER_ITEMS_CACHE = j.ok ? (j.items||[]) : [];
+  }
+  const items = ADSET_PICKER_ITEMS_CACHE;
+  if (!items.length){ box.innerHTML = '<p class="note">No published posts yet \u2014 publish something first.</p>'; return; }
+  box.innerHTML =
+    '<div style="background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:6px;max-height:280px;overflow-y:auto;">' +
+    '<input class="field" placeholder="Search your posts\u2026" oninput="adSetFilterPicker(this,\''+adsetId+'\')" style="margin-bottom:8px;">' +
+    '<div id="adSetPickerList_'+adsetId+'">' + items.map(it => adSetPickerRow(it, adsetId)).join('') + '</div>' +
+    '</div>' +
+    '<div id="adSetPickerResult_'+adsetId+'" style="margin-top:8px;"></div>';
+}
+function adSetPickerRow(it, adsetId){
+  const when = it.created_at ? new Date(it.created_at).toLocaleDateString() : '';
+  return '<div class="list-row" style="cursor:pointer;padding:6px 2px;" onclick="adSetAttachCreative(\''+adsetId+'\',\''+it.id+'\')">' +
+    '<div style="display:flex;gap:8px;align-items:center;">' +
+      (it.generated_image_url ? '<img src="'+esc(it.generated_image_url)+'" style="width:32px;height:32px;object-fit:cover;border-radius:6px;" loading="lazy">' : thumb(it.item_type||'image')) +
+      '<span><b style="font-size:13px;">'+esc(it.title||'Untitled')+'</b><div class="sub" style="font-size:11px;">'+esc(when)+'</div></span>' +
+    '</div></div>';
+}
+function adSetFilterPicker(input, adsetId){
+  const q = input.value.toLowerCase();
+  const filtered = ADSET_PICKER_ITEMS_CACHE.filter(it => (it.title||'').toLowerCase().includes(q));
+  el('adSetPickerList_'+adsetId).innerHTML = filtered.map(it => adSetPickerRow(it, adsetId)).join('') || '<p class="note">No matches.</p>';
+}
+async function adSetAttachCreative(adsetId, itemId){
+  const res = el('adSetPickerResult_'+adsetId);
+  res.innerHTML = '<div class="loading-block"><span class="spin"></span>Attaching\u2026</div>';
+  const j = await call('attach_creative_to_adset', { adset_id: adsetId, content_plan_item_id: itemId }, 45000);
+  if (!j.ok){ res.innerHTML = errBlock(j.error, ''); return; }
+  if (j.status === 'ready'){ res.innerHTML = '<p class="note" style="color:var(--green);">\u2713 Creative attached.</p>'; return; }
+  // Video - genuinely async, same real poll pattern already used for
+  // promote_post's video path.
+  res.innerHTML = '<div class="loading-block"><span class="spin"></span>Meta is processing the video\u2026</div>';
+  adSetPollVideoAttach(res, j.video_id, adsetId, j.caption, 0);
+}
+async function adSetPollVideoAttach(res, videoId, adsetId, caption, attempt){
+  if (attempt > 40){ res.innerHTML = '<p class="note">Still processing \u2014 check back shortly.</p>'; return; }
+  const j = await call('check_promote_video_status', { video_id: videoId, adset_id: adsetId, caption });
+  if (!j.ok){ res.innerHTML = errBlock(j.error, ''); return; }
+  if (j.status === 'ready'){ res.innerHTML = '<p class="note" style="color:var(--green);">\u2713 Creative attached.</p>'; return; }
+  if (j.status === 'failed'){ res.innerHTML = errBlock('Meta could not process this video.', ''); return; }
+  setTimeout(() => adSetPollVideoAttach(res, videoId, adsetId, caption, attempt + 1), 8000);
 }
 // Real campaign archetypes, grounded in current, converging Meta
 // agency practice (verified across multiple independent, recent
@@ -2924,6 +3103,49 @@ const AD_ARCHETYPES = [
     why: 'Targets customers with a child\u2019s birthday in the next 30 days - real timing relevance, not a seasonal guess.',
     segment: 'birthday_soon' },
 ];
+async function recommendNewAdSet(){
+  const box = el('adSetRecommendArea');
+  box.innerHTML = '<div class="loading-block"><span class="spin"></span>Looking at your real ad results, audiences, and recent posts\u2026</div>';
+  const j = await call('recommend_new_adset', {}, 30000);
+  if (!j.ok){ box.innerHTML = errBlock(j.error, ''); return; }
+  if (!j.has_enough_data){
+    box.innerHTML = '<div style="background:#fff8e8;border-radius:10px;padding:12px 14px;"><p class="note" style="margin:0;">'+esc(j.note||'Not enough real data yet for a grounded recommendation.')+'</p></div>';
+    return;
+  }
+  box.innerHTML =
+    '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;">' +
+    '<b>\u2728 Recommended next ad set</b>' +
+    (j.audience_name ? '<p class="note" style="margin:6px 0 0;"><b>Audience:</b> '+esc(j.audience_name)+'</p>' : '') +
+    (j.content_title ? '<p class="note" style="margin:2px 0 0;"><b>Creative:</b> '+esc(j.content_title)+'</p>' : '') +
+    (j.suggested_budget_aed ? '<p class="note" style="margin:2px 0 0;"><b>Budget:</b> AED '+j.suggested_budget_aed+'/day</p>' : '') +
+    '<p class="note" style="margin:8px 0 10px;">'+esc(j.reasoning||'')+'</p>' +
+    '<button class="btn btn-p btn-sm" onclick=\'useAdSetRecommendation('+JSON.stringify(j).replace(/'/g,"&#39;")+')\'>Use this recommendation</button>' +
+    '</div>';
+}
+// Pre-fills the real, existing creation form rather than duplicate it
+// with a second, parallel form just for recommendations - reviewed
+// and adjusted in the exact same place a manually-created ad set is,
+// never launched without the owner seeing and confirming it first.
+function useAdSetRecommendation(rec){
+  newAdSetForm();
+  setTimeout(() => {
+    if (rec.suggested_budget_aed) el('newAdSetBudget').value = rec.suggested_budget_aed;
+    el('newAdSetName').value = (rec.audience_name ? rec.audience_name+' \u2014 ' : '') + (rec.content_title || 'Recommended ad set');
+    if (rec.meta_audience_id){
+      const matchingArch = AD_ARCHETYPES.find(a => AD_AUDIENCES_CACHE.find(x => x.meta_audience_id === rec.meta_audience_id && x.segment === a.segment));
+      if (matchingArch) selectAdArchetype(matchingArch.key);
+    }
+    if (rec.content_plan_item_id){
+      LL_RECOMMENDED_CONTENT_ITEM = rec.content_plan_item_id;
+      const note = document.createElement('p');
+      note.className = 'note';
+      note.style.cssText = 'margin:4px 0 0;color:var(--green);';
+      note.textContent = 'Recommended creative: ' + (rec.content_title || '') + ' \u2014 attach it from "Add / change creative" once this ad set is created.';
+      el('newAdSetResult').appendChild(note);
+    }
+  }, 50);
+}
+let LL_RECOMMENDED_CONTENT_ITEM = null;
 function newAdSetForm(){
   el('newAdSetArea').innerHTML =
     '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-bottom:14px;">' +
@@ -3063,12 +3285,11 @@ function marketing(){
     '<div class="topline"><div class="pagetitle"><div class="kicker">Marketing</div><h1>What would you like to create?</h1>' +
     '<p>Start with the outcome. Zen uses your salon\u2019s look and voice behind the scenes.</p></div></div>' +
     '<button class="task" style="border:1.5px solid var(--green);margin-bottom:14px;" onclick="flow(()=>marketingAgentWizard())"><div class="task-top"><b>\u2726 Marketing Agent \u2014 guided</b> <span class="note" style="font-weight:600;color:var(--green);">Recommended</span></div><span>Goal \u2192 Audience/Persona \u2192 Creative \u2192 Generate \u2192 Publish \u2192 Promote, one guided flow. Also shows any campaigns you\u2019ve already started, so you can pick up where you left off.</span></button>' +
+    '<button class="task" style="border:1.5px solid var(--ink);margin-bottom:14px;" onclick="flow(()=>linkLaunchFlow())"><div class="task-top"><b>\ud83d\udd17 Build from your link or product</b> <span class="note" style="font-weight:600;">Fast</span></div><span>Paste a product link, an Instagram post, or describe what you\u2019re promoting \u2014 Zen builds real ad-ready creatives in every size and a ready-to-launch campaign in minutes, not a full guided flow.</span></button>' +
     '<div class="grid3">' +
-      mktTask('◇','Plan this month','A full month of content, planned for you','plan') +
       mktTask('▣','Make a poster','A single Instagram-ready image','poster') +
       mktTask('▶','Make a video','A short reel with scenes and captions','video') +
       mktTask('▦','Make a carousel','A multi-slide story','carousel') +
-      mktTask('◈','Meta ad strategies','Build real audiences from your own customer data','strategies') +
       mktTask('✦','Let Zen suggest','Based on what\u2019s working right now','suggest') +
       mktTask('▤','Publishing schedule','See what\u2019s coming up','schedule') +
     '</div>' +
@@ -3120,7 +3341,14 @@ async function strategyLibraryFlow(){
     '<div class="sechead"><h2>Audiences you\u2019ve built</h2></div>' +
     '<div id="audienceList"><div class="loading-block"><span class="spin"></span></div></div>';
   const j = await call('list_custom_audiences', {});
+  // Real race condition fixed here, reported directly: if the person
+  // navigates away before this call resolves, #audienceList no longer
+  // exists in the DOM by the time this callback runs - box would be
+  // null, and writing to it threw exactly the reported error. Guarded
+  // the same way any async render should be once the page itself
+  // isn't guaranteed to still be showing when the response arrives.
   const box = el('audienceList');
+  if (!box) return;
   if (!j.ok){ box.innerHTML = errBlock(j.error, 'strategyLibraryFlow()'); return; }
   const list = j.audiences || [];
   box.innerHTML = list.length ? (
@@ -3229,14 +3457,14 @@ async function audienceDelete(metaAudienceId, name){
   const j = await call('delete_custom_audience', { meta_audience_id: metaAudienceId });
   if (!j.ok){ toast(j.error, 'err'); return; }
   toast('Deleted from Meta', 'ok');
-  strategyLibraryFlow();
+  promotions('audiences');
 }
 async function audienceDeleteAll(){
   if (!confirm('Permanently delete ALL audiences Zen has built in Meta? This removes every one of them from your ad account entirely \u2014 it cannot be undone.')) return;
   const j = await call('delete_all_custom_audiences', {});
   if (!j.ok){ toast(j.error, 'err'); return; }
   toast(j.deleted+' deleted'+(j.failed&&j.failed.length?', '+j.failed.length+' failed':''), j.failed&&j.failed.length?'err':'ok');
-  strategyLibraryFlow();
+  promotions('audiences');
 }
 
 /* ── Goal-based campaign builder ──────────────────────────────────────
@@ -3279,22 +3507,27 @@ async function loadAdIntelligence(){
     panel.innerHTML = '';
     return;
   }
-  const rowsFor = (arr, key, label) => {
+  // Same real fix as the Promotions intelligence box - "Instagram
+  // Feed" and "Instagram Stories" are two genuinely different real
+  // placements, not the same one shown twice. labelFn builds each
+  // row's real, complete label instead of always reading one field.
+  const rowsFor = (arr, labelFn, title) => {
     const withData = (arr||[]).filter(r=>r.enough_data).slice(0,4);
-    if (!withData.length) return '<p class="note">'+label+': not enough real data yet.</p>';
-    return '<div style="margin-bottom:10px;"><b class="note" style="color:var(--ink);">'+label+'</b>' +
-      withData.map(r => '<div class="list-row" style="padding:4px 0;"><span>'+esc(String(r[key]))+'</span><span class="note">'+r.conversations+' conversations \u00b7 AED '+r.cost_per_conversation+'/each</span></div>').join('') +
+    if (!withData.length) return '<p class="note">'+title+': no results here yet.</p>';
+    return '<div style="margin-bottom:10px;"><b class="note" style="color:var(--ink);">'+title+'</b>' +
+      withData.map(r => '<div class="list-row" style="padding:4px 0;"><b style="font-weight:600;">'+esc(labelFn(r))+'</b><span class="note">'+r.conversations+' people replied \u2014 AED '+r.cost_per_conversation+' each</span></div>').join('') +
     '</div>';
   };
+  const placementLabel = (r) => r.platform_position ? capitalize(r.publisher_platform)+' \u2014 '+capitalize(r.platform_position) : capitalize(r.publisher_platform);
   panel.innerHTML =
     '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-bottom:16px;">' +
-      '<b>Real ad intelligence \u2014 your account\u2019s actual last '+j.days_used+' days</b>' +
-      '<p class="note" style="margin:4px 0 10px;">Used automatically to ground the strategy below in what\u2019s actually worked, not just general assumptions.'+(j.demographic_capped?' Age/gender limited to Meta\u2019s '+j.demographic_days_used+'-day cap.':'')+'</p>' +
-      rowsFor(j.age, 'age', 'Best age groups') +
-      rowsFor(j.gender, 'gender', 'Best gender') +
-      rowsFor(j.region, 'region', 'Best regions') +
-      rowsFor(j.device, 'impression_device', 'Best devices') +
-      rowsFor(j.placement, 'publisher_platform', 'Best placements') +
+      '<b>What\u2019s worked so far</b>' +
+      '<p class="note" style="margin:4px 0 10px;">Based on real replies to ads over your account\u2019s last '+j.days_used+' days. Used automatically to shape the strategy below.'+(j.demographic_capped?' Age/gender limited to Meta\u2019s '+j.demographic_days_used+'-day cap.':'')+'</p>' +
+      rowsFor(j.age, r=>r.age, 'Best age groups') +
+      rowsFor(j.gender, r=>capitalize(r.gender), 'Best gender') +
+      rowsFor(j.region, r=>r.region, 'Best areas') +
+      rowsFor(j.device, r=>capitalize(r.impression_device), 'Best devices') +
+      rowsFor(j.placement, placementLabel, 'Best places your ad showed up') +
       (j.partial_errors ? '<p class="note" style="color:#a02020;margin-top:8px;">Some breakdowns didn\u2019t load: '+j.partial_errors.join('; ')+'</p>' : '') +
     '</div>';
 }
@@ -3412,6 +3645,198 @@ function magentShell(bodyHtml, actionsHtml){
         (actionsHtml ? '<div class="magent-actions">'+actionsHtml+'</div>' : '') +
       '</div>' +
     '</div>';
+}
+// "Build from your link or product" - a real, fast, product-link-
+// first flow, distinct from the guided wizard's goal-first approach.
+// Researched real competitor structure before building this, not
+// guessed: the defining mechanism is starting from a real URL,
+// extracting real product info from it (not re-asking the owner to
+// describe what's already on the page), and generating every real ad
+// size in one pass rather than one format at a time.
+// A dedicated, simpler shell - "Build from your link" isn't the
+// guided wizard's 7 steps, so reusing magentShell (which renders that
+// exact step sidebar) would show a step list that doesn't correspond
+// to anything actually happening in this flow.
+function llShell(bodyHtml, actionsHtml){
+  return '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:22px;">Build from your link or product</h1>' +
+    '<div style="margin-top:14px;max-width:520px;">' + bodyHtml +
+      (actionsHtml ? '<div style="display:flex;justify-content:space-between;margin-top:16px;">'+actionsHtml+'</div>' : '') +
+    '</div>';
+}
+function linkLaunchFlow(){
+  el('p-flow').innerHTML = llShell(
+    zen('Paste a link to a product page, an Instagram post, or anything you\u2019re promoting \u2014 Zen reads the real title, image, and description straight off the page. No link handy? Just describe it instead.') +
+    '<label class="lbl">Link (optional)</label><input class="field" id="llUrl" placeholder="https://\u2026" style="margin-bottom:10px;">' +
+    '<label class="lbl">Or describe what you\u2019re promoting</label><textarea class="field" id="llDesc" style="min-height:60px;margin-bottom:10px;" placeholder="e.g. Our new princess braid package, AED 120"></textarea>' +
+    '<div id="llResult" style="margin-top:10px;"></div>',
+    '<span></span><button class="btn btn-p" onclick="linkLaunchExtract()">Continue</button>'
+  );
+}
+async function linkLaunchExtract(){
+  const url = (el('llUrl').value||'').trim();
+  const desc = (el('llDesc').value||'').trim();
+  if (!url && !desc){ toast('Add a link or a description first.', 'err'); return; }
+  const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Reading\u2026';
+  let product = null;
+  if (url) {
+    const j = await call('extract_product_from_url', { url }, 20000);
+    btn.disabled = false; btn.textContent = 'Continue';
+    if (!j.ok){
+      el('llResult').innerHTML = errBlock(j.error, 'linkLaunchFlow()') + '<p class="note" style="margin-top:6px;">You can still continue using the description above instead.</p>';
+      if (!desc) return;
+    } else {
+      product = j;
+    }
+  } else {
+    btn.disabled = false; btn.textContent = 'Continue';
+  }
+  LL_STATE = { product, desc };
+  linkLaunchConfirm();
+}
+let LL_STATE = {};
+function linkLaunchConfirm(){
+  const p = LL_STATE.product;
+  el('p-flow').innerHTML = llShell(
+    (p ? '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-bottom:12px;">' +
+      (p.image_url ? '<img src="'+esc(p.image_url)+'" style="width:100%;max-width:220px;border-radius:10px;margin-bottom:10px;">' : '') +
+      '<p class="note" style="margin:0 0 8px;">Here\u2019s what Zen found on the page \u2014 edit anything that\u2019s off:</p>' +
+      '<label class="lbl">Title</label><input class="field" id="llTitle" value="'+esc(p.title||'')+'" style="margin-bottom:8px;">' +
+      '<label class="lbl">Description</label><textarea class="field" id="llProdDesc" style="min-height:50px;margin-bottom:8px;">'+esc(p.description||'')+'</textarea>' +
+      '<label class="lbl">Price (optional)</label><input class="field" id="llPrice" value="'+esc(p.price?(p.price+' '+(p.currency||'')):'')+'" style="max-width:180px;">' +
+      '</div>' : '') +
+    zen('Zen will generate real, ready-to-post creatives in every size from this \u2014 square, story, and feed \u2014 in one pass.') +
+    // Same real, proven choice already used in the guided wizard - not
+    // a separate, new list, so the two flows never quietly disagree
+    // about which models actually exist.
+    '<label class="lbl">Image model</label>' +
+    '<select class="field" id="llModel" style="max-width:320px;margin-bottom:6px;">' +
+      '<option value="black-forest-labs/flux-2-pro" selected>Flux 2 Pro (default)</option>' +
+      '<option value="google/nano-banana-2-lite">Nano Banana 2 Lite \u2014 faster, cheaper</option>' +
+    '</select>' +
+    '<p class="note" style="margin:4px 0 0;">Nano Banana 2 Lite has no quality setting of its own \u2014 all 3 formats will use whichever model you pick here.</p>',
+    '<button class="btn btn-ghost" onclick="linkLaunchFlow()">Back</button><button class="btn btn-p" onclick="linkLaunchGenerate()">Generate all formats</button>'
+  );
+}
+async function linkLaunchGenerate(){
+  const selectedModel = el('llModel').value;
+  const p = LL_STATE.product;
+  const title = p ? (el('llTitle').value||'').trim() : '';
+  const prodDesc = p ? (el('llProdDesc').value||'').trim() : '';
+  const price = p ? (el('llPrice').value||'').trim() : '';
+  const userRequest = p
+    ? `Promote this product/service: ${title}. ${prodDesc}${price ? '. Price: '+price : ''}`
+    : LL_STATE.desc;
+  el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Writing the creative brief\u2026</div>', '');
+  const briefJ = await call('generate_creative_brief', { user_request: userRequest }, 30000);
+  if (!briefJ.ok){ el('p-flow').innerHTML = llShell(errBlock(briefJ.error, 'linkLaunchFlow()'), '<button class="btn btn-ghost" onclick="linkLaunchConfirm()">Back</button><span></span>'); return; }
+  const compiled = [briefJ.brief.subject, briefJ.brief.scene, briefJ.brief.activity, briefJ.brief.mood].filter(Boolean).join('. ');
+  LL_STATE.briefId = briefJ.brief.id;
+
+  // Real, distinguishing capability from here on: every real ad size
+  // generated in one pass, not one format chosen up front - three
+  // genuine separate generations from the same compiled prompt and
+  // model, for visual consistency across formats, not three
+  // disconnected images.
+  const formats = [['1:1','Square (feed)'],['9:16','Story / Reel'],['4:5','Portrait (feed)']];
+  el('p-flow').innerHTML = llShell(
+    '<div class="loading-block"><span class="spin"></span>Generating all 3 formats\u2026 this takes a little longer since each one is real, not a crop.</div>',
+    ''
+  );
+  const results = await Promise.all(formats.map(([ratio]) =>
+    // Real bug fixed here, reported directly ("3 formats failed to
+    // generate"): the actual Replicate API call uses this model string
+    // directly as the API path (/v1/models/${model}/predictions) - a
+    // bare "flux-2-pro" with no owner prefix isn't a real, resolvable
+    // path on Replicate, which is exactly why all three calls failed
+    // identically (they all shared this same wrong string). Every
+    // other real call to this model elsewhere in this app already uses
+    // the correct, full "black-forest-labs/flux-2-pro" - this was the
+    // one place that didn't.
+    call('run_generation', { compiled_prompt: compiled, model: selectedModel, aspect_ratio: ratio, creative_brief_id: LL_STATE.briefId }, 60000)
+  ));
+  LL_STATE.formats = formats.map((f, i) => ({ ratio: f[0], label: f[1], result: results[i] }));
+  linkLaunchShowResults();
+}
+function linkLaunchShowResults(){
+  const ok = LL_STATE.formats.filter(f => f.result.ok);
+  const failed = LL_STATE.formats.filter(f => !f.result.ok);
+  el('p-flow').innerHTML = llShell(
+    (ok.length ? zen(ok.length+' of 3 formats ready. Download to check any of them, or pick one to continue with \u2014 the others stay here either way.') : '') +
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;margin:10px 0;">' +
+      ok.map(f => '<div style="text-align:center;"><img src="'+esc(f.result.output_url)+'" style="width:140px;border-radius:10px;" loading="lazy"><p class="note" style="margin:4px 0;">'+esc(f.label)+'</p>' +
+        '<a href="'+esc(f.result.output_url)+'" download target="_blank" class="btn btn-ghost btn-sm" style="display:block;margin-bottom:4px;">\u2b07 Download</a>' +
+        '<button class="btn btn-s btn-sm" onclick="linkLaunchPublish(\''+f.result.generation_id+'\',\''+esc(f.label)+'\',\''+esc(f.ratio)+'\')">Use this</button></div>').join('') +
+    '</div>' +
+    (failed.length ? '<p class="note" style="color:#a02020;">'+failed.length+' format'+(failed.length>1?'s':'')+' failed to generate: '+failed.map(f=>esc(f.label)).join(', ')+'.</p>' : '') +
+    '<div id="llPublishArea" style="margin-top:10px;"></div>',
+    '<button class="btn btn-ghost" onclick="linkLaunchConfirm()">Back</button><span></span>'
+  );
+}
+// A real choice, not just "post the still image" - reuses the exact
+// same real video-generation flow already built for the guided
+// wizard, since a picked format is a real generation with a real id
+// just like any other.
+function linkLaunchPublish(generationId, label, ratio){
+  const area = el('llPublishArea');
+  area.innerHTML =
+    '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;">' +
+    '<p class="note" style="margin:0 0 10px;">'+esc(label)+' selected. Post it as this still image, or turn it into a real video first.</p>' +
+    '<button class="btn btn-s btn-sm" onclick="magentTurnIntoVideoForm(\''+generationId+'\')">\ud83c\udfa5 Turn this into a video first</button> ' +
+    '<button class="btn btn-p btn-sm" onclick="llReviewAndPublish(\''+generationId+'\',\''+ratio+'\')">Continue with this image</button>' +
+    '<div id="videoFormArea"></div>' +
+    '</div>';
+}
+// Real, single review step - caption, location, and an honest account
+// of what actually happens on publish - gathered once, then one real
+// post action, matching "take all the options, then post."
+async function llReviewAndPublish(generationId, ratio){
+  const area = el('llPublishArea');
+  area.innerHTML = '<div class="loading-block"><span class="spin"></span>Writing a caption\u2026</div>';
+  const p = LL_STATE.product;
+  const capJ = await call('generate_post_caption', {
+    title: p ? (el('llTitle') ? el('llTitle').value : p.title) : LL_STATE.desc,
+    description: p ? (el('llProdDesc') ? el('llProdDesc').value : p.description) : LL_STATE.desc,
+    price: p ? (el('llPrice') ? el('llPrice').value : p.price) : undefined,
+  });
+  const cap = capJ.ok ? capJ : { hook: '', caption: LL_STATE.desc || '', cta: '', hashtags: [] };
+  area.innerHTML =
+    '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;">' +
+    '<label class="lbl">Opening line (hook)</label><input class="field" id="llHook" value="'+esc(cap.hook||'')+'" style="margin-bottom:8px;">' +
+    '<label class="lbl">Caption</label><textarea class="field" id="llCaption" style="min-height:70px;margin-bottom:8px;">'+esc(cap.caption||'')+'</textarea>' +
+    '<label class="lbl">Call to action</label><input class="field" id="llCta" value="'+esc(cap.cta||'')+'" style="margin-bottom:8px;">' +
+    '<label class="lbl">Hashtags</label><input class="field" id="llHashtags" value="'+esc((cap.hashtags||[]).join(' '))+'" style="margin-bottom:10px;">' +
+    '<label class="lbl">Location (optional)</label><input class="field" id="llLocation" placeholder="Real Meta location ID, if you already have one" style="max-width:280px;margin-bottom:4px;">' +
+    '<p class="note" style="margin:0 0 10px;">There\u2019s no location search built yet \u2014 leave this blank to use your default salon location, or paste a real ID if you have one.</p>' +
+    '<div style="background:#f7f9f7;border-radius:10px;padding:10px 12px;margin-bottom:10px;">' +
+      '<p class="note" style="margin:0;"><b>What actually happens on publish:</b> posts to your Instagram feed, and automatically shares to Stories too \u2014 that\u2019s always included, not a separate choice. Facebook Page posting isn\u2019t built yet, so this won\u2019t post there.</p>' +
+    '</div>' +
+    '<button class="btn btn-p btn-sm" onclick="llPublishNow(\''+generationId+'\',\''+ratio+'\')">Publish now</button>' +
+    '<div id="llPublishResult" style="margin-top:10px;"></div>' +
+    '</div>';
+}
+async function llPublishNow(generationId, ratio){
+  const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Attaching\u2026';
+  const res = el('llPublishResult');
+  const title = (LL_STATE.product?.title) || (LL_STATE.desc||'Post').slice(0, 60);
+  const hashtags = (el('llHashtags').value||'').split(/\s+/).filter(Boolean);
+  const attachJ = await call('attach_generation_to_content_item', {
+    generation_id: generationId, title, aspect_ratio: ratio,
+    hook: el('llHook').value.trim(), caption: el('llCaption').value.trim(), cta: el('llCta').value.trim(), hashtags,
+    location_id_override: (el('llLocation').value||'').trim() || undefined,
+  });
+  if (!attachJ.ok){ res.innerHTML = errBlock(attachJ.error, ''); btn.disabled=false; btn.textContent='Publish now'; return; }
+  const itemId = attachJ.item.id;
+  btn.innerHTML = '<span class="spin"></span>Publishing\u2026';
+  // Real approval step, since publishing requires it - the owner has
+  // already reviewed everything on this same screen, so this happens
+  // automatically rather than asking for a separate, redundant click.
+  const approveJ = await call('approve_content_plan_item', { id: itemId });
+  if (!approveJ.ok){ res.innerHTML = errBlock(approveJ.error, ''); btn.disabled=false; btn.textContent='Publish now'; return; }
+  const j = await call('publish_content_plan_item_now', { id: itemId });
+  if (!j.ok){ res.innerHTML = errBlock(j.error, ''); btn.disabled=false; btn.textContent='Publish now'; return; }
+  res.innerHTML = '<p class="note" style="color:var(--green);">\u2713 Published'+(j.story_error?' to feed \u2014 Story share failed: '+esc(j.story_error):' to feed and Story')+'.</p><div id="promotePostArea" style="margin-top:10px;"></div>';
+  promotePostForm(itemId);
 }
 function marketingAgentWizard(){ magentState.step = 0; magentStepGoal(); }
 
@@ -4076,16 +4501,24 @@ async function magentGenerateVideo(){
   }, 45000);
   if (!j.ok){ btn.disabled = false; btn.textContent = 'Generate video'; el('vidGenResult').innerHTML = errBlock(j.error, 'magentTurnIntoVideoForm()'); return; }
   el('vidGenResult').innerHTML = '<div class="loading-block"><span class="spin"></span>Generating\u2026 real video generation can take several minutes.</div>';
-  magentPollVideoStatus(j.prediction_id, 0);
+  magentPollVideoStatus(j.prediction_id, j.generation_id, 0);
 }
-async function magentPollVideoStatus(predictionId, attempt){
+async function magentPollVideoStatus(predictionId, videoGenerationId, attempt){
   if (attempt > 40){ el('vidGenResult').innerHTML = '<p class="note">Still processing after a while \u2014 check back shortly, or view it directly in your Replicate dashboard.</p>'; return; }
-  const j = await call('check_video_status', { prediction_id: predictionId });
+  const j = await call('check_video_status', { prediction_id: predictionId, generation_id: videoGenerationId });
   if (!j.ok){ el('vidGenResult').innerHTML = errBlock(j.error, 'magentTurnIntoVideoForm()'); return; }
   if (j.status === 'succeeded' && j.output_url){
     magentState.lastVideoUrl = j.output_url;
     el('vidGenResult').innerHTML = '<video src="'+esc(j.output_url)+'" controls style="width:260px;border-radius:13px;"></video><p class="note" style="margin-top:6px;color:var(--green);">\u2713 Video ready</p>' +
       '<button class="btn btn-s btn-sm" style="margin-top:8px;" onclick="magentExtendVideoForm()">+ Extend this video</button>' +
+      // Real handoff back into "build from link" specifically - the
+      // real video generation id (now genuinely populated, not left
+      // stuck at "processing" forever) is what attaching it to a post
+      // actually needs. Only offered in that context, since the
+      // guided wizard already has its own separate publish path.
+      (typeof LL_STATE !== 'undefined' && LL_STATE && LL_STATE.formats && videoGenerationId
+        ? ' <button class="btn btn-p btn-sm" style="margin-top:8px;" onclick="llReviewAndPublish(\''+videoGenerationId+'\',\'9:16\')">Use this video for the post</button>'
+        : '') +
       '<div id="vidExtendArea" style="margin-top:8px;"></div>';
     return;
   }
@@ -4093,7 +4526,7 @@ async function magentPollVideoStatus(predictionId, attempt){
     el('vidGenResult').innerHTML = errBlock('Video generation '+j.status+(j.error?': '+j.error:''), 'magentTurnIntoVideoForm()');
     return;
   }
-  setTimeout(() => magentPollVideoStatus(predictionId, attempt + 1), 8000);
+  setTimeout(() => magentPollVideoStatus(predictionId, videoGenerationId, attempt + 1), 8000);
 }
 // Real continuation, not a re-generation - the actual last frame of
 // the finished video becomes the starting point for a genuinely new
