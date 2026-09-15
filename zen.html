@@ -3718,8 +3718,16 @@ function linkLaunchConfirm(){
     '<button class="btn btn-ghost" onclick="linkLaunchFlow()">Back</button><button class="btn btn-p" onclick="linkLaunchGenerate()">Generate all formats</button>'
   );
 }
+// Real, distinct angles first - the actual gap admitted directly:
+// every format before this reused one identical brief, so "3 formats"
+// meant one creative reshaped three ways, never three different
+// creatives to actually compare. Generates 3 real, different angles
+// as quick square previews first (cheap, fast, directly comparable),
+// then only expands the one actually chosen into all 3 real formats -
+// not 9 images up front for angles that might not even be used.
 async function linkLaunchGenerate(){
   const selectedModel = el('llModel').value;
+  LL_STATE.model = selectedModel;
   const p = LL_STATE.product;
   const title = p ? (el('llTitle').value||'').trim() : '';
   const prodDesc = p ? (el('llProdDesc').value||'').trim() : '';
@@ -3727,34 +3735,52 @@ async function linkLaunchGenerate(){
   const userRequest = p
     ? `Promote this product/service: ${title}. ${prodDesc}${price ? '. Price: '+price : ''}`
     : LL_STATE.desc;
-  el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Writing the creative brief\u2026</div>', '');
-  const briefJ = await call('generate_creative_brief', { user_request: userRequest }, 30000);
-  if (!briefJ.ok){ el('p-flow').innerHTML = llShell(errBlock(briefJ.error, 'linkLaunchFlow()'), '<button class="btn btn-ghost" onclick="linkLaunchConfirm()">Back</button><span></span>'); return; }
-  const compiled = [briefJ.brief.subject, briefJ.brief.scene, briefJ.brief.activity, briefJ.brief.mood].filter(Boolean).join('. ');
-  LL_STATE.briefId = briefJ.brief.id;
+  LL_STATE.userRequest = userRequest;
+  el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Writing 3 different creative angles\u2026</div>', '');
+  const anglesJ = await call('generate_creative_angles', { user_request: userRequest }, 30000);
+  if (!anglesJ.ok){ el('p-flow').innerHTML = llShell(errBlock(anglesJ.error, 'linkLaunchFlow()'), '<button class="btn btn-ghost" onclick="linkLaunchConfirm()">Back</button><span></span>'); return; }
 
-  // Real, distinguishing capability from here on: every real ad size
-  // generated in one pass, not one format chosen up front - three
-  // genuine separate generations from the same compiled prompt and
-  // model, for visual consistency across formats, not three
-  // disconnected images.
-  const formats = [['1:1','Square (feed)'],['9:16','Story / Reel'],['4:5','Portrait (feed)']];
+  el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Generating a quick preview of each angle\u2026</div>', '');
+  const previewResults = await Promise.all(anglesJ.angles.map((a) => {
+    const compiled = [a.subject, a.scene, a.activity, a.mood].filter(Boolean).join('. ');
+    return call('run_generation', { compiled_prompt: compiled, model: selectedModel, aspect_ratio: '1:1' }, 60000);
+  }));
+  LL_STATE.angles = anglesJ.angles.map((a, i) => ({ ...a, preview: previewResults[i] }));
+  linkLaunchShowAngles();
+}
+function linkLaunchShowAngles(){
+  const ok = LL_STATE.angles.filter(a => a.preview.ok);
   el('p-flow').innerHTML = llShell(
-    '<div class="loading-block"><span class="spin"></span>Generating all 3 formats\u2026 this takes a little longer since each one is real, not a crop.</div>',
-    ''
+    zen('3 genuinely different angles for this same product \u2014 pick the one that fits best, and Zen builds every real ad size from it.') +
+    '<div style="display:flex;gap:12px;flex-wrap:wrap;margin:10px 0;">' +
+      LL_STATE.angles.map((a, i) => a.preview.ok
+        ? '<div style="text-align:center;width:150px;"><img src="'+esc(a.preview.output_url)+'" style="width:150px;border-radius:10px;" loading="lazy"><p class="note" style="margin:4px 0;font-weight:600;color:var(--ink);">'+esc(a.angle_name||'Angle '+(i+1))+'</p>' +
+          '<button class="btn btn-s btn-sm" onclick="linkLaunchExpandFormats('+i+')">Use this angle</button></div>'
+        : '<div style="text-align:center;width:150px;"><p class="note" style="color:#a02020;">'+esc(a.angle_name||'Angle '+(i+1))+' failed to generate.</p></div>').join('') +
+    '</div>' +
+    (!ok.length ? '<p class="note" style="color:#a02020;">None of the 3 angles generated \u2014 try again.</p>' : ''),
+    '<button class="btn btn-ghost" onclick="linkLaunchConfirm()">Back</button><span></span>'
   );
-  const results = await Promise.all(formats.map(([ratio]) =>
-    // Real bug fixed here, reported directly ("3 formats failed to
-    // generate"): the actual Replicate API call uses this model string
-    // directly as the API path (/v1/models/${model}/predictions) - a
-    // bare "flux-2-pro" with no owner prefix isn't a real, resolvable
-    // path on Replicate, which is exactly why all three calls failed
-    // identically (they all shared this same wrong string). Every
-    // other real call to this model elsewhere in this app already uses
-    // the correct, full "black-forest-labs/flux-2-pro" - this was the
-    // one place that didn't.
-    call('run_generation', { compiled_prompt: compiled, model: selectedModel, aspect_ratio: ratio, creative_brief_id: LL_STATE.briefId }, 60000)
-  ));
+}
+// Real, per-format composition - a story slot needs real empty space
+// top and bottom for captions and UI, a square post doesn't; asking
+// for the same composition and just changing the canvas around it is
+// why format adaptation read as "the same picture" before. Each
+// format gets its own real, distinct prompt built from the same
+// chosen angle, not the identical prompt reused three times.
+async function linkLaunchExpandFormats(angleIndex){
+  const angle = LL_STATE.angles[angleIndex];
+  LL_STATE.chosenAngle = angle;
+  const formats = [
+    ['1:1', 'Square (feed)', 'Full-frame, centered composition with the subject filling most of the frame \u2014 this will be seen in a normal feed scroll.'],
+    ['9:16', 'Story / Reel', 'Vertical composition with genuine open space in the top and bottom thirds of the frame, since Stories UI and captions sit there \u2014 keep the main subject centered in the middle third, not spread across the full height.'],
+    ['4:5', 'Portrait (feed)', 'Taller vertical framing than a square post, subject positioned slightly above center to leave natural room for a caption below in the feed.'],
+  ];
+  el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Building all 3 real formats from this angle\u2026</div>', '');
+  const results = await Promise.all(formats.map(([ratio, , composition]) => {
+    const compiled = [angle.subject, angle.scene, angle.activity, angle.mood, composition].filter(Boolean).join('. ');
+    return call('run_generation', { compiled_prompt: compiled, model: LL_STATE.model, aspect_ratio: ratio }, 60000);
+  }));
   LL_STATE.formats = formats.map((f, i) => ({ ratio: f[0], label: f[1], result: results[i] }));
   linkLaunchShowResults();
 }
