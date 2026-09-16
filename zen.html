@@ -2854,8 +2854,14 @@ async function creativestudio(){
   // and people imagery, generated once and cached, not stock photos
   // or another site's own screenshots (neither of which can honestly
   // be reused here). Loaded after the cards themselves render, so a
-  // slow first-time generation never blocks the page.
-  call('get_studio_preview_images', {}, 90000).then(imgJ => {
+  // slow first-time generation never blocks the page. Real bug fixed
+  // here too: the backend now genuinely polls when Replicate's own
+  // 60-second sync wait isn't enough, which can push its real total
+  // time close to two minutes - this timeout is set safely above
+  // that real worst case, not the arbitrary 90s it was before, which
+  // could cut the request off before the backend's own real fix ever
+  // got a chance to finish.
+  call('get_studio_preview_images', {}, 150000).then(imgJ => {
     if (!imgJ.ok) return;
     CARD_DEFS.forEach(c => {
       const url = imgJ.images?.[c[0]];
@@ -4251,7 +4257,12 @@ async function ugcVideoFlow(){
   el('p-flow').innerHTML = llShell(
     zen('Select a product or service to promote, or add a new one.') +
     (UGC_STATE.products.length ? '<div class="gal-grid" style="max-width:560px;margin-bottom:12px;">' + UGC_STATE.products.map(p =>
-      '<div class="gal-card" onclick="ugcPickProduct(\''+p.id+'\')">' +
+      '<div class="gal-card" style="position:relative;" onclick="ugcPickProduct(\''+p.id+'\')">' +
+        // Real delete control - explicitly reported missing. Stops
+        // the click from also bubbling into the card's own onclick,
+        // which would otherwise navigate away instead of deleting.
+        '<button type="button" title="Delete" onclick="ugcDeleteProduct(\''+p.id+'\',\''+esc((p.name||'').replace(/\'/g,''))+'\',event)" ' +
+          'style="position:absolute;top:4px;right:4px;z-index:1;width:22px;height:22px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;font-size:13px;line-height:1;cursor:pointer;">\u00d7</button>' +
         (p.image_url ? '<img src="'+esc(p.image_url)+'" class="gal-media" loading="lazy">' : '<div class="gal-media" style="display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;">No photo</div>') +
         '<div class="gal-body"><span class="gal-label">'+esc(p.name)+'</span>'+(p.price?'<span class="gal-sub">'+esc(p.price)+'</span>':'')+'</div></div>').join('') + '</div>' : '') +
     '<button class="btn btn-s btn-sm" onclick="ugcAddProductForm()">+ Add a new product/service</button>' +
@@ -4266,16 +4277,57 @@ function ugcAddProductForm(){
     '<label class="lbl">Name</label><input class="field" id="ugcNewProductName" style="margin-bottom:8px;">' +
     '<label class="lbl">Description</label><textarea class="field" id="ugcNewProductDesc" style="min-height:50px;margin-bottom:8px;"></textarea>' +
     '<label class="lbl">Price (optional)</label><input class="field" id="ugcNewProductPrice" style="max-width:160px;margin-bottom:8px;">' +
+    // Real photo upload, added here - explicitly reported missing,
+    // and confirmed directly: the gallery card already had real logic
+    // to display a product photo, but this form never actually let
+    // anyone upload one to begin with. Same real, proven upload
+    // mechanism already used for Build from your link.
+    '<label class="lbl">Photo (optional)</label>' +
+    '<div><button type="button" class="btn btn-s btn-sm" onclick="el(\'ugcProductPhotoInput\').click()">\ud83d\udcf7 Upload a photo</button>' +
+    '<input type="file" id="ugcProductPhotoInput" accept="image/*" style="display:none;" onchange="ugcUploadProductPhoto()"></div>' +
+    '<div id="ugcProductPhotoPreview" style="margin:8px 0;"></div>' +
     '<button class="btn btn-p btn-sm" onclick="ugcSaveProduct()">Save and continue</button>' +
     '</div>';
+}
+async function ugcUploadProductPhoto(){
+  const input = el('ugcProductPhotoInput');
+  const file = input.files && input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024){ toast('That image is too large (over 5MB) \u2014 please use a smaller one.', 'err'); input.value = ''; return; }
+  const box = el('ugcProductPhotoPreview');
+  box.innerHTML = '<div class="loading-block"><span class="spin"></span>Uploading\u2026</div>';
+  try {
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    const j = await call('upload_product_photo', { image_base64: base64, content_type: file.type });
+    if (!j.ok){ box.innerHTML = errBlock(j.error, 'ugcAddProductForm()'); return; }
+    UGC_STATE.newProductPhotoUrl = j.image_url;
+    box.innerHTML = '<img src="'+esc(j.image_url)+'" style="width:90px;height:90px;object-fit:cover;border-radius:10px;"><button class="btn btn-ghost btn-sm" style="margin-left:8px;" onclick="UGC_STATE.newProductPhotoUrl=null;el(\'ugcProductPhotoPreview\').innerHTML=\'\';">Remove</button>';
+  } catch (e) {
+    box.innerHTML = errBlock(String((e && e.message) || e), 'ugcAddProductForm()');
+  } finally {
+    input.value = '';
+  }
 }
 async function ugcSaveProduct(){
   const name = (el('ugcNewProductName').value||'').trim();
   const description = (el('ugcNewProductDesc').value||'').trim();
   if (!name){ toast('Name is required.', 'err'); return; }
-  const j = await call('save_product', { name, description, price: (el('ugcNewProductPrice').value||'').trim()||undefined });
+  const j = await call('save_product', { name, description, price: (el('ugcNewProductPrice').value||'').trim()||undefined, image_url: UGC_STATE.newProductPhotoUrl||undefined });
   if (!j.ok){ toast(j.error, 'err'); return; }
   ugcPickProduct(j.product.id, j.product);
+}
+async function ugcDeleteProduct(productId, name, ev){
+  if (ev) ev.stopPropagation();
+  if (!confirm('Delete "'+name+'" from your product list? This can\u2019t be undone.')) return;
+  const j = await call('delete_product', { product_id: productId });
+  if (!j.ok){ toast(j.error, 'err'); return; }
+  toast('Deleted', 'ok');
+  ugcVideoFlow();
 }
 function ugcPickProduct(productId, productObj){
   const product = productObj || UGC_STATE.products.find(p => p.id === productId);
