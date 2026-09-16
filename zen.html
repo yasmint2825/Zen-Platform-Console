@@ -2998,26 +2998,33 @@ async function renderPerformanceTab(){
   body.innerHTML = '<div class="loading-block"><span class="spin"></span></div>';
   const j = await call('get_ad_attribution', { days: 30 });
   if (!j.ok){ body.innerHTML = errBlock(j.error, 'promotions()'); return; }
+  // Real change made here, asked for directly: lifetime value (a
+  // customer's unrelated historical spend) dropped entirely in favor
+  // of a real, honest "did this ad convert people while it was
+  // actually running" - matched against the ad set's own real active
+  // period from Meta, not just a generic follow-up window.
   const tableHtml = (!j.ads || !j.ads.length)
     ? '<p class="note">'+esc(j.note||'No ad conversations yet.')+'</p>'
     : '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">' +
       '<tr style="color:var(--muted);font-size:10.5px;text-align:left;">' +
         '<th style="padding:4px 6px;">Ad</th><th style="padding:4px 6px;text-align:right;">Qualified</th>' +
         '<th style="padding:4px 6px;text-align:right;">Visited</th><th style="padding:4px 6px;text-align:right;">Repeat</th>' +
-        '<th style="padding:4px 6px;text-align:right;">Revenue</th><th style="padding:4px 6px;text-align:right;">Real LTV</th>' +
-        '<th style="padding:4px 6px;text-align:right;">LTV ROAS</th><th></th></tr>' +
+        '<th style="padding:4px 6px;text-align:right;">Revenue</th><th style="padding:4px 6px;text-align:right;">Converted while active</th>' +
+        '<th style="padding:4px 6px;text-align:right;">ROAS (active)</th><th></th></tr>' +
       j.ads.map(a => '<tr style="border-top:1px solid var(--line);">' +
-        '<td style="padding:5px 6px;"><b>'+esc(a.headline||a.ad_id)+'</b></td>' +
+        '<td style="padding:5px 6px;"><b>'+esc(a.headline||a.ad_id)+'</b>' +
+          (a.active_period ? '<div class="note" style="margin-top:2px;">'+(a.active_period.still_active?'\ud83d\udfe2 Still running':'\u23f9\ufe0f Ended '+(a.active_period.end?new Date(a.active_period.end).toLocaleDateString():''))+'</div>' : '') +
+        '</td>' +
         '<td style="padding:5px 6px;text-align:right;">'+(a.qualified_rate!=null?a.qualified_rate+'%':'\u2014')+' <span class="note">('+a.qualified+'/'+a.conversations+')</span></td>' +
         '<td style="padding:5px 6px;text-align:right;">'+(a.visit_rate!=null?a.visit_rate+'%':'\u2014')+'</td>' +
         '<td style="padding:5px 6px;text-align:right;">'+money(a.repeat_customers)+'</td>' +
         '<td style="padding:5px 6px;text-align:right;">AED '+money(a.revenue)+'</td>' +
-        '<td style="padding:5px 6px;text-align:right;"><b>AED '+money(a.ltv_total)+'</b></td>' +
-        '<td style="padding:5px 6px;text-align:right;'+(a.ltv_return_on_spend>=1?'color:var(--green);font-weight:600;':'')+'">'+(a.ltv_return_on_spend!=null?a.ltv_return_on_spend+'x':'\u2014')+'</td>' +
+        '<td style="padding:5px 6px;text-align:right;"><b>'+money(a.converted_during_active_period)+'</b><div class="note">AED '+money(a.revenue_during_active_period)+'</div></td>' +
+        '<td style="padding:5px 6px;text-align:right;'+(a.return_on_spend_during_active_period>=1?'color:var(--green);font-weight:600;':'')+'">'+(a.return_on_spend_during_active_period!=null?a.return_on_spend_during_active_period+'x':'\u2014')+'</td>' +
         '<td style="padding:5px 6px;"><button class="btn btn-s btn-sm" onclick=\'attributionRecord('+JSON.stringify(a.headline||a.ad_id)+','+JSON.stringify(a)+')\'>Record finding</button></td>' +
       '</tr>').join('') +
       '</table></div>' +
-      '<p class="note" style="margin-top:8px;">Real LTV sums each unique customer\u2019s actual full transaction history, not just what they spent in the two weeks after this conversation \u2014 the number that actually answers \u201cwas this ad worth it\u201d for a business built on repeat visits.</p>';
+      '<p class="note" style="margin-top:8px;">\u201cConverted while active\u201d counts only real visits that happened while this specific ad was actually running \u2014 a sale that landed after the ad was already paused or ended doesn\u2019t honestly belong to it, even if it fell within the usual follow-up window.</p>';
   body.innerHTML = renderBookingsBox(j) +
     '<div class="sechead" style="margin-top:0;"><h2>Per-ad performance</h2></div>' + tableHtml;
 }
@@ -3521,7 +3528,7 @@ async function organicSuggest(postId, reach, engagement, caption){
 async function attributionFlow(){
   el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="strategyLibraryFlow()" style="margin-bottom:16px;">\u2190 Back</button>' +
     '<h1 style="font-size:22px;">Ad attribution</h1>' +
-    zen('Which ads produce genuine commercial interest and real visits, not just cheap clicks \u2014 including real lifetime value, not just what happened in the first two weeks.') +
+    zen('Which ads produce genuine commercial interest and real visits, not just cheap clicks \u2014 and whether they actually converted people while the ad was still running.') +
     '<div id="attrResult"><div class="loading-block"><span class="spin"></span></div></div>';
   const j = await call('get_ad_attribution', { days: 30 });
   const box = el('attrResult');
@@ -3531,25 +3538,27 @@ async function attributionFlow(){
     '<tr style="color:var(--muted);font-size:10.5px;text-align:left;">' +
       '<th style="padding:4px 6px;">Ad</th><th style="padding:4px 6px;text-align:right;">Qualified</th>' +
       '<th style="padding:4px 6px;text-align:right;">Visited</th><th style="padding:4px 6px;text-align:right;">Repeat</th>' +
-      '<th style="padding:4px 6px;text-align:right;">Revenue</th><th style="padding:4px 6px;text-align:right;">Real LTV</th>' +
-      '<th style="padding:4px 6px;text-align:right;">LTV ROAS</th><th></th></tr>' +
+      '<th style="padding:4px 6px;text-align:right;">Revenue</th><th style="padding:4px 6px;text-align:right;">Converted while active</th>' +
+      '<th style="padding:4px 6px;text-align:right;">ROAS (active)</th><th></th></tr>' +
     j.ads.map(a => '<tr style="border-top:1px solid var(--line);">' +
-      '<td style="padding:5px 6px;"><b>'+esc(a.headline||a.ad_id)+'</b></td>' +
+      '<td style="padding:5px 6px;"><b>'+esc(a.headline||a.ad_id)+'</b>' +
+        (a.active_period ? '<div class="note" style="margin-top:2px;">'+(a.active_period.still_active?'\ud83d\udfe2 Still running':'\u23f9\ufe0f Ended '+(a.active_period.end?new Date(a.active_period.end).toLocaleDateString():''))+'</div>' : '') +
+      '</td>' +
       '<td style="padding:5px 6px;text-align:right;">'+(a.qualified_rate!=null?a.qualified_rate+'%':'\u2014')+' <span class="note">('+a.qualified+'/'+a.conversations+')</span></td>' +
       '<td style="padding:5px 6px;text-align:right;">'+(a.visit_rate!=null?a.visit_rate+'%':'\u2014')+'</td>' +
       '<td style="padding:5px 6px;text-align:right;">'+money(a.repeat_customers)+'</td>' +
       '<td style="padding:5px 6px;text-align:right;">AED '+money(a.revenue)+'</td>' +
-      '<td style="padding:5px 6px;text-align:right;"><b>AED '+money(a.ltv_total)+'</b></td>' +
-      '<td style="padding:5px 6px;text-align:right;'+(a.ltv_return_on_spend>=1?'color:var(--green);font-weight:600;':'')+'">'+(a.ltv_return_on_spend!=null?a.ltv_return_on_spend+'x':'\u2014')+'</td>' +
+      '<td style="padding:5px 6px;text-align:right;"><b>'+money(a.converted_during_active_period)+'</b><div class="note">AED '+money(a.revenue_during_active_period)+'</div></td>' +
+      '<td style="padding:5px 6px;text-align:right;'+(a.return_on_spend_during_active_period>=1?'color:var(--green);font-weight:600;':'')+'">'+(a.return_on_spend_during_active_period!=null?a.return_on_spend_during_active_period+'x':'\u2014')+'</td>' +
       '<td style="padding:5px 6px;"><button class="btn btn-s btn-sm" onclick=\'attributionRecord('+JSON.stringify(a.headline||a.ad_id)+','+JSON.stringify(a)+')\'>Record finding</button></td>' +
     '</tr>').join('') +
     '</table></div>' +
-    '<p class="note" style="margin-top:8px;">Real LTV sums each unique customer\u2019s actual full transaction history, not just what they spent in the two weeks after this conversation \u2014 the number that actually answers \u201cwas this ad worth it\u201d for a business built on repeat visits.</p>';
+    '<p class="note" style="margin-top:8px;">\u201cConverted while active\u201d counts only real visits that happened while this specific ad was actually running \u2014 a sale that landed after the ad was already paused or ended doesn\u2019t honestly belong to it, even if it fell within the usual follow-up window.</p>';
 }
 async function attributionRecord(label, adData){
   const hypothesis = prompt('What is this ad testing? (e.g. "Premium device targeting for '+label+'")');
   if (!hypothesis) return;
-  const status = adData.ltv_return_on_spend >= 1 ? 'confirmed' : 'rejected';
+  const status = adData.return_on_spend_during_active_period >= 1 ? 'confirmed' : 'rejected';
   const j = await call('record_attribution_evidence', { hypothesis, status, supporting_data: adData });
   if (!j.ok){ toast(j.error, 'err'); return; }
   toast('Recorded as '+status+' \u2014 '+(status==='confirmed'?'this will now show as an already-tested pattern in future weekly reviews':'won\u2019t be suggested again as an untested tactic'), 'ok');
