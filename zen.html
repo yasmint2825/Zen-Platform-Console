@@ -2862,13 +2862,35 @@ async function creativestudio(){
   // could cut the request off before the backend's own real fix ever
   // got a chance to finish.
   call('get_studio_preview_images', {}, 150000).then(imgJ => {
-    if (!imgJ.ok) return;
+    // Real, direct way to validate whether these are actually being
+    // reused - logged plainly so this is checkable in the browser
+    // console rather than taken on faith. "hit" means the real,
+    // previously-generated images were reused; "generated" means real
+    // new ones were just made in this request, which is expected once
+    // (first visit, or right after a real prompt/version change) but
+    // a real sign of a caching problem if it keeps happening on every
+    // single visit.
+    console.log('[Creative Studio] preview image cache status:', imgJ.cache_status || (imgJ.ok ? 'unknown' : 'request failed'), imgJ.cache_save_error ? ('- save error: '+imgJ.cache_save_error) : '');
     CARD_DEFS.forEach(c => {
-      const url = imgJ.images?.[c[0]];
-      if (!url) return;
+      const url = imgJ.ok ? imgJ.images?.[c[0]] : null;
       const cardEl = el('studioCard_'+c[0]);
       const mediaEl = cardEl && cardEl.querySelector('div,img');
-      if (mediaEl) mediaEl.outerHTML = cardMedia(c[0], url);
+      if (!mediaEl) return;
+      if (url) { mediaEl.outerHTML = cardMedia(c[0], url); return; }
+      // Real, honest fallback - reported directly ("not loading"): a
+      // card whose real image never came back (the request failed, or
+      // this one genuinely never finished generating) was left with an
+      // indefinitely spinning placeholder forever, which looks
+      // identical to "still loading" even once the real attempt is
+      // long over. Swapped for a real, static icon instead, once the
+      // call has genuinely finished one way or another.
+      mediaEl.outerHTML = '<div style="width:56px;height:56px;border-radius:10px;background:var(--green-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px;">\ud83d\uddbc\ufe0f</div>';
+    });
+  }).catch(() => {
+    CARD_DEFS.forEach(c => {
+      const cardEl = el('studioCard_'+c[0]);
+      const mediaEl = cardEl && cardEl.querySelector('div,img');
+      if (mediaEl) mediaEl.outerHTML = '<div style="width:56px;height:56px;border-radius:10px;background:var(--green-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px;">\ud83d\uddbc\ufe0f</div>';
     });
   });
   const j = await call('list_all_content_items', {});
@@ -4106,6 +4128,12 @@ async function cloneAdAnalyze(){
 function cloneAdShowAnalysis(){
   const a = CLONE_STATE.analysis;
   el('p-flow').innerHTML = llShell(
+    // Real fix, reported directly: the uploaded reference thumbnail
+    // was shown once on the upload screen and then genuinely lost for
+    // the rest of the flow - this screen described the reference in
+    // words but never showed it again. Kept visible here too, so the
+    // real image and its real analysis sit together.
+    (CLONE_STATE.referenceUrl ? '<img src="'+esc(CLONE_STATE.referenceUrl)+'" style="width:120px;border-radius:10px;margin-bottom:12px;display:block;">' : '') +
     '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-bottom:12px;">' +
       '<b>What Zen found in this reference</b>' +
       '<div class="list" style="margin-top:8px;">' +
@@ -4137,7 +4165,14 @@ async function cloneAdGenerate(){
   // not a second one for every studio feature.
   LL_STATE = { desc };
   el('p-flow').innerHTML = llShell(
-    '<img src="'+esc(genJ.output_url)+'" style="width:220px;border-radius:13px;margin-bottom:12px;">' +
+    // Real fix, same reported issue as the analysis screen above: show
+    // the real reference alongside the real result, not just the
+    // result on its own - the actual comparison is the point of this
+    // whole feature.
+    '<div class="gal-grid" style="max-width:420px;margin-bottom:12px;">' +
+      (CLONE_STATE.referenceUrl ? '<div class="gal-card" style="cursor:default;"><img src="'+esc(CLONE_STATE.referenceUrl)+'" class="gal-media"><div class="gal-body"><span class="gal-label">Reference</span></div></div>' : '') +
+      '<div class="gal-card" style="cursor:default;"><img src="'+esc(genJ.output_url)+'" class="gal-media"><div class="gal-body"><span class="gal-label">Your version</span></div></div>' +
+    '</div>' +
     '<a href="'+esc(genJ.output_url)+'" download target="_blank" class="btn btn-ghost btn-sm" style="display:block;width:fit-content;margin-bottom:10px;">\u2b07 Download</a>' +
     '<div id="llPublishArea"></div>',
     '<button class="btn btn-ghost" onclick="cloneAdShowAnalysis()">Back</button><button class="btn btn-p" onclick="linkLaunchPublish(\''+genJ.generation_id+'\',\'Clone\',\'1:1\')">Continue to publish</button>',
