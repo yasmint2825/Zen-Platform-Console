@@ -3035,6 +3035,19 @@ function renderBookingsBox(attr){
     '</div>' +
   '</div>';
 }
+// Real, readable placement label - shared between Promotions and the
+// strategy-flow attribution screen, so a raw Meta value like
+// "instagram"/"story" reads as "Instagram \u2014 Story" in both real
+// places this data is shown, not formatted two different ways.
+function fmtPlacement(placement){
+  if (!placement) return '';
+  const platformNames = { facebook: 'Facebook', instagram: 'Instagram', audience_network: 'Audience Network', messenger: 'Messenger' };
+  const positionNames = { feed: 'Feed', story: 'Story', reels: 'Reels', explore: 'Explore', profile_feed: 'Profile Feed', search: 'Search', marketplace: 'Marketplace', video_feeds: 'Video Feeds' };
+  const platform = platformNames[String(placement.platform||'').toLowerCase()] || placement.platform;
+  const position = positionNames[String(placement.position||'').toLowerCase()] || placement.position;
+  const share = placement.spend_share != null ? ' ('+placement.spend_share+'% of spend)' : '';
+  return '<div class="note" style="margin-top:2px;">\ud83d\udccd '+esc(platform)+' \u2014 '+esc(position)+share+'</div>';
+}
 async function renderPerformanceTab(){
   const body = el('promotionsBody');
   body.innerHTML = '<div class="loading-block"><span class="spin"></span></div>';
@@ -3056,6 +3069,7 @@ async function renderPerformanceTab(){
       j.ads.map(a => '<tr style="border-top:1px solid var(--line);">' +
         '<td style="padding:5px 6px;"><b>'+esc(a.headline||a.ad_id)+'</b>' +
           (a.active_period ? '<div class="note" style="margin-top:2px;">'+(a.active_period.still_active?'\ud83d\udfe2 Still running':'\u23f9\ufe0f Ended '+(a.active_period.end?new Date(a.active_period.end).toLocaleDateString():''))+'</div>' : '') +
+          fmtPlacement(a.placement) +
         '</td>' +
         '<td style="padding:5px 6px;text-align:right;">'+(a.qualified_rate!=null?a.qualified_rate+'%':'\u2014')+' <span class="note">('+a.qualified+'/'+a.conversations+')</span></td>' +
         '<td style="padding:5px 6px;text-align:right;">'+(a.visit_rate!=null?a.visit_rate+'%':'\u2014')+'</td>' +
@@ -3585,6 +3599,7 @@ async function attributionFlow(){
     j.ads.map(a => '<tr style="border-top:1px solid var(--line);">' +
       '<td style="padding:5px 6px;"><b>'+esc(a.headline||a.ad_id)+'</b>' +
         (a.active_period ? '<div class="note" style="margin-top:2px;">'+(a.active_period.still_active?'\ud83d\udfe2 Still running':'\u23f9\ufe0f Ended '+(a.active_period.end?new Date(a.active_period.end).toLocaleDateString():''))+'</div>' : '') +
+          fmtPlacement(a.placement) +
       '</td>' +
       '<td style="padding:5px 6px;text-align:right;">'+(a.qualified_rate!=null?a.qualified_rate+'%':'\u2014')+' <span class="note">('+a.qualified+'/'+a.conversations+')</span></td>' +
       '<td style="padding:5px 6px;text-align:right;">'+(a.visit_rate!=null?a.visit_rate+'%':'\u2014')+'</td>' +
