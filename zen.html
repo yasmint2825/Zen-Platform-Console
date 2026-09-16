@@ -2252,6 +2252,20 @@ async function whatsappSettingsPanel(){
     section('Reply assistant \u2014 what it knows',
       '<p class="note" style="margin-top:0;">The assistant may only say what is listed below. Anything missing, it flags for a person rather than guessing \u2014 a wrong price sent over WhatsApp is a promise that has to be honoured or retracted.</p>' +
       (reply.ok ? autoReplyToggleHTML(reply) : '<p class="note" style="color:#a02020;">'+esc(reply.error)+'</p>') +
+      // Real, new section - this data was already being computed on
+      // every single auto-reply, but nothing ever let an owner
+      // actually see it. A service/package with two different
+      // recorded prices gets quietly withheld from being confidently
+      // quoted by the assistant - shown here so it's findable and
+      // fixable at the real source, not just something the assistant
+      // has to work around silently.
+      (priorities.ok && priorities.price_conflicts && priorities.price_conflicts.length
+        ? '<div class="sechead"><h2>\u26a0\ufe0f Prices needing a fix</h2></div>' +
+          '<p class="note" style="margin-top:0;">These have two different prices on record, so the assistant won\u2019t quote either one \u2014 fix the duplicate/conflicting entry in your price list to resolve this.</p>' +
+          '<div class="list">' + priorities.price_conflicts.map(c =>
+            '<div class="list-row"><span><b>'+esc(c.name)+'</b></span><span class="note">AED '+c.prices.map(p=>esc(String(p))).join(' and AED ')+'</span></div>').join('') +
+          '</div>'
+        : '') +
       '<div class="sechead"><h2>Facts it can use</h2></div>' +
       (facts.ok ? factsListHTML(facts.facts) : '<p class="note" style="color:#a02020;">'+esc(facts.error)+'</p>') +
       factAddFormHTML() +
@@ -7156,6 +7170,7 @@ async function settings(){
   // console's reply-assistant and cooldown settings.
   const rows = [
     ['⌂','Salon profile','Name, services, hours','profile',true],
+    ['✂','Packages & Services','Every price, package, and what\u2019s included \u2014 what the reply assistant actually knows','services',null],
     ['◐','Brand & Strategy','Brand settings, business strategy, Brand DNA','brand',null],
     ['💬','WhatsApp settings','Reply assistant, what to sell, campaign rules, templates','whatsapp',null],
     ['◎','Connections & Integrations','Instagram posting, Meta Ads, Replicate, Canva \u2014 real status for each','connections',null],
@@ -7169,7 +7184,7 @@ async function settings(){
     ['▣','Billing','Which AI model each feature uses, and what it costs','billing',null],
   ];
   el('setList').innerHTML = rows.map(r =>
-    '<div class="list-row" style="cursor:pointer;" onclick="'+(r[3]==='whatsapp'?"flow(()=>whatsappSettingsPanel())":r[3]==='billing'?"flow(()=>billingModelSettings())":r[3]==='avatars'?"flow(()=>avatarLibrarySettings())":r[3]==='gallery'?"flow(()=>salonGallerySettings())":r[3]==='autopilot'?"flow(()=>autopilotSettings())":r[3]?"flow(()=>settingsDetail('"+r[3]+"'))":"toast('This screen would open here.')")+'">' +
+    '<div class="list-row" style="cursor:pointer;" onclick="'+(r[3]==='whatsapp'?"flow(()=>whatsappSettingsPanel())":r[3]==='billing'?"flow(()=>billingModelSettings())":r[3]==='avatars'?"flow(()=>avatarLibrarySettings())":r[3]==='gallery'?"flow(()=>salonGallerySettings())":r[3]==='autopilot'?"flow(()=>autopilotSettings())":r[3]==='services'?"flow(()=>servicesPanel())":r[3]?"flow(()=>settingsDetail('"+r[3]+"'))":"toast('This screen would open here.')")+'">' +
     '<span style="display:flex;gap:12px;align-items:center;"><span style="width:30px;height:30px;border-radius:9px;background:#eef0ed;display:grid;place-items:center;">'+r[0]+'</span>' +
     '<span><b>'+r[1]+'</b><div class="sub">'+r[2]+'</div></span></span>' +
     (r[4]!==null ? '<span class="badge '+(r[4]?'on':'warn')+'">'+(r[4]?'Done':'Not yet')+'</span>' : '<span style="color:var(--muted);">›</span>') +
@@ -7540,6 +7555,109 @@ async function dndToggle(key, on, who){
   if (j.note) toast(j.note, '');
   el('dndSearch').value = ''; el('dndSearchResults').innerHTML = '';
   loadDndSettings();
+}
+// Real packages & services management - explicitly requested,
+// confirmed no way to view or edit these existed anywhere in this app
+// before now. The real column names on this table aren't known in
+// advance - built to render from whatever columns a row genuinely
+// has, rather than assume a fixed set this app can't directly verify.
+const SVC_SYSTEM_COLUMNS = ['id', 'tenant_id', 'created_at', 'updated_at', 'created_by'];
+let SVC_CACHE = [];
+async function servicesPanel(){
+  el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:21px;">Packages & Services</h1><div class="loading-block"><span class="spin"></span>Loading your real price list\u2026</div>';
+  const j = await call('list_salon_services', {});
+  if (!j.ok){ el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' + errBlock(j.error, 'servicesPanel()'); return; }
+  SVC_CACHE = j.services || [];
+  servicesRender();
+}
+function servicesRender(){
+  const rows = SVC_CACHE.map(s => {
+    const name = s.name || s.service_name || s.title || s.service || s.label || '(unnamed)';
+    const price = s.price ?? s.amount ?? s.rate ?? s.cost ?? s.value;
+    const desc = s.description || s.details || s.includes || '';
+    return '<div class="list-row" style="cursor:pointer;align-items:flex-start;" onclick="servicesEditForm(\''+s.id+'\')">' +
+      '<span><b>'+esc(String(name))+'</b>'+(desc?'<div class="sub">'+esc(String(desc))+'</div>':'')+'</span>' +
+      '<span style="white-space:nowrap;">'+(price!=null?'AED '+esc(String(price)):'<span class="note">no price</span>')+'</span>' +
+    '</div>';
+  }).join('');
+  el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:21px;">Packages & Services</h1>' +
+    '<p class="note" style="margin:4px 0 12px;">This is exactly what the WhatsApp reply assistant knows and can quote from \u2014 edit anything here and it reaches every real reply right away.</p>' +
+    '<button class="btn btn-s btn-sm" style="margin-bottom:10px;" onclick="servicesAddForm()">+ Add a new service or package</button>' +
+    '<div id="svcAddArea"></div>' +
+    (rows ? '<div class="list">'+rows+'</div>' : '<p class="note">Nothing on your price list yet.</p>');
+}
+function servicesEditForm(id){
+  const s = SVC_CACHE.find(x => String(x.id) === String(id));
+  if (!s) return;
+  const fields = Object.keys(s).filter(k => !SVC_SYSTEM_COLUMNS.includes(k));
+  el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="servicesRender()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:21px;">Edit service</h1>' +
+    '<div style="margin-top:10px;">' +
+      fields.map(f => {
+        const v = s[f];
+        const isBool = typeof v === 'boolean';
+        const label = f.charAt(0).toUpperCase() + f.slice(1).replace(/_/g, ' ');
+        return '<label class="lbl">'+esc(label)+'</label>' +
+          (isBool
+            ? '<div style="margin-bottom:10px;"><input type="checkbox" id="svcField_'+esc(f)+'" '+(v?'checked':'')+'></div>'
+            : '<input class="field" id="svcField_'+esc(f)+'" value="'+esc(v==null?'':String(v))+'" style="margin-bottom:10px;">');
+      }).join('') +
+    '</div>' +
+    '<button class="btn btn-p btn-sm" onclick="servicesSaveEdit(\''+id+'\')">Save</button> ' +
+    '<button class="btn btn-ghost btn-sm" onclick="servicesDelete(\''+id+'\',\''+esc((s.name||'this service').replace(/\'/g,''))+'\')">Delete</button>';
+}
+async function servicesSaveEdit(id){
+  const s = SVC_CACHE.find(x => String(x.id) === String(id));
+  if (!s) return;
+  const fields = Object.keys(s).filter(k => !SVC_SYSTEM_COLUMNS.includes(k));
+  const updated = {};
+  fields.forEach(f => {
+    const el_ = el('svcField_'+f);
+    if (!el_) return;
+    if (el_.type === 'checkbox') { updated[f] = el_.checked; return; }
+    const raw = el_.value;
+    // Keeps the same real type the value already had - a numeric
+    // price stays numeric, so it can still be compared/sorted
+    // correctly everywhere else this data is used.
+    updated[f] = (typeof s[f] === 'number') ? (raw === '' ? null : Number(raw)) : raw;
+  });
+  const j = await call('update_salon_service', { id, fields: updated });
+  if (!j.ok){ toast(j.error, 'err'); return; }
+  toast('Saved', 'ok');
+  servicesPanel();
+}
+async function servicesDelete(id, name){
+  if (!confirm('Delete "'+name+'"? This can\u2019t be undone.')) return;
+  const j = await call('delete_salon_service', { id });
+  if (!j.ok){ toast(j.error, 'err'); return; }
+  toast('Deleted', 'ok');
+  servicesPanel();
+}
+function servicesAddForm(){
+  el('svcAddArea').innerHTML =
+    '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-bottom:12px;">' +
+    '<label class="lbl">Name</label><input class="field" id="svcNewName" style="margin-bottom:8px;">' +
+    '<label class="lbl">Price (AED)</label><input class="field" id="svcNewPrice" style="max-width:160px;margin-bottom:8px;">' +
+    '<label class="lbl">Description / what\u2019s included</label><textarea class="field" id="svcNewDesc" style="min-height:60px;margin-bottom:8px;"></textarea>' +
+    '<label class="lbl">For (optional)</label>' +
+    '<select class="field" id="svcNewGender" style="max-width:200px;margin-bottom:10px;"><option value="">Anyone</option><option value="boys">Boys</option><option value="girls">Girls</option></select>' +
+    '<button class="btn btn-p btn-sm" onclick="servicesSaveNew()">Save</button>' +
+    '</div>';
+}
+async function servicesSaveNew(){
+  const name = (el('svcNewName').value||'').trim();
+  if (!name){ toast('Name is required.', 'err'); return; }
+  const priceRaw = (el('svcNewPrice').value||'').trim();
+  const j = await call('create_salon_service', {
+    name, price: priceRaw ? Number(priceRaw) : undefined,
+    description: (el('svcNewDesc').value||'').trim() || undefined,
+    gender: el('svcNewGender').value || undefined,
+  });
+  if (!j.ok){ toast(j.error, 'err'); return; }
+  toast('Added', 'ok');
+  servicesPanel();
 }
 function settingsDetail(key){
   const views = {
