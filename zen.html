@@ -4397,12 +4397,19 @@ function ugcPickAvatar(url, name){
   el('p-flow').innerHTML = llShell(
     '<img src="'+esc(url)+'" style="width:100px;border-radius:10px;margin-bottom:12px;">' +
     '<label class="lbl">Extra prompt (optional \u2014 leave blank and Zen figures it out)</label><textarea class="field" id="ugcExtraPrompt" style="min-height:50px;margin-bottom:10px;" placeholder="e.g. bright, natural daylight, close-up shot"></textarea>' +
-    // Real image models available in this app - not the reference's
-    // own model names, which aren't actually integrated here.
+    // Real, honest model choice - a real bug fixed here too: this
+    // dropdown's selected value was previously never actually used at
+    // all, and the model was silently hardcoded regardless of what was
+    // picked. Now genuinely wired through, and scoped to only the
+    // models that can actually do what this step needs - editing a
+    // real reference photo of the avatar, not imagining a new person.
+    // gpt-image-2 confirmed directly to support real reference-image
+    // editing the same way (its own real input_images field), so it's
+    // a genuine second option here, not flux-2-pro, which can't.
     '<label class="lbl">Image model</label>' +
     '<select class="field" id="ugcImageModel" style="margin-bottom:6px;">' +
-      '<option value="black-forest-labs/flux-2-pro" selected>Flux 2 Pro (default)</option>' +
-      '<option value="google/nano-banana-2-lite">Nano Banana 2 Lite \u2014 faster, cheaper</option>' +
+      '<option value="google/nano-banana-2-lite" selected>Nano Banana 2 Lite (default) \u2014 faster, cheaper</option>' +
+      '<option value="openai/gpt-image-2">GPT Image 2 \u2014 OpenAI\u2019s model, strong instruction-following and text rendering</option>' +
     '</select>',
     '<button class="btn btn-ghost" onclick="ugcPickConcept(\''+UGC_STATE.concept+'\')">Back</button><button class="btn btn-p" onclick="ugcGenerateImage()">Create image</button>',
     'Create UGC Video'
@@ -4420,11 +4427,9 @@ async function ugcGenerateImage(){
   const compiled = [briefJ.brief.subject, briefJ.brief.scene, briefJ.brief.activity, briefJ.brief.mood].filter(Boolean).join('. ');
   UGC_STATE.compiledPrompt = compiled;
   const regJ = await call('register_image_as_generation', { image_url: UGC_STATE.avatarUrl });
-  // Uses the real avatar directly as the reference for the shot,
-  // since the avatar itself is the person who must appear - forces
-  // Nano Banana specifically, the only model here that can genuinely
-  // edit a real reference image rather than imagine a new person.
-  const imgJ = regJ.ok ? await call('run_generation', { compiled_prompt: compiled, model: 'google/nano-banana-2-lite', reference_asset_urls: [UGC_STATE.avatarUrl], aspect_ratio: '9:16' }, 60000) : regJ;
+  // Real fix: genuinely uses the chosen model now, rather than a
+  // hardcoded one regardless of the dropdown selection above.
+  const imgJ = regJ.ok ? await call('run_generation', { compiled_prompt: compiled, model: UGC_STATE.imageModel || 'google/nano-banana-2-lite', reference_asset_urls: [UGC_STATE.avatarUrl], aspect_ratio: '9:16' }, 60000) : regJ;
   if (!imgJ.ok){ el('p-flow').innerHTML = llShell(errBlock(imgJ.error, ''), '<button class="btn btn-ghost" onclick="ugcVideoFlow()">Back</button><span></span>', 'Create UGC Video'); return; }
   ugcShowImageReview(imgJ.generation_id, imgJ.output_url);
 }
