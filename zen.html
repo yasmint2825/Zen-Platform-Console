@@ -4384,7 +4384,7 @@ async function ugcPickConcept(conceptKey){
   el('p-flow').innerHTML = llShell(
     zen('Choose an avatar.') +
     (UGC_STATE.avatars.length ? '<div class="gal-grid" style="max-width:560px;">' + UGC_STATE.avatars.map(a =>
-      '<div class="gal-card" onclick="ugcPickAvatar(\''+esc(a.storage_url)+'\',\''+esc((a.name||'').replace(/\'/g,''))+'\')">' +
+      '<div class="gal-card" onclick="ugcPickAvatar(\''+esc(a.storage_url)+'\',\''+esc((a.name||'').replace(/\'/g,''))+'\',\''+esc((a.description||'').replace(/\'/g,''))+'\')">' +
         '<img src="'+esc(a.storage_url)+'" class="gal-media" loading="lazy">' +
         '<div class="gal-body"><span class="gal-label">'+esc(a.name)+'</span></div></div>').join('') + '</div>'
       : '<p class="note">No avatars yet \u2014 create one first from the guided wizard\u2019s Visual Source step.</p>'),
@@ -4392,8 +4392,8 @@ async function ugcPickConcept(conceptKey){
     'Create UGC Video'
   );
 }
-function ugcPickAvatar(url, name){
-  UGC_STATE.avatarUrl = url; UGC_STATE.avatarName = name;
+function ugcPickAvatar(url, name, description){
+  UGC_STATE.avatarUrl = url; UGC_STATE.avatarName = name; UGC_STATE.avatarDescription = description || '';
   el('p-flow').innerHTML = llShell(
     '<img src="'+esc(url)+'" style="width:100px;border-radius:10px;margin-bottom:12px;">' +
     '<label class="lbl">Extra prompt (optional \u2014 leave blank and Zen figures it out)</label><textarea class="field" id="ugcExtraPrompt" style="min-height:50px;margin-bottom:10px;" placeholder="e.g. bright, natural daylight, close-up shot"></textarea>' +
@@ -4410,10 +4410,36 @@ function ugcPickAvatar(url, name){
     '<select class="field" id="ugcImageModel" style="margin-bottom:6px;">' +
       '<option value="google/nano-banana-2-lite" selected>Nano Banana 2 Lite (default) \u2014 faster, cheaper</option>' +
       '<option value="openai/gpt-image-2">GPT Image 2 \u2014 OpenAI\u2019s model, strong instruction-following and text rendering</option>' +
-    '</select>',
+    '</select>' +
+    // Real fix, asked for directly: every generated image was already
+    // being saved for real in the database - the actual gap was that
+    // nothing let anyone come back to one. list_generations already
+    // existed as a real, working backend action, never once called
+    // from anywhere in this app until now.
+    '<button type="button" class="btn btn-ghost btn-sm" style="margin-top:4px;" onclick="ugcShowPreviousImages()">\ud83d\uddbc\ufe0f Or use an image you already generated</button>' +
+    '<div id="ugcPreviousArea" style="margin-top:10px;"></div>',
     '<button class="btn btn-ghost" onclick="ugcPickConcept(\''+UGC_STATE.concept+'\')">Back</button><button class="btn btn-p" onclick="ugcGenerateImage()">Create image</button>',
     'Create UGC Video'
   );
+}
+async function ugcShowPreviousImages(){
+  const area = el('ugcPreviousArea');
+  area.innerHTML = '<div class="loading-block"><span class="spin"></span>Loading your recent images\u2026</div>';
+  const j = await call('list_generations', {});
+  if (!j.ok){ area.innerHTML = errBlock(j.error, ''); return; }
+  // Only real, actually-succeeded images with a real output - a
+  // generation still processing or one that failed has nothing real
+  // to show or reuse.
+  const usable = (j.generations || []).filter(g => g.status === 'succeeded' && g.output_url).slice(0, 12);
+  area.innerHTML = usable.length
+    ? '<div class="gal-grid">' + usable.map(g =>
+        '<div class="gal-card" onclick="ugcUsePreviousImage(\''+g.id+'\',\''+esc(g.output_url)+'\')">' +
+          '<img src="'+esc(g.output_url)+'" class="gal-media" loading="lazy">' +
+        '</div>').join('') + '</div>'
+    : '<p class="note">Nothing generated yet.</p>';
+}
+function ugcUsePreviousImage(generationId, imageUrl){
+  ugcShowImageReview(generationId, imageUrl);
 }
 async function ugcGenerateImage(){
   UGC_STATE.extraPrompt = (el('ugcExtraPrompt').value||'').trim();
@@ -4422,14 +4448,21 @@ async function ugcGenerateImage(){
   const p = UGC_STATE.product;
   const topic = p ? `${p.name}${p.description ? ' - '+p.description : ''}${p.price ? ' ('+p.price+')' : ''}` : 'this business';
   el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Generating\u2026</div>', '', 'Create UGC Video');
-  const briefJ = await call('generate_creative_brief', { user_request: `${UGC_STATE.avatarName}, genuine and natural, talking directly to camera about: ${topic}. ${conceptDesc}.${UGC_STATE.extraPrompt ? ' '+UGC_STATE.extraPrompt : ''}` }, 30000);
+  const briefJ = await call('generate_creative_brief', { user_request: `A specific, real presenter/creator named ${UGC_STATE.avatarName}${UGC_STATE.avatarDescription ? ', described exactly as: '+UGC_STATE.avatarDescription : ''}, talking directly to camera about a product/service they are promoting - they are the presenter, not the customer receiving the service, so their real, stated appearance and age must be followed exactly as given, not assumed from the business's usual customer. What they're talking about: ${topic}. ${conceptDesc}.${UGC_STATE.extraPrompt ? ' '+UGC_STATE.extraPrompt : ''}`, subject_is_presenter: true }, 30000);
   if (!briefJ.ok){ el('p-flow').innerHTML = llShell(errBlock(briefJ.error, ''), '<button class="btn btn-ghost" onclick="ugcVideoFlow()">Back</button><span></span>', 'Create UGC Video'); return; }
   const compiled = [briefJ.brief.subject, briefJ.brief.scene, briefJ.brief.activity, briefJ.brief.mood].filter(Boolean).join('. ');
   UGC_STATE.compiledPrompt = compiled;
-  const regJ = await call('register_image_as_generation', { image_url: UGC_STATE.avatarUrl });
-  // Real fix: genuinely uses the chosen model now, rather than a
-  // hardcoded one regardless of the dropdown selection above.
-  const imgJ = regJ.ok ? await call('run_generation', { compiled_prompt: compiled, model: UGC_STATE.imageModel || 'google/nano-banana-2-lite', reference_asset_urls: [UGC_STATE.avatarUrl], aspect_ratio: '9:16' }, 60000) : regJ;
+  // Real fix, reported directly: an earlier, unused
+  // register_image_as_generation call sat here before this - its own
+  // result was never actually used for anything (only checked for
+  // .ok, which a simple insert essentially always is), and it created
+  // a real but pointless database row with no reference data at all,
+  // which is very likely what looked like "the reference isn't being
+  // sent." The real call below has always correctly included both
+  // the chosen model and the avatar as a real reference - removing
+  // the dead call in front of it removes the misleading row, not the
+  // actual generation logic.
+  const imgJ = await call('run_generation', { compiled_prompt: compiled, model: UGC_STATE.imageModel || 'google/nano-banana-2-lite', reference_asset_urls: [UGC_STATE.avatarUrl], aspect_ratio: '9:16' }, 60000);
   if (!imgJ.ok){ el('p-flow').innerHTML = llShell(errBlock(imgJ.error, ''), '<button class="btn btn-ghost" onclick="ugcVideoFlow()">Back</button><span></span>', 'Create UGC Video'); return; }
   ugcShowImageReview(imgJ.generation_id, imgJ.output_url);
 }
