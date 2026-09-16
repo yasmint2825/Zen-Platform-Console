@@ -4462,6 +4462,14 @@ async function ugcShowPreviousImages(){
     : '<p class="note">Nothing generated yet.</p>';
 }
 function ugcUsePreviousImage(generationId, imageUrl){
+  // Real bug fixed here, reported directly: this path (reusing an
+  // already-generated image) skipped straight past the step that
+  // reads the checkbox above, so choosing a previous image silently
+  // never captured its real state at all - business context stayed
+  // on by default here regardless of what the checkbox actually
+  // showed, since the value was never read, not because it was
+  // ignored on purpose.
+  UGC_STATE.useBusinessContext = el('ugcUseBusinessContext') ? el('ugcUseBusinessContext').checked : true;
   ugcShowImageReview(generationId, imageUrl);
 }
 async function ugcGenerateImage(){
