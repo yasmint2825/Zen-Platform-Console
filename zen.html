@@ -1847,7 +1847,11 @@ async function zenwhatsapp(){
   // go()/flow() the moment the person navigates anywhere else, so it
   // never keeps polling in the background or errors against DOM that
   // no longer exists.
-  WA_REFRESH_TIMER = setInterval(waAutoRefresh, 5000);
+  // Real fix, requested directly: 5s was too frequent for the real
+  // scroll-jump issue this caused - 30s is a real, still-responsive
+  // interval for a WhatsApp inbox, now paired with the scroll-position
+  // fix above so neither change alone has to carry the whole fix.
+  WA_REFRESH_TIMER = setInterval(waAutoRefresh, 30000);
 }
 async function waAutoRefresh(){
   const p = el('p-zenwhatsapp');
@@ -1967,6 +1971,16 @@ function waRenderThread(mobile){
   const pane = el('waThreadPane');
   if (!pane || !c) return;
   const name = c.customer_name || c.mobile;
+  // Real fix, reported directly: this render runs on every auto-
+  // refresh cycle, and previously forced the thread to jump to the
+  // bottom every single time - including while someone had genuinely
+  // scrolled up to read older history. Captured here, before the real
+  // DOM gets replaced below: was the person already at (or very near)
+  // the bottom? Only that real state gets preserved after the
+  // refresh - scrolled up stays scrolled up, at the bottom stays at
+  // the bottom, matching how a real chat app actually behaves.
+  const existingBody = pane.querySelector('.wa-thread-body');
+  const wasNearBottom = !existingBody || (existingBody.scrollHeight - existingBody.scrollTop - existingBody.clientHeight < 80);
   // The real backend returns messages newest-first (it queries
   // created_at descending, then pushes each row onto the array in
   // that order) - rendered as-is, that puts the most recent message
@@ -1999,7 +2013,10 @@ function waRenderThread(mobile){
       '<button class="btn btn-ghost btn-sm" title="Attach an image" onclick="WA_PICKER_OPEN=true; setTimeout(()=>WA_PICKER_OPEN=false, 60000); el(\'waImageInput\').click()">\ud83d\udcf7</button>' +
       '<button class="btn btn-p btn-sm" onclick="waSendReply(\''+esc(mobile)+'\')">Send</button>' +
     '</div>';
-  pane.querySelector('.wa-thread-body').scrollTop = 9999;
+  // Only scrolls to the bottom when that was genuinely already close
+  // to where the person was - never forces it on someone who
+  // deliberately scrolled up.
+  if (wasNearBottom) pane.querySelector('.wa-thread-body').scrollTop = 9999;
 }
 // Reads the chosen file as base64 and sends it as a real WhatsApp
 // image message - send_whatsapp_image uploads it to permanent
