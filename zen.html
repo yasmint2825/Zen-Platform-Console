@@ -4425,6 +4425,15 @@ function ugcPickAvatar(url, name, description){
       '<option value="google/nano-banana-2-lite" selected>Nano Banana 2 Lite (default) \u2014 faster, cheaper</option>' +
       '<option value="openai/gpt-image-2">GPT Image 2 \u2014 OpenAI\u2019s model, strong instruction-following and text rendering</option>' +
     '</select>' +
+    // Real, explicit toggle - reported directly with a concrete case
+    // (a real, unrelated product's UGC script coming back talking
+    // about a haircut, because this business's own context was
+    // always forced in regardless of what was actually being
+    // promoted). Checked by default for the common case; unchecking
+    // it genuinely omits this business's name/industry from both the
+    // image brief and the script entirely, for promoting something
+    // real but unrelated to it through the same tool.
+    '<label style="font-size:13px;display:block;margin:6px 0 10px;"><input type="checkbox" id="ugcUseBusinessContext" checked> Use my business\u2019s context (industry, tone) \u2014 uncheck if this is for a different, unrelated product</label>' +
     // Real fix, asked for directly: every generated image was already
     // being saved for real in the database - the actual gap was that
     // nothing let anyone come back to one. list_generations already
@@ -4458,11 +4467,12 @@ function ugcUsePreviousImage(generationId, imageUrl){
 async function ugcGenerateImage(){
   UGC_STATE.extraPrompt = (el('ugcExtraPrompt').value||'').trim();
   UGC_STATE.imageModel = el('ugcImageModel').value;
+  UGC_STATE.useBusinessContext = el('ugcUseBusinessContext') ? el('ugcUseBusinessContext').checked : true;
   const conceptDesc = UGC_CONCEPTS.find(c => c[0] === UGC_STATE.concept)?.[2] || '';
   const p = UGC_STATE.product;
   const topic = p ? `${p.name}${p.description ? ' - '+p.description : ''}${p.price ? ' ('+p.price+')' : ''}` : 'this business';
   el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Generating\u2026</div>', '', 'Create UGC Video');
-  const briefJ = await call('generate_creative_brief', { user_request: `A specific, real presenter/creator named ${UGC_STATE.avatarName}${UGC_STATE.avatarDescription ? ', described exactly as: '+UGC_STATE.avatarDescription : ''}, talking directly to camera about a product/service they are promoting - they are the presenter, not the customer receiving the service, so their real, stated appearance and age must be followed exactly as given, not assumed from the business's usual customer. What they're talking about: ${topic}. ${conceptDesc}.${UGC_STATE.extraPrompt ? ' '+UGC_STATE.extraPrompt : ''}`, subject_is_presenter: true }, 30000);
+  const briefJ = await call('generate_creative_brief', { user_request: `A specific, real presenter/creator named ${UGC_STATE.avatarName}${UGC_STATE.avatarDescription ? ', described exactly as: '+UGC_STATE.avatarDescription : ''}, talking directly to camera about a product/service they are promoting - they are the presenter, not the customer receiving the service, so their real, stated appearance and age must be followed exactly as given, not assumed from the business's usual customer. What they're talking about: ${topic}. ${conceptDesc}.${UGC_STATE.extraPrompt ? ' '+UGC_STATE.extraPrompt : ''}`, subject_is_presenter: true, use_business_context: UGC_STATE.useBusinessContext }, 30000);
   if (!briefJ.ok){ el('p-flow').innerHTML = llShell(errBlock(briefJ.error, ''), '<button class="btn btn-ghost" onclick="ugcVideoFlow()">Back</button><span></span>', 'Create UGC Video'); return; }
   const compiled = [briefJ.brief.subject, briefJ.brief.scene, briefJ.brief.activity, briefJ.brief.mood].filter(Boolean).join('. ');
   UGC_STATE.compiledPrompt = compiled;
@@ -4493,7 +4503,7 @@ async function ugcVideoSettingsForm(){
   el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Writing a script\u2026</div>', '', 'Create UGC Video');
   const p = UGC_STATE.product;
   const topic = p ? `${p.name}${p.description ? ' - '+p.description : ''}${p.price ? ' ('+p.price+')' : ''}` : 'this business';
-  const scriptJ = await call('generate_hook_body_script', { topic, speaker_description: UGC_STATE.avatarName, reference_concept: UGC_CONCEPTS.find(c=>c[0]===UGC_STATE.concept)?.[1] }, 30000);
+  const scriptJ = await call('generate_hook_body_script', { topic, speaker_description: UGC_STATE.avatarName, reference_concept: UGC_CONCEPTS.find(c=>c[0]===UGC_STATE.concept)?.[1], use_business_context: UGC_STATE.useBusinessContext }, 30000);
   const hook = scriptJ.ok ? scriptJ.hook : '';
   const bodyText = scriptJ.ok ? scriptJ.body : '';
   el('p-flow').innerHTML = llShell(
@@ -4515,7 +4525,7 @@ async function ugcVideoSettingsForm(){
     '<div style="display:flex;gap:8px;margin-bottom:10px;">' +
       '<div style="flex:1;"><label class="lbl">Voice tone</label><select class="field" id="ugcTone"><option value="">Natural</option><option>confident</option><option>friendly</option><option>excited</option><option>calm</option></select></div>' +
       '<div style="flex:1;"><label class="lbl">Emotion</label><select class="field" id="ugcEmotion"><option value="">Natural</option><option>enthusiastic</option><option>warm</option><option>playful</option><option>sincere</option></select></div>' +
-      '<div style="flex:1;"><label class="lbl">Accent</label><select class="field" id="ugcAccent"><option value="">Natural</option><option>neutral</option><option>British</option><option>American</option></select></div>' +
+      '<div style="flex:1;"><label class="lbl">Accent</label><select class="field" id="ugcAccent"><option value="">Natural / let Zen match the avatar</option><option value="Arabic">Arabic</option><option value="British">British</option><option value="American">American</option><option value="Indian">Indian</option><option value="Filipino">Filipino</option><option value="African">African</option><option value="French">French</option><option value="Australian">Australian</option></select></div>' +
     '</div>' +
     '<label style="font-size:13px;display:block;margin-bottom:10px;"><input type="checkbox" id="ugcMusic" checked> Include soft background music</label>' +
     '<label class="lbl">Video model</label>' +
@@ -4536,7 +4546,7 @@ function ugcSetLength(len){
 async function ugcRegenerateScript(){
   const p = UGC_STATE.product;
   const topic = p ? `${p.name}${p.description ? ' - '+p.description : ''}${p.price ? ' ('+p.price+')' : ''}` : 'this business';
-  const j = await call('generate_hook_body_script', { topic, speaker_description: UGC_STATE.avatarName, reference_concept: UGC_CONCEPTS.find(c=>c[0]===UGC_STATE.concept)?.[1] }, 30000);
+  const j = await call('generate_hook_body_script', { topic, speaker_description: UGC_STATE.avatarName, reference_concept: UGC_CONCEPTS.find(c=>c[0]===UGC_STATE.concept)?.[1], use_business_context: UGC_STATE.useBusinessContext }, 30000);
   if (!j.ok){ toast(j.error, 'err'); return; }
   el('ugcHook').value = j.hook; el('ugcBody').value = j.body;
 }
@@ -4616,6 +4626,14 @@ function talkingHeadPickAvatar(storageUrl, name){
     '<div id="talkManualArea" style="display:none;">' +
       '<label class="lbl">Write the exact line to say</label><textarea class="field" id="talkManualScript" style="min-height:50px;margin-bottom:10px;" placeholder="e.g. You\u2019re going to love our new braid package!"></textarea>' +
     '</div>' +
+    // Real delivery controls added here too, matching UGC Video -
+    // Talking Head is the same real lip-sync mechanism, and had none
+    // of these at all before now.
+    '<div style="display:flex;gap:8px;margin-bottom:10px;">' +
+      '<div style="flex:1;"><label class="lbl">Voice tone</label><select class="field" id="talkTone"><option value="">Natural</option><option>confident</option><option>friendly</option><option>excited</option><option>calm</option></select></div>' +
+      '<div style="flex:1;"><label class="lbl">Emotion</label><select class="field" id="talkEmotion"><option value="">Natural</option><option>enthusiastic</option><option>warm</option><option>playful</option><option>sincere</option></select></div>' +
+      '<div style="flex:1;"><label class="lbl">Accent</label><select class="field" id="talkAccent"><option value="">Natural / let Zen match the avatar</option><option value="Arabic">Arabic</option><option value="British">British</option><option value="American">American</option><option value="Indian">Indian</option><option value="Filipino">Filipino</option><option value="African">African</option><option value="French">French</option><option value="Australian">Australian</option></select></div>' +
+    '</div>' +
     '<label style="font-size:13px;display:block;margin-bottom:10px;"><input type="checkbox" id="talkMusic" checked> Include soft background music</label>',
     '<button class="btn btn-ghost" onclick="talkingHeadFlow()">Back</button><button class="btn btn-p" onclick="talkingHeadReview()">Continue</button>',
     'Talking Head'
@@ -4635,8 +4653,12 @@ async function talkingHeadReview(){
   // Real bug fixed here, caught by testing: these values must be read
   // BEFORE the DOM is replaced with the loading state below - reading
   // them after would find null, since the actual fields no longer
-  // exist by then.
+  // exist by then. Same real timing rule applied to the new delivery
+  // controls added here too.
   const selectedStyle = el('talkStyle') ? el('talkStyle').value : undefined;
+  const selectedTone = el('talkTone') ? el('talkTone').value : '';
+  const selectedEmotion = el('talkEmotion') ? el('talkEmotion').value : '';
+  const selectedAccent = el('talkAccent') ? el('talkAccent').value : '';
   let script = null;
   if (mode === 'manual') {
     script = (el('talkManualScript').value||'').trim();
@@ -4649,6 +4671,7 @@ async function talkingHeadReview(){
     script = scriptJ.script;
   }
   TALK_STATE.topic = topic; TALK_STATE.script = script; TALK_STATE.includeMusic = includeMusic;
+  TALK_STATE.tone = selectedTone; TALK_STATE.emotion = selectedEmotion; TALK_STATE.accent = selectedAccent;
   // Real final review, matching what was asked for directly - avatar,
   // script, and music all shown together before anything real gets
   // generated, with the script still editable at this point.
@@ -4671,14 +4694,14 @@ async function talkingHeadGenerate(){
   el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Preparing your avatar for video\u2026</div>', '', 'Talking Head');
   const regJ = await call('register_image_as_generation', { image_url: TALK_STATE.avatarUrl });
   if (!regJ.ok){ el('p-flow').innerHTML = llShell(errBlock(regJ.error, ''), '<button class="btn btn-ghost" onclick="talkingHeadFlow()">Back</button><span></span>', 'Talking Head'); return; }
-  await talkingVideoAnimate(regJ.generation_id, TALK_STATE.avatarName, TALK_STATE.topic, 'talkingHeadFlow', 'Talking Head', finalScript, TALK_STATE.includeMusic);
+  await talkingVideoAnimate(regJ.generation_id, TALK_STATE.avatarName, TALK_STATE.topic, 'talkingHeadFlow', 'Talking Head', finalScript, TALK_STATE.includeMusic, TALK_STATE.tone, TALK_STATE.emotion, TALK_STATE.accent);
 }
 // Shared by both UGC Video and Talking Head - the real script +
 // lip-sync + animate sequence, built once rather than duplicated.
 // preWrittenScript/includeMusic are optional - UGC Video's existing
 // call (without them) keeps generating a fresh AI script with no
 // music, unchanged.
-async function talkingVideoAnimate(generationId, speakerDescription, topic, backFn, heading, preWrittenScript, includeMusic){
+async function talkingVideoAnimate(generationId, speakerDescription, topic, backFn, heading, preWrittenScript, includeMusic, tone, emotion, accent){
   let script = preWrittenScript;
   if (!script) {
     el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Writing a natural spoken line\u2026</div>', '', heading);
@@ -4686,7 +4709,7 @@ async function talkingVideoAnimate(generationId, speakerDescription, topic, back
     if (!scriptJ.ok){ el('p-flow').innerHTML = llShell(errBlock(scriptJ.error, ''), '<button class="btn btn-ghost" onclick="'+backFn+'()">Back</button><span></span>', heading); return; }
     script = scriptJ.script;
   }
-  const promptJ = await call('generate_lipsync_motion_prompt', { script, speaker_description: speakerDescription, include_music: !!includeMusic });
+  const promptJ = await call('generate_lipsync_motion_prompt', { script, speaker_description: speakerDescription, include_music: !!includeMusic, tone: tone||undefined, emotion: emotion||undefined, accent: accent||undefined });
   if (!promptJ.ok){ el('p-flow').innerHTML = llShell(errBlock(promptJ.error, ''), '<button class="btn btn-ghost" onclick="'+backFn+'()">Back</button><span></span>', heading); return; }
   el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Animating with lip-sync\u2026 this can take a few minutes.</div>', '', heading);
   const vidJ = await call('run_image_to_video', { generation_id: generationId, prompt: promptJ.motion_prompt, model: 'google/veo-3.1', duration: 8, aspect_ratio: '9:16' }, 45000);
