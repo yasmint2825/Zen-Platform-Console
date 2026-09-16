@@ -4515,7 +4515,7 @@ async function ugcVideoSettingsForm(){
     '<label class="lbl">Video length</label>' +
     '<div style="display:flex;gap:6px;margin-bottom:10px;">' +
       '<button type="button" class="btn btn-s btn-sm" data-len="short" onclick="ugcSetLength(\'short\')" style="border-color:var(--green);">Short (~8s)</button>' +
-      '<button type="button" class="btn btn-s btn-sm" data-len="long" onclick="ugcSetLength(\'long\')">Long (~15s)</button>' +
+      '<button type="button" class="btn btn-s btn-sm" data-len="long" id="ugcLongLabel" onclick="ugcSetLength(\'long\')">Long (~8s)</button>' +
     '</div>' +
     '<label class="lbl">Hook (first few seconds)</label><textarea class="field" id="ugcHook" style="min-height:45px;margin-bottom:6px;">'+esc(hook)+'</textarea>' +
     '<label class="lbl">Main message</label><textarea class="field" id="ugcBody" style="min-height:50px;margin-bottom:6px;">'+esc(bodyText)+'</textarea>' +
@@ -4529,10 +4529,13 @@ async function ugcVideoSettingsForm(){
     '</div>' +
     '<label style="font-size:13px;display:block;margin-bottom:10px;"><input type="checkbox" id="ugcMusic" checked> Include soft background music</label>' +
     '<label class="lbl">Video model</label>' +
-    '<select class="field" id="ugcVideoModel" style="margin-bottom:10px;">' +
+    '<select class="field" id="ugcVideoModel" style="margin-bottom:10px;" onchange="ugcUpdateLongLabel()">' +
       '<option value="google/veo-3.1" selected>Google Veo 3.1</option>' +
       '<option value="bytedance/seedance-2.0">ByteDance Seedance 2.0</option>' +
+      '<option value="bytedance/seedance-2.0-fast">ByteDance Seedance 2.0 Fast</option>' +
       '<option value="xai/grok-imagine-video">Grok Imagine Video</option>' +
+      '<option value="alibaba/wan-3">Alibaba Wan 3.0</option>' +
+      '<option value="prunaai/p-video">Pruna AI P-Video</option>' +
     '</select>',
     '<button class="btn btn-ghost" onclick="ugcShowImageReview(\''+UGC_STATE.imageGenerationId+'\',\''+UGC_STATE.imageUrl+'\')">Back</button><button class="btn btn-p" onclick="ugcVideoGenerateFinal()">Create video</button>',
     'Create UGC Video'
@@ -4542,6 +4545,16 @@ async function ugcVideoSettingsForm(){
 function ugcSetLength(len){
   UGC_STATE.length = len;
   document.querySelectorAll('[data-len]').forEach(b => b.style.borderColor = b.dataset.len === len ? 'var(--green)' : 'var(--line)');
+}
+// Real fix, caught by testing: the "Long" button's own label was
+// static and never actually matched the real max duration of
+// whichever model was selected - misleading even for the real,
+// default model. Kept genuinely accurate as the real choice changes.
+function ugcUpdateLongLabel(){
+  const model = el('ugcVideoModel').value;
+  const max = VIDEO_MODEL_MAX_HINT[model] || 15;
+  const btn = el('ugcLongLabel');
+  if (btn) btn.textContent = 'Long (~'+max+'s)';
 }
 async function ugcRegenerateScript(){
   const p = UGC_STATE.product;
@@ -4571,7 +4584,7 @@ async function ugcVideoGenerateFinal(){
 // Real, per-model maximums - confirmed directly rather than assumed,
 // used so "Long" never requests a duration a chosen model can't
 // actually deliver.
-const VIDEO_MODEL_MAX_HINT = { 'google/veo-3.1': 8, 'bytedance/seedance-2.0': 15, 'xai/grok-imagine-video': 15 };
+const VIDEO_MODEL_MAX_HINT = { 'google/veo-3.1': 8, 'bytedance/seedance-2.0': 15, 'xai/grok-imagine-video': 15, 'bytedance/seedance-2.0-fast': 15, 'alibaba/wan-3': 30, 'prunaai/p-video': 10 };
 // direction) rather than generating a new, different-looking person
 // each time - the real point of a persistent presenter.
 let TALK_STATE = {};
