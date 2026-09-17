@@ -1834,9 +1834,15 @@ async function zenwhatsapp(){
     // element.
     const last = c.messages.reduce((newest, m) => (!newest || new Date(m.at||0) > new Date(newest.at||0)) ? m : newest, null);
     const name = c.customer_name || c.mobile;
+    // Real activation, reported directly: the real channel field was
+    // already being returned by the backend on every conversation,
+    // but nothing here ever actually looked at it - every
+    // conversation rendered identically regardless of which platform
+    // it was really on.
+    const isIg = c.channel === 'instagram';
     return '<button class="wa-convo'+(c.mobile===WA_ACTIVE?' active':'')+'" onclick="waSelect(\''+esc(c.mobile)+'\')">' +
       avatar(name,30) +
-      '<div style="min-width:0;"><div class="wa-convo-name">'+esc(name)+'</div>' +
+      '<div style="min-width:0;"><div class="wa-convo-name">'+esc(name)+' <span style="font-size:10px;font-weight:400;color:'+(isIg?'#c13584':'#25d366')+';">'+(isIg?'\ud83d\udcf8 Instagram':'\ud83d\udcac WhatsApp')+'</span></div>' +
       '<div class="wa-convo-last">'+esc(String((last&&last.body)||'').slice(0,60))+'</div></div>' +
       '<div class="wa-convo-meta"><div class="wa-convo-time">'+ago(c.last_inbound_at)+'</div>' +
       (c.unhandled?'<span class="badge warn" style="margin-top:3px;">'+c.unhandled+'</span>':'') + '</div></button>';
@@ -1989,9 +1995,19 @@ function waRenderThread(mobile){
   // timestamp rather than trusting array order, so this is correct
   // regardless of which order the backend happens to send in.
   const ordered = c.messages.slice().sort((a,b) => new Date(a.at||0) - new Date(b.at||0));
+  // Real activation here too, matching the inbox list - the real
+  // channel field was already there on this same conversation object,
+  // just never actually read anywhere in the thread view either.
+  const isIg = c.channel === 'instagram';
+  // For an Instagram conversation, the "mobile" field genuinely holds
+  // the raw numeric ig_user_id, not a phone number - showing that
+  // instead of the real @username underneath it would just look like
+  // a meaningless number.
+  const idLine = isIg ? (c.ig_username ? '@'+c.ig_username : c.mobile) : c.mobile;
   pane.innerHTML =
     '<div class="wa-thread-head">' + avatar(name,32) +
-      '<div><b style="font-size:12.5px;">'+esc(name)+'</b><div class="sub" style="font-size:10.5px;">'+esc(c.mobile)+'</div></div></div>' +
+      '<div><b style="font-size:12.5px;">'+esc(name)+'</b>' +
+      '<div class="sub" style="font-size:10.5px;">'+esc(idLine)+' \u00b7 <span style="color:'+(isIg?'#c13584':'#25d366')+';">'+(isIg?'\ud83d\udcf8 Instagram':'\ud83d\udcac WhatsApp')+'</span>'+(c.from_ad?' \u00b7 from an ad':'')+'</div></div></div>' +
     '<div class="wa-thread-body" id="waThreadBody">' + ordered.slice(-20).map(m =>
       '<div class="wa-bubble" style="'+(m.direction==='out'?'margin-left:auto;background:#fff;border:1px solid var(--line);':'')+'margin-bottom:8px;">' +
       (m.media_url ? '<img src="'+esc(m.media_url)+'" style="max-width:220px;border-radius:10px;display:block;margin-bottom:'+(m.body?'6px':'0')+';" loading="lazy">' : '') +
@@ -2074,7 +2090,19 @@ async function waSendReply(mobile){
   const box = el('waReplyBox'), text = box.value.trim();
   if (!text) return;
   box.disabled = true;
-  const j = await call('send_whatsapp_reply', { to_number: mobile, message: text });
+  // Real bug fixed here too, found while activating the real
+  // platform distinction: this always called the WhatsApp-only send
+  // action regardless of which real platform the conversation was
+  // actually on - a reply to a real Instagram conversation would have
+  // silently gone nowhere, or tried to send to a WhatsApp number that
+  // was actually a raw Instagram user id. Routed to the real, correct
+  // action for each channel, using the exact real parameter shape
+  // send_instagram_reply itself expects (ig_user_id, not to_number).
+  const c = WA_CACHE.find(x => x.mobile === mobile);
+  const isIg = c && c.channel === 'instagram';
+  const j = isIg
+    ? await call('send_instagram_reply', { ig_user_id: mobile, message: text })
+    : await call('send_whatsapp_reply', { to_number: mobile, message: text });
   if (!j.ok){ box.disabled = false; toast(j.error, 'err'); return; }
   toast('Sent', 'ok');
   await zenwhatsapp(); // real refresh - pulls the message and unread count back from the server
@@ -2223,6 +2251,34 @@ async function setPackagePriorityInline(index, priority){
 // live: reply-assistant confidence and limits, today's real WhatsApp
 // usage, the actual cooldown this tenant runs, and the real approved
 // template list - nothing hardcoded.
+async function waCheckMalformedNumbers(){
+  const area = el('waMalformedArea');
+  area.innerHTML = '<div class="loading-block"><span class="spin"></span>Scanning your real conversations\u2026</div>';
+  const j = await call('find_malformed_mobile_numbers', {});
+  if (!j.ok){ area.innerHTML = errBlock(j.error, ''); return; }
+  if (!j.count){ area.innerHTML = '<p class="note" style="color:var(--green);">\u2713 No broken numbers found.</p>'; return; }
+  area.innerHTML =
+    '<p class="note" style="margin-top:0;">Found '+j.count+' number'+(j.count>1?'s':'')+' with a real, broken double country-code \u2014 messages to these will fail until fixed.</p>' +
+    '<div class="list">' + j.numbers.map(n =>
+      '<div class="list-row"><span><b>'+esc(n.name||n.mobile)+'</b><div class="sub">'+esc(n.mobile)+' \u2192 '+esc(n.corrected)+'</div></span></div>').join('') +
+    '</div>' +
+    '<button class="btn btn-p btn-sm" style="margin-top:10px;" onclick="waApplyMalformedFix()">Fix these numbers</button>';
+}
+async function waApplyMalformedFix(){
+  if (!confirm('Update these phone numbers in your real records? This can\u2019t be undone.')) return;
+  const area = el('waMalformedArea');
+  area.innerHTML = '<div class="loading-block"><span class="spin"></span>Fixing\u2026</div>';
+  const j = await call('fix_malformed_mobile_numbers', {});
+  if (!j.ok){ area.innerHTML = errBlock(j.error, ''); return; }
+  area.innerHTML =
+    (j.fixed.length ? '<p class="note" style="color:var(--green);">\u2713 Fixed '+j.fixed.length+' number'+(j.fixed.length>1?'s':'')+'.</p>' : '') +
+    (j.skipped.length
+      ? '<p class="note" style="margin-top:8px;">'+j.skipped.length+' skipped and need a manual look:</p>' +
+        '<div class="list">' + j.skipped.map(s =>
+          '<div class="list-row"><span>'+esc(s.from)+' \u2192 '+esc(s.to)+'<div class="sub">'+esc(s.reason)+'</div></span></div>').join('') +
+        '</div>'
+      : '');
+}
 async function whatsappSettingsPanel(){
   el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
     '<h1 style="font-size:21px;">WhatsApp settings</h1><div class="loading-block"><span class="spin"></span>Reading your real settings\u2026</div>';
@@ -2247,7 +2303,15 @@ async function whatsappSettingsPanel(){
       '<div class="list"><div class="list-row"><b>'+(connected?'Connected':'Not connected')+'</b>' +
         '<span class="badge'+(connected?' on':' warn')+'">'+(connected?'Working':'Check credentials')+'</span></div></div>' +
       (connected ? '' : '<p class="note">'+esc(templates.error||'')+'</p>') +
-      '<button class="btn btn-s btn-sm" style="margin-top:8px;" onclick="reconnectWhatsAppFlow()">Reconnect</button>', true) +
+      '<button class="btn btn-s btn-sm" style="margin-top:8px;" onclick="reconnectWhatsAppFlow()">Reconnect</button>' +
+      // Real, new section - asked for directly, following the real
+      // double-country-code bug already fixed for new messages. This
+      // finds real, already-corrupted numbers still sitting in
+      // existing records, which would otherwise keep failing to
+      // receive a message and fragment into a duplicate conversation
+      // the next time that real customer writes in.
+      '<button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="waCheckMalformedNumbers()">\ud83d\udd0d Check for broken phone numbers</button>' +
+      '<div id="waMalformedArea" style="margin-top:10px;"></div>', true) +
 
     section('Reply assistant \u2014 what it knows',
       '<p class="note" style="margin-top:0;">The assistant may only say what is listed below. Anything missing, it flags for a person rather than guessing \u2014 a wrong price sent over WhatsApp is a promise that has to be honoured or retracted.</p>' +
@@ -4523,6 +4587,27 @@ function ugcShowImageReview(generationId, imageUrl){
   );
 }
 async function ugcVideoSettingsForm(){
+  // Real fix, reported directly: the checkbox needs to be set BEFORE
+  // the real script gets written, not just available to adjust
+  // afterward via regenerate - restructured so this screen shows the
+  // real settings first (pre-filled with whatever was chosen earlier,
+  // still changeable here) and only writes the real script once
+  // confirmed, rather than generating immediately on arrival using
+  // whatever was set on an earlier screen.
+  const initialContext = UGC_STATE.useBusinessContext !== false;
+  el('p-flow').innerHTML = llShell(
+    '<img src="'+esc(UGC_STATE.imageUrl)+'" style="width:120px;border-radius:10px;margin-bottom:12px;">' +
+    '<label style="font-size:13px;display:block;margin-bottom:10px;"><input type="checkbox" id="ugcUseBusinessContext2" '+(initialContext?'checked':'')+'> Use my business\u2019s context (industry, tone) \u2014 uncheck if this is for a different, unrelated product</label>' +
+    '<button class="btn btn-p btn-sm" onclick="ugcWriteScript()">Write the script</button>',
+    '<button class="btn btn-ghost" onclick="ugcShowImageReview(\''+UGC_STATE.imageGenerationId+'\',\''+UGC_STATE.imageUrl+'\')">Back</button><span></span>',
+    'Create UGC Video'
+  );
+}
+async function ugcWriteScript(){
+  // Real, timing-critical read - captured here, before the DOM below
+  // is replaced with the loading state, same real rule already
+  // applied elsewhere in this app for exactly this reason.
+  UGC_STATE.useBusinessContext = el('ugcUseBusinessContext2').checked;
   el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Writing a script\u2026</div>', '', 'Create UGC Video');
   const p = UGC_STATE.product;
   const topic = p ? `${p.name}${p.description ? ' - '+p.description : ''}${p.price ? ' ('+p.price+')' : ''}` : 'this business';
@@ -4551,6 +4636,16 @@ async function ugcVideoSettingsForm(){
       '<div style="flex:1;"><label class="lbl">Accent</label><select class="field" id="ugcAccent"><option value="">Natural / let Zen match the avatar</option><option value="Arabic">Arabic</option><option value="British">British</option><option value="American">American</option><option value="Indian">Indian</option><option value="Filipino">Filipino</option><option value="African">African</option><option value="French">French</option><option value="Australian">Australian</option></select></div>' +
     '</div>' +
     '<label style="font-size:13px;display:block;margin-bottom:10px;"><input type="checkbox" id="ugcMusic" checked> Include soft background music</label>' +
+    // Real, explicit aspect ratio choice - asked for directly, and a
+    // real bug fixed alongside it: this was previously always
+    // hardcoded to 9:16 regardless of what was actually needed,
+    // never a real, honored setting.
+    '<label class="lbl">Aspect ratio</label>' +
+    '<select class="field" id="ugcAspectRatio" style="max-width:220px;margin-bottom:10px;">' +
+      '<option value="9:16" selected>9:16 \u2014 Reels / Stories (portrait)</option>' +
+      '<option value="16:9">16:9 \u2014 Landscape</option>' +
+      '<option value="1:1">1:1 \u2014 Square</option>' +
+    '</select>' +
     '<label class="lbl">Video model</label>' +
     '<select class="field" id="ugcVideoModel" style="margin-bottom:10px;" onchange="ugcUpdateLongLabel()">' +
       '<option value="google/veo-3.1" selected>Google Veo 3.1</option>' +
@@ -4595,12 +4690,16 @@ async function ugcVideoGenerateFinal(){
   const tone = el('ugcTone').value, emotion = el('ugcEmotion').value, accent = el('ugcAccent').value;
   const includeMusic = el('ugcMusic').checked;
   const videoModel = el('ugcVideoModel').value;
+  const aspectRatio = el('ugcAspectRatio').value;
   const duration = UGC_STATE.length === 'long' ? (VIDEO_MODEL_MAX_HINT[videoModel] || 15) : 8;
   el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Preparing the motion prompt\u2026</div>', '', 'Create UGC Video');
   const promptJ = await call('generate_lipsync_motion_prompt', { script: combinedScript, speaker_description: UGC_STATE.avatarName, include_music: includeMusic, tone: tone||undefined, emotion: emotion||undefined, accent: accent||undefined });
   if (!promptJ.ok){ el('p-flow').innerHTML = llShell(errBlock(promptJ.error, ''), '<button class="btn btn-ghost" onclick="ugcVideoSettingsForm()">Back</button><span></span>', 'Create UGC Video'); return; }
   el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Animating with lip-sync\u2026 this can take a few minutes.</div>', '', 'Create UGC Video');
-  const vidJ = await call('run_image_to_video', { generation_id: UGC_STATE.imageGenerationId, prompt: promptJ.motion_prompt, model: videoModel, duration, aspect_ratio: '9:16' }, 45000);
+  // Real fix: this was previously always hardcoded to 9:16 regardless
+  // of what was actually chosen - now genuinely uses the real,
+  // explicit selection above.
+  const vidJ = await call('run_image_to_video', { generation_id: UGC_STATE.imageGenerationId, prompt: promptJ.motion_prompt, model: videoModel, duration, aspect_ratio: aspectRatio }, 45000);
   if (!vidJ.ok){ el('p-flow').innerHTML = llShell(errBlock(vidJ.error, ''), '<button class="btn btn-ghost" onclick="ugcVideoSettingsForm()">Back</button><span></span>', 'Create UGC Video'); return; }
   talkingVideoPoll(vidJ.prediction_id, vidJ.generation_id, combinedScript, 'ugcVideoFlow', 'Create UGC Video', 0);
 }
@@ -4635,18 +4734,112 @@ function talkingHeadFilterAvatars(input){
   const filtered = TALK_STATE.avatars.filter(a => (a.name||'').toLowerCase().includes(q) || (a.description||'').toLowerCase().includes(q));
   el('talkAvatarGrid').innerHTML = filtered.map(talkingHeadAvatarTile).join('') || '<p class="note">No matches.</p>';
 }
+// Real restructure, asked for directly - matching UGC Video's own
+// real flow: a real image is generated first (the avatar used as a
+// real reference, optionally with a real background), reviewed, and
+// only then does video generation begin - not straight from the raw
+// avatar photo as before. Same real options as UGC Video throughout:
+// image model choice, a real background upload, a real "use a
+// previous image" path, a real business-context toggle, and a real
+// aspect ratio / video model choice before the final generation.
+function talkingHeadPickAvatar(storageUrl, name){
+  TALK_STATE.avatarUrl = storageUrl; TALK_STATE.avatarName = name;
+  el('p-flow').innerHTML = llShell(
+    '<img src="'+esc(storageUrl)+'" style="width:100px;border-radius:10px;margin-bottom:12px;">' +
+    '<label class="lbl">What are you promoting?</label><textarea class="field" id="talkTopic" style="min-height:60px;margin-bottom:10px;" placeholder="e.g. our princess braid package, AED 120"></textarea>' +
+    '<label class="lbl">Extra prompt (optional \u2014 leave blank and Zen figures it out)</label><textarea class="field" id="talkExtraPrompt" style="min-height:50px;margin-bottom:10px;" placeholder="e.g. bright, natural daylight, close-up shot"></textarea>' +
+    '<label class="lbl">Background image (optional)</label>' +
+    '<div><button type="button" class="btn btn-s btn-sm" onclick="el(\'talkBgInput\').click()">\ud83d\uddbc\ufe0f Upload a background</button>' +
+    '<input type="file" id="talkBgInput" accept="image/*" style="display:none;" onchange="talkingHeadUploadBackground()"></div>' +
+    '<div id="talkBgPreview" style="margin:8px 0;"></div>' +
+    '<label class="lbl">Image model</label>' +
+    '<select class="field" id="talkImageModel" style="margin-bottom:6px;">' +
+      '<option value="google/nano-banana-2-lite" selected>Nano Banana 2 Lite (default) \u2014 faster, cheaper</option>' +
+      '<option value="openai/gpt-image-2">GPT Image 2 \u2014 OpenAI\u2019s model, strong instruction-following and text rendering</option>' +
+    '</select>' +
+    '<label style="font-size:13px;display:block;margin:6px 0 10px;"><input type="checkbox" id="talkUseBusinessContext" checked> Use my business\u2019s context (industry, tone) \u2014 uncheck if this is for a different, unrelated product</label>' +
+    '<button type="button" class="btn btn-ghost btn-sm" style="margin-top:4px;" onclick="talkingHeadShowPreviousImages()">\ud83d\uddbc\ufe0f Or use an image you already generated</button>' +
+    '<div id="talkPreviousArea" style="margin-top:10px;"></div>',
+    '<button class="btn btn-ghost" onclick="talkingHeadFlow()">Back</button><button class="btn btn-p" onclick="talkingHeadGenerateImage()">Create image</button>',
+    'Talking Head'
+  );
+}
+async function talkingHeadUploadBackground(){
+  const input = el('talkBgInput');
+  const file = input.files && input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024){ toast('That image is too large (over 5MB) \u2014 please use a smaller one.', 'err'); input.value = ''; return; }
+  const box = el('talkBgPreview');
+  box.innerHTML = '<div class="loading-block"><span class="spin"></span>Uploading\u2026</div>';
+  try {
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    const j = await call('upload_product_photo', { image_base64: base64, content_type: file.type });
+    if (!j.ok){ box.innerHTML = errBlock(j.error, ''); return; }
+    TALK_STATE.backgroundUrl = j.image_url;
+    box.innerHTML = '<img src="'+esc(j.image_url)+'" style="width:90px;height:90px;object-fit:cover;border-radius:10px;"><button class="btn btn-ghost btn-sm" style="margin-left:8px;" onclick="TALK_STATE.backgroundUrl=null;el(\'talkBgPreview\').innerHTML=\'\';">Remove</button>';
+  } catch (e) {
+    box.innerHTML = errBlock(String((e && e.message) || e), '');
+  } finally {
+    input.value = '';
+  }
+}
+async function talkingHeadShowPreviousImages(){
+  const area = el('talkPreviousArea');
+  area.innerHTML = '<div class="loading-block"><span class="spin"></span>Loading your recent images\u2026</div>';
+  const j = await call('list_generations', {});
+  if (!j.ok){ area.innerHTML = errBlock(j.error, ''); return; }
+  const usable = (j.generations || []).filter(g => g.status === 'succeeded' && g.output_url).slice(0, 12);
+  area.innerHTML = usable.length
+    ? '<div class="gal-grid">' + usable.map(g =>
+        '<div class="gal-card" onclick="talkingHeadUsePreviousImage(\''+g.id+'\',\''+esc(g.output_url)+'\')">' +
+          '<img src="'+esc(g.output_url)+'" class="gal-media" loading="lazy">' +
+        '</div>').join('') + '</div>'
+    : '<p class="note">Nothing generated yet.</p>';
+}
+function talkingHeadUsePreviousImage(generationId, imageUrl){
+  TALK_STATE.useBusinessContext = el('talkUseBusinessContext') ? el('talkUseBusinessContext').checked : true;
+  talkingHeadImageReview(generationId, imageUrl);
+}
+async function talkingHeadGenerateImage(){
+  const topic = (el('talkTopic').value||'').trim();
+  if (!topic){ toast('Describe what you\u2019re promoting first.', 'err'); return; }
+  TALK_STATE.topic = topic;
+  TALK_STATE.extraPrompt = (el('talkExtraPrompt').value||'').trim();
+  TALK_STATE.imageModel = el('talkImageModel').value;
+  TALK_STATE.useBusinessContext = el('talkUseBusinessContext') ? el('talkUseBusinessContext').checked : true;
+  el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Generating\u2026</div>', '', 'Talking Head');
+  const briefJ = await call('generate_creative_brief', { user_request: `A specific, real presenter/creator named ${TALK_STATE.avatarName}, talking directly to camera about a product/service they are promoting - they are the presenter, not the customer receiving the service, so their real, stated appearance and age must be followed exactly as given, not assumed from the business's usual customer. What they're talking about: ${topic}.${TALK_STATE.extraPrompt ? ' '+TALK_STATE.extraPrompt : ''}`, subject_is_presenter: true, use_business_context: TALK_STATE.useBusinessContext }, 30000);
+  if (!briefJ.ok){ el('p-flow').innerHTML = llShell(errBlock(briefJ.error, ''), '<button class="btn btn-ghost" onclick="talkingHeadPickAvatar(\''+TALK_STATE.avatarUrl+'\',\''+esc(TALK_STATE.avatarName)+'\')">Back</button><span></span>', 'Talking Head'); return; }
+  const compiled = [briefJ.brief.subject, briefJ.brief.scene, briefJ.brief.activity, briefJ.brief.mood].filter(Boolean).join('. ');
+  const references = [TALK_STATE.avatarUrl];
+  if (TALK_STATE.backgroundUrl) references.push(TALK_STATE.backgroundUrl);
+  const imgJ = await call('run_generation', { compiled_prompt: compiled, model: TALK_STATE.imageModel || 'google/nano-banana-2-lite', reference_asset_urls: references, aspect_ratio: '9:16' }, 60000);
+  if (!imgJ.ok){ el('p-flow').innerHTML = llShell(errBlock(imgJ.error, ''), '<button class="btn btn-ghost" onclick="talkingHeadPickAvatar(\''+TALK_STATE.avatarUrl+'\',\''+esc(TALK_STATE.avatarName)+'\')">Back</button><span></span>', 'Talking Head'); return; }
+  talkingHeadImageReview(imgJ.generation_id, imgJ.output_url);
+}
+function talkingHeadImageReview(generationId, imageUrl){
+  TALK_STATE.imageGenerationId = generationId; TALK_STATE.imageUrl = imageUrl;
+  el('p-flow').innerHTML = llShell(
+    zen('Review your image. Regenerate if it\u2019s not right, or continue to write the script.') +
+    '<img src="'+esc(imageUrl)+'" style="width:200px;border-radius:13px;margin-bottom:10px;">',
+    '<button class="btn btn-s" onclick="talkingHeadGenerateImage()">\u21bb Regenerate</button><button class="btn btn-p" onclick="talkingHeadScriptSettings()">Continue</button>',
+    'Talking Head'
+  );
+}
 const TALK_SCRIPT_STYLES = [
   ['problem_solution', 'Problem \u2192 solution'],
   ['testimonial', 'Genuine testimonial'],
   ['offer_led', 'Offer-led'],
   ['storytelling', 'Short story'],
 ];
-function talkingHeadPickAvatar(storageUrl, name){
-  TALK_STATE.avatarUrl = storageUrl; TALK_STATE.avatarName = name;
+function talkingHeadScriptSettings(){
   el('p-flow').innerHTML = llShell(
-    '<img src="'+esc(storageUrl)+'" style="width:120px;border-radius:13px;margin-bottom:12px;">' +
-    '<p class="note" style="margin:0 0 10px;">Using <b>'+esc(name)+'</b> as your presenter.</p>' +
-    '<label class="lbl">What are you promoting?</label><textarea class="field" id="talkTopic" style="min-height:60px;margin-bottom:10px;" placeholder="e.g. our princess braid package, AED 120"></textarea>' +
+    '<img src="'+esc(TALK_STATE.imageUrl)+'" style="width:100px;border-radius:10px;margin-bottom:12px;">' +
     '<label class="lbl">Script</label>' +
     '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">' +
       '<button type="button" class="btn btn-s btn-sm" data-scriptmode="ai" onclick="talkingHeadSetScriptMode(\'ai\')" style="border-color:var(--green);">\u2728 Let Zen write it</button>' +
@@ -4662,16 +4855,28 @@ function talkingHeadPickAvatar(storageUrl, name){
     '<div id="talkManualArea" style="display:none;">' +
       '<label class="lbl">Write the exact line to say</label><textarea class="field" id="talkManualScript" style="min-height:50px;margin-bottom:10px;" placeholder="e.g. You\u2019re going to love our new braid package!"></textarea>' +
     '</div>' +
-    // Real delivery controls added here too, matching UGC Video -
-    // Talking Head is the same real lip-sync mechanism, and had none
-    // of these at all before now.
     '<div style="display:flex;gap:8px;margin-bottom:10px;">' +
       '<div style="flex:1;"><label class="lbl">Voice tone</label><select class="field" id="talkTone"><option value="">Natural</option><option>confident</option><option>friendly</option><option>excited</option><option>calm</option></select></div>' +
       '<div style="flex:1;"><label class="lbl">Emotion</label><select class="field" id="talkEmotion"><option value="">Natural</option><option>enthusiastic</option><option>warm</option><option>playful</option><option>sincere</option></select></div>' +
       '<div style="flex:1;"><label class="lbl">Accent</label><select class="field" id="talkAccent"><option value="">Natural / let Zen match the avatar</option><option value="Arabic">Arabic</option><option value="British">British</option><option value="American">American</option><option value="Indian">Indian</option><option value="Filipino">Filipino</option><option value="African">African</option><option value="French">French</option><option value="Australian">Australian</option></select></div>' +
     '</div>' +
-    '<label style="font-size:13px;display:block;margin-bottom:10px;"><input type="checkbox" id="talkMusic" checked> Include soft background music</label>',
-    '<button class="btn btn-ghost" onclick="talkingHeadFlow()">Back</button><button class="btn btn-p" onclick="talkingHeadReview()">Continue</button>',
+    '<label style="font-size:13px;display:block;margin-bottom:10px;"><input type="checkbox" id="talkMusic" checked> Include soft background music</label>' +
+    '<label class="lbl">Aspect ratio</label>' +
+    '<select class="field" id="talkAspectRatio" style="max-width:220px;margin-bottom:10px;">' +
+      '<option value="9:16" selected>9:16 \u2014 Reels / Stories (portrait)</option>' +
+      '<option value="16:9">16:9 \u2014 Landscape</option>' +
+      '<option value="1:1">1:1 \u2014 Square</option>' +
+    '</select>' +
+    '<label class="lbl">Video model</label>' +
+    '<select class="field" id="talkVideoModel" style="margin-bottom:10px;">' +
+      '<option value="google/veo-3.1" selected>Google Veo 3.1</option>' +
+      '<option value="bytedance/seedance-2.0">ByteDance Seedance 2.0</option>' +
+      '<option value="bytedance/seedance-2.0-fast">ByteDance Seedance 2.0 Fast</option>' +
+      '<option value="xai/grok-imagine-video">Grok Imagine Video</option>' +
+      '<option value="alibaba/wan-3">Alibaba Wan 3.0</option>' +
+      '<option value="prunaai/p-video">Pruna AI P-Video</option>' +
+    '</select>',
+    '<button class="btn btn-ghost" onclick="talkingHeadImageReview(\''+TALK_STATE.imageGenerationId+'\',\''+TALK_STATE.imageUrl+'\')">Back</button><button class="btn btn-p" onclick="talkingHeadReview()">Continue</button>',
     'Talking Head'
   );
 }
@@ -4682,8 +4887,7 @@ function talkingHeadSetScriptMode(mode){
   TALK_STATE.scriptMode = mode;
 }
 async function talkingHeadReview(){
-  const topic = (el('talkTopic').value||'').trim();
-  if (!topic){ toast('Describe what you\u2019re promoting first.', 'err'); return; }
+  const topic = TALK_STATE.topic;
   const mode = TALK_STATE.scriptMode || 'ai';
   const includeMusic = el('talkMusic').checked;
   // Real bug fixed here, caught by testing: these values must be read
@@ -4695,6 +4899,8 @@ async function talkingHeadReview(){
   const selectedTone = el('talkTone') ? el('talkTone').value : '';
   const selectedEmotion = el('talkEmotion') ? el('talkEmotion').value : '';
   const selectedAccent = el('talkAccent') ? el('talkAccent').value : '';
+  const selectedAspectRatio = el('talkAspectRatio') ? el('talkAspectRatio').value : '9:16';
+  const selectedVideoModel = el('talkVideoModel') ? el('talkVideoModel').value : 'google/veo-3.1';
   let script = null;
   if (mode === 'manual') {
     script = (el('talkManualScript').value||'').trim();
@@ -4703,41 +4909,44 @@ async function talkingHeadReview(){
   el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>'+(script?'Preparing your review\u2026':'Writing a natural spoken line\u2026')+'</div>', '', 'Talking Head');
   if (!script) {
     const scriptJ = await call('generate_talking_script', { topic, speaker_description: TALK_STATE.avatarName, style: selectedStyle }, 30000);
-    if (!scriptJ.ok){ el('p-flow').innerHTML = llShell(errBlock(scriptJ.error, ''), '<button class="btn btn-ghost" onclick="talkingHeadPickAvatar(\''+TALK_STATE.avatarUrl+'\',\''+esc(TALK_STATE.avatarName)+'\')">Back</button><span></span>', 'Talking Head'); return; }
+    if (!scriptJ.ok){ el('p-flow').innerHTML = llShell(errBlock(scriptJ.error, ''), '<button class="btn btn-ghost" onclick="talkingHeadScriptSettings()">Back</button><span></span>', 'Talking Head'); return; }
     script = scriptJ.script;
   }
-  TALK_STATE.topic = topic; TALK_STATE.script = script; TALK_STATE.includeMusic = includeMusic;
+  TALK_STATE.script = script; TALK_STATE.includeMusic = includeMusic;
   TALK_STATE.tone = selectedTone; TALK_STATE.emotion = selectedEmotion; TALK_STATE.accent = selectedAccent;
+  TALK_STATE.aspectRatio = selectedAspectRatio; TALK_STATE.videoModel = selectedVideoModel;
   // Real final review, matching what was asked for directly - avatar,
   // script, and music all shown together before anything real gets
   // generated, with the script still editable at this point.
   el('p-flow').innerHTML = llShell(
     '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;">' +
       '<div style="display:flex;gap:12px;align-items:center;margin-bottom:10px;">' +
-        '<img src="'+esc(TALK_STATE.avatarUrl)+'" style="width:60px;height:60px;object-fit:cover;border-radius:8px;">' +
+        '<img src="'+esc(TALK_STATE.imageUrl)+'" style="width:60px;height:60px;object-fit:cover;border-radius:8px;">' +
         '<b>'+esc(TALK_STATE.avatarName)+'</b>' +
       '</div>' +
       '<label class="lbl">Script</label><textarea class="field" id="talkFinalScript" style="min-height:50px;margin-bottom:8px;">'+esc(script)+'</textarea>' +
       '<p class="note" style="margin:0;">'+(includeMusic ? '\ud83c\udfb5 Soft background music will be included.' : 'No background music.')+'</p>' +
     '</div>',
-    '<button class="btn btn-ghost" onclick="talkingHeadPickAvatar(\''+TALK_STATE.avatarUrl+'\',\''+esc(TALK_STATE.avatarName)+'\')">Back</button><button class="btn btn-p" onclick="talkingHeadGenerate()">Generate</button>',
+    '<button class="btn btn-ghost" onclick="talkingHeadScriptSettings()">Back</button><button class="btn btn-p" onclick="talkingHeadGenerate()">Generate</button>',
     'Talking Head'
   );
 }
 async function talkingHeadGenerate(){
   const finalScript = (el('talkFinalScript').value||'').trim();
   if (!finalScript){ toast('The script can\u2019t be empty.', 'err'); return; }
-  el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Preparing your avatar for video\u2026</div>', '', 'Talking Head');
-  const regJ = await call('register_image_as_generation', { image_url: TALK_STATE.avatarUrl });
-  if (!regJ.ok){ el('p-flow').innerHTML = llShell(errBlock(regJ.error, ''), '<button class="btn btn-ghost" onclick="talkingHeadFlow()">Back</button><span></span>', 'Talking Head'); return; }
-  await talkingVideoAnimate(regJ.generation_id, TALK_STATE.avatarName, TALK_STATE.topic, 'talkingHeadFlow', 'Talking Head', finalScript, TALK_STATE.includeMusic, TALK_STATE.tone, TALK_STATE.emotion, TALK_STATE.accent);
+  // Real fix: the image was already generated (and, when reused,
+  // already a real, registered generation) earlier in this real flow -
+  // no longer re-registers the raw avatar photo here, since that step
+  // now happens once, up front, as part of actually creating the
+  // image being animated.
+  await talkingVideoAnimate(TALK_STATE.imageGenerationId, TALK_STATE.avatarName, TALK_STATE.topic, 'talkingHeadFlow', 'Talking Head', finalScript, TALK_STATE.includeMusic, TALK_STATE.tone, TALK_STATE.emotion, TALK_STATE.accent, TALK_STATE.aspectRatio, TALK_STATE.videoModel);
 }
 // Shared by both UGC Video and Talking Head - the real script +
 // lip-sync + animate sequence, built once rather than duplicated.
 // preWrittenScript/includeMusic are optional - UGC Video's existing
 // call (without them) keeps generating a fresh AI script with no
 // music, unchanged.
-async function talkingVideoAnimate(generationId, speakerDescription, topic, backFn, heading, preWrittenScript, includeMusic, tone, emotion, accent){
+async function talkingVideoAnimate(generationId, speakerDescription, topic, backFn, heading, preWrittenScript, includeMusic, tone, emotion, accent, aspectRatio, videoModel){
   let script = preWrittenScript;
   if (!script) {
     el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Writing a natural spoken line\u2026</div>', '', heading);
@@ -4748,20 +4957,39 @@ async function talkingVideoAnimate(generationId, speakerDescription, topic, back
   const promptJ = await call('generate_lipsync_motion_prompt', { script, speaker_description: speakerDescription, include_music: !!includeMusic, tone: tone||undefined, emotion: emotion||undefined, accent: accent||undefined });
   if (!promptJ.ok){ el('p-flow').innerHTML = llShell(errBlock(promptJ.error, ''), '<button class="btn btn-ghost" onclick="'+backFn+'()">Back</button><span></span>', heading); return; }
   el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Animating with lip-sync\u2026 this can take a few minutes.</div>', '', heading);
-  const vidJ = await call('run_image_to_video', { generation_id: generationId, prompt: promptJ.motion_prompt, model: 'google/veo-3.1', duration: 8, aspect_ratio: '9:16' }, 45000);
+  // Real, genuine model choice now honored here - previously always
+  // hardcoded regardless of anything selected anywhere.
+  const model = videoModel || 'google/veo-3.1';
+  const vidJ = await call('run_image_to_video', { generation_id: generationId, prompt: promptJ.motion_prompt, model, duration: 8, aspect_ratio: aspectRatio || '9:16' }, 45000);
   if (!vidJ.ok){ el('p-flow').innerHTML = llShell(errBlock(vidJ.error, ''), '<button class="btn btn-ghost" onclick="'+backFn+'()">Back</button><span></span>', heading); return; }
   talkingVideoPoll(vidJ.prediction_id, vidJ.generation_id, script, backFn, heading, 0);
 }
 function talkingVideoPoll(predictionId, videoGenId, script, backFn, heading, attempt){
   if (attempt > 40){ el('p-flow').innerHTML = llShell('<p class="note">Still processing after a while \u2014 check back shortly.</p>', '<button class="btn btn-ghost" onclick="'+backFn+'()">Back</button><span></span>', heading); return; }
-  call('check_video_status', { prediction_id: predictionId, generation_id: videoGenId }).then(j => {
+  call('check_video_status', { prediction_id: predictionId, generation_id: videoGenId }).then(async j => {
     if (!j.ok){ el('p-flow').innerHTML = llShell(errBlock(j.error, ''), '<button class="btn btn-ghost" onclick="'+backFn+'()">Back</button><span></span>', heading); return; }
     if (j.status === 'succeeded' && j.output_url){
+      // Real fix, reported directly: a finished video was never saved
+      // anywhere real - the database record existed, but nothing ever
+      // attached it to a real, visible content item, so it had no way
+      // to show up in Recent creative projects or be picked up for
+      // real scheduling/promotion afterward. Saved here, the one real
+      // point completion is actually known, using the same real
+      // attach action already proven for images - it already, fully
+      // supports video content.
+      const attachJ = await call('attach_generation_to_content_item', {
+        generation_id: videoGenId, title: heading+' - '+new Date().toLocaleDateString(),
+        caption: script || '', item_type: 'video', aspect_ratio: '9:16',
+      });
       el('p-flow').innerHTML = llShell(
         '<video src="'+esc(j.output_url)+'" controls style="width:220px;border-radius:13px;margin-bottom:8px;"></video>' +
         '<p class="note" style="margin:0 0 10px;">Says: \u201c'+esc(script)+'\u201d</p>' +
-        '<a href="'+esc(j.output_url)+'" download target="_blank" class="btn btn-p btn-sm" style="display:block;width:fit-content;">\u2b07 Download video</a>' +
-        '<p class="note" style="margin-top:10px;">Direct Instagram publishing for video isn\u2019t built yet \u2014 download it to post manually.</p>',
+        '<a href="'+esc(j.output_url)+'" download target="_blank" class="btn btn-p btn-sm" style="display:block;width:fit-content;margin-bottom:8px;">\u2b07 Download video</a>' +
+        (attachJ.ok
+          ? '<p class="note" style="color:var(--green);">\u2713 Saved \u2014 find it under Creative Studio\u2019s Recent projects, and it\u2019s now ready to use for promotion.</p>' +
+            '<button class="btn btn-s btn-sm" style="margin-top:8px;" onclick="promotePostForm(\''+attachJ.item.id+'\')">Use for promotion</button>'
+          : '<p class="note" style="color:#a02020;">Could not save this for later: '+esc(attachJ.error||'')+' \u2014 download it now before leaving this screen.</p>') +
+        '<p class="note" style="margin-top:10px;">Direct Instagram feed publishing for video isn\u2019t built yet \u2014 download it to post manually, or use it for a real ad above.</p>',
         '<button class="btn btn-ghost" onclick="'+backFn+'()">Back</button><span></span>',
         heading
       );
