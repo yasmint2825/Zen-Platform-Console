@@ -2973,12 +2973,29 @@ async function creativestudio(){
   });
   const j = await call('list_all_content_items', {});
   const items = (j.ok ? j.items : []).slice(0, 8);
+  // Real, readable status labels - reported directly ("I see status
+  // but not what it means"): the raw, technical status value
+  // ("creative_ready", etc.) was shown exactly as stored, not
+  // translated into something a person would actually recognize.
+  const STATUS_LABELS = { planned: 'Planned', creative_ready: 'Awaiting approval', approved: 'Approved', scheduled: 'Scheduled', published: 'Published' };
   el('csRecentProjects').innerHTML = items.length
-    ? '<div class="gal-grid">' + items.map(it =>
-        '<div class="gal-card" style="cursor:default;">' +
-          (it.generated_image_url ? '<img src="'+esc(it.generated_image_url)+'" class="gal-media" loading="lazy">' : '<div class="gal-media" style="display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;">'+esc(it.item_type||'')+'</div>') +
-          '<div class="gal-body"><span class="gal-label">'+esc(it.title||'Untitled')+'</span><span class="gal-sub">'+esc(it.status||'')+'</span></div>' +
-        '</div>').join('') + '</div>'
+    ? '<div class="gal-grid">' + items.map(it => {
+        // Real bug fixed here too, found while checking this: a real
+        // video item's own generation URL is a real .mp4 file - an
+        // <img> tag can never display that, so every real video here
+        // silently rendered as a broken image with nothing visible at
+        // all. A real <video> element is used instead whenever the
+        // item is genuinely a video.
+        const isVideo = it.item_type === 'video';
+        const media = it.generated_image_url
+          ? (isVideo
+              ? '<video src="'+esc(it.generated_image_url)+'" class="gal-media" muted></video>'
+              : '<img src="'+esc(it.generated_image_url)+'" class="gal-media" loading="lazy">')
+          : '<div class="gal-media" style="display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;">'+esc(it.item_type||'')+'</div>';
+        return '<div class="gal-card" style="cursor:default;">' + media +
+          '<div class="gal-body"><span class="gal-label">'+esc(it.title||'Untitled')+'</span><span class="gal-sub">'+esc(STATUS_LABELS[it.status]||it.status||'')+'</span></div>' +
+        '</div>';
+      }).join('') + '</div>'
     : '<p class="note">Nothing generated yet \u2014 start with Clone an Ad above.</p>';
 }
 async function promotions(tab){
