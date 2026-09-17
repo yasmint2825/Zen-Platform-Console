@@ -1842,7 +1842,14 @@ async function zenwhatsapp(){
     const isIg = c.channel === 'instagram';
     return '<button class="wa-convo'+(c.mobile===WA_ACTIVE?' active':'')+'" onclick="waSelect(\''+esc(c.mobile)+'\')">' +
       avatar(name,30) +
-      '<div style="min-width:0;"><div class="wa-convo-name">'+esc(name)+' <span style="font-size:10px;font-weight:400;color:'+(isIg?'#c13584':'#25d366')+';">'+(isIg?'\ud83d\udcf8 Instagram':'\ud83d\udcac WhatsApp')+'</span></div>' +
+      '<div style="min-width:0;"><div class="wa-convo-name">'+esc(name)+' <span style="font-size:10px;font-weight:400;color:'+(isIg?'#c13584':'#25d366')+';">'+(isIg?'\ud83d\udcf8 Instagram':'\ud83d\udcac WhatsApp')+'</span>' +
+        // Real fix, reported directly: the "from an ad" marker only
+        // ever showed once a conversation was opened - the inbox list
+        // itself, where this same real from_ad field was already
+        // available on every row, never actually showed it, so
+        // browsing the list just said "WhatsApp" with no indication
+        // an ad was involved at all.
+        (c.from_ad?' <span style="font-size:10px;font-weight:400;color:var(--muted);">\ud83d\udce3 from an ad</span>':'') + '</div>' +
       '<div class="wa-convo-last">'+esc(String((last&&last.body)||'').slice(0,60))+'</div></div>' +
       '<div class="wa-convo-meta"><div class="wa-convo-time">'+ago(c.last_inbound_at)+'</div>' +
       (c.unhandled?'<span class="badge warn" style="margin-top:3px;">'+c.unhandled+'</span>':'') + '</div></button>';
