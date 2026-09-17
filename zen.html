@@ -1954,6 +1954,18 @@ async function loadChatHistoryInline(filter){
 // mark_conversation_handled action already existed on the backend but
 // was never called from anywhere in this build, which is the entire
 // reason a read message kept sitting in the unread badge forever.
+async function waEditMobile(oldMobile){
+  const convo = WA_CACHE.find(c => c.mobile === oldMobile);
+  const raw = prompt('Enter the correct number for '+((convo && convo.customer_name) || 'this customer')+':\n\nInclude the country code, no leading 0 or + \u2014 e.g. 918106679523 for India, 447911123456 for the UK.', oldMobile);
+  if (raw === null) return; // cancelled
+  const newMobile = raw.trim();
+  if (!newMobile || newMobile === oldMobile) return;
+  const j = await call('update_conversation_mobile', { old_mobile: oldMobile, new_mobile: newMobile });
+  if (!j.ok){ toast(j.error, 'err'); return; }
+  toast('Updated to '+j.corrected, 'ok');
+  WA_ACTIVE = j.corrected;
+  await zenwhatsapp();
+}
 async function waSelect(mobile){
   WA_ACTIVE = mobile;
   el('waListPane').querySelectorAll('.wa-convo').forEach((b,i) => b.classList.toggle('active', WA_CACHE[i].mobile===mobile));
@@ -2013,8 +2025,15 @@ function waRenderThread(mobile){
   const idLine = isIg ? (c.ig_username ? '@'+c.ig_username : c.mobile) : c.mobile;
   pane.innerHTML =
     '<div class="wa-thread-head">' + avatar(name,32) +
-      '<div><b style="font-size:12.5px;">'+esc(name)+'</b>' +
-      '<div class="sub" style="font-size:10.5px;">'+esc(idLine)+' \u00b7 <span style="color:'+(isIg?'#c13584':'#25d366')+';">'+(isIg?'\ud83d\udcf8 Instagram':'\ud83d\udcac WhatsApp')+'</span>'+(c.from_ad?' \u00b7 from an ad':'')+'</div></div></div>' +
+      '<div style="flex:1;"><b style="font-size:12.5px;">'+esc(name)+'</b>' +
+      '<div class="sub" style="font-size:10.5px;">'+esc(idLine)+' \u00b7 <span style="color:'+(isIg?'#c13584':'#25d366')+';">'+(isIg?'\ud83d\udcf8 Instagram':'\ud83d\udcac WhatsApp')+'</span>'+(c.from_ad?' \u00b7 from an ad':'') +
+        // Real, direct, simple edit option added here - reported
+        // directly that the earlier, bulk scan-and-fix tool tucked
+        // inside settings was too hard to actually find. This puts a
+        // real, immediate fix right where the wrong number is
+        // actually visible - no separate screen, no scan to run first.
+        (!isIg ? ' \u00b7 <a href="#" onclick="waEditMobile(\''+esc(c.mobile)+'\');return false;" style="color:var(--accent);">Edit number</a>' : '') +
+      '</div></div></div>' +
     '<div class="wa-thread-body" id="waThreadBody">' + ordered.slice(-20).map(m =>
       '<div class="wa-bubble" style="'+(m.direction==='out'?'margin-left:auto;background:#fff;border:1px solid var(--line);':'')+'margin-bottom:8px;">' +
       (m.media_url ? '<img src="'+esc(m.media_url)+'" style="max-width:220px;border-radius:10px;display:block;margin-bottom:'+(m.body?'6px':'0')+';" loading="lazy">' : '') +
