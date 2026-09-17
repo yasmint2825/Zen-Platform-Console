@@ -2919,6 +2919,25 @@ function promotionsTabBar(active){
 // than shown as if they work, matching the spec's own phased build
 // order (shared foundation first, one feature proven end-to-end
 // before the next).
+async function csDeleteApproval(type, id, btnEl, ev){
+  if (ev) ev.stopPropagation();
+  if (!confirm('Delete this? This can\u2019t be undone.')) return;
+  const j = await call('delete_approval_item', { type, id });
+  if (!j.ok){ toast(j.error, 'err'); return; }
+  toast('Deleted', 'ok');
+  const card = btnEl.closest('.gal-card');
+  if (card) card.remove();
+}
+async function csRecoverGeneration(generationId, itemType, btnEl){
+  btnEl.disabled = true; btnEl.textContent = 'Saving\u2026';
+  const j = await call('attach_generation_to_content_item', {
+    generation_id: generationId, title: 'Recovered '+itemType+' - '+new Date().toLocaleDateString(),
+    item_type: itemType, aspect_ratio: itemType === 'video' ? '9:16' : '1:1',
+  });
+  if (!j.ok){ toast(j.error, 'err'); btnEl.disabled = false; btnEl.textContent = 'Save this'; return; }
+  toast('Saved', 'ok');
+  btnEl.closest('.gal-card').remove();
+}
 async function creativestudio(){
   STATE.lastPage='creativestudio';
   const p = el('p-creativestudio');
@@ -2952,8 +2971,61 @@ async function creativestudio(){
     '<div class="grid3" style="margin-top:14px;">' +
       CARD_DEFS.map(c => studioCard(c[0], c[1], c[2], c[3], null)).join('') +
     '</div>' +
+    // Real, new section - reported directly ("why can't I see
+    // everything saved for approval"): a real, complete backend
+    // action for exactly this already existed, correctly aggregating
+    // every real source of pending approval - but nothing in the
+    // frontend ever called it. Placed above Recent projects, since an
+    // item genuinely waiting on a decision is more actionable than
+    // one already finished.
+    '<div class="sechead" style="margin-top:18px;"><h2>Awaiting your approval</h2></div>' +
+    '<div id="csApprovals"><div class="loading-block"><span class="spin"></span></div></div>' +
     '<div class="sechead" style="margin-top:18px;"><h2>Recent creative projects</h2></div>' +
     '<div id="csRecentProjects"><div class="loading-block"><span class="spin"></span></div></div>';
+  call('list_all_approvals', {}).then(aj => {
+    // Real, explicit scope - asked for directly: only real, generated
+    // creative belongs on this screen, not a pending WhatsApp reply
+    // decision, which is a genuinely different kind of approval that
+    // belongs with ZenWhatsApp itself, not Creative Studio.
+    const approvals = aj.ok ? aj.approvals.filter(a => a.type !== 'whatsapp_decision') : [];
+    el('csApprovals').innerHTML = approvals.length
+      ? '<div class="gal-grid">' + approvals.map(a =>
+          '<div class="gal-card" style="cursor:default;position:relative;">' +
+            // Real delete control - asked for directly ("I want to
+            // delete unwanted approvals"). Stops its own click from
+            // bubbling further, and removes just this one card once
+            // genuinely deleted, rather than reloading the whole list.
+            '<button type="button" title="Delete" onclick="csDeleteApproval(\''+a.type+'\',\''+a.id+'\',this,event)" ' +
+              'style="position:absolute;top:4px;right:4px;z-index:1;width:22px;height:22px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;font-size:13px;line-height:1;cursor:pointer;">\u00d7</button>' +
+            (a.image_url
+              ? (String(a.title||'').startsWith('Video') || /\.(mp4|mov|webm)(\?|$)/i.test(a.image_url)
+                  ? '<video src="'+esc(a.image_url)+'" class="gal-media" muted></video>'
+                  : '<img src="'+esc(a.image_url)+'" class="gal-media" loading="lazy">')
+              : '<div class="gal-media" style="display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;">'+esc(a.type||'')+'</div>') +
+            '<div class="gal-body"><span class="gal-label">'+esc(a.title||'Untitled')+'</span>'+(a.detail?'<span class="gal-sub">'+esc(String(a.detail).slice(0,60))+'</span>':'')+'</div>' +
+          '</div>').join('') + '</div>'
+      : '<p class="note">Nothing waiting on you right now.</p>';
+  });
+  // Real recovery check - asked for directly ("where did our videos
+  // go"), following the real fix made earlier this session for videos
+  // never being saved anywhere visible. That fix only applies going
+  // forward - anything generated before it was deployed still has a
+  // real, succeeded row in the database, it just was never linked to
+  // anything visible. Only surfaced when something real is actually
+  // found, so this stays silent and out of the way otherwise.
+  call('find_unattached_generations', {}).then(uj => {
+    if (!uj.ok || !uj.generations.length) return;
+    const box = document.createElement('div');
+    box.innerHTML =
+      '<div class="sechead" style="margin-top:18px;"><h2>\ud83d\udd0d Found '+uj.generations.length+' earlier creation'+(uj.generations.length>1?'s':'')+' not yet saved</h2></div>' +
+      '<p class="note" style="margin-top:0;">These were generated before a real fix made recently \u2014 they exist, just were never linked to a visible project. Save the ones you want to keep.</p>' +
+      '<div class="gal-grid">' + uj.generations.map(g =>
+        '<div class="gal-card" style="cursor:default;">' +
+          (g.is_video ? '<video src="'+esc(g.output_url)+'" class="gal-media" muted></video>' : '<img src="'+esc(g.output_url)+'" class="gal-media" loading="lazy">') +
+          '<div class="gal-body"><button class="btn btn-s btn-sm" onclick="csRecoverGeneration(\''+g.id+'\',\''+(g.is_video?'video':'image')+'\',this)">Save this</button></div>' +
+        '</div>').join('') + '</div>';
+    p.appendChild(box);
+  });
   // Real, actually-generated preview images - your own real product
   // and people imagery, generated once and cached, not stock photos
   // or another site's own screenshots (neither of which can honestly
@@ -4173,8 +4245,21 @@ async function llReviewAndPublish(generationId, ratio){
     price: p ? (el('llPrice') ? el('llPrice').value : p.price) : undefined,
   });
   const cap = capJ.ok ? capJ : { hook: '', caption: LL_STATE.desc || '', cta: '', hashtags: [] };
+  // Real fix, requested directly: this now saves the moment a caption
+  // is ready, using the same real generation/caption already produced
+  // here - not only once "Publish now" is actually clicked. Someone
+  // who generates an image and simply leaves no longer loses it -
+  // the same real fix already made for video, applied here too.
+  const title = (LL_STATE.product?.title) || (LL_STATE.desc||'Post').slice(0, 60);
+  const attachJ = await call('attach_generation_to_content_item', {
+    generation_id: generationId, title, aspect_ratio: ratio,
+    hook: cap.hook||'', caption: cap.caption||'', cta: cap.cta||'', hashtags: cap.hashtags||[],
+    item_type: LL_STATE.itemType || 'image',
+  });
+  LL_STATE.itemId = attachJ.ok ? attachJ.item.id : null;
   area.innerHTML =
     '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;">' +
+    (attachJ.ok ? '<p class="note" style="margin:0 0 8px;color:var(--green);">\u2713 Saved \u2014 edit anything below, it\u2019ll be kept even if you don\u2019t publish.</p>' : '<p class="note" style="margin:0 0 8px;color:#a02020;">Could not save this automatically: '+esc(attachJ.error||'')+' \u2014 download it before leaving this screen.</p>') +
     '<label class="lbl">Opening line (hook)</label><input class="field" id="llHook" value="'+esc(cap.hook||'')+'" style="margin-bottom:8px;">' +
     '<label class="lbl">Caption</label><textarea class="field" id="llCaption" style="min-height:70px;margin-bottom:8px;">'+esc(cap.caption||'')+'</textarea>' +
     '<label class="lbl">Call to action</label><input class="field" id="llCta" value="'+esc(cap.cta||'')+'" style="margin-bottom:8px;">' +
@@ -4189,19 +4274,22 @@ async function llReviewAndPublish(generationId, ratio){
     '</div>';
 }
 async function llPublishNow(generationId, ratio){
-  const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Attaching\u2026';
+  const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Publishing\u2026';
   const res = el('llPublishResult');
-  const title = (LL_STATE.product?.title) || (LL_STATE.desc||'Post').slice(0, 60);
+  // Real fix: the item already exists (saved automatically above) -
+  // this now only updates it with whatever was actually edited, then
+  // publishes, rather than creating it for the first time here.
+  if (!LL_STATE.itemId){
+    res.innerHTML = errBlock('This wasn\u2019t saved automatically earlier \u2014 refresh and try again.', '');
+    btn.disabled = false; btn.textContent = 'Publish now'; return;
+  }
   const hashtags = (el('llHashtags').value||'').split(/\s+/).filter(Boolean);
-  const attachJ = await call('attach_generation_to_content_item', {
-    generation_id: generationId, title, aspect_ratio: ratio,
-    hook: el('llHook').value.trim(), caption: el('llCaption').value.trim(), cta: el('llCta').value.trim(), hashtags,
+  const updateJ = await call('update_content_plan_item_publish_details', {
+    id: LL_STATE.itemId, hook: el('llHook').value.trim(), caption: el('llCaption').value.trim(), cta: el('llCta').value.trim(), hashtags,
     location_id_override: (el('llLocation').value||'').trim() || undefined,
-    item_type: LL_STATE.itemType || 'image',
   });
-  if (!attachJ.ok){ res.innerHTML = errBlock(attachJ.error, ''); btn.disabled=false; btn.textContent='Publish now'; return; }
-  const itemId = attachJ.item.id;
-  btn.innerHTML = '<span class="spin"></span>Publishing\u2026';
+  if (!updateJ.ok){ res.innerHTML = errBlock(updateJ.error, ''); btn.disabled=false; btn.textContent='Publish now'; return; }
+  const itemId = LL_STATE.itemId;
   // Real approval step, since publishing requires it - the owner has
   // already reviewed everything on this same screen, so this happens
   // automatically rather than asking for a separate, redundant click.
@@ -5597,10 +5685,21 @@ async function magentRunGeneration(){
       creative_brief_id: magentState.pendingBriefId, generation_id: genRes.generation_id,
     }); // best-effort, doesn't block the flow if it fails
   }
+  // Real fix, requested directly: saves the moment a real image is
+  // generated, not only once the "Continue" button below is actually
+  // clicked - someone who generates and just leaves no longer loses
+  // it. Same real fix already made for video and for Clone an Ad,
+  // applied here too.
+  const autoAttachJ = await call('attach_generation_to_content_item', {
+    generation_id: genRes.generation_id, title: (concept.message||'Post').slice(0, 60),
+    caption: concept.message||'', aspect_ratio: magentState.aspectRatio || '1:1',
+  });
+  magentState.itemId = autoAttachJ.ok ? autoAttachJ.item.id : null;
 
   el('p-flow').innerHTML = magentShell(
     '<img src="'+esc(genRes.output_url)+'" style="width:260px;aspect-ratio:1;object-fit:cover;border-radius:13px;margin-bottom:12px;" loading="lazy">' +
     '<p class="note">'+esc(concept.format)+' for '+esc(persona?persona.name:'your audience')+'</p>' +
+    (autoAttachJ.ok ? '<p class="note" style="color:var(--green);">\u2713 Saved \u2014 kept even if you don\u2019t continue.</p>' : '') +
     '<button class="btn btn-s btn-sm" style="margin-top:8px;" onclick="magentTurnIntoVideoForm(\''+genRes.generation_id+'\')">\ud83c\udfa5 Turn this into a video</button> ' +
     '<button class="btn btn-s btn-sm" style="margin-top:8px;" onclick="beforeAfterForm(\''+genRes.generation_id+'\',\''+esc(genRes.output_url)+'\')">\u2702\ufe0f Generate before/after</button>' +
     '<div id="videoFormArea"></div>' +
@@ -5901,11 +6000,25 @@ async function magentRunCarouselGeneration(concept, persona){
     slideUrls.push(genRes.output_url);
   }
 
+  // Real fix, matching the single-image path above: saves the moment
+  // all real slides are generated, not only once "Continue" is
+  // actually clicked. additional_generation_ids attaches every real
+  // slide after the first, so this remains one real carousel item,
+  // not several separate ones.
+  const additionalIds = magentState.pendingGenerationIds.slice(1);
+  const autoAttachJ = await call('attach_generation_to_content_item', {
+    generation_id: magentState.pendingGenerationIds[0], title: (concept.message||'Post').slice(0, 60),
+    caption: concept.message||'', aspect_ratio: magentState.aspectRatio || '1:1',
+    additional_generation_ids: additionalIds.length ? additionalIds : undefined,
+  });
+  magentState.itemId = autoAttachJ.ok ? autoAttachJ.item.id : null;
+
   el('p-flow').innerHTML = magentShell(
     '<div style="display:flex;gap:8px;margin-bottom:12px;">' +
       slideUrls.map((u,i) => '<div><img src="'+esc(u)+'" style="width:110px;aspect-ratio:1;object-fit:cover;border-radius:10px;" loading="lazy"><p class="note" style="text-align:center;">'+(i+1)+'</p></div>').join('') +
     '</div>' +
-    '<p class="note">'+slideUrls.length+'-slide carousel for '+esc(persona?persona.name:'your audience')+'</p>',
+    '<p class="note">'+slideUrls.length+'-slide carousel for '+esc(persona?persona.name:'your audience')+'</p>' +
+    (autoAttachJ.ok ? '<p class="note" style="color:var(--green);">\u2713 Saved \u2014 kept even if you don\u2019t continue.</p>' : ''),
     '<button class="btn btn-ghost" onclick="magentStepVisualSource()">Regenerate</button>' +
     '<button class="btn btn-p" onclick="magentStepPublish(\''+magentState.pendingGenerationIds[0]+'\',\''+esc((concept.message||'Post').replace(/\'/g,''))+'\')">Continue</button>'
   );
@@ -5917,26 +6030,32 @@ async function magentRunCarouselGeneration(concept, persona){
 // plan_item), not a new publish mechanism built for this wizard.
 async function magentStepPublish(generationId, title){
   magentState.step = 5;
-  el('p-flow').innerHTML = magentShell('<div class="loading-block"><span class="spin"></span></div>', '');
   const concept = magentState.conceptQueue[magentState.conceptIndex];
-  // Carousel: pass every slide after the first as additional_generation_ids
-  // so attach_generation_to_content_item creates real mw_carousel_slides
-  // rows for each, not just the first image.
-  const additionalIds = (magentState.pendingGenerationIds || []).slice(1);
-  const j = await call('attach_generation_to_content_item', {
-    generation_id: generationId, title, caption: concept.message||'', aspect_ratio: magentState.aspectRatio || '1:1',
-    additional_generation_ids: additionalIds.length ? additionalIds : undefined,
-  });
-  if (!j.ok){ el('p-flow').innerHTML = magentShell(errBlock(j.error, 'magentStepGenerate()'), '<button class="btn btn-ghost" onclick="magentStepVisualSource()">Back</button><span></span>'); return; }
-  magentState.itemId = j.item.id;
+  // Real fix: the single-image path above already saves this - only
+  // fall back to attaching here for a path that hasn't (the carousel
+  // generation path, which still attaches at this point) to avoid
+  // creating a real, duplicate second item for the same generation.
+  let itemId = magentState.itemId;
+  let isCarousel = false, slideCount = 0;
+  if (!itemId) {
+    el('p-flow').innerHTML = magentShell('<div class="loading-block"><span class="spin"></span></div>', '');
+    const additionalIds = (magentState.pendingGenerationIds || []).slice(1);
+    const j = await call('attach_generation_to_content_item', {
+      generation_id: generationId, title, caption: concept.message||'', aspect_ratio: magentState.aspectRatio || '1:1',
+      additional_generation_ids: additionalIds.length ? additionalIds : undefined,
+    });
+    if (!j.ok){ el('p-flow').innerHTML = magentShell(errBlock(j.error, 'magentStepGenerate()'), '<button class="btn btn-ghost" onclick="magentStepVisualSource()">Back</button><span></span>'); return; }
+    itemId = j.item.id; isCarousel = j.is_carousel; slideCount = j.slide_count;
+    magentState.itemId = itemId;
+  }
   if (magentState.campaignId){
     call('update_wizard_campaign_concept', {
       campaign_id: magentState.campaignId, concept_index: magentState.conceptIndex, status: 'published',
-      creative_brief_id: magentState.pendingBriefId, generation_id: generationId, content_plan_item_id: j.item.id,
+      creative_brief_id: magentState.pendingBriefId, generation_id: generationId, content_plan_item_id: itemId,
     }); // best-effort
   }
   el('p-flow').innerHTML = magentShell(
-    zen((j.is_carousel ? j.slide_count+'-slide carousel ready. ' : '')+'Post to Instagram now, hold it for approval, or choose a time \u2014 same real publishing this business already uses elsewhere in Zen, just reached from inside this wizard now.') +
+    zen((isCarousel ? slideCount+'-slide carousel ready. ' : '')+'Post to Instagram now, hold it for approval, or choose a time \u2014 same real publishing this business already uses elsewhere in Zen, just reached from inside this wizard now.') +
     '<input class="field" type="datetime-local" id="magPubWhen" style="max-width:260px;margin:10px 0;">' +
     '<div id="magPubResult" style="margin-top:8px;"></div>',
     '<button class="btn btn-s" onclick="magentDoApprove()">Save for approval</button>' +
@@ -6221,6 +6340,17 @@ async function contentGenerate(){
   }, 60000);
   if (!genRes.ok){ el('p-flow').innerHTML = wizSteps(CONTENT_STEPS,1) + errBlock(genRes.error, 'contentBrief()'); return; }
   contentState.generation = genRes;
+  // Real fix, requested directly: saves the moment a real image is
+  // generated, not only once the review screen's "Continue" is
+  // actually clicked. Same real fix already made across every other
+  // generation flow this session, applied here too.
+  const autoAttachJ = await call('attach_generation_to_content_item', {
+    generation_id: genRes.generation_id,
+    title: contentState.theme || (contentState.brief||{}).subject || 'Post',
+    target_segment: contentState.targetSegment, aspect_ratio: '1:1',
+  });
+  contentState.itemId = autoAttachJ.ok ? autoAttachJ.item.id : null;
+  contentState.inCurrentCampaign = autoAttachJ.ok ? autoAttachJ.in_current_campaign : false;
   contentReview();
 }
 function contentReview(){
@@ -6244,20 +6374,29 @@ function contentReview(){
 async function contentPublish(){
   const caption = (el('capText').value||'').trim();
   const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Saving\u2026';
-  // The actual values from the editable Brief screen - possibly
-  // overridden from the strategy defaults - not re-derived from the
-  // original strategy object, which would silently ignore any change
-  // made on that screen.
-  const j = await call('attach_generation_to_content_item', {
-    generation_id: contentState.generation.generation_id,
-    title: contentState.theme || (contentState.brief||{}).subject || 'Post', caption,
-    target_segment: contentState.targetSegment, aspect_ratio: '1:1',
-  });
-  if (!j.ok){ toast(j.error, 'err'); btn.disabled=false; btn.textContent='Continue'; return; }
-  contentState.itemId = j.item.id;
+  // Real fix: the item already exists (saved automatically when the
+  // image was first generated) - this now only updates its real
+  // caption with whatever was actually edited, rather than creating a
+  // real, duplicate second item. Falls back to the original attach
+  // only if that earlier auto-save didn't happen for some reason.
+  let itemId = contentState.itemId;
+  let inCurrentCampaign = contentState.inCurrentCampaign;
+  if (itemId) {
+    const updateJ = await call('update_content_plan_item_publish_details', { id: itemId, caption });
+    if (!updateJ.ok){ toast(updateJ.error, 'err'); btn.disabled=false; btn.textContent='Continue'; return; }
+  } else {
+    const j = await call('attach_generation_to_content_item', {
+      generation_id: contentState.generation.generation_id,
+      title: contentState.theme || (contentState.brief||{}).subject || 'Post', caption,
+      target_segment: contentState.targetSegment, aspect_ratio: '1:1',
+    });
+    if (!j.ok){ toast(j.error, 'err'); btn.disabled=false; btn.textContent='Continue'; return; }
+    itemId = j.item.id; inCurrentCampaign = j.in_current_campaign;
+    contentState.itemId = itemId;
+  }
   el('p-flow').innerHTML =
     wizSteps(CONTENT_STEPS,3) + '<h1 style="font-size:22px;">Ready to publish</h1>' +
-    '<p class="note" style="margin-top:4px;">Post to Instagram now, or choose a time.'+(j.in_current_campaign?' Counted as part of this month\u2019s campaign.':' No approved campaign right now, so this stands alone.')+'</p>' +
+    '<p class="note" style="margin-top:4px;">Post to Instagram now, or choose a time.'+(inCurrentCampaign?' Counted as part of this month\u2019s campaign.':' No approved campaign right now, so this stands alone.')+'</p>' +
     '<input class="field" type="datetime-local" id="pubWhen" style="max-width:260px;margin-top:10px;">' +
     '<div id="pubResult" style="margin-top:8px;"></div>' +
     '<div class="wiz-actions"><button class="btn btn-s" onclick="contentDoSchedule()">Schedule</button>' +
