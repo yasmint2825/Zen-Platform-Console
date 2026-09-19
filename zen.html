@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Zen · Clickable Prototype</title>
+<title>Zen · Your business, in focus</title>
 <script>
 /* Catches literally anything that goes wrong anywhere on this page,
    from the very first moment the page starts loading - before the
@@ -501,18 +501,228 @@ label.lbl{display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:v
   .cal{grid-template-columns:repeat(2,1fr);}
 }
 </style>
+<style id="zen-ux-presentation">
+/* Presentation-only layer. App scripts, generated HTML and selectors unchanged. */
+:root{--bg:#f4f6f3;--surface:#fff;--ink:#203b34;--muted:#61716b;--line:#dce5de;--green:#206653;--green-soft:#e6f0e8;--warn:#965614;--warn-soft:#fbf0df;--nav-w:256px;--r:18px;--shadow:0 6px 24px #163d3010;--shadow-lg:0 20px 64px #163d3026}
+body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;line-height:1.6}
+h1,h2,h3{font-family:inherit;letter-spacing:-.035em}button,input,select,textarea{font-family:inherit}
+button,a,input,select,textarea{touch-action:manipulation}button{transition:background .16s,border-color .16s,box-shadow .16s}
+:focus-visible{outline:3px solid #428771;outline-offset:3px}.btn:disabled{transform:none;box-shadow:none}
+.onb-orb{background:#245f4f;border-radius:12px;width:36px;height:36px;font:700 18px/1 inherit;box-shadow:0 3px 8px #143c3017}
+.side{padding:25px 15px 15px;background:#fcfdfb;border-right:1px solid var(--line);overflow-y:auto;overscroll-behavior:contain}
+.side-brand{padding:0 12px 22px;gap:11px}.side-brand b{font:750 26px/1.15 inherit;letter-spacing:-1px}.side-brand small{font-size:12px;margin-top:4px;max-width:160px;overflow-wrap:anywhere}
+.side-nav{gap:18px}.ux-nav-group{display:grid;gap:4px}.ux-nav-heading{padding:0 13px 5px;font-size:10px;letter-spacing:.12em;font-weight:750;color:#7b8880}
+.side-btn{min-height:57px;padding:10px 12px;gap:12px;border:1px solid transparent;border-radius:12px;color:#51665b}
+.side-btn .ic{width:21px;height:23px;color:#698174;flex-shrink:0}.side-btn .ic svg{width:21px;height:21px;display:block}
+.ux-nav-copy{min-width:0}.ux-nav-copy strong{display:block;font-size:13px;line-height:1.3;font-weight:650}.ux-nav-copy small{display:block;font-size:10.5px;font-weight:400;margin-top:4px;line-height:1.35;color:#718077}
+.side-btn:hover{background:#eef3ed}.side-btn.active{background:#e6efe4;border-color:#d8e5d5;color:#214c3c;box-shadow:inset 3px 0 #307254}.side-btn.active .ic{color:#236344}.side-btn.active small{color:#526b5a}
+.side-btn .cnt{font-size:10px;min-width:20px;height:20px;flex-shrink:0}.side-foot{margin-top:24px;padding-top:16px}
+.ux-account-label{font-size:9px;letter-spacing:.07em;font-weight:700;color:var(--muted);padding:0 10px}.ux-account-label span{display:block;letter-spacing:0;font-size:10px;font-weight:400;margin-top:3px}
+.side-user{padding:12px 10px;border-radius:12px}.side-user:hover{background:var(--green-soft)}.side-user .av{width:34px;height:34px;background:#e1eadd;color:#375942;font:700 13px/1 inherit}
+.main{padding:0 38px 50px;max-width:1440px;width:100%;margin:0 auto;min-width:0}
+.ux-workspace-top{min-height:72px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:28px;color:var(--muted);font-size:12px}
+.ux-workspace-name{font-weight:600}.ux-workspace-tag{background:#e7eee4;border:1px solid #dbe6d5;border-radius:30px;padding:5px 12px;font-size:11px;color:#3f644e}
+.ux-route{display:none;gap:15px;align-items:center;margin:0 0 28px;padding-bottom:25px;border-bottom:1px solid var(--line)}.ux-route-icon{width:52px;height:52px;background:#e5eee1;border:1px solid #d7e4d1;border-radius:17px;display:grid;place-items:center;flex-shrink:0;color:#3c6c50}.ux-route-icon svg{width:25px;height:25px}
+.ux-eyebrow{font-size:9px;letter-spacing:.14em;color:#6e8071;font-weight:750;line-height:1.5;margin-bottom:4px}.ux-route-title{font-size:23px;line-height:1.25;font-weight:720;letter-spacing:-.035em}.ux-route-desc{font-size:12.5px;color:var(--muted);margin-top:6px}
+.main:has(#p-home.on) .ux-route-home,.main:has(#p-campaigns.on) .ux-route-campaigns,.main:has(#p-zenwhatsapp.on) .ux-route-zenwhatsapp,.main:has(#p-marketing.on) .ux-route-marketing,.main:has(#p-creativestudio.on) .ux-route-creativestudio,.main:has(#p-promotions.on) .ux-route-promotions,.main:has(#p-insights.on) .ux-route-insights,.main:has(#p-settings.on) .ux-route-settings,.main:has(#p-flow.on) .ux-route-flow{display:flex}
+.topline{margin-bottom:22px;gap:14px;flex-wrap:wrap}.pagetitle h1{font-size:25px;font-weight:690;line-height:1.28;margin-bottom:8px}.pagetitle p{font-size:13.5px;line-height:1.7;max-width:700px}.kicker{color:#758677;font-size:10px}
+.page>.topline .kicker{display:none} /* repeated route label is already in the shell */
+.btn{border-radius:11px;min-height:44px;padding:11px 17px;font-size:13px;justify-content:center;line-height:1.4}.btn-p,.btn-g{background:#22634e;color:#fff;box-shadow:0 3px 7px #164b3613}.btn-p:hover,.btn-g:hover{background:#184a3b}.btn-s{border-color:#cfdbd1}.btn-s:hover{background:#f1f6ef;border-color:#9eb79f}.btn-ghost:hover{background:#e9eee7}.btn-sm{min-height:38px;padding:8px 12px;font-size:12px}
+.field{padding:12px 14px;min-height:46px;font-size:14px;border-color:#d2ddd3;border-radius:11px}.field::placeholder{color:#7b877f}label.lbl{font-size:12.5px;line-height:1.5;margin-top:4px;margin-bottom:7px}.hint{font-size:12px;line-height:1.6}
+.ask{max-width:none;width:100%;border-radius:16px;box-shadow:0 3px 16px #1c4d3910;padding:7px 7px 7px 18px;border-color:#ccdccc;margin:20px 0}.ask .spark{font-size:21px}.ask input{font-size:14px;padding:10px 4px}.ask:focus-within{outline:2px solid #78a488;outline-offset:2px}
+.grid2,.grid3{gap:16px}.grid2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid3{grid-template-columns:repeat(3,minmax(0,1fr))}.grid2>*,.grid3>*{min-width:0}
+.task{padding:21px;border-radius:17px;border-color:#dae4d8;min-height:136px;box-shadow:0 3px 12px #1c4d3905;position:relative;line-height:1.6;width:100%}.task:hover{border-color:#8cb096;background:#fcfefb;box-shadow:0 6px 20px #1c4d3910}.task b{font-size:14px;line-height:1.4}.task span{font-size:12px;line-height:1.65;margin-top:8px}.task-top{align-items:start;gap:10px}.task:focus-visible{outline-offset:4px}
+.sechead{margin:30px 0 13px;gap:12px;flex-wrap:wrap}.sechead h2{font-size:16px;letter-spacing:-.025em}.sechead span{font-size:12px}
+.mini-grid{gap:12px;border:0;grid-template-columns:repeat(4,minmax(0,1fr))}.mini,.mini+.mini{padding:18px;border:1px solid #dce5d9;border-radius:15px;background:#fff;min-width:0;box-shadow:0 3px 12px #1c4d3905}.mini b{font-family:inherit;font-size:25px;letter-spacing:-.04em;font-weight:680}.mini span{font-size:11.5px;line-height:1.55}.mini[onclick]:hover{border-color:#8cb096;background:#fcfefb}
+.stack{border-top:0;background:white;border:1px solid var(--line);border-radius:16px;padding:3px 16px}.stack>:last-child{border-bottom:0}.attn{padding:17px 0;gap:12px;grid-template-columns:32px minmax(0,1fr) auto}.attn b{font-size:13px}.attn p{font-size:12px}.attn .n{font:650 19px/1.2 inherit;color:#4e7d58}.attn .btn{min-height:40px}
+#homeOpportunity>.attn{background:#eaf1e4;border:1px solid #d3e0cb;border-radius:16px;padding:19px 15px}#homeHowAmIDoing>div{border-radius:16px!important;padding:19px!important}#homeHowAmIDoing .spark-num{font-family:inherit;font-size:25px}
+#homeActivity24h:empty,#homeSendCost:empty{margin:0}#homeSendCost .note{max-width:none;margin-bottom:17px}#homeSnippets{margin-top:22px}#homeActivity24h{margin-top:18px}
+.list{border:1px solid var(--line);border-radius:16px;background:white;padding:0 17px}.list-row{padding:17px 0;gap:14px}.list-row:last-child{border-bottom:0}.list-row b{font-size:13px}.list-row .sub{font-size:12px;line-height:1.6;margin-top:3px}.list-row[onclick]:hover{background:#f7faf4}.list-row>span,.list-row>div{min-width:0}
+.badge{font-size:10px;padding:4px 9px;line-height:1.5}.note{font-size:12.5px;line-height:1.7}.empty-block{background:#f9fbf7;border:1px dashed #ccdcca;border-radius:16px;padding:32px 22px}.empty-block h2{font-size:15px}.empty-block p{font-size:12.5px}.empty-ic{margin-bottom:10px}.loading-block{font-size:13px}
+.zen-msg{gap:12px;margin:18px 0 22px}.zen-bubble{background:#e8f1e5;border-color:#d8e5d2;font-size:13px;line-height:1.75;border-radius:4px 16px 16px 16px}.zen-avatar{background:#28654f;font-family:inherit}.cost,.safety{font-size:13px;line-height:1.7;padding:16px 18px;border:1px solid #e7d6bc}.safety{border-color:#d0e2cf}.cost{color:#845014}
+.subtabs{gap:5px;border:1px solid var(--line);border-radius:13px;background:#eaf0e6;padding:5px;margin:18px 0 24px;overflow-x:auto}.subtabs button{border:0;border-radius:9px;min-height:40px;white-space:nowrap;font-size:12px;padding:10px 17px}.subtabs button.active{background:white;color:#24583f;box-shadow:0 2px 5px #24453412}.subtabs button:hover{background:#f7faf4}
+.wiz-steps{max-width:none;gap:8px;counter-reset:step;margin:18px 0 27px}.wiz-step{border-top:3px solid #dbe5d8;font-size:11.5px;padding:10px 4px 0;line-height:1.4}.wiz-step:before{counter-increment:step;content:counter(step) ". ";font-weight:700}.wiz-step.now{border-color:var(--green);color:var(--green)}.wiz-step.done{border-color:#85ad80}
+.magent-shell{gap:25px}.magent-nav{width:195px;background:#eaf0e6;padding:10px;border:1px solid #dbe6d5;border-radius:16px}.magent-nav-step{min-height:44px;font-size:12px;border-radius:10px;line-height:1.5;padding:11px;margin:3px 0}.magent-nav-step.active{color:#236347;background:#fff;box-shadow:0 2px 8px #1837230d}.magent-nav-step.done{color:#467948}.magent-content{max-width:790px;background:white;border:1px solid var(--line);border-radius:18px;padding:25px}.magent-content>.note:first-child{margin-top:0;background:#f2f6ec;border:0;border-radius:10px;padding:12px 14px}.magent-actions{border-top:1px solid var(--line);padding-top:20px;gap:10px}.wiz-actions{gap:12px;max-width:none}.wiz-actions button{max-width:100%}
+#p-marketing>button.task:first-of-type{background:#e6efdd;border-color:#a8c197!important;padding:26px;min-height:156px;box-shadow:0 5px 19px #34542a0c}#p-marketing>button.task:first-of-type:before{content:"START HERE · STEP-BY-STEP GUIDANCE";display:block;font-size:9px;font-weight:750;color:#527344;letter-spacing:.1em;margin-bottom:13px}#p-marketing>button.task:first-of-type b{font-size:20px;letter-spacing:-.03em}#p-marketing>button.task:first-of-type .task-top>.note{border:0;background:#fff;padding:5px 10px;border-radius:20px;font-size:10px;margin-top:0;white-space:nowrap}#p-marketing>button.task:nth-of-type(2){min-height:115px;border:1px solid var(--line)!important}#p-marketing>.grid3{margin-top:7px}#p-marketing .task-top>.note{max-width:none}
+#p-creativestudio>.grid3{grid-template-columns:repeat(3,minmax(0,1fr))}#p-creativestudio button[id^="studioCard_"]{flex-direction:column;padding:21px;gap:16px!important;min-height:225px}#p-creativestudio button[id^="studioCard_"]>img,#p-creativestudio button[id^="studioCard_"]>div:first-child:not(:last-child){width:70px!important;height:70px!important;border-radius:16px!important}#p-creativestudio button[id^="studioCard_"]>img{object-fit:cover}#p-creativestudio button[id^="studioCard_"]>.task-top{width:100%}
+.gal-grid{gap:17px;grid-template-columns:repeat(auto-fill,minmax(175px,1fr))}.gal-card{border-radius:17px}.gal-card .gal-body{padding:13px 15px}.gal-card .gal-label{font-size:13px}.gal-card .gal-sub{font-size:12px}.gal-card .gal-actions{flex-wrap:wrap}.gal-empty{padding:30px}
+#setList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;border:0;padding:0;background:transparent}#setList>.list-row{border:1px solid var(--line);border-radius:15px;background:white;padding:19px;align-items:start}#setList>.list-row:hover{border-color:#9bb79a;background:#fafdf7}
+.ux-help-area{margin-top:30px}.ux-help{display:none;border:1px solid #dbe5d6;background:#edf2e7;border-radius:14px;padding:0 19px}.ux-help summary{font-size:12px;cursor:pointer;color:#426047;font-weight:600;padding:16px 0}.ux-help-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;padding:6px 0 21px}.ux-help-grid b{color:#709264;font-size:11px}.ux-help-grid h3{font-size:13px;letter-spacing:0;margin:5px 0}.ux-help-grid p{font-size:12px;color:var(--muted);line-height:1.7}
+.main:has(#p-home.on) .ux-help-home,.main:has(#p-campaigns.on) .ux-help-campaigns,.main:has(#p-marketing.on) .ux-help-marketing,.main:has(#p-creativestudio.on) .ux-help-creativestudio,.main:has(#p-promotions.on) .ux-help-promotions{display:block}
+.modal{border:1px solid #d7e4d5;border-radius:20px}.modal-head{padding:20px 22px}.modal-body{padding:22px}.modal-foot{padding:16px 22px;flex-wrap:wrap}.modal-x{min-width:40px;min-height:40px}.toast{font-size:13px;max-width:calc(100vw - 28px)}#toastHost{max-width:calc(100vw - 28px)}
+.onb-top{padding:22px 36px;background:#fcfdfb}.onb-brand{font-family:inherit;font-size:19px}.onb-body{padding:38px 20px 60px}.onb-card{max-width:650px;background:white;padding:32px;border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow)}.onb-card h1{font-size:27px}.onb-kicker{font-size:11px;color:#6b7e68}.onb-card>p.sub{font-size:14px}.onb-skip{min-height:44px;color:#3a6748}.ux-onb-intro{padding:16px 36px;font-size:13px;color:var(--muted)}.src{padding:18px}.src b{font-size:14px}.src span{font-size:12px}
+/* A friendly sign-in entry; all authentication controls stay in their hosts. */
+#loginGate{padding:0;background:#fbfcf8;align-items:stretch;gap:0}.ux-welcome{width:51%;min-height:100vh;background:#184e40;color:#f4f7ed;display:flex;flex-direction:column;padding:45px clamp(32px,5vw,90px);position:relative;overflow:hidden}.ux-welcome-brand{display:flex;align-items:center;gap:11px;font-size:30px;letter-spacing:-1px;font-weight:700}.ux-welcome-brand .onb-orb{background:#d3e4be;color:#275440}.ux-welcome-brand>span:last-child{font-size:9px;letter-spacing:.12em;font-weight:500;margin-left:auto;color:#b4cbbb}.ux-welcome-copy{margin-top:65px;max-width:500px}.ux-welcome-kicker{font-size:9px;letter-spacing:.13em;color:#acc4b5;font-weight:600}.ux-welcome h1{font-size:clamp(40px,4.4vw,66px);line-height:1.08;font-weight:560;margin:19px 0 23px;letter-spacing:-.05em}.ux-welcome h1 em{font-style:normal;color:#d1e5b9}.ux-welcome-copy p{font-size:14px;line-height:1.85;color:#c0d3c6;max-width:350px}.ux-welcome-visual{max-width:470px;width:100%;margin:16px auto 5px}.ux-welcome-visual svg{width:100%;display:block}.ux-welcome-foot{display:flex;flex-wrap:wrap;gap:9px 16px;margin-top:auto;color:#c1d4c8;font-size:10px}.ux-welcome-foot span:before{content:"✓";color:#c6dfa8;margin-right:5px}
+#loginGate>.ux-auth-card{align-self:center;max-width:430px!important;margin:40px auto;padding:38px!important;width:calc(49% - 60px)!important}.ux-auth-card>.ux-auth-intro{margin:32px 0 28px}.ux-auth-intro h2{font-size:32px;font-weight:650;margin:10px 0}.ux-auth-intro p{font-size:14px;color:var(--muted)}.ux-auth-card .btn-block{min-height:48px;margin-top:8px}.ux-auth-card .field{min-height:48px}.ux-auth-card>div:last-child:has(a){gap:16px;flex-wrap:wrap}.ux-auth-card a{color:#346649!important;text-underline-offset:4px}.ux-auth-card>.hint:empty{display:none}
+#forgotGate,#signupGate{background:radial-gradient(ellipse at 20% 15%,#e5eddc,transparent 60%),#f5f7f0;padding:40px 20px}#forgotGate>.ux-auth-card,#signupGate>.ux-auth-card{max-width:450px!important;background:white;border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow);padding:35px!important}#signupGate .ux-auth-card>div:first-child,#forgotGate .ux-auth-card>div:first-child{margin-bottom:28px!important}
+@media(min-width:1600px){.main{padding-right:55px;padding-left:55px}}
+@media(max-height:820px) and (min-width:861px){.side{padding-top:20px}.side-brand{padding-bottom:18px}.side-nav{gap:12px}.side-btn{min-height:50px;padding-top:8px;padding-bottom:8px}.side-foot{margin-top:20px}.ux-nav-heading{font-size:9px}.ux-welcome-copy{margin-top:35px}.ux-welcome{padding-top:32px;padding-bottom:30px}.ux-welcome-visual{max-width:365px}}
+@media(max-width:1150px) and (min-width:861px){:root{--nav-w:235px}.main{padding-left:25px;padding-right:25px}.mini-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.grid3,#p-creativestudio>.grid3{grid-template-columns:repeat(2,minmax(0,1fr))}.magent-nav{width:158px}.magent-shell{gap:15px}.magent-content{padding:20px}.ux-nav-copy strong{font-size:12px}.ux-nav-copy small{font-size:10px}.ux-welcome{padding:36px}.ux-welcome-brand>span:last-child{display:none}}
+@media(max-width:860px){
+ .side{width:min(295px,88vw);padding:22px 17px;z-index:150}.side-nav{gap:16px}.side-btn{min-height:55px}.main{padding:0 20px 36px;max-width:none;margin:0}.mobile-top{display:flex;min-height:62px;margin:0 -20px;padding:9px 17px;border-bottom:1px solid var(--line);background:#fcfdfb;position:sticky;top:0;z-index:100}.mobile-top button{min-width:44px;min-height:44px;border-radius:10px;background:#eaf1e3;color:var(--green)}.mobile-top b{font-family:inherit!important;font-size:20px!important}.ux-workspace-top{min-height:53px;margin-bottom:22px;font-size:11px}.ux-workspace-tag{font-size:10px;padding:4px 9px}.ux-route{gap:12px;padding-bottom:21px;margin-bottom:22px}.ux-route-title{font-size:22px}.ux-route-desc{font-size:12px}.ux-route-icon{height:44px;width:44px;border-radius:13px}.ux-eyebrow{font-size:8px}.pagetitle h1{font-size:23px}.topline{margin-bottom:18px}.pagetitle p{font-size:13px}
+ .grid2,.grid3,#p-creativestudio>.grid3{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.mini-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.mini,.mini+.mini{padding:16px}.mini b{font-size:23px}.mini span{font-size:11px}.attn{gap:9px}.attn .go{white-space:normal}.task{padding:18px}.task b{font-size:13px}.magent-shell{display:block}.magent-nav{width:100%;position:static;display:flex;padding:6px;margin-bottom:16px;gap:4px;overflow-x:auto}.magent-nav-step{white-space:nowrap;min-height:40px;padding:9px 12px}.magent-content{max-width:none;padding:22px}.magent-actions{background:#fff;padding:14px 0;bottom:0;z-index:2;position:sticky}.wiz-steps{overflow-x:auto;gap:9px}.wiz-step{min-width:78px;font-size:11px;flex:1 0 78px}.ux-help-grid{gap:18px}.subtabs{max-width:100%}.btn{min-height:44px}.gal-actions .btn{min-height:38px}.field{font-size:16px}.ask input{font-size:16px}.onb-card{padding:26px}.ux-welcome{display:none}#loginGate>.ux-auth-card{width:100%!important;max-width:440px!important;padding:30px!important;margin:auto}#loginGate{min-height:100dvh;padding:45px 0;background:radial-gradient(ellipse at top right,#e2ebd7,transparent 65%),#fbfcf8}.ux-auth-intro h2{font-size:32px}.ux-onb-intro{padding:14px 20px}.onb-top{padding:15px 20px}.wa-layout{height:auto;min-height:500px}
+}
+@media(max-width:560px){
+ .main{padding-left:16px;padding-right:16px}.mobile-top{margin-left:-16px;margin-right:-16px}.ux-workspace-top{font-size:10px}.ux-route{align-items:flex-start}.ux-route-title{font-size:21px}.ux-route-desc{font-size:12px;line-height:1.6}.grid2,.grid3,#p-creativestudio>.grid3{grid-template-columns:1fr}.mini-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.mini b{font-size:21px}.mini,.mini+.mini{padding:14px}.mini span{font-size:10.5px}.attn{grid-template-columns:25px minmax(0,1fr)}.attn>.go{grid-column:2;justify-self:start}.attn p{font-size:12px}.task{min-height:115px}.task span{font-size:12px}#p-marketing>button.task:first-of-type{padding:22px}#p-marketing>button.task:first-of-type b{font-size:19px}#p-marketing>button.task:first-of-type .task-top{flex-wrap:wrap}#p-marketing>button.task:first-of-type .task-top>.note{margin:0}#p-creativestudio button[id^="studioCard_"]{min-height:145px;flex-direction:row;padding:18px}#p-creativestudio button[id^="studioCard_"]>img,#p-creativestudio button[id^="studioCard_"]>div:first-child:not(:last-child){width:58px!important;height:58px!important}#setList{grid-template-columns:1fr}.ux-help-grid{grid-template-columns:1fr;gap:16px}.ux-help-grid>div{padding-top:10px;border-top:1px solid #d8e3d2}.ux-help-grid h3{margin:3px 0}.list{padding:0 13px}.list-row{flex-wrap:wrap}.list-row .sub{overflow-wrap:anywhere}.wiz-actions,.magent-actions{flex-wrap:wrap}.magent-content{padding:18px}.magent-nav{border-radius:12px}.gal-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.gal-card .gal-body{padding:11px}.gal-card .gal-label{font-size:12px}.gal-card .gal-sub{font-size:11px}.gal-actions{padding:0 10px 10px!important}.onb-card{padding:22px 18px;border-radius:17px}.onb-card h1{font-size:24px}.onb-body{padding:22px 14px 40px}.onb-top{padding:12px 16px}.overlay{padding:12px}.modal-body{padding:18px}.ask{padding-left:12px}.ask .spark{font-size:17px}.ask input{font-size:14px}.wa-convo-pane{width:100%!important;max-width:none}.wa-thread-pane{min-height:420px}.cal{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+/* Preserve the inbox's two panes on desktop; stack both on small screens. */
+.wa-shell{border-radius:17px;min-width:0}.wa-list-pane{width:260px;flex-basis:260px}.wa-convo{padding:16px 14px}.wa-convo-name{font-size:13px}.wa-convo-last{font-size:12px}.wa-thread-head{padding:16px}.wa-thread-foot{padding:14px;flex-wrap:wrap}.wa-thread-foot textarea{font-size:14px}.wa-thread-body{overflow-wrap:anywhere}.camp-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.camp-card{padding:20px;border-radius:17px}.camp-card p{font-size:12px;line-height:1.65}.camp-foot{gap:10px;flex-wrap:wrap}.camp-state{font-size:11px}
+.onb-orb{font-family:inherit;font-weight:700;font-size:18px;line-height:1}.side-brand b{font-family:inherit;font-weight:750;font-size:26px;line-height:1.15}.side-user .av{font-family:inherit;font-size:13px;font-weight:700}.attn .n{font-family:inherit;font-size:19px;font-weight:650}.side-foot{margin-top:auto;padding-top:18px}
+@media(max-width:1100px){.camp-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:860px){#waTabs{flex-wrap:wrap;overflow:visible}#waTabs>span{width:100%;margin-left:0!important;padding:3px 0!important}#waSearchInput{width:auto!important;min-width:0;flex:1}.side-foot{margin-top:24px}}
+@media(max-width:620px){.wa-shell{flex-direction:column;height:auto;max-height:none}.wa-list-pane{width:100%;flex:0 0 auto;max-height:230px;border-right:0;border-bottom:1px solid var(--line)}.wa-thread-pane{min-height:440px;max-height:650px}.wa-thread-head{flex-wrap:wrap}.wa-thread-foot textarea{min-width:160px}.wa-convo{padding:12px}.camp-grid{grid-template-columns:1fr}.camp-card{padding:18px}}
+@media(prefers-reduced-motion:reduce){.page.on,.toast{animation:none}button,.side{transition:none}}
+
+</style>
+<style id="zen-ux-refinements">
+/* Compact, legible presentation. Existing app-generated HTML is untouched. */
+:root{--ui-font:"Segoe UI",-apple-system,BlinkMacSystemFont,Arial,sans-serif;--nav-w:238px;--r:12px;--muted:#596e63}
+body{font-family:var(--ui-font);font-size:14px;line-height:1.5}
+:where(h1,h2,h3,p,b,strong,span,small,div,section,button,input,select,textarea,label,summary){font-family:var(--ui-font)!important}
+pre,code,pre *{font-family:ui-monospace,SFMono-Regular,Consolas,monospace!important}
+.page h1,.pagetitle h1{font-size:22px!important;font-weight:650;line-height:1.25;letter-spacing:-.025em;margin-bottom:5px}
+.page h2,.sechead h2{font-size:15px!important;font-weight:650;letter-spacing:-.015em;line-height:1.35}
+.page h3{font-size:14px!important;letter-spacing:0;line-height:1.4}
+.pagetitle p,.page .zen-bubble{font-size:13px;line-height:1.6}.page .pagetitle p{max-width:760px}
+.page :is(.hint,.note,.sub,.gal-sub),.modal :is(.hint,.note,.sub){font-size:12px;line-height:1.55}
+.page :is([style*="font-size:9"],[style*="font-size:10"],[style*="font-size:11"]),.modal :is([style*="font-size:9"],[style*="font-size:10"],[style*="font-size:11"]){font-size:12px!important}
+.page label.lbl,.modal label.lbl{font-size:13px;line-height:1.5}
+.field{font-size:14px;line-height:1.5;padding:9px 12px;min-height:42px;border-radius:9px}
+.btn{font-size:13px;min-height:40px;padding:9px 14px;border-radius:9px;box-shadow:none;line-height:1.4}.btn-sm{font-size:12px;min-height:34px;padding:7px 11px}.btn-lg{min-height:44px}.btn-block{min-height:44px}
+.btn-ghost{color:#50675b}.chip{font-size:12px;min-height:34px;padding:7px 11px}.badge{font-size:11px;line-height:1.35;padding:4px 8px}
+.side{padding:16px 12px 12px}.side-brand{padding:0 11px 16px}.side-brand b{font-size:23px;line-height:1.2}.side-brand small{font-size:11px}.side-nav{gap:12px}.side-btn{min-height:48px;padding:8px 10px;gap:10px;border-radius:9px}.ux-nav-copy strong{font-size:13px}.ux-nav-copy small{font-size:11px;line-height:1.25;margin-top:3px}.ux-nav-heading{font-size:10px;letter-spacing:.07em;padding:0 11px 3px;color:#657b6b}.ux-account-label{font-size:10px}.side-foot{padding-top:12px}.side-user{padding:8px 10px}
+.main{max-width:1600px;padding:0 26px 26px}.ux-workspace-top{min-height:35px;margin-bottom:10px;font-size:11px}.ux-workspace-tag{font-size:11px;padding:3px 9px}.ux-route{gap:9px;padding:0;margin:0 0 10px;border:0;align-items:center}.ux-route-icon{width:29px;height:29px;border-radius:9px}.ux-route-icon svg{width:17px;height:17px}.ux-route>div:last-child{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}.ux-route .ux-eyebrow{font-size:10px;letter-spacing:.05em;margin:0;color:#617668}.ux-route-title{font-size:14px;font-weight:650;letter-spacing:0;line-height:1.5}.ux-route-desc{display:none}
+.topline{margin-bottom:12px;gap:10px}.grid2,.grid3,.camp-grid{gap:12px}.sechead{margin:20px 0 9px}.sechead span{font-size:12px}
+.task{padding:15px;min-height:106px;border-radius:12px;box-shadow:none}.task b{font-size:14px;line-height:1.4}.task span{font-size:12px;line-height:1.55;margin-top:5px}.task:hover{box-shadow:0 3px 10px #1c4d390a}.task-top{gap:8px}
+.mini-grid{gap:10px}.mini,.mini+.mini{padding:12px 14px;border-radius:11px;box-shadow:none}.mini b{font-size:22px;font-weight:650;letter-spacing:-.025em;line-height:1.25}.mini span{font-size:12px;line-height:1.45;margin-top:5px}
+.list{border-radius:12px;padding:0 13px}.list-row{padding:12px 0;gap:12px}.list-row b{font-size:13px}.list-row .sub{font-size:12px;margin-top:2px}.stack{border-radius:12px;padding:0 12px}.attn{padding:12px 0;gap:10px;grid-template-columns:25px minmax(0,1fr) auto}.attn .n{font-size:17px}.attn b{font-size:13px;line-height:1.4}.attn p{font-size:12px;line-height:1.5}.attn .btn{min-height:34px}
+.ask{padding:4px 5px 4px 12px;border-radius:11px;margin:12px 0;box-shadow:none}.ask input{font-size:14px;padding:7px 4px}.ask .spark{font-size:18px}
+.zen-msg{margin:12px 0 16px}.zen-bubble{padding:12px 14px;border-radius:4px 12px 12px 12px}.cost,.safety{padding:12px 14px;border-radius:10px;font-size:13px;line-height:1.55;margin-top:12px}.note{margin-top:10px}.empty-block{padding:23px 16px;border-radius:12px}.empty-block p{font-size:12px}.loading-block{padding:17px 0}
+.subtabs{margin:10px 0 14px;padding:4px;border-radius:10px}.subtabs button{padding:7px 13px;min-height:34px;font-size:12px}
+.magent-shell{gap:18px}.magent-nav{padding:7px;width:180px;border-radius:12px}.magent-nav-step{padding:8px 10px;min-height:38px;font-size:12px}.magent-content{padding:18px;max-width:840px;border-radius:13px}.magent-actions{padding-top:14px;margin-top:16px}.wiz-steps{margin:12px 0 18px}.wiz-step{font-size:12px;padding-top:8px}.wiz-actions{margin-top:18px}
+#p-marketing>button.task:first-of-type{padding:18px;min-height:120px;margin-bottom:10px!important}#p-marketing>button.task:first-of-type:before{font-size:10px;margin-bottom:8px}#p-marketing>button.task:first-of-type b{font-size:17px}#p-marketing>button.task:nth-of-type(2){min-height:96px;padding:15px;margin-bottom:10px!important}
+#p-creativestudio button[id^="studioCard_"]{padding:15px;gap:12px!important;min-height:168px}#p-creativestudio button[id^="studioCard_"]>img,#p-creativestudio button[id^="studioCard_"]>div:first-child:not(:last-child){width:48px!important;height:48px!important;border-radius:11px!important}
+.gal-grid{gap:12px;grid-template-columns:repeat(auto-fill,minmax(165px,1fr))}.gal-card{border-radius:12px}.gal-card .gal-body{padding:10px 12px}.gal-card .gal-actions{padding:0 12px 12px}.gal-card .gal-label{font-size:13px}.gal-card .gal-sub{font-size:12px}.camp-card{padding:15px;border-radius:12px;min-height:130px}.camp-count{width:31px;height:31px;margin-bottom:7px}.camp-foot{margin-top:10px}
+#setList{gap:10px}#setList>.list-row{padding:14px;border-radius:11px}.onb-top{padding:16px 24px}.onb-card{padding:25px;border-radius:17px}.onb-card h1{font-size:24px}.onb-body{padding-top:24px}.onb-kicker{font-size:11px}.ux-onb-intro{padding:12px 24px}.src{padding:14px;border-radius:11px}.src span{font-size:12px}
+/* At the top: one optional guide, not another large hero. Native details
+   supports keyboard use; the tiny added script remembers open/closed only. */
+.ux-help-area{margin:0 0 12px;flex:0 0 auto}.ux-help{border:1px solid #d3e0ce;background:#eff5eb;padding:0 13px;border-radius:10px;overflow:visible}.ux-help summary{list-style:none;display:flex;align-items:center;gap:8px;min-height:36px;padding:7px 0;color:#36543b;font-size:12px;font-weight:600;line-height:1.4}.ux-help summary::-webkit-details-marker{display:none}.ux-guide-spark{font-size:14px;color:#527549}.ux-guide-title{flex:1;min-width:0}.ux-guide-toggle{display:flex;gap:7px;align-items:center;font-size:11px;white-space:nowrap;color:#4e674f;font-weight:500}.ux-guide-show{display:none}.ux-help:not([open]) .ux-guide-hide{display:none}.ux-help:not([open]) .ux-guide-show{display:inline}.ux-help:not([open]) .ux-guide-toggle>span:last-child{transform:rotate(180deg)}.ux-help summary:hover .ux-guide-toggle{text-decoration:underline;text-underline-offset:3px}
+.ux-help .ux-help-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));list-style:none;margin:0;padding:0 0 10px;gap:16px}.ux-help:not([open]) .ux-help-grid{display:none}.ux-help-grid>li{display:flex;gap:8px;min-width:0;border:0;padding:0}.ux-guide-step{width:20px;height:20px;background:#deead7;border-radius:50%;font-size:11px;font-weight:650;display:grid;place-items:center;flex-shrink:0;margin-top:1px;color:#3e6041}.ux-help-grid h3{font-size:12px;font-weight:650;line-height:1.4;letter-spacing:0;margin:0 0 2px}.ux-help-grid p{font-size:12px;line-height:1.45;color:#52694f;margin:0}
+.main:has(#p-zenwhatsapp.on) .ux-help-zenwhatsapp,.main:has(#p-insights.on) .ux-help-insights,.main:has(#p-settings.on) .ux-help-settings,.main:has(#p-flow.on) .ux-help-flow{display:block}
+/* Login: the user's message replaces the previous hero and illustration. */
+#loginGate{background:#f7f9f4;min-height:100dvh}.ux-welcome{background:linear-gradient(155deg,#20685d,#13493f);width:50%;min-height:100dvh;justify-content:center;padding:45px clamp(35px,5vw,80px);overflow:visible}.ux-welcome-brand{font-size:24px;gap:12px;margin-bottom:32px;letter-spacing:0}.ux-welcome-brand b{display:block;font-size:24px;line-height:1.2}.ux-welcome-brand small{display:block;font-size:13px;font-weight:400;line-height:1.5;color:#d2e7dd;margin-top:3px}.ux-welcome-brand .onb-orb{width:41px;height:41px;background:#ffffff20;color:white}.ux-welcome-copy{margin:0;max-width:440px}.ux-welcome h1{font-size:clamp(30px,3.1vw,44px);font-weight:650;line-height:1.16;letter-spacing:-.035em;margin:0 0 18px}.ux-welcome-copy p{font-size:16px;line-height:1.65;max-width:440px;color:#e0ece4}.ux-benefits{list-style:none;padding:0;margin:27px 0;display:grid;gap:20px;max-width:440px}.ux-benefits li{display:flex;gap:14px;align-items:flex-start}.ux-benefit-icon{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:#ffffff1c;color:#e7efe4;font-size:21px;flex-shrink:0}.ux-benefits h2{font-size:15px;font-weight:650;line-height:1.4;letter-spacing:0;margin:0 0 4px}.ux-benefits p{font-size:14px;line-height:1.5;color:#d5e5da}.ux-login-assurance{border-top:1px solid #ffffff24;padding-top:17px;max-width:420px;font-size:13px;line-height:1.65;color:#c1dcd0;margin-top:5px}
+#loginGate>.ux-auth-card{max-width:420px!important;width:calc(50% - 50px)!important;padding:28px!important;margin:35px auto}.ux-auth-card>.ux-auth-intro{margin:24px 0}.ux-auth-intro h2{font-size:28px;font-weight:650;line-height:1.25;margin:0 0 8px}.ux-auth-intro p{font-size:14px}.ux-auth-card label.lbl{font-size:13px}.ux-auth-card .field{font-size:15px;min-height:45px}.ux-auth-card .btn-block{min-height:45px}
+/* A bounded workspace for the two daily-use screens. Overflow is contained
+   within messages/priorities, never clipped; mobile and zoom get natural flow. */
+@media(min-width:1100px) and (min-height:650px){
+ .main:has(#p-home.on),.main:has(#p-zenwhatsapp.on){height:100dvh;min-height:0;display:flex;flex-direction:column;padding-bottom:12px}
+ .main:has(#p-home.on)>:not(.page.on),.main:has(#p-zenwhatsapp.on)>:not(.page.on){flex-shrink:0}
+ #p-home.on{display:grid;flex:1 1 auto;min-height:0;grid-template-columns:repeat(12,minmax(0,1fr));grid-template-rows:auto auto auto auto minmax(0,1fr) auto;gap:9px 12px;align-content:start;animation:none}
+ #p-home>.topline{grid-column:1/5;grid-row:1;margin:0!important;align-self:center}#p-home>.topline h1{font-size:20px!important}
+ #p-home>.ask{grid-column:5/-1;grid-row:1;margin:0!important;align-self:center;min-height:42px}
+ #homeAnswer{grid-column:1/-1;grid-row:2;max-height:145px;overflow:auto}#homeAnswer:empty{display:none}
+ #homeSnippets{grid-column:1/-1;grid-row:3;grid-template-columns:repeat(4,minmax(0,1fr));margin:0!important;gap:10px}
+ #homeSendCost{grid-column:1/-1;grid-row:4}#homeSendCost:empty{display:none}#homeSendCost .note{font-size:12px;line-height:1.4;margin:0!important;padding-left:8px;max-width:none}
+ #homeHowAmIDoing{grid-column:1/-1;grid-row:5;align-self:start;grid-template-columns:repeat(3,minmax(0,1fr));margin:0!important;gap:10px}
+ #p-home{--home-bottom-start:86px}
+ #p-home>.grid2{display:contents}
+ #p-home>.grid2>div:first-child{grid-column:1/8;grid-row:5/7;margin-top:var(--home-bottom-start);min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding-right:4px}
+ #homeRightCol{grid-column:8/-1;grid-row:5/7;align-self:start;margin-top:var(--home-bottom-start)}
+ #homeActivity24h{flex:0 0 auto;margin:0;max-height:145px;overflow-y:auto;overscroll-behavior:contain}#homeActivity24h:empty{display:none}
+ #homeActivity24h .mini-grid{display:block}#homeActivity24h .mini{padding:5px 9px;border-radius:0;border:0;border-bottom:1px solid var(--line);box-shadow:none}#homeActivity24h .mini:first-child{border-radius:9px 9px 0 0}#homeActivity24h .mini:last-child{border-bottom:0;border-radius:0 0 9px 9px}#homeActivity24h .mini span{margin:0;font-size:12px;line-height:1.4}
+ #p-home .sechead{margin:0 0 7px!important}#p-home .sechead h2{font-size:14px!important}
+ #homeHowAmIDoing>div{padding:10px 12px!important;border-radius:11px!important}#homeHowAmIDoing .mini b{font-size:20px}#homeHowAmIDoing .mini>span{font-size:12px;margin-top:3px;line-height:1.4}#homeHowAmIDoing .trend{display:inline;font-size:12px}
+ #homeSnippets .mini{padding:10px 12px}#homeSnippets .mini b{font-size:22px}#homeSnippets .mini>span{font-size:12px;line-height:1.4}
+ #homeAttn .attn{padding:8px 0;gap:8px}#homeAttn .attn b{font-size:13px}#homeAttn .attn p{font-size:12px;line-height:1.4;margin-top:2px}#homeAdHealth:not(:empty){margin-top:12px}#homeAdHealth .attn{padding:8px 0}#homeAdHealth .note{margin-top:6px}
+ #homeOpportunity>.attn{padding:11px;border-radius:11px}#p-home .empty-block{padding:17px 12px}#p-home .empty-ic{margin-bottom:5px}
+ #p-zenwhatsapp.on{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;animation:none}
+ #p-zenwhatsapp>.topline{margin-bottom:7px;flex-shrink:0}#p-zenwhatsapp .pagetitle{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 14px}#p-zenwhatsapp .pagetitle h1{font-size:20px!important;margin:0}#p-zenwhatsapp .pagetitle p{font-size:12px}
+ #waTabs{margin:0 0 8px;flex-shrink:0}#waTabs>span{padding-bottom:0!important}#waSearchInput{min-height:34px}
+ #waSearchResult{flex:0 0 auto;max-height:120px;overflow-y:auto}#waSearchResult:empty{display:none}
+ #waChatPane{flex:1 1 auto;min-height:0}#waHistoryPane{flex:1 1 auto;min-height:0;overflow-y:auto}
+ #waChatPane .wa-shell{height:100%;max-height:none;min-height:0;flex-direction:row;border-radius:12px}
+ #waListPane{width:270px;flex:0 0 270px;min-height:0;max-height:none;overflow-y:auto}
+ #waThreadPane{min-height:0;max-height:none;display:flex;flex-direction:column;overflow:hidden}
+ #waThreadPane .wa-thread-head{flex:0 0 auto;padding:9px 12px}
+ #waThreadBody{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:12px}
+ #waThreadPane .wa-thread-foot{flex:0 0 auto;flex-wrap:nowrap;padding:8px 10px;background:#fff;gap:7px}
+ #waReplyBox{min-height:40px;max-height:80px;min-width:0;font-size:14px;padding:9px 10px;line-height:1.45}#waThreadPane .wa-thread-foot button{min-height:40px;flex:0 0 auto}
+}
+/* Compact / zoomed screens retain every item and all reading space. */
+@media(max-width:1099px),(max-height:649px){
+ .main{padding-left:18px;padding-right:18px}.ux-help .ux-help-grid{gap:12px}.mini-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ux-workspace-top{margin-bottom:9px}.ux-route{margin-bottom:9px}.ux-help-area{margin-bottom:12px}
+ #homeHowAmIDoing>div{padding:12px!important}#homeHowAmIDoing .mini b{font-size:21px}#homeActivity24h .mini-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#p-home>.grid2{margin-top:12px!important}
+ .wa-shell{height:min(620px,70dvh);max-height:none;min-height:320px}.wa-thread-pane{min-height:0;max-height:none;overflow:hidden}.wa-thread-head{flex-shrink:0;padding:10px 12px}.wa-thread-body{min-height:0;flex:1 1 auto;overflow-y:auto}.wa-thread-foot{position:sticky;bottom:0;flex:0 0 auto;background:white;padding:9px;flex-wrap:nowrap}.wa-thread-foot textarea{min-width:0;font-size:14px}.wa-thread-foot .btn{min-height:40px}
+}
+@media(max-width:860px){
+ .main{padding:0 16px 24px}.mobile-top{min-height:52px;padding:4px 14px;margin:0 -16px;position:sticky}.mobile-top button{min-height:42px;min-width:42px}.ux-workspace-top{min-height:32px;margin-bottom:8px}.ux-route{gap:8px;padding:0;margin-bottom:9px}.ux-route .ux-eyebrow{display:none}.ux-route-title{font-size:14px}.ux-route-icon{width:27px;height:27px}.side-btn{min-height:50px}.ux-nav-copy strong{font-size:13px}.ux-nav-copy small{font-size:11px}.side-nav{gap:12px}
+ .field{font-size:16px;min-height:44px}.btn{min-height:44px}.btn-sm{min-height:40px}.ask input{font-size:16px}.subtabs button{min-height:40px}.task{padding:14px;min-height:105px}.task span{font-size:13px}.pagetitle p{font-size:13px}.page h1{font-size:21px!important}.ux-help summary{min-height:42px}.ux-help .ux-help-grid{grid-template-columns:1fr;gap:9px;padding-bottom:12px}.ux-help-grid h3{font-size:12px}.ux-help-grid p{font-size:12px}.ux-help-grid>li{padding:0;border:0}.ux-guide-step{width:20px;height:20px}
+ .magent-nav{width:100%;padding:5px;gap:3px}.magent-nav-step{font-size:12px;min-height:40px;padding:8px 10px}.magent-content{padding:16px}.magent-actions{padding:10px 0}.wiz-step{font-size:12px}.gal-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #p-marketing>button.task:first-of-type{padding:16px;min-height:120px}#p-creativestudio button[id^="studioCard_"]{min-height:125px;padding:14px}.mini span{font-size:12px}.list-row .sub{font-size:12px}#setList>.list-row{padding:13px}
+ #loginGate{display:none;padding:0;background:#f7f9f4;flex-direction:column}#loginGate.on{display:flex}.ux-welcome{display:flex;width:100%;min-height:0;padding:27px 26px;justify-content:start}.ux-welcome-brand{margin-bottom:19px;font-size:22px}.ux-welcome-brand b{font-size:22px}.ux-welcome-brand small{font-size:12px}.ux-welcome h1{font-size:29px;margin-bottom:12px}.ux-welcome h1 br{display:none}.ux-welcome-copy p{font-size:14px;line-height:1.6;max-width:600px}.ux-benefits{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin:18px 0;max-width:none}.ux-benefits li{gap:8px;flex-direction:column}.ux-benefit-icon{width:29px;height:29px;border-radius:9px;font-size:16px}.ux-benefits h2{font-size:13px;line-height:1.4}.ux-benefits p{font-size:12px;line-height:1.5}.ux-login-assurance{font-size:12px;padding-top:12px;margin-top:0;max-width:none}#loginGate>.ux-auth-card{width:100%!important;max-width:420px!important;padding:26px!important;margin:0 auto}.ux-auth-card>.ux-auth-intro{margin:16px 0 20px}.ux-auth-intro h2{font-size:25px}.ux-auth-card .field{font-size:16px}
+ #waTabs{flex-wrap:wrap;overflow:visible}#waTabs>span{width:100%;margin-left:0!important;padding:0!important}#waSearchInput{width:auto!important;min-width:0;flex:1;font-size:16px!important}
+}
+/* Small-screen messenger: compact customer list above the thread. The composer
+   remains a separate flex row while only the message history scrolls. */
+@media(max-width:620px){
+ .wa-shell{flex-direction:column;height:72dvh;min-height:420px;max-height:none}.wa-list-pane{width:100%;flex:0 0 110px;max-height:110px;min-height:0;overflow-y:auto;border-bottom:1px solid var(--line);border-right:0}.wa-thread-pane{flex:1 1 auto;min-height:0;max-height:none}.wa-convo{padding:9px 12px}.wa-thread-head{padding:9px 11px;flex-wrap:nowrap}.wa-thread-body{padding:11px;min-height:0}.wa-thread-foot{padding:8px;gap:5px}.wa-thread-foot textarea{min-width:0;min-height:44px;font-size:16px}.wa-thread-foot .btn{min-height:44px;padding:8px 10px}.wa-bubble{max-width:93%;font-size:14px}.wa-bubble img{max-width:100%!important;height:auto}.wa-meta{font-size:11px}
+ .ux-help summary{gap:6px;font-size:12px}.ux-guide-toggle{font-size:11px}.ux-guide-spark{display:none}.ux-guide-title{max-width:calc(100% - 84px)}.ux-route>div:last-child{gap:6px}.grid2,.grid3{gap:10px}.mini-grid{gap:9px}.mini,.mini+.mini{padding:11px}.mini b{font-size:21px}.mini span{font-size:12px}.attn{grid-template-columns:23px minmax(0,1fr)}.attn>.go{grid-column:2;justify-self:start}.task{min-height:100px}.page h1{font-size:21px!important}.onb-body{padding:18px 12px 30px}.onb-card{padding:20px 16px}.ux-onb-intro{padding:12px 16px;font-size:12px}.onb-card h1{font-size:23px}.ux-benefits{grid-template-columns:1fr;gap:12px}.ux-benefits li{flex-direction:row;gap:10px}.ux-benefits h2{margin:0 0 2px}.ux-welcome{padding:24px}.ux-welcome h1{font-size:28px}.ux-login-assurance{font-size:12px}
+}
+/* Separate dashboard rows prevent long values from overlapping the next card. */
+@media(min-width:1100px) and (min-height:650px){
+ #p-home.on{grid-template-rows:auto auto auto auto auto minmax(0,1fr) auto;gap:7px 12px}
+ #homeHowAmIDoing{grid-row:5;align-self:stretch}
+ #p-home>.grid2>div:first-child{grid-row:6/8;margin-top:0}
+ #homeRightCol{grid-row:6/8;margin-top:0}
+ #homeActivity24h{max-height:110px;margin:0}
+}
+/* The inbox is a viewport workspace on tablets and phones too. */
+@media(max-width:1099px) and (min-height:650px){
+ .main:has(#p-zenwhatsapp.on){height:100dvh;min-height:0;display:flex;flex-direction:column;padding-bottom:10px}
+ .main:has(#p-zenwhatsapp.on)>*{flex-shrink:0}
+ .main:has(#p-zenwhatsapp.on) .ux-help[open] .ux-help-grid{max-height:135px;overflow-y:auto}
+ #p-zenwhatsapp.on{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;animation:none}
+ #p-zenwhatsapp>.topline{margin-bottom:6px;flex-shrink:0}
+ #p-zenwhatsapp .pagetitle h1{font-size:20px!important;margin-bottom:3px}#p-zenwhatsapp .pagetitle p{font-size:12px;line-height:1.4}
+ #waTabs{margin:0 0 7px;flex-shrink:0;gap:3px;padding:3px}#waTabs>span{padding:0!important}
+ #waSearchInput{min-height:36px}#waTabs button{min-height:36px;padding:6px 10px}
+ #waSearchResult{flex:0 0 auto;max-height:90px;overflow-y:auto}#waSearchResult:empty{display:none}
+ #waChatPane{flex:1 1 auto;min-height:0}#waHistoryPane{flex:1 1 auto;min-height:0;overflow-y:auto}
+ #waChatPane .wa-shell{height:100%;min-height:0;max-height:none}
+ #waThreadPane{flex:1 1 auto;min-height:0;max-height:none;overflow:hidden}
+ #waThreadPane .wa-thread-head{flex:0 0 auto;padding:8px 10px}
+ #waThreadBody{min-height:0;flex:1 1 auto;overflow-y:auto;padding:10px}
+ #waThreadPane .wa-thread-foot{position:static;flex:0 0 auto;flex-wrap:nowrap;padding:7px;gap:5px;background:#fff}
+ #waReplyBox{min-width:0;min-height:40px;max-height:70px;font-size:16px;padding:8px;line-height:1.4}
+ #waThreadPane .wa-thread-foot button{min-height:40px;flex:0 0 auto}
+}
+@media(max-width:620px) and (min-height:650px){#waListPane{flex:0 0 78px;max-height:78px;min-height:0}#waThreadPane .wa-thread-head .avatar{width:27px!important;height:27px!important}#waThreadPane .wa-thread-foot button{min-height:44px}#waReplyBox{min-height:44px}}
+@media(max-width:360px){.mini-grid,.gal-grid{grid-template-columns:1fr}.ux-guide-toggle{font-size:11px}.ux-guide-title{font-size:12px}.main{padding-left:12px;padding-right:12px}.mobile-top{margin-left:-12px;margin-right:-12px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important}.page.on{animation:none}}
+
+</style>
 </head>
 <body>
-<div id="loginGate" class="on">
-<div style="width:100%;max-width:340px;padding:0 20px;">
+<div id="loginGate" class="on"><aside class="ux-welcome" aria-label="What Zen does for your business">
+ <div class="ux-welcome-brand"><span class="onb-orb">Z</span><div><b>Zen</b><small>AI for small businesses</small></div></div>
+ <div class="ux-welcome-copy"><h1>Your quiet<br>business partner.</h1><p>Zen looks after your customer messages, your offers and your ads — and tells you in plain words what’s working.</p></div>
+ <ul class="ux-benefits">
+  <li><span class="ux-benefit-icon" aria-hidden="true">☏</span><div><h2>Answers your WhatsApp</h2><p>Helps reply to customers, day and night.</p></div></li>
+  <li><span class="ux-benefit-icon" aria-hidden="true">✦</span><div><h2>Makes your posts and ads</h2><p>Zen creates. You review and choose what to use.</p></div></li>
+  <li><span class="ux-benefit-icon" aria-hidden="true">◎</span><div><h2>Explains your numbers</h2><p>No charts to decode. Just clear answers.</p></div></li>
+ </ul>
+ <p class="ux-login-assurance">You choose what runs automatically and what waits for your approval.</p>
+</aside>
+<div class="ux-auth-card" style="width:100%;max-width:340px;padding:0 20px;">
   <div style="display:flex;gap:9px;align-items:center;margin-bottom:16px;"><span class="onb-orb">Z</span>
     <div><b style="font:600 15px Sora;display:block;">Zen</b><small style="color:var(--muted);">AI</small></div></div>
+  <div class="ux-auth-intro"><h2>Welcome back.</h2><p>Log in to your business workspace.</p></div>
   <form id="loginForm" novalidate onsubmit="event.preventDefault();doRealLogin();return false;">
-    <input class="field" id="loginEmail" name="email" type="email" placeholder="Email" autocomplete="username" style="margin-bottom:10px;">
-    <input class="field" id="loginPass" name="password" type="password" placeholder="Password" autocomplete="current-password" style="margin-bottom:10px;">
+    <label class="lbl" for="loginEmail">Email address</label><input class="field" id="loginEmail" name="email" type="email" placeholder="Email" autocomplete="username" style="margin-bottom:10px;">
+    <label class="lbl" for="loginPass">Password</label><input class="field" id="loginPass" name="password" type="password" placeholder="Password" autocomplete="current-password" style="margin-bottom:10px;">
     <button class="btn btn-p btn-block" type="submit">Log in</button>
   </form>
-  <div id="loginMsg" class="hint" style="margin-top:10px;"></div>
+  <div id="loginMsg" role="status" aria-live="polite" class="hint" style="margin-top:10px;"></div>
   <div style="display:flex;justify-content:space-between;margin-top:14px;font-size:12px;">
     <a href="#" onclick="event.preventDefault();showForgotPassword();" style="color:var(--muted);">Forgot password?</a>
     <a href="#" onclick="event.preventDefault();showSignup();" style="color:var(--muted);">New here? Create an account</a>
@@ -523,13 +733,13 @@ label.lbl{display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:v
 <!-- Real Supabase Auth password reset - sends an actual email with a
      reset link; nothing simulated here. -->
 <div id="forgotGate">
-<div style="width:100%;max-width:340px;padding:0 20px;">
+<div class="ux-auth-card" style="width:100%;max-width:340px;padding:0 20px;">
   <div style="display:flex;gap:9px;align-items:center;margin-bottom:16px;"><span class="onb-orb">Z</span>
     <div><b style="font:600 15px Sora;display:block;">Reset your password</b></div></div>
-  <input class="field" id="forgotEmail" type="email" placeholder="Your email" style="margin-bottom:10px;">
+  <label class="lbl" for="forgotEmail">Email address</label><input class="field" id="forgotEmail" type="email" placeholder="Your email" style="margin-bottom:10px;">
   <button class="btn btn-p btn-block" onclick="doForgotPassword()">Send reset link</button>
-  <div id="forgotMsg" class="hint" style="margin-top:10px;"></div>
-  <a href="#" onclick="event.preventDefault();showLogin();" style="display:block;margin-top:14px;font-size:12px;color:var(--muted);">\u2190 Back to log in</a>
+  <div id="forgotMsg" role="status" aria-live="polite" class="hint" style="margin-top:10px;"></div>
+  <a href="#" onclick="event.preventDefault();showLogin();" style="display:block;margin-top:14px;font-size:12px;color:var(--muted);">← Back to log in</a>
 </div>
 </div>
 
@@ -538,22 +748,22 @@ label.lbl{display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:v
      backend, seeds default campaign settings and makes this user its
      owner) - not a demo of what signup would look like. -->
 <div id="signupGate">
-<div style="width:100%;max-width:340px;padding:0 20px;">
+<div class="ux-auth-card" style="width:100%;max-width:340px;padding:0 20px;">
   <div style="display:flex;gap:9px;align-items:center;margin-bottom:16px;"><span class="onb-orb">Z</span>
     <div><b style="font:600 15px Sora;display:block;">Create your account</b><small style="color:var(--muted);">Sets up a brand-new, separate business in Zen.</small></div></div>
   <div id="signupForm">
-    <input class="field" id="signupBizName" placeholder="Business name, e.g. Curl Up Salon" style="margin-bottom:10px;">
-    <input class="field" id="signupEmail" type="email" placeholder="Email" autocomplete="username" style="margin-bottom:10px;">
-    <input class="field" id="signupPass" type="password" placeholder="Password (at least 8 characters)" autocomplete="new-password" style="margin-bottom:10px;">
+    <label class="lbl" for="signupBizName">Business name</label><input class="field" id="signupBizName" placeholder="Business name, e.g. Curl Up Salon" style="margin-bottom:10px;">
+    <label class="lbl" for="signupEmail">Email address</label><input class="field" id="signupEmail" type="email" placeholder="Email" autocomplete="username" style="margin-bottom:10px;">
+    <label class="lbl" for="signupPass">Password</label><input class="field" id="signupPass" type="password" placeholder="Password (at least 8 characters)" autocomplete="new-password" style="margin-bottom:10px;">
     <button class="btn btn-p btn-block" onclick="doSignup()">Create account</button>
-    <div id="signupMsg" class="hint" style="margin-top:10px;"></div>
+    <div id="signupMsg" role="status" aria-live="polite" class="hint" style="margin-top:10px;"></div>
   </div>
   <div id="signupConfirmSent" style="display:none;text-align:center;padding:20px 0;">
-    <div style="font-size:32px;margin-bottom:10px;">\u2709\ufe0f</div>
+    <div style="font-size:32px;margin-bottom:10px;">✉</div>
     <b style="display:block;font-size:14px;margin-bottom:6px;">Check your email</b>
-    <p style="color:var(--muted);font-size:12.5px;line-height:1.5;margin:0;">We\u2019ve sent a confirmation link to <b id="signupConfirmEmail" style="color:var(--ink);"></b>. Click it, then come back and log in.</p>
+    <p style="color:var(--muted);font-size:12.5px;line-height:1.5;margin:0;">We’ve sent a confirmation link to <b id="signupConfirmEmail" style="color:var(--ink);"></b>. Click it, then come back and log in.</p>
   </div>
-  <a href="#" onclick="event.preventDefault();showLogin();" style="display:block;margin-top:14px;font-size:12px;color:var(--muted);">\u2190 Back to log in</a>
+  <a href="#" onclick="event.preventDefault();showLogin();" style="display:block;margin-top:14px;font-size:12px;color:var(--muted);">← Back to log in</a>
 </div>
 </div>
 <div id="toastHost"></div>
@@ -566,7 +776,7 @@ label.lbl{display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:v
     <div class="onb-brand"><span class="onb-orb">Z</span>Zen</div>
     <button class="onb-skip" id="onbSkipBtn" onclick="onbSkip()">Skip to Home →</button>
   </div>
-  <div class="onb-progress"><i id="onbBar" style="width:0%;"></i></div>
+  <p class="ux-onb-intro">Let’s get to know your business. Follow the steps below, or finish setup later.</p><div class="onb-progress"><i id="onbBar" style="width:0%;"></i></div>
   <div class="onb-body"><div class="onb-card" id="onbStage"></div></div>
 </div>
 
@@ -574,31 +784,48 @@ label.lbl{display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:v
      MAIN APP — five destinations + Settings
      ══════════════════════════════════════════════════════════════ -->
 <div id="app">
-  <nav class="side">
+  <nav class="side" aria-label="Main navigation">
     <div class="side-brand"><span class="onb-orb">Z</span><div><b>Zen</b><small id="sideBrandTenant">AI</small></div></div>
-    <div class="side-nav">
-      <button class="side-btn active" data-p="home" onclick="go('home')"><span class="ic">⌂</span>Command Centre</button>
-      <button class="side-btn" data-p="campaigns" onclick="go('campaigns')"><span class="ic">◈</span>Campaigns<span class="cnt" id="navCampBadge" style="display:none;"></span></button>
-      <button class="side-btn" data-p="zenwhatsapp" onclick="go('zenwhatsapp')"><span class="ic">💬</span>ZenWhatsApp<span class="cnt" id="navWaBadge" style="display:none;"></span></button>
-      <button class="side-btn" data-p="marketing" onclick="go('marketing')"><span class="ic">✦</span>Marketing</button>
-      <button class="side-btn" data-p="promotions" onclick="go('promotions')"><span class="ic">▲</span>Promotions</button>
-      <button class="side-btn" data-p="creativestudio" onclick="go('creativestudio')"><span class="ic">◆</span>AI Creative Studio</button>
-      <button class="side-btn" data-p="insights" onclick="go('insights')"><span class="ic">◎</span>Insights</button>
-      <button class="side-btn" data-p="settings" onclick="go('settings')"><span class="ic">⚙</span>Settings</button>
+    <div class="side-nav" aria-label="Workspace navigation">
+<div class="ux-nav-group"><div class="ux-nav-heading">YOUR DAY</div><button class="side-btn active" data-p="home" onclick="go('home')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></svg></span><span class="ux-nav-copy"><strong>Command Centre</strong><small>Your business at a glance</small></span></button></div>
+<div class="ux-nav-group"><div class="ux-nav-heading">YOUR CUSTOMERS</div><button class="side-btn" data-p="zenwhatsapp" onclick="go('zenwhatsapp')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-2 2V11.5a9.5 9.5 0 0 1 19 0Z"/><path d="M7 10h9M7 14h5"/></svg></span><span class="ux-nav-copy"><strong>WhatsApp inbox</strong><small>Conversations & replies</small></span><span class="cnt" id="navWaBadge" style="display:none;"></span></button><button class="side-btn" data-p="campaigns" onclick="go('campaigns')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18v13H3zM3 6l9 7 9-7M8 3h8"/></svg></span><span class="ux-nav-copy"><strong>WhatsApp campaigns</strong><small>Bring customers back</small></span><span class="cnt" id="navCampBadge" style="display:none;"></span></button></div>
+<div class="ux-nav-group"><div class="ux-nav-heading">GROW YOUR BUSINESS</div><button class="side-btn" data-p="marketing" onclick="go('marketing')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.6 6.4L21 12l-6.4 2.6L12 21l-2.6-6.4L3 12l6.4-2.6Z"/></svg></span><span class="ux-nav-copy"><strong>Marketing</strong><small>Guided campaigns & posts</small></span></button><button class="side-btn" data-p="creativestudio" onclick="go('creativestudio')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 5-5 4 4 4-6 5 7"/></svg></span><span class="ux-nav-copy"><strong>Creative studio</strong><small>AI images & videos</small></span></button><button class="side-btn" data-p="promotions" onclick="go('promotions')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 9 14-5v16L4 15ZM18 9h3v6h-3M6 16l2 5h3l-2-4"/></svg></span><span class="ux-nav-copy"><strong>Paid ads</strong><small>Promotions on Meta</small></span></button></div>
+<div class="ux-nav-group"><div class="ux-nav-heading">YOUR BUSINESS</div><button class="side-btn" data-p="insights" onclick="go('insights')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3v18h17M8 16v-4M13 16V7M18 16v-7"/></svg></span><span class="ux-nav-copy"><strong>Insights</strong><small>Understand your results</small></span></button><button class="side-btn" data-p="settings" onclick="go('settings')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="currentColor"/><circle cx="15" cy="17" r="3" fill="currentColor"/></svg></span><span class="ux-nav-copy"><strong>Settings</strong><small>Your business & connections</small></span></button></div>
     </div>
-    <div class="side-foot">
-      <div class="side-user" id="sideUser" style="cursor:pointer;" onclick="doLogout()" title="Log out">
+    <div class="side-foot"><div class="ux-account-label">YOUR ACCOUNT <span>Click below to log out</span></div>
+      <div class="side-user" id="sideUser" style="cursor:pointer;" role="button" aria-label="Your account: log out" onclick="doLogout()" title="Log out">
         <span class="av" id="sideUserAv">?</span>
         <div><b style="display:block;" id="sideUserName">…</b><span style="color:var(--muted);" id="sideUserRole">…</span></div>
       </div>
     </div>
   </nav>
 
-  <main class="main">
+  <main class="main" id="zen-workspace">
     <div class="mobile-top">
-      <button onclick="document.body.classList.toggle('menu-open')">☰</button>
+      <button aria-label="Open or close navigation" onclick="document.body.classList.toggle('menu-open')">☰</button>
       <b style="font:600 14px Sora;">Zen</b><span></span>
     </div>
+<header class="ux-workspace-top"><span class="ux-workspace-name">Business workspace</span><span class="ux-workspace-tag">✦ Your AI assistant</span></header>
+<div class="ux-route ux-route-home"><div class="ux-route-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></svg></div><div><div class="ux-eyebrow">YOUR DAY, AT A GLANCE</div><p class="ux-route-title">Command Centre</p></div></div>
+<div class="ux-route ux-route-campaigns"><div class="ux-route-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18v13H3zM3 6l9 7 9-7M8 3h8"/></svg></div><div><div class="ux-eyebrow">YOUR CUSTOMERS</div><p class="ux-route-title">WhatsApp campaigns</p></div></div>
+<div class="ux-route ux-route-zenwhatsapp"><div class="ux-route-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-2 2V11.5a9.5 9.5 0 0 1 19 0Z"/><path d="M7 10h9M7 14h5"/></svg></div><div><div class="ux-eyebrow">YOUR CUSTOMERS</div><p class="ux-route-title">WhatsApp inbox</p></div></div>
+<div class="ux-route ux-route-marketing"><div class="ux-route-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.6 6.4L21 12l-6.4 2.6L12 21l-2.6-6.4L3 12l6.4-2.6Z"/></svg></div><div><div class="ux-eyebrow">GROW YOUR BUSINESS</div><p class="ux-route-title">Marketing</p></div></div>
+<div class="ux-route ux-route-creativestudio"><div class="ux-route-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 5-5 4 4 4-6 5 7"/></svg></div><div><div class="ux-eyebrow">GROW YOUR BUSINESS</div><p class="ux-route-title">Creative studio</p></div></div>
+<div class="ux-route ux-route-promotions"><div class="ux-route-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 9 14-5v16L4 15ZM18 9h3v6h-3M6 16l2 5h3l-2-4"/></svg></div><div><div class="ux-eyebrow">GROW YOUR BUSINESS</div><p class="ux-route-title">Paid ads · Promotions</p></div></div>
+<div class="ux-route ux-route-insights"><div class="ux-route-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3v18h17M8 16v-4M13 16V7M18 16v-7"/></svg></div><div><div class="ux-eyebrow">YOUR BUSINESS</div><p class="ux-route-title">Insights</p></div></div>
+<div class="ux-route ux-route-settings"><div class="ux-route-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="currentColor"/><circle cx="15" cy="17" r="3" fill="currentColor"/></svg></div><div><div class="ux-eyebrow">YOUR BUSINESS</div><p class="ux-route-title">Settings</p></div></div>
+<div class="ux-route ux-route-flow"><div class="ux-route-icon"><span aria-hidden="true">✦</span></div><div><div class="ux-eyebrow">ONE STEP AT A TIME</div><p class="ux-route-title">Your current task</p></div></div>
+<aside class="ux-help-area" aria-label="Page guidance">
+<details class="ux-help ux-help-home" data-guide="home" open><summary><span class="ux-guide-spark" aria-hidden="true">✦</span><span class="ux-guide-title">Start here: your business at a glance</span><span class="ux-guide-toggle"><span class="ux-guide-hide">Hide guide</span><span class="ux-guide-show">Show guide</span><span aria-hidden="true">⌃</span></span></summary><ol class="ux-help-grid"><li><span class="ux-guide-step" aria-hidden="true">1</span><div><h3>Check what needs you</h3><p>Review attention items and customer opportunities.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">2</span><div><h3>See what worked</h3><p>Compare your revenue and recent customer activity.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">3</span><div><h3>Choose your next step</h3><p>Open a card for details, or ask Zen a question.</p></div></li></ol></details>
+<details class="ux-help ux-help-zenwhatsapp" data-guide="zenwhatsapp" open><summary><span class="ux-guide-spark" aria-hidden="true">✦</span><span class="ux-guide-title">Your inbox, one conversation at a time</span><span class="ux-guide-toggle"><span class="ux-guide-hide">Hide guide</span><span class="ux-guide-show">Show guide</span><span aria-hidden="true">⌃</span></span></summary><ol class="ux-help-grid"><li><span class="ux-guide-step" aria-hidden="true">1</span><div><h3>Choose a customer</h3><p>Unread conversations appear at the top.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">2</span><div><h3>Catch up quickly</h3><p>Read the messages and check what Zen has replied.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">3</span><div><h3>Reply with confidence</h3><p>Type your message, add an image if needed, then Send.</p></div></li></ol></details>
+<details class="ux-help ux-help-campaigns" data-guide="campaigns" open><summary><span class="ux-guide-spark" aria-hidden="true">✦</span><span class="ux-guide-title">Bring customers back with a useful message</span><span class="ux-guide-toggle"><span class="ux-guide-hide">Hide guide</span><span class="ux-guide-show">Show guide</span><span aria-hidden="true">⌃</span></span></summary><ol class="ux-help-grid"><li><span class="ux-guide-step" aria-hidden="true">1</span><div><h3>Pick a campaign</h3><p>Choose the customer group you want to reach.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">2</span><div><h3>Check how it sends</h3><p>Review the audience and automatic or approval settings.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">3</span><div><h3>See the response</h3><p>Check who messaged and who returned afterwards.</p></div></li></ol></details>
+<details class="ux-help ux-help-marketing" data-guide="marketing" open><summary><span class="ux-guide-spark" aria-hidden="true">✦</span><span class="ux-guide-title">Have a goal? Zen will help you get started.</span><span class="ux-guide-toggle"><span class="ux-guide-hide">Hide guide</span><span class="ux-guide-show">Show guide</span><span aria-hidden="true">⌃</span></span></summary><ol class="ux-help-grid"><li><span class="ux-guide-step" aria-hidden="true">1</span><div><h3>Start with your goal</h3><p>Choose the guided Marketing Agent if you need a hand.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">2</span><div><h3>Create your content</h3><p>Use a product link, or choose a poster, video, or carousel.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">3</span><div><h3>Review your next move</h3><p>Check your content, then publish, schedule, or promote.</p></div></li></ol></details>
+<details class="ux-help ux-help-creativestudio" data-guide="creativestudio" open><summary><span class="ux-guide-spark" aria-hidden="true">✦</span><span class="ux-guide-title">Turn one idea into something worth sharing</span><span class="ux-guide-toggle"><span class="ux-guide-hide">Hide guide</span><span class="ux-guide-show">Show guide</span><span aria-hidden="true">⌃</span></span></summary><ol class="ux-help-grid"><li><span class="ux-guide-step" aria-hidden="true">1</span><div><h3>Choose your starting point</h3><p>Use a reference ad, existing creative, presenter, or trend.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">2</span><div><h3>Make it your own</h3><p>Follow the prompts with your product and brand details.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">3</span><div><h3>Review what you made</h3><p>Find saved work and items awaiting approval below.</p></div></li></ol></details>
+<details class="ux-help ux-help-promotions" data-guide="promotions" open><summary><span class="ux-guide-spark" aria-hidden="true">✦</span><span class="ux-guide-title">Make your advertising easier to understand</span><span class="ux-guide-toggle"><span class="ux-guide-hide">Hide guide</span><span class="ux-guide-show">Show guide</span><span aria-hidden="true">⌃</span></span></summary><ol class="ux-help-grid"><li><span class="ux-guide-step" aria-hidden="true">1</span><div><h3>Choose who to reach</h3><p>Audiences are the people you want to see your ads.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">2</span><div><h3>Manage your ads</h3><p>Ad sets group ads with shared budgets and audiences.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">3</span><div><h3>Check your results</h3><p>Use Performance to understand how the ads are doing.</p></div></li></ol></details>
+<details class="ux-help ux-help-insights" data-guide="insights" open><summary><span class="ux-guide-spark" aria-hidden="true">✦</span><span class="ux-guide-title">You don’t need to be a numbers person.</span><span class="ux-guide-toggle"><span class="ux-guide-hide">Hide guide</span><span class="ux-guide-show">Show guide</span><span aria-hidden="true">⌃</span></span></summary><ol class="ux-help-grid"><li><span class="ux-guide-step" aria-hidden="true">1</span><div><h3>Ask in your own words</h3><p>Try a question about your business in the Ask box.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">2</span><div><h3>Explore one area</h3><p>Choose WhatsApp, Marketing, or Sales and Operations.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">3</span><div><h3>Find a customer</h3><p>Search by name or number to look into their history.</p></div></li></ol></details>
+<details class="ux-help ux-help-settings" data-guide="settings" open><summary><span class="ux-guide-spark" aria-hidden="true">✦</span><span class="ux-guide-title">A little setup helps Zen understand your business</span><span class="ux-guide-toggle"><span class="ux-guide-hide">Hide guide</span><span class="ux-guide-show">Show guide</span><span aria-hidden="true">⌃</span></span></summary><ol class="ux-help-grid"><li><span class="ux-guide-step" aria-hidden="true">1</span><div><h3>Start with the essentials</h3><p>Check your profile, services, prices, and opening hours.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">2</span><div><h3>Connect your channels</h3><p>Review your WhatsApp, Instagram, and ad connections.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">3</span><div><h3>Choose your boundaries</h3><p>Set reply rules, automation preferences, and team access.</p></div></li></ol></details>
+<details class="ux-help ux-help-flow" data-guide="flow" open><summary><span class="ux-guide-spark" aria-hidden="true">✦</span><span class="ux-guide-title">One decision at a time. You’ve got this.</span><span class="ux-guide-toggle"><span class="ux-guide-hide">Hide guide</span><span class="ux-guide-show">Show guide</span><span aria-hidden="true">⌃</span></span></summary><ol class="ux-help-grid"><li><span class="ux-guide-step" aria-hidden="true">1</span><div><h3>Follow the current step</h3><p>Use the title and step indicator to see where you are.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">2</span><div><h3>Review before continuing</h3><p>Check your choices, previews, and any displayed costs.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">3</span><div><h3>Need to change direction?</h3><p>Use the Back control within this task.</p></div></li></ol></details>
+</aside>
     <section class="page on" id="p-home"></section>
     <section class="page" id="p-campaigns"></section>
     <section class="page" id="p-zenwhatsapp"></section>
@@ -608,6 +835,7 @@ label.lbl{display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:v
     <section class="page" id="p-insights"></section>
     <section class="page" id="p-settings"></section>
     <section class="page" id="p-flow"></section>
+
   </main>
 </div>
 
@@ -1484,7 +1712,6 @@ async function home(){
     // its own page.
     '<div id="homeSnippets" class="mini-grid" style="margin-bottom:2px;"><div class="loading-block"><span class="spin"></span></div></div>' +
     '<div id="homeSendCost"></div>' +
-    '<div id="homeActivity24h"></div>' +
     // Real "how am I doing" row, in plain language - this week vs
     // last week, this month vs last month, this quarter vs the same
     // quarter last year - three real comparisons side by side rather
@@ -1493,16 +1720,22 @@ async function home(){
     '<div id="homeHowAmIDoing" class="grid3" style="margin-top:10px;"><div class="loading-block"><span class="spin"></span></div></div>' +
     // Real, dense two-column dock for the rest: what needs a
     // decision on the left (queue review, ad strategy), what's
-    // opportunity on the right - side by side rather than one long
-    // stack, so everything real is visible together without
-    // scrolling. Agent status and Intelligence's own findings are
-    // deliberately not duplicated here - Agents and Insights are one
-    // click away and already show them in full.
+    // opportunity and recent activity on the right - side by side
+    // rather than one long stack, so everything real is visible
+    // together without scrolling. Agent status and Intelligence's own
+    // findings are deliberately not duplicated here - Agents and
+    // Insights are one click away and already show them in full.
+    // Opportunity and activity share one flex column so they stack at
+    // their own real height, rather than each claiming a separate
+    // grid row that can leave a large gap when either is short.
     '<div class="grid2" style="margin-top:14px;align-items:start;">' +
       '<div><div class="sechead" style="margin-top:0;"><h2>Needs your attention</h2></div>' +
         '<div class="stack" id="homeAttn"><div class="loading-block"><span class="spin"></span>Checking your business\u2026</div></div>' +
         '<div id="homeAdHealth"></div></div>' +
-      '<div id="homeOpportunity"></div>' +
+      '<div id="homeRightCol" style="display:flex;flex-direction:column;gap:14px;">' +
+        '<div id="homeOpportunity"></div>' +
+        '<div id="homeActivity24h"></div>' +
+      '</div>' +
     '</div>';
 
   // The 400-day revenue fetch needed for the MTD comparison is the
@@ -2003,6 +2236,7 @@ async function zenwhatsapp(){
     '<div class="subtabs" id="waTabs" style="align-items:center;">' +
       '<button class="active" onclick="waSubTab(\'chat\')">Chat</button>' +
       '<button onclick="waSubTab(\'history\')">History</button>' +
+      '<button onclick="waSubTab(\'results\')">Results</button>' +
       '<span style="margin-left:auto;display:flex;align-items:center;gap:6px;padding-bottom:8px;">' +
         '<input id="waSearchInput" placeholder="Find a customer by name or number\u2026" style="width:220px;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12.5px;" onkeydown="if(event.key===\'Enter\')waSearchCustomer(this.value)">' +
         '<button class="btn btn-s btn-sm" onclick="waSearchCustomer(document.getElementById(\'waSearchInput\').value)">Find</button>' +
@@ -2010,6 +2244,7 @@ async function zenwhatsapp(){
     '</div>' +
     '<div id="waSearchResult"></div>' +
     '<div id="waChatPane"><div class="loading-block"><span class="spin"></span>Loading conversations\u2026</div></div>' +
+    '<div id="waResultsPane" style="display:none;"></div>' +
     '<div id="waHistoryPane" style="display:none;"><div class="loading-block"><span class="spin"></span></div></div>';
 
   const j = await call('list_conversations', {limit:40});
@@ -2132,11 +2367,50 @@ async function waSearchCustomer(query){
       '</div>';
   }).join('');
 }
+// Real, new - the third tab asked for directly: business results
+// (retention, top campaigns) shown right on the page you already
+// check daily for messages, not only reachable through a separate
+// Insights section. Same real backend calls the full WhatsApp
+// Insights page itself uses, just condensed to what matters most at
+// a glance - "See full breakdown" still leads there for anyone who
+// wants the complete tables.
 function waSubTab(name){
-  document.querySelectorAll('#waTabs button').forEach((b,i)=>b.classList.toggle('active', (name==='chat'?0:1)===i));
+  document.querySelectorAll('#waTabs button').forEach((b,i)=>b.classList.toggle('active', (name==='chat'?0:name==='history'?1:2)===i));
   el('waChatPane').style.display = name==='chat' ? 'block' : 'none';
   el('waHistoryPane').style.display = name==='history' ? 'block' : 'none';
+  el('waResultsPane').style.display = name==='results' ? 'block' : 'none';
   if (name==='history') loadChatHistoryInline();
+  if (name==='results') loadWaResultsInline();
+}
+async function loadWaResultsInline(){
+  const box = el('waResultsPane');
+  if (!box || box.dataset.loaded) return;
+  box.innerHTML = '<div class="loading-block"><span class="spin"></span></div>';
+  const [conversion, engage] = await Promise.all([
+    call('get_message_conversion', {days:90, window_days:30}),
+    call('get_engagement_intelligence', {days:30}),
+  ]);
+  let html = '';
+  const ctot = conversion && conversion.ok && conversion.totals;
+  if (ctot){
+    html += '<div class="mini-grid" style="max-width:640px;">' +
+      '<div class="mini"><b>'+money(ctot.came_back||0)+' / '+money(ctot.people||0)+'</b><span>Came back within 30 days ('+(ctot.rate!=null?ctot.rate+'%':'\u2014')+')</span></div>' +
+      '<div class="mini"><b>AED '+money(ctot.revenue||0)+'</b><span>Revenue from those visits</span></div>' +
+    '</div>';
+  }
+  const liftByCamp = (engage && engage.ok && engage.lift_by_campaign) || [];
+  const ranked = liftByCamp.filter(c => c.readable).sort((a,b) => (b.lift_points||0)-(a.lift_points||0)).slice(0,3);
+  if (ranked.length){
+    html += '<div class="sechead" style="margin-top:16px;"><h2>Best-performing campaigns</h2></div>' +
+      '<div class="stack">' + ranked.map(c =>
+        '<div class="attn"><div class="n" style="color:'+(c.lift_points>=0?'var(--green)':'#a02020')+';">'+(c.lift_points>=0?'+':'')+c.lift_points+'</div>' +
+        '<div><b>'+esc(CAMPAIGN_LABELS[c.campaign_key]||c.campaign_key)+'</b><p>'+c.contacted_returned+' of '+c.contacted+' contacted came back, vs '+c.holdout_returned+' of '+c.holdout+' held back</p></div></div>').join('') +
+      '</div>';
+  }
+  if (!ctot && !ranked.length) html = '<p class="note">Not enough sent messages yet to show results here.</p>';
+  html += '<button class="btn btn-ghost btn-sm" style="margin-top:16px;" onclick="flow(()=>whatsappInsights())">See full breakdown \u2192</button>';
+  box.innerHTML = html;
+  box.dataset.loaded = '1';
 }
 // Real per-message history, both directions - the earlier version
 // only ever rendered outbound-send fields (status, template_name),
@@ -8944,5 +9218,23 @@ async function fixImportDone(){
   go('home');
 }
 function contentApprovalFlow(){ contentFlow('Poster'); }
+</script>
+<script id="zen-guide-preferences">
+/* UI preference only. No app state, API calls, sends, routes or auth changes. */
+(function () {
+  'use strict';
+  document.querySelectorAll('details[data-guide]').forEach(function (guide) {
+    var key = 'zen.ui.guide.v1.' + guide.getAttribute('data-guide');
+    var saved = null;
+    try { saved = window.localStorage.getItem(key); } catch (_) {}
+    if (saved === null && window.matchMedia && window.matchMedia('(max-width: 860px)').matches) guide.open = false;
+    if (saved === 'closed') guide.open = false;
+    if (saved === 'open') guide.open = true;
+    guide.addEventListener('toggle', function () {
+      try { window.localStorage.setItem(key, guide.open ? 'open' : 'closed'); } catch (_) {}
+    });
+  });
+})();
+
 </script>
 </body></html>
