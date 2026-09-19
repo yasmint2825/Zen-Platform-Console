@@ -3309,7 +3309,25 @@ async function renderPerformanceTab(){
       '</table></div>' +
       '<p class="note" style="margin-top:8px;">\u201cConverted while active\u201d counts only real visits that happened while this specific ad was actually running \u2014 a sale that landed after the ad was already paused or ended doesn\u2019t honestly belong to it, even if it fell within the usual follow-up window.</p>';
   body.innerHTML = renderBookingsBox(j) +
-    '<div class="sechead" style="margin-top:0;"><h2>Per-ad performance</h2></div>' + tableHtml;
+    '<div class="sechead" style="margin-top:0;"><h2>Per-ad performance</h2></div>' + tableHtml +
+    // Real activation - asked for directly. This real capability
+    // already existed, fully working, but nothing ever triggered it.
+    // Manual button here; a scheduled, unattended run can also be set
+    // up separately so this happens without needing to remember.
+    '<div class="sechead" style="margin-top:18px;"><h2>Report conversions back to Meta</h2></div>' +
+    '<p class="note" style="margin-top:0;">Tells Meta which real sales came from an ad, so it can optimize delivery toward people who actually convert - not just click.</p>' +
+    '<button class="btn btn-s btn-sm" onclick="sendAdConversionsFlow()">Send unreported conversions now</button>' +
+    '<div id="sendConversionsResult" style="margin-top:8px;"></div>';
+}
+async function sendAdConversionsFlow(){
+  const box = el('sendConversionsResult');
+  box.innerHTML = '<div class="loading-block"><span class="spin"></span>Checking for real, unreported conversions\u2026</div>';
+  const j = await call('send_ad_conversions', {});
+  if (!j.ok){ box.innerHTML = errBlock(j.error, ''); return; }
+  box.innerHTML = j.sent
+    ? '<p class="note" style="color:var(--green);">\u2713 Reported '+j.sent+' real conversion'+(j.sent>1?'s':'')+' to Meta.'+(j.no_visit_yet?' '+j.no_visit_yet+' more are being tracked, waiting to see if they convert.':'')+'</p>'
+    : '<p class="note">'+(j.note||('Nothing new to report right now.'+(j.no_visit_yet?' '+j.no_visit_yet+' conversation(s) are still being watched for a real visit.':'')))+'</p>';
+  if (j.failed) box.innerHTML += '<p class="note" style="color:#a02020;">'+j.failed+' failed to send. '+(j.errors||[]).join('; ')+'</p>';
 }
 async function renderAdSetsTab(){
   const body = el('promotionsBody');
