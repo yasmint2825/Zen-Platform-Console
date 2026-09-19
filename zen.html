@@ -3226,6 +3226,44 @@ async function csDeleteGeneration(generationId, btnEl){
   toast('Deleted', 'ok');
   btnEl.closest('.gal-card').remove();
 }
+// Real, new - checks two genuinely different real places a video can
+// exist: a finished generation (which, if truly finished, already
+// attached itself automatically - shown here for confirmation, not
+// because it's missing anything) and individual scenes still sitting
+// inside an unfinished video draft, whatever real status that draft
+// is at. Answers "where actually is it" directly rather than only
+// checking the one place a fully-finished video would already have
+// left.
+async function csCheckAllVideos(btnEl){
+  btnEl.disabled = true; btnEl.textContent = 'Checking\u2026';
+  const box = el('csAllVideosResult');
+  box.innerHTML = '<div class="loading-block" style="padding:6px 0;"><span class="spin"></span></div>';
+  const j = await call('find_all_video_generations', {});
+  btnEl.disabled = false; btnEl.textContent = 'Check every video ever generated, including unfinished drafts';
+  if (!j.ok){ box.innerHTML = '<p class="note" style="color:#a02020;">'+esc(j.error)+'</p>'; return; }
+  if (j.note){ box.innerHTML = '<p class="note">'+esc(j.note)+'</p>'; return; }
+
+  let html = '';
+  if (j.finished_videos && j.finished_videos.length){
+    html += '<p class="note" style="margin-top:0;"><b style="color:var(--ink);">'+j.finished_videos.length+'</b> finished video'+(j.finished_videos.length>1?'s':'')+' \u2014 these already have a real, permanent project. See them under Recent creative projects above.</p>' +
+      '<div class="gal-grid">' + j.finished_videos.map(v =>
+        '<div class="gal-card" style="cursor:default;"><video src="'+esc(v.output_url)+'" class="gal-media" muted controls></video></div>').join('') + '</div>';
+  }
+  if (j.draft_scenes && j.draft_scenes.length){
+    // Grouped by the real draft they belong to - several scenes
+    // often belong to the same unfinished video.
+    const byItem = {};
+    j.draft_scenes.forEach(s => { (byItem[s.item_id] ||= {title:s.item_title, status:s.item_status, scenes:[]}).scenes.push(s); });
+    html += '<p class="note" style="margin-top:14px;"><b style="color:var(--ink);">'+j.draft_scenes.length+'</b> scene video'+(j.draft_scenes.length>1?'s':'')+' inside unfinished draft'+(Object.keys(byItem).length>1?'s':'')+' \u2014 generated and permanently saved, but the video was never finished (stitched together and published) as one project.</p>' +
+      Object.values(byItem).map(g =>
+        '<div style="margin-top:8px;"><b style="font-size:12.5px;">'+esc(g.title)+'</b> <span class="badge">'+esc(g.status)+'</span>' +
+        '<div class="gal-grid" style="margin-top:6px;">' + g.scenes.map(s =>
+          '<div class="gal-card" style="cursor:default;"><video src="'+esc(s.output_url)+'" class="gal-media" muted controls></video>' +
+            '<div class="gal-body"><span class="gal-sub">Scene '+(s.scene_number!=null?s.scene_number:'?')+(s.has_voiceover?' \u00b7 has voiceover':'')+'</span></div></div>').join('') +
+        '</div></div>').join('');
+  }
+  box.innerHTML = html || '<p class="note">No real video generation found at all for this account.</p>';
+}
 async function creativestudio(){
   STATE.lastPage='creativestudio';
   const p = el('p-creativestudio');
@@ -3317,6 +3355,21 @@ async function creativestudio(){
         '</div>').join('') + '</div>';
     p.appendChild(box);
   });
+  // Real, new - asked for directly ("how are the UGC/talking head
+  // videos not saved"). A finished, stitched video attaches itself
+  // the moment it succeeds, so it was never "unattached" for the
+  // check above to find - the real gap this covers is a video that
+  // never reached that finished stage: individual scenes generated
+  // (each one already safely, permanently stored) but the final
+  // stitch never run or never checked back on. Its own button,
+  // deliberately not run automatically - this scans every real video
+  // draft regardless of status, which is more than the everyday page
+  // load needs.
+  const videoCheckBox = document.createElement('div');
+  videoCheckBox.innerHTML = '<div class="sechead" style="margin-top:18px;"><h2>Looking for a specific video?</h2></div>' +
+    '<button class="btn btn-ghost btn-sm" onclick="csCheckAllVideos(this)">Check every video ever generated, including unfinished drafts</button>' +
+    '<div id="csAllVideosResult" style="margin-top:8px;"></div>';
+  p.appendChild(videoCheckBox);
   // Real, actually-generated preview images - your own real product
   // and people imagery, generated once and cached, not stock photos
   // or another site's own screenshots (neither of which can honestly
@@ -8591,6 +8644,13 @@ async function dataPanel(){
   const on = !!(s.ok && s.tenant && s.tenant.auto_resolve_duplicates);
   const cooldown = (s.ok && s.tenant && s.tenant.global_cooldown_days != null) ? s.tenant.global_cooldown_days : 21;
   const holdout = (s.ok && s.tenant && s.tenant.holdout_percent != null) ? s.tenant.holdout_percent : 10;
+  // Real, new - the retention setting behind auto-clearing saved
+  // creative, asked for directly. Off (null) unless the tenant already
+  // has a real value set - this is real, permanent deletion, so it
+  // only shows as "on" when a real number is actually configured.
+  const retentionRaw = s.ok && s.tenant ? s.tenant.creative_retention_days : null;
+  const retentionOn = retentionRaw != null;
+  const retentionDays = retentionRaw != null ? retentionRaw : 30;
   el('p-flow').innerHTML =
     '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
     '<h1 style="font-size:21px;">Data</h1>' +
@@ -8605,7 +8665,27 @@ async function dataPanel(){
       '<div class="list-row"><span>Holdout'+tip('A share of each send is deliberately left out on purpose, so results can be compared against them. Without this there is no way to tell whether a message caused someone to return, or they would have anyway.')+'</span>' +
         '<span><input class="field" id="holdoutPct" type="number" min="0" max="50" value="'+holdout+'" style="width:60px;display:inline-block;margin:0;text-align:right;"> %</span></div>' +
     '</div>' +
-    '<button class="btn btn-p btn-sm" style="margin-top:10px;" onclick="saveCooldownHoldout()">Save</button>';
+    '<button class="btn btn-p btn-sm" style="margin-top:10px;" onclick="saveCooldownHoldout()">Save</button>' +
+    '<div class="sechead" style="margin-top:20px;"><h2>Saved content & images</h2></div>' +
+    '<p class="note" style="margin-top:0;">Automatically and permanently delete saved posts, images, and videos once they\u2019re old enough \u2014 the file itself, not just the listing. Anything scheduled is never touched, however old. This only ever affects content and images \u2014 nothing else in your account.</p>' +
+    '<div class="list"><div class="list-row"><b>Auto-clear old saved creative</b>'+switchControl(retentionOn, 'dataToggleRetention(this.checked)')+'</div></div>' +
+    '<div id="retentionDaysRow" style="'+(retentionOn?'':'display:none;')+'margin-top:8px;">' +
+      '<div class="list"><div class="list-row"><span>Clear after</span>' +
+        '<span><input class="field" id="retentionDays" type="number" min="7" max="365" value="'+retentionDays+'" style="width:70px;display:inline-block;margin:0;text-align:right;"> days</span></div></div>' +
+      '<button class="btn btn-p btn-sm" style="margin-top:10px;" onclick="saveRetentionDays()">Save</button>' +
+    '</div>';
+}
+async function dataToggleRetention(checked){
+  el('retentionDaysRow').style.display = checked ? '' : 'none';
+  if (!checked){
+    const j = await call('set_creative_retention_days', { creative_retention_days: null });
+    toast(j.ok ? 'Turned off \u2014 saved creative will no longer be auto-cleared.' : j.error, j.ok?'ok':'err');
+  }
+}
+async function saveRetentionDays(){
+  const d = Number(el('retentionDays').value);
+  const j = await call('set_creative_retention_days', { creative_retention_days: d });
+  toast(j.ok ? 'Saved \u2014 saved creative older than '+d+' days will be cleared automatically (scheduled content is exempt).' : j.error, j.ok?'ok':'err');
 }
 async function saveCooldownHoldout(){
   const cd = Number(el('globalCooldown').value);
