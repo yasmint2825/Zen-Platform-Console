@@ -1860,6 +1860,7 @@ async function campaigns(){
     '<div class="topline"><div class="pagetitle"><div class="kicker">WhatsApp campaigns</div><h1>Reaching your customers.</h1>' +
     '<p>Everyone Zen might message, in one place. Automatic ones send themselves; the rest wait for you.</p></div></div>' +
     '<div class="mini-grid" id="campCounts"></div>' +
+    '<div id="campPendingTotal" style="margin:8px 0 2px;"></div>' +
     '<div class="camp-grid" id="campList" style="margin-top:6px;"><div class="loading-block"><span class="spin"></span>Checking who is due, and how each type is set\u2026</div></div>' +
     '<div class="sechead"><h2>Did it work?</h2></div>' +
     '<button class="btn btn-s" onclick="flow(conversionReport)">Who messaged us, and who came back within 30 days</button>' +
@@ -1878,10 +1879,17 @@ async function campaigns(){
   // - not just what's about to send.
   const bc = buckets.counts || {};
   el('campCounts').innerHTML =
-    '<div class="mini"><b>'+money(bc.pending||0)+'</b><span>Waiting to send</span></div>' +
+    '<div class="mini"><b>'+money(bc.pending||0)+'</b><span>Waiting to send, last 60 days</span></div>' +
     '<div class="mini" style="cursor:pointer;" onclick="flow(()=>heldOutFlow())"><b>'+money(bc.holdout||0)+'</b><span>Held back'+tip('Deliberately left out of a past send, so results could be compared against them. Click to see who, and release any of them if you want to send after all.')+'</span></div>' +
     '<div class="mini"><b>'+money(bc.rejected||0)+'</b><span>Rejected<span style="display:block;font-size:9.5px;color:var(--muted);font-weight:400;">Cleared automatically after 2 weeks</span></span></div>' +
     '<div class="mini"><b>'+money(bc.sent||0)+'</b><span>Sent, last 60 days</span></div>';
+  // Real, new - the count above is capped at 60 days by default (and
+  // the page it comes from tops out at 365 regardless), so if
+  // messages have genuinely piled up since before that, this is the
+  // only way to see the real total. Lazy: not needed on every load,
+  // only when actually asked for.
+  el('campPendingTotal').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="campShowPendingTotal()">Check exact total waiting, since the very start</button>' +
+    '<div id="campPendingTotalResult" style="margin-top:6px;"></div>';
 
   const counts = (buckets.by_campaign && buckets.by_campaign.pending) || {};
   const byCat = buckets.by_campaign || {};
@@ -1946,6 +1954,24 @@ function campRenderList(){
       '</div></div>';
   }).join('');
 }
+// Real, new - the exact, uncapped total of everything still waiting
+// for review, with no date limit, since the existing counts above
+// are capped for performance and could hide a real backlog older
+// than that.
+async function campShowPendingTotal(){
+  const box = el('campPendingTotalResult');
+  box.innerHTML = '<div class="loading-block" style="padding:6px 0;"><span class="spin"></span></div>';
+  const j = await call('get_pending_total', {});
+  if (!j.ok){ box.innerHTML = '<p class="note" style="color:#a02020;">'+esc(j.error)+'</p>'; return; }
+  if (!j.total){ box.innerHTML = '<p class="note">Nothing waiting at all, right now.</p>'; return; }
+  const byCat = Object.entries(j.by_campaign||{}).sort((a,b)=>b[1]-a[1]);
+  const oldestDate = j.oldest_at ? new Date(j.oldest_at).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}) : null;
+  box.innerHTML =
+    '<p class="note" style="margin-top:0;"><b style="color:var(--ink);">'+money(j.total)+'</b> waiting in total, with no date limit'+(oldestDate?' \u2014 the oldest has been waiting since '+oldestDate:'')+'.</p>' +
+    '<div class="mini-grid" style="margin-top:6px;">' +
+      byCat.map(([key,n]) => '<div class="mini"><b>'+money(n)+'</b><span>'+esc((CAMP_LABELS[key]||{}).name || String(key).replace(/_/g,' '))+'</span></div>').join('') +
+    '</div>';
+}
 async function campSetHoldout(key, value){
   const t = CAMPAIGN_TYPES.find(x=>x.key===key);
   if (!t) return;
@@ -1968,19 +1994,21 @@ async function zenwhatsapp(){
   p.innerHTML =
     '<div class="topline"><div class="pagetitle"><div class="kicker">ZenWhatsApp</div><h1>Conversations.</h1>' +
     '<p>Zen answers most of these itself. The ones it could not are at the top.</p></div></div>' +
-    // Real, new - find whether one particular customer has ever
-    // messaged, by name or number. The inbox list below only ever
-    // shows the most recently active conversations, so someone who
-    // messaged a while ago, or whose thread has since been pushed
-    // down by everyone else's, would not be visible there at all.
-    '<div class="ask" style="margin-bottom:14px;"><span class="spark">\ud83d\udd0d</span>' +
-      '<input id="waSearchInput" placeholder="Find a customer by name or number\u2026" onkeydown="if(event.key===\'Enter\')waSearchCustomer(this.value)">' +
-      '<button class="btn btn-p btn-sm" onclick="waSearchCustomer(document.getElementById(\'waSearchInput\').value)">Find</button></div>' +
-    '<div id="waSearchResult"></div>' +
-    '<div class="subtabs" id="waTabs">' +
+    // Real fix, reported directly: as its own full-width row above the
+    // tabs, this pushed the whole conversation window down far enough
+    // that the send button dropped below the fold. Moved into the same
+    // row as the Chat/History tabs, right-aligned and compact, so it
+    // costs no extra vertical space at all - the conversation window
+    // starts exactly where it used to.
+    '<div class="subtabs" id="waTabs" style="align-items:center;">' +
       '<button class="active" onclick="waSubTab(\'chat\')">Chat</button>' +
       '<button onclick="waSubTab(\'history\')">History</button>' +
+      '<span style="margin-left:auto;display:flex;align-items:center;gap:6px;padding-bottom:8px;">' +
+        '<input id="waSearchInput" placeholder="Find a customer by name or number\u2026" style="width:220px;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12.5px;" onkeydown="if(event.key===\'Enter\')waSearchCustomer(this.value)">' +
+        '<button class="btn btn-s btn-sm" onclick="waSearchCustomer(document.getElementById(\'waSearchInput\').value)">Find</button>' +
+      '</span>' +
     '</div>' +
+    '<div id="waSearchResult"></div>' +
     '<div id="waChatPane"><div class="loading-block"><span class="spin"></span>Loading conversations\u2026</div></div>' +
     '<div id="waHistoryPane" style="display:none;"><div class="loading-block"><span class="spin"></span></div></div>';
 
