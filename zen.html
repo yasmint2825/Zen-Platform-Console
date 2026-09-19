@@ -577,7 +577,7 @@ label.lbl{display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:v
   <nav class="side">
     <div class="side-brand"><span class="onb-orb">Z</span><div><b>Zen</b><small id="sideBrandTenant">AI</small></div></div>
     <div class="side-nav">
-      <button class="side-btn active" data-p="home" onclick="go('home')"><span class="ic">⌂</span>Home</button>
+      <button class="side-btn active" data-p="home" onclick="go('home')"><span class="ic">⌂</span>Command Centre</button>
       <button class="side-btn" data-p="campaigns" onclick="go('campaigns')"><span class="ic">◈</span>Campaigns<span class="cnt" id="navCampBadge" style="display:none;"></span></button>
       <button class="side-btn" data-p="zenwhatsapp" onclick="go('zenwhatsapp')"><span class="ic">💬</span>ZenWhatsApp<span class="cnt" id="navWaBadge" style="display:none;"></span></button>
       <button class="side-btn" data-p="marketing" onclick="go('marketing')"><span class="ic">✦</span>Marketing</button>
@@ -1473,17 +1473,36 @@ async function home(){
   STATE.lastPage='home';
   const p = el('p-home');
   p.innerHTML =
-    '<div class="topline"><div class="pagetitle"><div class="kicker">Home</div><h1>Good morning.</h1>' +
-    '<p>Here\u2019s what needs you today.</p></div></div>' +
-    '<div class="ask"><span class="spark">✦</span><input placeholder="Ask Zen anything about your business…" onkeydown="if(event.key===\'Enter\')askZen(this.value,\'homeAnswer\')">' +
+    '<div class="topline" style="margin-bottom:8px;"><div class="pagetitle"><div class="kicker">Command Centre</div><h1 style="font-size:20px;margin:2px 0;">Good morning.</h1></div></div>' +
+    '<div class="ask" style="margin-bottom:8px;"><span class="spark">✦</span><input placeholder="Ask Zen anything about your business…" onkeydown="if(event.key===\'Enter\')askZen(this.value,\'homeAnswer\')">' +
     '<button class="btn btn-p btn-sm" onclick="askZen(document.querySelector(\'.ask input\').value,\'homeAnswer\')">Ask</button></div>' +
-    '<div class="chips">' +
-      '<button class="chip" onclick="askZen(\'How is business doing this month?\',\'homeAnswer\')">How is business doing?</button>' +
-      '<button class="chip" onclick="go(\'campaigns\')">Who should I bring back?</button>' +
-      '<button class="chip" onclick="go(\'marketing\')">Create something</button>' +
-    '</div><div id="homeAnswer"></div>' +
-    '<div class="sechead"><h2>Needs your attention</h2></div>' +
-    '<div class="stack" id="homeAttn"><div class="loading-block"><span class="spin"></span>Checking your business\u2026</div></div>';
+    '<div id="homeAnswer"></div>' +
+    // Real snippet row - WhatsApp messages in the last 24 hours (and
+    // how many came from an ad), qualified leads in the same window,
+    // and revenue attributable to WhatsApp campaigns versus Meta ads.
+    // A highlight only - the real detail for each already lives on
+    // its own page.
+    '<div id="homeSnippets" class="mini-grid" style="margin-bottom:2px;"><div class="loading-block"><span class="spin"></span></div></div>' +
+    '<div id="homeActivity24h"></div>' +
+    // Real "how am I doing" row, in plain language - this week vs
+    // last week, this month vs last month, this quarter vs the same
+    // quarter last year - three real comparisons side by side rather
+    // than stacked, so the whole snapshot fits in view together. Full
+    // detail stays one click away.
+    '<div id="homeHowAmIDoing" class="grid3" style="margin-top:10px;"><div class="loading-block"><span class="spin"></span></div></div>' +
+    // Real, dense two-column dock for the rest: what needs a
+    // decision on the left (queue review, ad strategy), what's
+    // opportunity on the right - side by side rather than one long
+    // stack, so everything real is visible together without
+    // scrolling. Agent status and Intelligence's own findings are
+    // deliberately not duplicated here - Agents and Insights are one
+    // click away and already show them in full.
+    '<div class="grid2" style="margin-top:14px;align-items:start;">' +
+      '<div><div class="sechead" style="margin-top:0;"><h2>Needs your attention</h2></div>' +
+        '<div class="stack" id="homeAttn"><div class="loading-block"><span class="spin"></span>Checking your business\u2026</div></div>' +
+        '<div id="homeAdHealth"></div></div>' +
+      '<div id="homeOpportunity"></div>' +
+    '</div>';
 
   // The 400-day revenue fetch needed for the MTD comparison is the
   // slowest call on this page. It runs in parallel but is not
@@ -1494,14 +1513,73 @@ async function home(){
   const fast = Promise.all([
     call('get_command_center_data', {}), call('get_decision_buckets', {days:60}),
     call('list_conversations', {limit:30}),
+    // Real, new snippet data (points 3/4/5) - fast, database-only
+    // queries, safe to include on the critical path alongside the
+    // rest.
+    call('get_command_center_extras', {}),
   ]);
 
-  const [cc, buckets, convos] = await fast;
+  const [cc, buckets, convos, extras] = await fast;
   HOME_CACHE = { cc, buckets, convos };
   const badge = el('navWaBadge');
   if (badge){ const n = convos.total_unhandled||0; badge.style.display = n?'flex':'none'; badge.textContent = n; }
   const campBadge = el('navCampBadge');
   if (campBadge){ const n = (buckets.counts&&buckets.counts.pending)||0; campBadge.style.display = n?'flex':'none'; campBadge.textContent = n; }
+
+  // Real snippet row - WhatsApp messages in the last 24 hours (and
+  // how many came from an ad), qualified leads (last 24h shown
+  // beside last 7d so a quiet day doesn't read as a quiet week), and
+  // revenue attributable to each real channel.
+  if (extras.ok) {
+    const wa = extras.whatsapp_24h, ql = extras.qualified_leads, rev = extras.revenue_by_channel;
+    el('homeSnippets').innerHTML =
+      '<div class="mini" style="cursor:pointer;" onclick="go(\'zenwhatsapp\')"><b>'+wa.total+'</b>' +
+        '<span>WhatsApp messages, last 24h \u2014 '+wa.from_ads+' from ads, '+wa.organic+' other</span></div>' +
+      '<div class="mini" style="cursor:pointer;" onclick="go(\'zenwhatsapp\')"><b>'+ql.last_24h+' <span style="font-size:12px;font-weight:500;color:var(--muted);">/ '+ql.last_7d+'</span></b>' +
+        '<span>Qualified leads \u2014 last 24h / last 7 days</span></div>' +
+      '<div class="mini" style="cursor:pointer;" onclick="go(\'promotions\')"><b>AED '+money(rev.whatsapp_campaigns)+'</b>' +
+        '<span>From WhatsApp campaigns, last 90 days</span></div>' +
+      '<div class="mini" style="cursor:pointer;" onclick="go(\'promotions\')"><b>AED '+money(rev.meta_ads)+'</b>' +
+        '<span>From Meta ads, last 90 days</span></div>';
+    // Real, new - what Zen itself actually did in the last 24 hours,
+    // asked for directly: genuine campaign sends by name, real
+    // replies sent, and when the ad-strategy engine last actually
+    // ran. Each line only appears if something real happened.
+    const act = extras.activity_24h || [];
+    el('homeActivity24h').innerHTML = act.length ?
+      '<div class="sechead" style="margin-top:10px;"><h2>What Zen did in the last 24 hours</h2></div>' +
+      '<div class="mini-grid">' + act.map(line =>
+        '<div class="mini"><span style="display:block;">'+esc(line)+'</span></div>').join('') +
+      '</div>' : '';
+  } else {
+    el('homeSnippets').innerHTML = '<p class="note">'+esc(extras.error||'Not available right now.')+'</p>';
+  }
+
+  // Real "how am I doing" section, in plain language - this week vs
+  // last week, this month vs last month (until yesterday), and this
+  // quarter vs the same quarter last year until the same day. Lazy,
+  // off the critical path: the 400-day revenue history and the
+  // quarter comparison are the two slowest real calls on this page.
+  Promise.all([call('get_daily_metric', {metric_key:'revenue', days:400}), call('get_quarter_comparison', {})])
+    .then(([revMetric, quarterData]) => { el('homeHowAmIDoing').innerHTML = howAmIDoingHTML(revMetric, quarterData); });
+
+  // Real, lazy ad-health check (point 1: "if any Meta ads not
+  // working, if I need to alter Meta ads strategy") - kept separate
+  // and non-blocking, since this is a real, live Meta API call, the
+  // slowest real thing this page could do. Silently skipped if Meta
+  // ads aren't connected - not an error state to alarm over.
+  call('recommend_ad_actions', {days:30}).then(rec => {
+    if (!rec.ok || !rec.recommendations || !rec.recommendations.length) return;
+    const urgent = rec.recommendations.slice(0, 2);
+    el('homeAdHealth').innerHTML =
+      '<div class="sechead" style="margin-top:14px;"><h2>Ad strategy needs a look</h2></div>' +
+      '<div class="stack">' + urgent.map(r =>
+        '<div class="attn" style="cursor:pointer;" onclick="go(\'promotions\')"><div class="n">\u26a0\ufe0f</div>' +
+        '<div><b>'+esc(r.name||'')+'</b><p>'+esc(r.why||'')+'</p></div>' +
+        '<button class="btn btn-s btn-sm go" onclick="go(\'promotions\')">Review</button></div>').join('') +
+      '</div>' +
+      (rec.recommendations.length > 2 ? '<p class="note" style="margin-top:6px;">'+(rec.recommendations.length-2)+' more under Promotions \u2192 Ad sets.</p>' : '');
+  });
 
   // The people queue and unhandled messages already appear as nav
   // badges and attention cards above - repeating them under "results"
@@ -1512,6 +1590,85 @@ async function home(){
     '<div class="attn"><div class="n">'+(i+1)+'</div><div><b>'+esc(a.title||'')+'</b><p>'+esc(String(a.detail||'').slice(0,150))+'</p></div>' +
     '<button class="btn btn-s btn-sm go" onclick="go(\'campaigns\')">Review</button></div>').join('')
     : '<div class="empty-block">'+emptyIcon('\u25ce')+'<h2>Nothing unusual today</h2><p>Zen is still watching.</p></div>';
+
+  // Real "opportunity detected" card - at-risk customers, what
+  // they're worth, and what's already been done about them. Same
+  // real data (cc.at_risk) already fetched above, never previously
+  // shown on this page.
+  const atRisk = cc.at_risk;
+  el('homeOpportunity').innerHTML = (atRisk && atRisk.count) ? (
+    '<div class="sechead" style="margin-top:0;"><h2>Opportunity detected</h2></div>' +
+    '<div class="attn" style="cursor:pointer;" onclick="go(\'campaigns\')">' +
+      '<div class="n">\u2605</div><div><b>'+atRisk.count+' customer'+(atRisk.count===1?'':'s')+' at risk of not returning</b>' +
+      '<p>'+(atRisk.note ? esc(atRisk.note) : 'Based on real visit patterns and prediction data.')+
+        (atRisk.revenue_estimate ? ' \u2014 ~AED '+money(atRisk.revenue_estimate)+' at stake, one visit each.' : '')+'</p></div>' +
+      '<button class="btn btn-s btn-sm go" onclick="go(\'campaigns\')">Review</button>' +
+    '</div>'
+  ) : '<div class="empty-block">'+emptyIcon('\u2605')+'<h2>No opportunity flagged right now</h2><p>Zen is still watching.</p></div>';
+}
+// Real, plain-language "how am I doing" summary for the Command
+// Centre - this week vs last week, this month vs last month (until
+// yesterday), and this quarter vs the same quarter last year until
+// the same day. Asked for directly as plain language, not raw
+// percentages - a snippet with the full, detailed version of each
+// already available on its own page (This month/quarter under Sales
+// and Operations).
+function plainTrendLine(pct, label){
+  if (pct == null) return null;
+  const dir = pct >= 0 ? 'up' : 'down';
+  const abs = Math.abs(pct);
+  const phrase = abs < 3 ? 'about the same as' : (dir==='up' ? 'ahead of' : 'behind');
+  return '<span class="trend '+dir+'">'+(dir==='up'?'\u2191':'\u2193')+' '+abs+'%</span> '+phrase+' '+label;
+}
+function howAmIDoingHTML(revMetric, quarterData){
+  if (!revMetric.ok || !revMetric.rows || !revMetric.rows.length) return '<p class="note">Not enough revenue history yet to compare.</p>';
+  const byDate = {};
+  revMetric.rows.forEach(r => { byDate[r.metric_date] = Number(r.value||0); });
+  const today = new Date(); today.setUTCHours(0,0,0,0);
+  const yesterday = new Date(today); yesterday.setUTCDate(yesterday.getUTCDate()-1);
+
+  function sumRange(start, end){
+    let sum = 0, any = false;
+    for (let d=new Date(start); d<=end; d.setUTCDate(d.getUTCDate()+1)){
+      const key = d.toISOString().slice(0,10);
+      if (key in byDate){ sum += byDate[key]; any = true; }
+    }
+    return any ? sum : null;
+  }
+  // This week (Mon-yesterday) vs the same Mon-<same weekday> stretch
+  // last week - real, like-for-like days, not a partial week against
+  // a full one.
+  const dow = (yesterday.getUTCDay() + 6) % 7; // 0=Mon
+  const thisWeekStart = new Date(yesterday); thisWeekStart.setUTCDate(thisWeekStart.getUTCDate() - dow);
+  const thisWeek = sumRange(thisWeekStart, yesterday);
+  const lastWeekStart = new Date(thisWeekStart); lastWeekStart.setUTCDate(lastWeekStart.getUTCDate() - 7);
+  const lastWeekEnd = new Date(yesterday); lastWeekEnd.setUTCDate(lastWeekEnd.getUTCDate() - 7);
+  const lastWeek = sumRange(lastWeekStart, lastWeekEnd);
+  const weekPct = (thisWeek!=null && lastWeek!=null && lastWeek!==0) ? Math.round(((thisWeek-lastWeek)/lastWeek)*100) : null;
+
+  // This month-to-date vs the same stretch last month - same real
+  // slicing already proven in mtdCompareHTML.
+  const dayOfMonth = yesterday.getUTCDate();
+  function mtdSum(monthsAgo){
+    const end = new Date(Date.UTC(yesterday.getUTCFullYear(), yesterday.getUTCMonth()-monthsAgo, dayOfMonth));
+    const start = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), 1));
+    return sumRange(start, end);
+  }
+  const thisMonth = mtdSum(0), lastMonth = mtdSum(1);
+  const monthPct = (thisMonth!=null && lastMonth!=null && lastMonth!==0) ? Math.round(((thisMonth-lastMonth)/lastMonth)*100) : null;
+
+  const rows = [];
+  rows.push('<div class="mini" style="cursor:pointer;" onclick="go(\'insights\')"><b>'+(thisWeek!=null?'AED '+money(Math.round(thisWeek)):'\u2014')+'</b>' +
+    '<span>This week'+(weekPct!=null?' \u2014 '+plainTrendLine(weekPct,'last week'):'')+'</span></div>');
+  rows.push('<div class="mini" style="cursor:pointer;" onclick="go(\'insights\')"><b>'+(thisMonth!=null?'AED '+money(Math.round(thisMonth)):'\u2014')+'</b>' +
+    '<span>This month'+(monthPct!=null?' \u2014 '+plainTrendLine(monthPct,'last month'):'')+'</span></div>');
+
+  if (quarterData && quarterData.ok && quarterData.current_quarter && quarterData.current_quarter.revenue != null) {
+    const q = quarterData.current_quarter, yoy = quarterData.yoy_change_percent;
+    rows.push('<div class="mini" style="cursor:pointer;" onclick="go(\'insights\')"><b>AED '+money(q.revenue)+'</b>' +
+      '<span>This quarter'+(yoy!=null?' \u2014 '+plainTrendLine(yoy,'last year'):'')+'</span></div>');
+  }
+  return rows.join('');
 }
 function mtdCompareHTML(revMetric){
   if (!revMetric.ok || !revMetric.rows || !revMetric.rows.length) return '<p class="note">Not enough revenue history yet to compare.</p>';
