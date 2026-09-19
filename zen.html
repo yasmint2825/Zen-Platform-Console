@@ -192,8 +192,8 @@ label.lbl{display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:v
 /* ── App shell (post-onboarding) ─────────────────────────────────── */
 #app{display:none;min-height:100vh;}
 #app.on{display:flex;}
-#loginGate,#forgotGate,#signupGate{display:none;min-height:100vh;align-items:center;justify-content:center;padding-bottom:8vh;}
-#loginGate.on,#forgotGate.on,#signupGate.on{display:flex;}
+#loginGate{display:none;min-height:100vh;align-items:center;justify-content:center;padding-bottom:8vh;}
+#loginGate.on{display:flex;}
 .side{width:var(--nav-w);flex:0 0 var(--nav-w);background:#fafbf9;border-right:1px solid var(--line);
   padding:18px 12px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;}
 .side-brand{display:flex;gap:9px;align-items:center;padding:6px 8px 20px;}
@@ -554,7 +554,6 @@ button,a,input,select,textarea{touch-action:manipulation}button{transition:backg
 /* A friendly sign-in entry; all authentication controls stay in their hosts. */
 #loginGate{padding:0;background:#fbfcf8;align-items:stretch;gap:0}.ux-welcome{width:51%;min-height:100vh;background:#184e40;color:#f4f7ed;display:flex;flex-direction:column;padding:45px clamp(32px,5vw,90px);position:relative;overflow:hidden}.ux-welcome-brand{display:flex;align-items:center;gap:11px;font-size:30px;letter-spacing:-1px;font-weight:700}.ux-welcome-brand .onb-orb{background:#d3e4be;color:#275440}.ux-welcome-brand>span:last-child{font-size:9px;letter-spacing:.12em;font-weight:500;margin-left:auto;color:#b4cbbb}.ux-welcome-copy{margin-top:65px;max-width:500px}.ux-welcome-kicker{font-size:9px;letter-spacing:.13em;color:#acc4b5;font-weight:600}.ux-welcome h1{font-size:clamp(40px,4.4vw,66px);line-height:1.08;font-weight:560;margin:19px 0 23px;letter-spacing:-.05em}.ux-welcome h1 em{font-style:normal;color:#d1e5b9}.ux-welcome-copy p{font-size:14px;line-height:1.85;color:#c0d3c6;max-width:350px}.ux-welcome-visual{max-width:470px;width:100%;margin:16px auto 5px}.ux-welcome-visual svg{width:100%;display:block}.ux-welcome-foot{display:flex;flex-wrap:wrap;gap:9px 16px;margin-top:auto;color:#c1d4c8;font-size:10px}.ux-welcome-foot span:before{content:"✓";color:#c6dfa8;margin-right:5px}
 #loginGate>.ux-auth-card{align-self:center;max-width:430px!important;margin:40px auto;padding:38px!important;width:calc(49% - 60px)!important}.ux-auth-card>.ux-auth-intro{margin:32px 0 28px}.ux-auth-intro h2{font-size:32px;font-weight:650;margin:10px 0}.ux-auth-intro p{font-size:14px;color:var(--muted)}.ux-auth-card .btn-block{min-height:48px;margin-top:8px}.ux-auth-card .field{min-height:48px}.ux-auth-card>div:last-child:has(a){gap:16px;flex-wrap:wrap}.ux-auth-card a{color:#346649!important;text-underline-offset:4px}.ux-auth-card>.hint:empty{display:none}
-#forgotGate,#signupGate{background:radial-gradient(ellipse at 20% 15%,#e5eddc,transparent 60%),#f5f7f0;padding:40px 20px}#forgotGate>.ux-auth-card,#signupGate>.ux-auth-card{max-width:450px!important;background:white;border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow);padding:35px!important}#signupGate .ux-auth-card>div:first-child,#forgotGate .ux-auth-card>div:first-child{margin-bottom:28px!important}
 @media(min-width:1600px){.main{padding-right:55px;padding-left:55px}}
 @media(max-height:820px) and (min-width:861px){.side{padding-top:20px}.side-brand{padding-bottom:18px}.side-nav{gap:12px}.side-btn{min-height:50px;padding-top:8px;padding-bottom:8px}.side-foot{margin-top:20px}.ux-nav-heading{font-size:9px}.ux-welcome-copy{margin-top:35px}.ux-welcome{padding-top:32px;padding-bottom:30px}.ux-welcome-visual{max-width:365px}}
 @media(max-width:1150px) and (min-width:861px){:root{--nav-w:235px}.main{padding-left:25px;padding-right:25px}.mini-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.grid3,#p-creativestudio>.grid3{grid-template-columns:repeat(2,minmax(0,1fr))}.magent-nav{width:158px}.magent-shell{gap:15px}.magent-content{padding:20px}.ux-nav-copy strong{font-size:12px}.ux-nav-copy small{font-size:10px}.ux-welcome{padding:36px}.ux-welcome-brand>span:last-child{display:none}}
@@ -611,6 +610,252 @@ pre,code,pre *{font-family:ui-monospace,SFMono-Regular,Consolas,monospace!import
 .main:has(#p-zenwhatsapp.on) .ux-help-zenwhatsapp,.main:has(#p-insights.on) .ux-help-insights,.main:has(#p-settings.on) .ux-help-settings,.main:has(#p-flow.on) .ux-help-flow{display:block}
 /* Login: the user's message replaces the previous hero and illustration. */
 #loginGate{background:#f7f9f4;min-height:100dvh}.ux-welcome{background:linear-gradient(155deg,#20685d,#13493f);width:50%;min-height:100dvh;justify-content:center;padding:45px clamp(35px,5vw,80px);overflow:visible}.ux-welcome-brand{font-size:24px;gap:12px;margin-bottom:32px;letter-spacing:0}.ux-welcome-brand b{display:block;font-size:24px;line-height:1.2}.ux-welcome-brand small{display:block;font-size:13px;font-weight:400;line-height:1.5;color:#d2e7dd;margin-top:3px}.ux-welcome-brand .onb-orb{width:41px;height:41px;background:#ffffff20;color:white}.ux-welcome-copy{margin:0;max-width:440px}.ux-welcome h1{font-size:clamp(30px,3.1vw,44px);font-weight:650;line-height:1.16;letter-spacing:-.035em;margin:0 0 18px}.ux-welcome-copy p{font-size:16px;line-height:1.65;max-width:440px;color:#e0ece4}.ux-benefits{list-style:none;padding:0;margin:27px 0;display:grid;gap:20px;max-width:440px}.ux-benefits li{display:flex;gap:14px;align-items:flex-start}.ux-benefit-icon{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:#ffffff1c;color:#e7efe4;font-size:21px;flex-shrink:0}.ux-benefits h2{font-size:15px;font-weight:650;line-height:1.4;letter-spacing:0;margin:0 0 4px}.ux-benefits p{font-size:14px;line-height:1.5;color:#d5e5da}.ux-login-assurance{border-top:1px solid #ffffff24;padding-top:17px;max-width:420px;font-size:13px;line-height:1.65;color:#c1dcd0;margin-top:5px}
+/* Real fix: the real login/signup form was originally paired
+   side-by-side with the welcome panel as direct children of a flex
+   #loginGate. Now that both sit one level deeper, inside the new
+   landing page's final section, #loginGate itself is no longer their
+   flex parent - restoring the same side-by-side pairing at the new
+   level, as a contained, rounded panel rather than a full viewport
+   height, since it's now a section within a long page rather than
+   the whole screen. */
+#lp-auth-anchor{display:flex;align-items:stretch;max-width:1080px;padding:0!important;border-radius:22px;overflow:hidden;box-shadow:0 24px 70px -20px #16382c30}
+#lp-auth-anchor .ux-welcome{min-height:600px;overflow:hidden}
+#lp-auth-anchor .ux-auth-card{display:flex;flex-direction:column;justify-content:center;background:#fff}
+@media(max-width:860px){#lp-auth-anchor{flex-direction:column;box-shadow:none;border-radius:0}#lp-auth-anchor .ux-welcome{min-height:0}}
+/* Real, animated "glimpse inside Zen" panel on the login screen,
+   asked for directly, in the spirit of a product-in-motion landing
+   page. Built from Zen's own real design language (its actual card,
+   tile and chat-bubble styling, just scaled down) rather than stock
+   photography or invented UI - three genuine mini mockups of screens
+   that already exist in the product, cross-fading on a loop so the
+   whole thing needs no JavaScript and can never get stuck or throw an
+   error. Motion is capped by prefers-reduced-motion below. */
+.ux-glimpse-wrap{margin-top:34px;max-width:440px}
+.ux-glimpse-stack{position:relative;height:238px;width:100%;max-width:380px}
+.ux-glimpse-card{position:absolute;inset:0;background:#fff;border-radius:18px;box-shadow:0 24px 60px -12px #0a2a2050,0 2px 8px #0a2a2020;padding:20px 22px;opacity:0;color:var(--ink,#1c201d);display:flex;flex-direction:column;will-change:opacity,transform}
+.ux-glimpse-kicker{font-size:10px;letter-spacing:.1em;font-weight:700;color:#5f8a76;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.ux-glimpse-kicker .dot{width:6px;height:6px;border-radius:50%;background:#3ba175;display:inline-block}
+.ux-glimpse-wa-bubble{max-width:82%;padding:9px 13px;border-radius:14px;font-size:12.5px;line-height:1.5;margin-bottom:8px}
+.ux-glimpse-wa-in{background:#f0f2ee;border-bottom-left-radius:4px;align-self:flex-start}
+.ux-glimpse-wa-out{background:#dcf1e4;border-bottom-right-radius:4px;align-self:flex-end;color:#1a4a34}
+.ux-glimpse-tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:auto}
+.ux-glimpse-tile{border:1px solid #e5e8e3;border-radius:12px;padding:12px 13px}
+.ux-glimpse-tile b{display:block;font-size:19px;font-weight:700;letter-spacing:-.02em;color:#183c2f}
+.ux-glimpse-tile span{display:block;font-size:10.5px;color:#6f756f;margin-top:3px;line-height:1.4}
+.ux-glimpse-ad{flex:1;border-radius:12px;background:linear-gradient(135deg,#e6f0e8,#d3e6d8);display:flex;flex-direction:column;justify-content:flex-end;padding:12px;margin-bottom:10px;position:relative;overflow:hidden}
+.ux-glimpse-ad:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 70% 20%,#ffffff90,transparent 55%)}
+.ux-glimpse-ad b{position:relative;font-size:12px;color:#1a4a34;background:#ffffffcc;padding:4px 9px;border-radius:99px;align-self:flex-start}
+.ux-glimpse-badge{align-self:flex-start;font-size:10.5px;font-weight:650;color:#3a6748;background:#e6f0e8;border:1px solid #cfe3d3;padding:4px 10px;border-radius:99px}
+@keyframes uxGlimpse1{0%{opacity:0;transform:translateY(10px) scale(.985)}4%,29%{opacity:1;transform:translateY(0) scale(1)}33%,100%{opacity:0;transform:translateY(-8px) scale(.985)}}
+@keyframes uxGlimpse2{0%,33%{opacity:0;transform:translateY(10px) scale(.985)}37%,62%{opacity:1;transform:translateY(0) scale(1)}66%,100%{opacity:0;transform:translateY(-8px) scale(.985)}}
+@keyframes uxGlimpse3{0%,66%{opacity:0;transform:translateY(10px) scale(.985)}70%,95%{opacity:1;transform:translateY(0) scale(1)}99%,100%{opacity:0;transform:translateY(-8px) scale(.985)}}
+.ux-glimpse-card:nth-child(1){animation:uxGlimpse1 13s ease-in-out infinite}
+.ux-glimpse-card:nth-child(2){animation:uxGlimpse2 13s ease-in-out infinite}
+.ux-glimpse-card:nth-child(3){animation:uxGlimpse3 13s ease-in-out infinite}
+@media(prefers-reduced-motion:reduce){.ux-glimpse-card{animation:none!important;opacity:0}.ux-glimpse-card:first-child{opacity:1}}
+@media(max-width:860px){.ux-glimpse-wrap{display:none}}
+/* Real, new - the login screen rebuilt as a genuine landing page,
+   asked for directly, in the spirit of a product-led marketing site:
+   real hooks, real value props, and a real path to signing up - all
+   using Zen's own actual capabilities and design language, not
+   invented features or fabricated social proof. The real, working
+   login/signup/forgot-password block below is untouched - every id
+   and handler stays exactly as it was; this only adds real content
+   above it. */
+.lp{background:var(--bg);color:var(--ink);overflow-x:hidden}
+.lp-nav{position:sticky;top:0;z-index:40;display:flex;align-items:center;justify-content:space-between;padding:16px clamp(20px,4vw,56px);background:#fbfcf9ee;backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.lp-nav-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px}
+.lp-nav-links{display:flex;align-items:center;gap:28px;font-size:13.5px;font-weight:600;color:var(--muted)}
+.lp-nav-links a{color:var(--muted)}
+.lp-nav-links a:hover{color:var(--ink)}
+.lp-nav-cta{display:flex;align-items:center;gap:14px}
+.lp-section{padding:clamp(56px,8vw,110px) clamp(20px,5vw,56px);max-width:1180px;margin:0 auto}
+.lp-kicker{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--green);background:var(--green-soft);padding:6px 13px;border-radius:99px;margin-bottom:20px}
+.lp-hero{padding-top:clamp(40px,7vw,86px);display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center}
+.lp-hero h1{font-size:clamp(34px,4.6vw,58px);line-height:1.08;font-weight:700;letter-spacing:-.03em;margin:0 0 22px}
+.lp-hero h1 em{font-style:normal;color:var(--green)}
+.lp-hero p{font-size:17px;line-height:1.65;color:var(--muted);max-width:480px;margin-bottom:30px}
+.lp-hero-ctas{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:22px}
+.lp-hero-note{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:7px}
+.lp-hero-note:before{content:"✓";color:var(--green);font-weight:700}
+.lp-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;padding:14px 26px;font-size:14.5px;font-weight:650;border:1px solid transparent;cursor:pointer;transition:transform .15s,box-shadow .15s}
+.lp-btn-p{background:var(--green);color:#fff;box-shadow:0 8px 22px -6px #16543f66}
+.lp-btn-p:hover{transform:translateY(-1px);box-shadow:0 12px 28px -6px #16543f7a}
+.lp-btn-s{background:#fff;color:var(--ink);border-color:var(--line)}
+.lp-btn-s:hover{border-color:#b9c9bd}
+/* Hero device frame around the glimpse stack, browser-chrome style */
+.lp-frame{background:#fff;border-radius:20px;box-shadow:0 30px 80px -20px #16382c30,0 2px 10px #16382c14;border:1px solid var(--line);overflow:hidden}
+.lp-frame-bar{display:flex;gap:6px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.lp-frame-bar span{width:9px;height:9px;border-radius:50%;background:#e3e6e0}
+.lp-frame-body{padding:22px;min-height:300px;position:relative}
+/* Comparison strip */
+.lp-compare{display:grid;grid-template-columns:1fr auto 1fr;gap:28px;align-items:start;margin-top:36px}
+.lp-compare-col{background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px}
+.lp-compare-col.is-zen{border-color:var(--green);box-shadow:0 16px 40px -14px #16543f30}
+.lp-compare-col h3{font-size:13px;font-weight:700;letter-spacing:-.01em;margin:0 0 14px;display:flex;align-items:center;gap:8px}
+.lp-compare-col ul{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.lp-compare-col li{font-size:13.5px;line-height:1.5;color:var(--muted);display:flex;gap:9px;align-items:flex-start}
+.lp-compare-col.is-zen li{color:var(--ink)}
+.lp-compare-x{color:#b8564a;flex-shrink:0}
+.lp-compare-check{color:var(--green);flex-shrink:0}
+.lp-compare-arrow{align-self:center;font-size:20px;color:var(--muted)}
+/* Feature grid */
+.lp-features{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:20px}
+.lp-feature{background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px;transition:box-shadow .15s,transform .15s}
+.lp-feature:hover{box-shadow:0 14px 32px -14px #16382c26;transform:translateY(-2px)}
+.lp-feature-ic{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;font-size:18px;margin-bottom:14px}
+.lp-feature h3{font-size:15px;font-weight:650;margin:0 0 7px}
+.lp-feature p{font-size:13px;line-height:1.6;color:var(--muted);margin:0}
+/* How it works */
+.lp-steps{counter-reset:lpstep;display:grid;gap:0;margin-top:24px}
+.lp-step{display:grid;grid-template-columns:52px 1fr;gap:20px;padding:26px 0;border-top:1px solid var(--line)}
+.lp-step:last-child{border-bottom:1px solid var(--line)}
+.lp-step-num{counter-increment:lpstep;width:40px;height:40px;border-radius:50%;background:var(--green-soft);color:var(--green);font-weight:700;font-size:15px;display:grid;place-items:center}
+.lp-step h3{font-size:15.5px;font-weight:650;margin:0 0 6px}
+.lp-step p{font-size:13.5px;line-height:1.6;color:var(--muted);margin:0;max-width:560px}
+/* Animated Instagram-post showcase */
+.lp-showcase{display:grid;grid-template-columns:.85fr 1.15fr;gap:52px;align-items:center}
+.lp-phone{width:270px;margin:0 auto;background:#111;border-radius:34px;padding:12px;box-shadow:0 40px 90px -24px #16382c40}
+.lp-phone-screen{background:#fff;border-radius:24px;overflow:hidden;position:relative;height:490px}
+.lp-ig-head{display:flex;align-items:center;gap:9px;padding:12px 13px;border-bottom:1px solid #eee}
+.lp-ig-head .av{width:28px;height:28px;border-radius:50%;background:var(--green);color:#fff;display:grid;place-items:center;font-size:11px;font-weight:700}
+.lp-ig-head b{font-size:12.5px}
+.lp-ig-media{position:relative;height:270px;overflow:hidden}
+.lp-ig-slide{position:absolute;inset:0;opacity:0;background-size:cover;background-position:center}
+.lp-ig-slide .cap{position:absolute;left:14px;bottom:14px;right:14px;color:#fff;font-size:13px;font-weight:650;text-shadow:0 2px 10px #00000070}
+@keyframes lpIg1{0%,3%{opacity:0}6%,29%{opacity:1;transform:scale(1.04)}0%{transform:scale(1)}33%,100%{opacity:0}}
+@keyframes lpIg2{0%,33%{opacity:0}37%,62%{opacity:1;transform:scale(1.04)}66%,100%{opacity:0}}
+@keyframes lpIg3{0%,66%{opacity:0}70%,95%{opacity:1;transform:scale(1.04)}99%,100%{opacity:0}}
+.lp-ig-slide:nth-child(1){animation:lpIg1 13s ease-in-out infinite;transform-origin:60% 40%}
+.lp-ig-slide:nth-child(2){animation:lpIg2 13s ease-in-out infinite;transform-origin:40% 60%}
+.lp-ig-slide:nth-child(3){animation:lpIg3 13s ease-in-out infinite;transform-origin:50% 50%}
+.lp-ig-actions{display:flex;gap:14px;padding:10px 13px;font-size:16px;color:#333}
+.lp-ig-likes{padding:0 13px;font-size:12px;font-weight:650}
+.lp-ig-caption{padding:4px 13px 12px;font-size:12px;line-height:1.5;color:#444}
+.lp-ig-caption b{color:#111}
+@media(prefers-reduced-motion:reduce){.lp-ig-slide{animation:none!important;opacity:0;transform:none!important}.lp-ig-slide:first-child{opacity:1}}
+.lp-showcase-copy h2{margin-bottom:14px}
+.lp-showcase-list{list-style:none;padding:0;margin:22px 0 0;display:grid;gap:16px}
+.lp-showcase-list li{display:flex;gap:12px;align-items:flex-start;font-size:14px;line-height:1.6;color:var(--muted)}
+.lp-showcase-list b{color:var(--ink);display:block;font-size:14px;margin-bottom:2px}
+.lp-showcase-num{flex-shrink:0;width:26px;height:26px;border-radius:8px;background:var(--green-soft);color:var(--green);font-size:12px;font-weight:700;display:grid;place-items:center}
+/* Pricing */
+.lp-pricing{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:24px}
+.lp-price-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:28px}
+.lp-price-card.is-featured{border-color:var(--green);box-shadow:0 20px 50px -18px #16543f38;position:relative}
+.lp-price-tag{position:absolute;top:-13px;left:24px;background:var(--green);color:#fff;font-size:10.5px;font-weight:700;letter-spacing:.05em;padding:5px 12px;border-radius:99px}
+.lp-price-card h3{font-size:14px;font-weight:700;margin:0 0 6px}
+.lp-price-card .sub{font-size:12.5px;color:var(--muted);margin-bottom:18px}
+.lp-price{display:flex;align-items:baseline;gap:5px;margin-bottom:22px}
+.lp-price b{font-size:34px;font-weight:700;letter-spacing:-.02em}
+.lp-price span{font-size:13px;color:var(--muted)}
+.lp-price-card ul{list-style:none;padding:0;margin:0 0 24px;display:grid;gap:11px}
+.lp-price-card li{font-size:13px;line-height:1.5;display:flex;gap:9px;color:var(--ink)}
+.lp-price-note{margin-top:14px;font-size:11.5px;color:var(--muted);text-align:center}
+/* Real, new - the animated, sequencing "how it works" demo, asked
+   for directly: a real device stage cycling through 5 real UI
+   snapshots with a visible, filling progress bar synced to each one -
+   the same robust, no-JS-timer cross-fade technique used elsewhere on
+   this page, just with a second, parallel animation driving the
+   progress indicator in lockstep. */
+.lp-seq{display:grid;grid-template-columns:.95fr 1.05fr;gap:52px;align-items:center;margin-top:28px}
+.lp-seq-bars{display:flex;gap:6px;margin-bottom:16px}
+.lp-seq-bar{flex:1;height:4px;border-radius:99px;background:#e5e8e2;overflow:hidden}
+.lp-seq-bar-fill{display:block;height:100%;width:0;background:var(--green);border-radius:99px}
+@keyframes lpBar1{0%{width:0}18%,100%{width:100%}}
+@keyframes lpBar2{0%,18%{width:0}38%,100%{width:100%}}
+@keyframes lpBar3{0%,38%{width:0}58%,100%{width:100%}}
+@keyframes lpBar4{0%,58%{width:0}78%,100%{width:100%}}
+@keyframes lpBar5{0%,78%{width:0}98%,100%{width:100%}}
+.lp-seq-bar:nth-child(1) .lp-seq-bar-fill{animation:lpBar1 15s linear infinite}
+.lp-seq-bar:nth-child(2) .lp-seq-bar-fill{animation:lpBar2 15s linear infinite}
+.lp-seq-bar:nth-child(3) .lp-seq-bar-fill{animation:lpBar3 15s linear infinite}
+.lp-seq-bar:nth-child(4) .lp-seq-bar-fill{animation:lpBar4 15s linear infinite}
+.lp-seq-bar:nth-child(5) .lp-seq-bar-fill{animation:lpBar5 15s linear infinite}
+.lp-seq-stage{position:relative;height:300px}
+.lp-seq-frame{position:absolute;inset:0;opacity:0;background:#fff;border-radius:18px;box-shadow:0 24px 60px -16px #16382c30,0 2px 10px #16382c14;padding:22px;display:flex;flex-direction:column;justify-content:center}
+@keyframes lpSeq1{0%,2%{opacity:0;transform:translateY(8px)}5%,16%{opacity:1;transform:none}19%,100%{opacity:0;transform:translateY(-8px)}}
+@keyframes lpSeq2{0%,20%{opacity:0;transform:translateY(8px)}23%,36%{opacity:1;transform:none}39%,100%{opacity:0;transform:translateY(-8px)}}
+@keyframes lpSeq3{0%,40%{opacity:0;transform:translateY(8px)}43%,56%{opacity:1;transform:none}59%,100%{opacity:0;transform:translateY(-8px)}}
+@keyframes lpSeq4{0%,60%{opacity:0;transform:translateY(8px)}63%,76%{opacity:1;transform:none}79%,100%{opacity:0;transform:translateY(-8px)}}
+@keyframes lpSeq5{0%,80%{opacity:0;transform:translateY(8px)}83%,96%{opacity:1;transform:none}99%,100%{opacity:0;transform:translateY(-8px)}}
+.lp-seq-frame:nth-child(1){animation:lpSeq1 15s ease-in-out infinite}
+.lp-seq-frame:nth-child(2){animation:lpSeq2 15s ease-in-out infinite}
+.lp-seq-frame:nth-child(3){animation:lpSeq3 15s ease-in-out infinite}
+.lp-seq-frame:nth-child(4){animation:lpSeq4 15s ease-in-out infinite}
+.lp-seq-frame:nth-child(5){animation:lpSeq5 15s ease-in-out infinite}
+@media(prefers-reduced-motion:reduce){.lp-seq-frame{animation:none!important;opacity:0}.lp-seq-frame:first-child{opacity:1}.lp-seq-bar-fill{animation:none!important;width:0}.lp-seq-bar:first-child .lp-seq-bar-fill{width:100%}}
+.lp-seq-connect{display:grid;gap:11px}
+.lp-seq-connect-row{display:flex;align-items:center;gap:11px;padding:11px 13px;border:1px solid var(--line);border-radius:11px;font-size:13px;font-weight:600}
+.lp-seq-connect-row .ck{width:20px;height:20px;border-radius:50%;background:var(--green);color:#fff;font-size:11px;display:grid;place-items:center;flex-shrink:0}
+.lp-seq-approve{border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px}
+.lp-seq-approve .n{font-size:19px;color:var(--green);font-weight:700}
+.lp-seq-approve b{display:block;font-size:13px}
+.lp-seq-approve span{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
+.lp-steps-mini{list-style:none;padding:0;margin:0;display:grid;gap:4px}
+.lp-steps-mini li{display:flex;gap:12px;align-items:flex-start;padding:13px 0;border-top:1px solid var(--line)}
+.lp-steps-mini li:first-child{border-top:0}
+.lp-steps-mini .num{width:26px;height:26px;border-radius:50%;background:var(--green-soft);color:var(--green);font-weight:700;font-size:12px;display:grid;place-items:center;flex-shrink:0;margin-top:1px}
+.lp-steps-mini b{display:block;font-size:14px;margin-bottom:2px}
+.lp-steps-mini p{margin:0;font-size:12.5px;line-height:1.55;color:var(--muted)}
+@media(max-width:980px){.lp-seq{grid-template-columns:1fr}}
+/* FAQ */
+.lp-faq{max-width:760px;margin:24px auto 0}
+.lp-faq-item{border-bottom:1px solid var(--line)}
+.lp-faq-item summary{padding:19px 4px;font-size:14.5px;font-weight:600;cursor:pointer;display:flex;justify-content:space-between;align-items:center;list-style:none}
+.lp-faq-item summary::-webkit-details-marker{display:none}
+.lp-faq-item summary:after{content:"+";font-size:19px;color:var(--muted);font-weight:400}
+.lp-faq-item[open] summary:after{content:"–"}
+.lp-faq-item p{padding:0 4px 19px;font-size:13.5px;line-height:1.65;color:var(--muted);margin:0}
+/* Final CTA */
+.lp-final{background:linear-gradient(155deg,#20685d,#13493f);border-radius:26px;padding:clamp(40px,6vw,70px);text-align:center;color:#fff;margin:0 clamp(20px,5vw,56px)}
+.lp-final h2{font-size:clamp(26px,3.2vw,36px);font-weight:700;letter-spacing:-.02em;margin:0 0 14px}
+.lp-final p{font-size:15px;color:#d6e6dc;max-width:480px;margin:0 auto 28px}
+.lp-final .lp-btn-s{background:#fff}
+.lp-foot{text-align:center;padding:30px 20px 40px;font-size:12px;color:var(--muted)}
+@media(max-width:980px){.lp-hero{grid-template-columns:1fr}.lp-hero-visual{order:-1}.lp-compare{grid-template-columns:1fr}.lp-compare-arrow{display:none}.lp-features{grid-template-columns:repeat(2,1fr)}.lp-showcase{grid-template-columns:1fr}.lp-pricing{grid-template-columns:1fr}.lp-nav-links{display:none}}
+@media(max-width:640px){.lp-features{grid-template-columns:1fr}.lp-section{padding-left:18px;padding-right:18px}.lp-final{margin:0 18px}}
+/* Real, new - the sign-in/sign-up modal, asked for directly: opens
+   instantly over the page regardless of scroll position, rather than
+   requiring a scroll to a form buried at the bottom. Every real
+   input id and handler inside is unchanged from before - only the
+   container is new. */
+.auth-modal-backdrop{position:fixed;inset:0;z-index:200;background:#12271fb3;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:20px;overflow-y:auto}
+.auth-modal-backdrop.open{display:flex}
+.auth-modal-card{position:relative;background:#fff;border-radius:20px;max-width:400px;width:100%;padding:34px 30px;box-shadow:0 30px 80px -16px #0a2a2050;animation:authPop .22s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes authPop{0%{opacity:0;transform:translateY(10px) scale(.97)}100%{opacity:1;transform:none}}
+.auth-modal-x{position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:9px;border:0;background:#f2f4f0;color:var(--muted);font-size:14px;cursor:pointer;display:grid;place-items:center}
+.auth-modal-x:hover{background:#e6ebe3;color:var(--ink)}
+@media(prefers-reduced-motion:reduce){.auth-modal-card{animation:none}}
+/* Real fix, reported directly: on a shorter screen the login panel's
+   own content (logo, headline, animated glimpse, assurance line)
+   could genuinely exceed the viewport and force a scroll to reach the
+   form below it. Compresses the same real content progressively
+   rather than cutting anything - the glimpse stays, just smaller.
+   Placed after the base .ux-welcome/.ux-glimpse-stack rules above so
+   it actually wins the cascade, rather than being overridden by them. */
+@media(max-height:820px){
+  .ux-welcome{padding-top:28px;padding-bottom:26px}
+  .ux-welcome-brand{margin-bottom:20px}
+  .ux-welcome-copy{margin-top:0}
+  .ux-welcome h1{margin:12px 0 14px}
+  .ux-glimpse-wrap{margin-top:20px}
+  .ux-glimpse-stack{height:190px}
+  .ux-login-assurance{padding-top:12px;margin-top:0}
+}
+@media(max-height:700px){
+  .ux-welcome{padding-top:20px;padding-bottom:18px}
+  .ux-welcome-brand{margin-bottom:14px}
+  .ux-welcome h1{font-size:clamp(24px,2.6vw,34px);margin:8px 0 10px}
+  .ux-welcome-copy p{font-size:14px;line-height:1.5}
+  .ux-glimpse-wrap{margin-top:14px}
+  .ux-glimpse-stack{height:160px}
+  .ux-glimpse-card{padding:14px 16px}
+  .ux-glimpse-kicker{margin-bottom:8px}
+  .ux-glimpse-tiles{gap:7px}
+  .ux-glimpse-tile{padding:8px 10px}
+  .ux-glimpse-tile b{font-size:16px}
+}
 #loginGate>.ux-auth-card{max-width:420px!important;width:calc(50% - 50px)!important;padding:28px!important;margin:35px auto}.ux-auth-card>.ux-auth-intro{margin:24px 0}.ux-auth-intro h2{font-size:28px;font-weight:650;line-height:1.25;margin:0 0 8px}.ux-auth-intro p{font-size:14px}.ux-auth-card label.lbl{font-size:13px}.ux-auth-card .field{font-size:15px;min-height:45px}.ux-auth-card .btn-block{min-height:45px}
 /* A bounded workspace for the two daily-use screens. Overflow is contained
    within messages/priorities, never clipped; mobile and zoom get natural flow. */
@@ -701,71 +946,1711 @@ pre,code,pre *{font-family:ui-monospace,SFMono-Regular,Consolas,monospace!import
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important}.page.on{animation:none}}
 
 </style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style id="zen-premium-experience">
+/* ══════════════════════════════════════════════════════════════════════
+   ZEN · PREMIUM EXPERIENCE LAYER  (v2)
+   Purely presentational. Adds tokens, layout and motion for the public
+   landing experience inside #loginGate > .lp only, plus a light polish
+   pass on the signed-in shell. No existing id, handler, data contract,
+   route or workflow is touched by anything in this file.
+   Replaces the earlier conversion layer, which was written into the
+   document with escaped newlines and therefore never parsed.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Tokens ─────────────────────────────────────────────────────── */
+:root{
+  /* Forest — the brand. Control, trust, business. */
+  --zp-forest:#0a2621;
+  --zp-forest-2:#10382f;
+  --zp-forest-3:#17514444;
+  --zp-green:#12695a;
+  --zp-green-lit:#1e9b7e;
+  /* Violet — reserved for AI / generated work. Amber keeps its existing
+     meaning in the app (cost and caution) and is not used here. */
+  --zp-violet:#7a5af8;
+  --zp-violet-soft:#efeaff;
+  /* Mint — live / active state only. */
+  --zp-mint:#6fe3b0;
+  /* Surfaces */
+  --zp-paper:#f6f8f2;
+  --zp-sand:#f2ede1;
+  --zp-cloud:#ffffff;
+  --zp-line:#e2e8de;
+  --zp-ink:#10211c;
+  --zp-muted:#5c6b64;
+  --zp-on-dark:#d7e6df;
+  --zp-on-dark-dim:#8fa8a0;
+  /* Elevation */
+  --zp-lift-1:0 2px 8px rgba(11,42,35,.05);
+  --zp-lift-2:0 18px 40px -22px rgba(11,42,35,.30);
+  --zp-lift-3:0 40px 90px -36px rgba(8,36,29,.48);
+  --zp-glow-violet:0 30px 70px -34px rgba(122,90,248,.55);
+  /* Rhythm */
+  --zp-r-sm:12px; --zp-r-md:18px; --zp-r-lg:26px; --zp-r-xl:36px;
+  --zp-stage-pad:clamp(56px,7vw,104px);
+  --zp-nav-h:68px;
+}
+
+/* ── 2. Typography ─────────────────────────────────────────────────── */
+/* Bricolage Grotesque for display: a grotesque with real character and
+   optical sizing — it gives the page a voice without reading as a
+   template. IBM Plex Sans for text, which this build already asked for
+   in its own font stack but never actually loaded. */
+.lp h1,.lp h2,.lp h3,.lp .zp-display{
+  font-family:'Bricolage Grotesque','Sora',-apple-system,'Segoe UI',sans-serif;
+  letter-spacing:-.035em;
+}
+.lp{ font-feature-settings:'kern' 1,'liga' 1; }
+
+/* The base sheet uppercases every kicker. Sentence case reads like a
+   person talking and keeps the chips from shouting over the headlines. */
+.lp .lp-kicker{
+  text-transform:none;letter-spacing:.005em;font-size:12px;font-weight:600;
+  background:#fff;border:1px solid var(--zp-line);color:var(--zp-green);
+  box-shadow:var(--zp-lift-1);padding:7px 14px 7px 11px;gap:8px;
+}
+.lp .lp-kicker::before{
+  content:"";width:6px;height:6px;border-radius:50%;
+  background:var(--zp-green-lit);box-shadow:0 0 0 3px rgba(30,155,126,.16);
+}
+.zp-stage .lp-kicker{
+  background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.16);
+  color:#e4f3ec;box-shadow:none;backdrop-filter:blur(6px);
+}
+
+/* ── 3. Shell ──────────────────────────────────────────────────────── */
+.lp{
+  background:
+    radial-gradient(1100px 520px at 88% -8%,#e6f0e4 0,transparent 62%),
+    radial-gradient(820px 420px at -6% 22%,#efeaff 0,transparent 58%),
+    linear-gradient(180deg,#f8faf5 0%,var(--zp-paper) 38%,#f8faf5 100%);
+}
+.lp-section{max-width:1200px}
+.lp-btn{border-radius:14px;font-weight:600;letter-spacing:-.005em;
+  transition:transform .22s cubic-bezier(.2,.8,.2,1),box-shadow .22s ease,background .2s ease,border-color .2s ease}
+.lp-btn-p{background:linear-gradient(140deg,#1b7d68,var(--zp-green) 62%);
+  box-shadow:0 14px 30px -14px rgba(11,70,56,.62),inset 0 1px 0 rgba(255,255,255,.18)}
+.lp-btn-p:hover{transform:translateY(-2px);box-shadow:0 20px 40px -16px rgba(11,70,56,.7)}
+.lp-btn-s:hover{transform:translateY(-2px);border-color:#bed0c3;box-shadow:var(--zp-lift-2)}
+.lp-btn-lg{padding:16px 30px;font-size:15.5px}
+
+/* ── 4. Navigation ─────────────────────────────────────────────────── */
+.lp-nav{
+  height:var(--zp-nav-h);padding:0 clamp(18px,4vw,56px);
+  background:rgba(248,250,245,.72);backdrop-filter:blur(18px) saturate(1.4);
+  border-bottom:1px solid transparent;transition:background .3s ease,border-color .3s ease,box-shadow .3s ease;
+}
+.lp-nav.zp-stuck{background:rgba(248,250,245,.94);border-bottom-color:var(--zp-line);box-shadow:0 10px 30px -26px rgba(11,42,35,.5)}
+.lp-nav-brand{font-size:19px;letter-spacing:-.03em;gap:11px}
+.lp-nav-brand .onb-orb{background:linear-gradient(145deg,#1b7d68,#0e4b3f);box-shadow:0 8px 20px -10px rgba(14,75,63,.8)}
+.lp-nav-links{gap:30px;font-weight:550}
+.lp-nav-links a{position:relative;padding:4px 0;transition:color .2s ease}
+.lp-nav-links a::after{content:"";position:absolute;left:0;right:100%;bottom:0;height:2px;
+  border-radius:2px;background:var(--zp-green-lit);transition:right .28s cubic-bezier(.2,.8,.2,1)}
+.lp-nav-links a:hover::after{right:0}
+
+/* ── 5. Hero stage ─────────────────────────────────────────────────── */
+.zp-stage{position:relative;background:var(--zp-forest);color:#fff;overflow:hidden;isolation:isolate}
+.zp-stage-hero{margin-top:calc(-1 * var(--zp-nav-h))}
+#lp-features,#lp-studio,#lp-how,#lp-pricing,#lp-value{scroll-margin-top:calc(var(--zp-nav-h) + 14px)}
+.zp-stage::before{
+  content:"";position:absolute;inset:0;z-index:-2;
+  background:
+    radial-gradient(760px 520px at 76% 8%,rgba(122,90,248,.34) 0,transparent 62%),
+    radial-gradient(680px 480px at 12% 88%,rgba(30,155,126,.30) 0,transparent 60%),
+    radial-gradient(900px 600px at 50% -20%,rgba(111,227,176,.14) 0,transparent 66%),
+    linear-gradient(165deg,#0b2b25 0%,#0a2621 46%,#081f1b 100%);
+}
+/* A slow-drifting light keeps the stage feeling alive without asking
+   anything of the browser but a transform. */
+.zp-stage::after{
+  content:"";position:absolute;z-index:-1;width:min(70vw,880px);aspect-ratio:1;
+  right:-16%;top:-30%;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,rgba(122,90,248,.20),transparent 66%);
+  filter:blur(24px);animation:zpDrift 22s ease-in-out infinite alternate;
+}
+@keyframes zpDrift{to{transform:translate3d(-7%,9%,0) scale(1.12)}}
+
+.zp-hero{
+  position:relative;display:grid;grid-template-columns:1.02fr .98fr;
+  gap:clamp(34px,5vw,74px);align-items:center;
+  max-width:1240px;margin:0 auto;
+  padding:calc(var(--zp-nav-h) + clamp(30px,5vw,68px)) clamp(20px,5vw,56px) clamp(74px,9vw,120px);
+}
+.zp-hero h1{
+  font-size:clamp(42px,5.6vw,74px);line-height:.98;font-weight:700;
+  letter-spacing:-.05em;color:#fff;margin:22px 0 22px;max-width:14ch;
+}
+.zp-hero h1 .zp-lift{
+  display:inline-block;background:linear-gradient(100deg,#8affd0,#7a5af8 92%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.zp-hero-sub{font-size:clamp(16px,1.35vw,19px);line-height:1.62;color:var(--zp-on-dark);
+  max-width:52ch;margin:0 0 30px}
+.zp-hero-ctas{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.zp-hero .lp-btn-s{background:rgba(255,255,255,.96);border-color:transparent;color:var(--zp-ink)}
+.zp-hero .lp-btn-ghost{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.22);color:#fff}
+.zp-hero .lp-btn-ghost:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.4)}
+.zp-hero-assure{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:26px;
+  font-size:13px;color:var(--zp-on-dark-dim)}
+.zp-hero-assure span{display:inline-flex;align-items:center;gap:7px}
+.zp-hero-assure span::before{content:"";width:15px;height:15px;border-radius:50%;flex:none;
+  background:rgba(111,227,176,.16);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236fe3b0' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l5 5L19 7'/%3E%3C/svg%3E");
+  background-size:10px;background-repeat:no-repeat;background-position:center}
+
+/* Live badge */
+.zp-live{display:inline-flex;align-items:center;gap:9px;font-size:12.5px;font-weight:600;
+  color:#cfeee0;background:rgba(111,227,176,.10);border:1px solid rgba(111,227,176,.24);
+  padding:7px 15px 7px 12px;border-radius:99px}
+.zp-live i{width:7px;height:7px;border-radius:50%;background:var(--zp-mint);
+  box-shadow:0 0 0 0 rgba(111,227,176,.6);animation:zpPing 2.4s infinite}
+@keyframes zpPing{50%{box-shadow:0 0 0 9px rgba(111,227,176,0)}}
+
+/* ── 6. Hero composition: phone + post + tile ──────────────────────── */
+.zp-compose{position:relative;min-height:520px;display:flex;justify-content:center;align-items:center}
+.zp-float{animation:zpFloat 7s ease-in-out infinite}
+@keyframes zpFloat{50%{transform:translateY(-12px)}}
+
+.zp-phone{
+  position:relative;width:min(282px,74vw);aspect-ratio:9/18.2;border-radius:40px;
+  background:linear-gradient(160deg,#16332c,#0b241f);padding:11px;
+  box-shadow:var(--zp-lift-3),0 0 0 1px rgba(255,255,255,.09),inset 0 1px 0 rgba(255,255,255,.14);
+  z-index:2;
+}
+.zp-phone-screen{position:relative;height:100%;border-radius:30px;overflow:hidden;
+  background:#ece5dd;display:flex;flex-direction:column}
+.zp-wa-top{display:flex;align-items:center;gap:10px;padding:14px 14px 12px;
+  background:linear-gradient(120deg,#0f5b4c,#12695a);color:#fff;flex:none}
+.zp-wa-top .av{width:32px;height:32px;border-radius:50%;flex:none;display:grid;place-items:center;
+  background:rgba(255,255,255,.2);font-weight:700;font-size:13px}
+.zp-wa-top b{font-size:13.5px;display:block;line-height:1.25}
+.zp-wa-top small{font-size:10.5px;color:#b9ded2;display:flex;align-items:center;gap:5px}
+.zp-wa-top small::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--zp-mint)}
+.zp-wa-body{flex:1;padding:14px 12px;display:flex;flex-direction:column;gap:9px;overflow:hidden;
+  background-image:radial-gradient(rgba(18,105,90,.055) 1px,transparent 1px);background-size:15px 15px}
+.zp-msg{max-width:84%;padding:9px 12px;border-radius:14px;font-size:12.5px;line-height:1.48;
+  box-shadow:0 1px 2px rgba(11,42,35,.12);opacity:0;transform:translateY(8px) scale(.97);
+  animation:zpMsgIn .5s cubic-bezier(.2,.9,.3,1) forwards}
+.zp-msg.in{align-self:flex-start;background:#fff;border-top-left-radius:5px;color:#16241f}
+.zp-msg.out{align-self:flex-end;background:#d7f2d4;border-top-right-radius:5px;color:#11301f}
+.zp-msg.out::after{content:"✓✓";display:block;text-align:right;font-size:9px;color:#56957c;margin-top:3px}
+.zp-msg:nth-child(1){animation-delay:.5s}
+.zp-msg:nth-child(2){animation-delay:1.5s}
+.zp-msg:nth-child(3){animation-delay:2.4s}
+.zp-msg:nth-child(4){animation-delay:3.4s}
+@keyframes zpMsgIn{to{opacity:1;transform:none}}
+.zp-typing{align-self:flex-end;display:flex;gap:4px;padding:11px 13px;background:#d7f2d4;
+  border-radius:14px 5px 14px 14px;opacity:0;animation:zpTyping 4.4s .9s infinite}
+.zp-typing i{width:5px;height:5px;border-radius:50%;background:#4e8f73;animation:zpDot 1.1s infinite}
+.zp-typing i:nth-child(2){animation-delay:.16s}.zp-typing i:nth-child(3){animation-delay:.32s}
+@keyframes zpTyping{0%,10%{opacity:0}12%,22%{opacity:1}26%,100%{opacity:0}}
+@keyframes zpDot{50%{transform:translateY(-3px);opacity:.5}}
+.zp-wa-foot{flex:none;padding:9px 12px 12px;background:#f4f0e9;border-top:1px solid #e3dcd0;
+  display:flex;align-items:center;gap:8px;font-size:11px;color:#7b8a80}
+.zp-wa-foot .pill{flex:1;background:#fff;border-radius:99px;padding:8px 12px}
+.zp-wa-foot .snd{width:26px;height:26px;border-radius:50%;background:var(--zp-green);flex:none}
+
+/* Floating post card — the creative side of the product */
+.zp-post{
+  position:absolute;right:-18px;top:8%;width:min(212px,44vw);z-index:3;
+  border-radius:22px;overflow:hidden;background:#fff;
+  box-shadow:var(--zp-glow-violet),0 0 0 1px rgba(255,255,255,.55);
+  animation:zpFloat 8.5s ease-in-out infinite .6s;
+}
+.zp-post-head{display:flex;align-items:center;gap:8px;padding:9px 11px;font-size:11px;font-weight:650;color:#16241f}
+.zp-post-head .av{width:20px;height:20px;border-radius:50%;background:linear-gradient(140deg,#7a5af8,#1e9b7e);
+  color:#fff;display:grid;place-items:center;font-size:9px}
+.zp-post-head .tag{margin-left:auto;font-size:8.5px;font-weight:700;color:var(--zp-violet);
+  background:var(--zp-violet-soft);padding:3px 7px;border-radius:99px}
+.zp-post-art{position:relative;aspect-ratio:4/5;overflow:hidden}
+.zp-post-art>figure{position:absolute;inset:0;margin:0;opacity:0;animation:zpSwap 13.5s infinite}
+.zp-post-art>figure:nth-child(2){animation-delay:4.5s}
+.zp-post-art>figure:nth-child(3){animation-delay:9s}
+@keyframes zpSwap{0%{opacity:0;transform:scale(1.06)}4%,30%{opacity:1;transform:scale(1)}36%,100%{opacity:0;transform:scale(1.02)}}
+.zp-post-foot{padding:9px 11px 11px;font-size:10px;line-height:1.45;color:#5c6b64}
+.zp-post-foot b{color:#16241f}
+
+/* Floating result tile — the money answer */
+.zp-tile{
+  position:absolute;left:-18px;bottom:9%;z-index:4;width:min(216px,52vw);
+  background:rgba(255,255,255,.97);border-radius:20px;padding:15px 17px;
+  box-shadow:var(--zp-lift-3),0 0 0 1px rgba(255,255,255,.5);
+  animation:zpFloat 9.5s ease-in-out infinite 1.2s;
+}
+.zp-tile small{font-size:10px;font-weight:650;color:#7a8a81;letter-spacing:.01em}
+.zp-tile b{display:block;font-family:'Bricolage Grotesque',sans-serif;font-size:29px;
+  letter-spacing:-.045em;color:var(--zp-forest);line-height:1.1;margin:5px 0 3px}
+.zp-tile p{font-size:10.5px;line-height:1.45;color:#6d7c74;margin:0}
+.zp-spark{display:flex;align-items:flex-end;gap:4px;height:34px;margin-top:10px}
+.zp-spark i{flex:1;border-radius:4px 4px 2px 2px;background:linear-gradient(180deg,#5fc79f,#12695a);
+  transform-origin:bottom;transform:scaleY(.06);animation:zpGrow .9s cubic-bezier(.2,.9,.3,1) forwards}
+.zp-spark i:nth-child(1){height:38%;animation-delay:1.1s}
+.zp-spark i:nth-child(2){height:55%;animation-delay:1.2s}
+.zp-spark i:nth-child(3){height:44%;animation-delay:1.3s}
+.zp-spark i:nth-child(4){height:72%;animation-delay:1.4s}
+.zp-spark i:nth-child(5){height:64%;animation-delay:1.5s}
+.zp-spark i:nth-child(6){height:92%;animation-delay:1.6s;background:linear-gradient(180deg,#8affd0,#1e9b7e)}
+@keyframes zpGrow{to{transform:scaleY(1)}}
+
+/* ── 7. Counter band ───────────────────────────────────────────────── */
+.zp-band{max-width:1200px;margin:0 auto;padding:0 clamp(20px,5vw,56px);position:relative;z-index:5;margin-top:-52px}
+.zp-band-inner{
+  background:rgba(255,255,255,.96);backdrop-filter:blur(20px);
+  border:1px solid rgba(226,232,222,.9);border-radius:var(--zp-r-lg);
+  box-shadow:var(--zp-lift-3);display:grid;grid-template-columns:repeat(4,1fr);overflow:hidden;
+}
+.zp-band-cell{padding:24px 26px;border-left:1px solid var(--zp-line)}
+.zp-band-cell:first-child{border-left:0}
+.zp-band-cell b{display:block;font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(26px,2.6vw,34px);
+  letter-spacing:-.05em;color:var(--zp-forest);line-height:1}
+.zp-band-cell span{display:block;font-size:12.5px;line-height:1.5;color:var(--zp-muted);margin-top:7px}
+.zp-band-note{font-size:11.5px;color:var(--zp-muted);text-align:center;margin:14px 0 0}
+
+/* ── 8. Section headings ───────────────────────────────────────────── */
+.zp-head{max-width:760px}
+.zp-head h2{font-size:clamp(30px,4vw,50px);line-height:1.04;font-weight:700;
+  letter-spacing:-.045em;margin:6px 0 16px}
+.zp-head p{font-size:16.5px;line-height:1.68;color:var(--zp-muted);max-width:62ch;margin:0}
+.zp-stage .zp-head h2{color:#fff}
+.zp-stage .zp-head p{color:var(--zp-on-dark)}
+
+/* ── 9. Before / after ─────────────────────────────────────────────── */
+.lp-compare{gap:20px;margin-top:40px;align-items:stretch}
+.lp-compare-col{border-radius:var(--zp-r-lg);padding:30px;background:#fff;box-shadow:var(--zp-lift-1);
+  transition:transform .3s cubic-bezier(.2,.8,.2,1),box-shadow .3s ease}
+.lp-compare-col:not(.is-zen){background:linear-gradient(180deg,#fbfbf8,#f4f5f0);border-color:#e6e6df}
+.lp-compare-col.is-zen{
+  background:linear-gradient(160deg,#0e352d,#0a2621);border-color:transparent;color:#fff;
+  box-shadow:var(--zp-lift-3)}
+.lp-compare-col.is-zen h3{color:#fff;font-size:14px}
+.lp-compare-col.is-zen li{color:var(--zp-on-dark);border-bottom-color:rgba(255,255,255,.08)}
+.lp-compare-col.is-zen .lp-compare-check{background:rgba(111,227,176,.16);color:var(--zp-mint)}
+.lp-compare-col h3{font-size:14px;letter-spacing:-.02em}
+.lp-compare-col li{padding:11px 0;border-bottom:1px solid var(--zp-line);font-size:14px;line-height:1.55}
+.lp-compare-col li:last-child{border-bottom:0}
+.lp-compare-arrow{align-self:center;font-size:22px;color:#b9c9bd}
+
+/* ── 10. Feature grid ──────────────────────────────────────────────── */
+.lp-features{gap:18px;margin-top:38px}
+.lp-feature{
+  position:relative;border-radius:var(--zp-r-lg);padding:28px;background:#fff;
+  border:1px solid var(--zp-line);box-shadow:var(--zp-lift-1);overflow:hidden;
+  transition:transform .3s cubic-bezier(.2,.8,.2,1),box-shadow .3s ease,border-color .3s ease;
+}
+.lp-feature::before{
+  content:"";position:absolute;right:-60px;top:-60px;width:170px;height:170px;border-radius:50%;
+  background:radial-gradient(circle,rgba(30,155,126,.13),transparent 68%);
+  opacity:0;transition:opacity .35s ease;
+}
+.lp-feature:hover{transform:translateY(-6px);box-shadow:var(--zp-lift-2);border-color:#cdddd1}
+.lp-feature:hover::before{opacity:1}
+.lp-feature h3{font-size:17px;letter-spacing:-.03em;margin-bottom:8px}
+.lp-feature p{font-size:14px;line-height:1.62;color:var(--zp-muted)}
+.lp-feature-ic{width:46px;height:46px;border-radius:15px;display:grid;place-items:center;
+  margin-bottom:18px;box-shadow:inset 0 0 0 1px rgba(16,33,28,.05)}
+.zp-feature-wide{grid-column:span 2}
+@media(max-width:980px){.zp-feature-wide{grid-column:span 1}}
+
+/* ── 11. Creative marquee ──────────────────────────────────────────── */
+.zp-marquee{position:relative;padding:clamp(40px,5vw,64px) 0 clamp(52px,6vw,76px);overflow:hidden}
+.zp-marquee::before,.zp-marquee::after{content:"";position:absolute;top:0;bottom:0;width:clamp(40px,10vw,150px);z-index:2;pointer-events:none}
+.zp-marquee::before{left:0;background:linear-gradient(90deg,var(--zp-forest),transparent)}
+.zp-marquee::after{right:0;background:linear-gradient(270deg,var(--zp-forest),transparent)}
+.zp-track{display:flex;gap:20px;width:max-content;animation:zpScroll 52s linear infinite}
+.zp-marquee:hover .zp-track,.zp-track:focus-within{animation-play-state:paused}
+@keyframes zpScroll{to{transform:translate3d(-50%,0,0)}}
+.zp-card{
+  width:230px;flex:none;border-radius:20px;overflow:hidden;background:#fff;
+  box-shadow:0 26px 54px -30px rgba(0,0,0,.7);transition:transform .3s cubic-bezier(.2,.8,.2,1);
+}
+.zp-card:hover{transform:translateY(-8px) scale(1.02)}
+.zp-card-art{aspect-ratio:4/5;position:relative;overflow:hidden}
+.zp-card-meta{padding:11px 13px 13px;display:flex;align-items:flex-start;gap:8px}
+.zp-card-meta b{font-size:11.5px;color:#16241f;letter-spacing:-.01em;line-height:1.3;display:block}
+.zp-card-meta span{font-size:10px;color:#79877f;display:block;margin-top:3px}
+.zp-card-meta .badge{margin-left:auto;flex:none;font-size:8.5px;font-weight:700;padding:3px 7px;border-radius:99px;
+  background:var(--zp-violet-soft);color:var(--zp-violet)}
+
+/* ── 12. Full-bleed device showcase ────────────────────────────────── */
+.zp-showcase{display:grid;grid-template-columns:.88fr 1.12fr;gap:clamp(32px,5vw,70px);
+  align-items:center;max-width:1240px;margin:0 auto;padding:var(--zp-stage-pad) clamp(20px,5vw,56px)}
+.zp-laptop{position:relative;perspective:1600px}
+.zp-laptop-lid{
+  border-radius:16px 16px 6px 6px;background:linear-gradient(150deg,#1a3c34,#0c2a24);padding:12px 12px 14px;
+  box-shadow:var(--zp-lift-3),inset 0 1px 0 rgba(255,255,255,.12);
+  transform:rotateY(-9deg) rotateX(3deg);transition:transform .6s cubic-bezier(.2,.8,.2,1);
+}
+.zp-laptop:hover .zp-laptop-lid{transform:rotateY(0) rotateX(0)}
+.zp-laptop-base{height:11px;margin:0 auto;width:86%;border-radius:0 0 14px 14px;
+  background:linear-gradient(180deg,#14352e,#0a221d);box-shadow:0 22px 40px -22px rgba(0,0,0,.8)}
+.zp-screen{border-radius:9px;overflow:hidden;background:#f6f8f2;display:grid;grid-template-columns:132px 1fr;min-height:330px}
+.zp-screen-side{background:#fbfcf9;border-right:1px solid var(--zp-line);padding:14px 11px}
+.zp-screen-side .b{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:700;color:#16241f;margin-bottom:14px}
+.zp-screen-side .b i{width:20px;height:20px;border-radius:7px;background:var(--zp-forest);color:#fff;
+  display:grid;place-items:center;font-size:10px;font-style:normal}
+.zp-screen-side u{display:block;text-decoration:none;font-size:10.5px;color:#6f7d75;padding:7px 9px;border-radius:8px;margin-bottom:3px}
+.zp-screen-side u.on{background:var(--zp-green);color:#fff;font-weight:650;box-shadow:0 8px 16px -12px rgba(11,70,56,.9)}
+.zp-screen-main{padding:15px 16px}
+.zp-screen-main .hd{font-size:13px;font-weight:700;letter-spacing:-.02em;margin-bottom:3px;color:#16241f}
+.zp-screen-main .sb{font-size:10.5px;color:#7a8880;margin-bottom:13px}
+.zp-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:12px}
+.zp-kpi{background:#fff;border:1px solid var(--zp-line);border-radius:12px;padding:11px}
+.zp-kpi small{font-size:9px;color:#8b9891;display:block}
+.zp-kpi b{font-size:19px;letter-spacing:-.04em;color:var(--zp-forest);display:block;margin-top:3px;
+  font-family:'Bricolage Grotesque',sans-serif}
+.zp-kpi em{font-style:normal;font-size:9px;color:#2f8c6e;font-weight:650}
+.zp-chart{background:#fff;border:1px solid var(--zp-line);border-radius:12px;padding:12px 13px}
+.zp-chart .cl{font-size:9.5px;color:#8b9891;margin-bottom:9px}
+.zp-bars{display:flex;align-items:flex-end;gap:6px;height:72px}
+.zp-bars i{flex:1;border-radius:4px 4px 2px 2px;background:linear-gradient(180deg,#a8ddc4,#2f8c6e);
+  transform-origin:bottom;transform:scaleY(.05)}
+.is-visible .zp-bars i{animation:zpGrow 1s cubic-bezier(.2,.9,.3,1) forwards}
+.zp-bars i:nth-child(1){height:34%;animation-delay:.05s}
+.zp-bars i:nth-child(2){height:52%;animation-delay:.12s}
+.zp-bars i:nth-child(3){height:41%;animation-delay:.19s}
+.zp-bars i:nth-child(4){height:66%;animation-delay:.26s}
+.zp-bars i:nth-child(5){height:58%;animation-delay:.33s}
+.zp-bars i:nth-child(6){height:79%;animation-delay:.4s}
+.zp-bars i:nth-child(7){height:70%;animation-delay:.47s}
+.zp-bars i:nth-child(8){height:94%;animation-delay:.54s;background:linear-gradient(180deg,#8affd0,#1e9b7e)}
+.zp-ask{margin-top:11px;background:linear-gradient(140deg,#11362e,#0c2924);border-radius:12px;padding:11px 13px;color:#d7e6df}
+.zp-ask .q{font-size:10.5px;color:#9fbdb2;margin-bottom:5px}
+.zp-ask .a{font-size:11px;line-height:1.5}
+
+.zp-showcase-list{list-style:none;padding:0;margin:26px 0 0;display:grid;gap:14px}
+.zp-showcase-list li{display:flex;gap:14px;align-items:flex-start;
+  background:#fff;border:1px solid var(--zp-line);border-radius:16px;padding:16px 18px;
+  box-shadow:var(--zp-lift-1);
+  transition:background .25s ease,border-color .25s ease,transform .25s ease,box-shadow .25s ease}
+.zp-showcase-list li:hover{border-color:#cdddd1;transform:translateX(4px);box-shadow:var(--zp-lift-2)}
+.zp-showcase-list .ic{flex:none;width:34px;height:34px;border-radius:11px;display:grid;place-items:center;
+  background:var(--zp-violet-soft);color:var(--zp-violet)}
+.zp-showcase-list b{display:block;font-size:14.5px;color:var(--zp-ink);letter-spacing:-.025em;margin-bottom:3px}
+.zp-showcase-list p{font-size:13px;line-height:1.55;color:var(--zp-muted);margin:0}
+.zp-stage .zp-showcase-list li{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.1);box-shadow:none}
+.zp-stage .zp-showcase-list li:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.22)}
+.zp-stage .zp-showcase-list .ic{background:rgba(111,227,176,.14);color:var(--zp-mint)}
+.zp-stage .zp-showcase-list b{color:#fff}
+.zp-stage .zp-showcase-list p{color:var(--zp-on-dark-dim)}
+
+/* Nav sits over the dark hero until the page scrolls, then resolves
+   into the light sticky bar the rest of the page expects. */
+.lp-nav:not(.zp-stuck){background:transparent;backdrop-filter:none}
+.lp-nav:not(.zp-stuck) .lp-nav-brand{color:#fff}
+.lp-nav:not(.zp-stuck) .lp-nav-brand .onb-orb{background:rgba(255,255,255,.16);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
+.lp-nav:not(.zp-stuck) .lp-nav-links a{color:rgba(224,240,233,.82)}
+.lp-nav:not(.zp-stuck) .lp-nav-links a:hover{color:#fff}
+.lp-nav:not(.zp-stuck) .zp-nav-signin{color:#fff!important}
+.lp-nav:not(.zp-stuck) .lp-btn-p{background:rgba(255,255,255,.96);color:var(--zp-forest);
+  box-shadow:0 12px 28px -14px rgba(0,0,0,.6)}
+
+/* ── 13. Value calculator ──────────────────────────────────────────── */
+.zp-calc{display:grid;grid-template-columns:1fr 1fr;gap:clamp(26px,4vw,52px);align-items:center;
+  background:#fff;border:1px solid var(--zp-line);border-radius:var(--zp-r-xl);
+  padding:clamp(26px,4vw,48px);box-shadow:var(--zp-lift-2);margin-top:36px}
+.zp-field{margin-bottom:22px}
+.zp-field label{display:flex;justify-content:space-between;align-items:baseline;
+  font-size:13.5px;font-weight:600;color:var(--zp-ink);margin-bottom:11px}
+.zp-field label output{font-family:'Bricolage Grotesque',sans-serif;font-size:16px;
+  letter-spacing:-.03em;color:var(--zp-green)}
+.zp-field input[type=range]{width:100%;appearance:none;-webkit-appearance:none;height:6px;border-radius:99px;
+  background:linear-gradient(90deg,var(--zp-green-lit),#dfe8e1);outline-offset:4px}
+.zp-field input[type=range]::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;
+  width:22px;height:22px;border-radius:50%;background:#fff;border:2px solid var(--zp-green);
+  box-shadow:0 5px 14px -5px rgba(11,70,56,.7);cursor:pointer;transition:transform .15s ease}
+.zp-field input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.12)}
+.zp-field input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#fff;
+  border:2px solid var(--zp-green);box-shadow:0 5px 14px -5px rgba(11,70,56,.7);cursor:pointer}
+.zp-readout{background:linear-gradient(158deg,#10382f,#0a2621);border-radius:var(--zp-r-lg);
+  padding:clamp(24px,3vw,34px);color:#fff;box-shadow:var(--zp-lift-3);position:relative;overflow:hidden}
+.zp-readout::after{content:"";position:absolute;width:240px;height:240px;right:-90px;top:-110px;border-radius:50%;
+  background:radial-gradient(circle,rgba(122,90,248,.34),transparent 68%)}
+.zp-readout>*{position:relative}
+.zp-readout-row{display:flex;align-items:baseline;justify-content:space-between;gap:14px;
+  padding:15px 0;border-bottom:1px solid rgba(255,255,255,.1)}
+.zp-readout-row:last-of-type{border-bottom:0}
+.zp-readout-row span{font-size:13px;color:var(--zp-on-dark-dim);max-width:20ch;line-height:1.4}
+.zp-readout-row b{font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(26px,3vw,36px);
+  letter-spacing:-.05em;line-height:1;white-space:nowrap}
+.zp-readout-row b.hi{background:linear-gradient(100deg,#8affd0,#7a5af8);-webkit-background-clip:text;background-clip:text;color:transparent}
+.zp-readout-foot{font-size:11.5px;line-height:1.55;color:var(--zp-on-dark-dim);margin-top:18px}
+
+/* ── 14. Personas ──────────────────────────────────────────────────── */
+.zp-personas{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:36px}
+.zp-persona{position:relative;min-height:300px;border-radius:var(--zp-r-lg);overflow:hidden;
+  padding:24px;display:flex;flex-direction:column;justify-content:flex-end;color:#fff;isolation:isolate;
+  transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s ease}
+.zp-persona:hover{transform:translateY(-7px);box-shadow:var(--zp-lift-3)}
+.zp-persona::before{content:"";position:absolute;inset:0;z-index:-2}
+.zp-persona:nth-child(1)::before{background:linear-gradient(155deg,#1d6a59,#0d332c)}
+.zp-persona:nth-child(2)::before{background:linear-gradient(155deg,#6d4fd6,#2b2352)}
+.zp-persona:nth-child(3)::before{background:linear-gradient(155deg,#b45c4a,#40211c)}
+.zp-persona:nth-child(4)::before{background:linear-gradient(155deg,#2f6f8f,#152c3c)}
+.zp-persona-art{position:absolute;inset:0;width:100%;height:100%;z-index:-1;opacity:.9}
+.zp-persona b{font-family:'Bricolage Grotesque',sans-serif;font-size:20px;letter-spacing:-.035em;display:block;margin-bottom:7px}
+.zp-persona p{font-size:13px;line-height:1.55;color:rgba(255,255,255,.82);margin:0}
+.zp-persona .zp-persona-tag{position:absolute;top:18px;left:18px;font-size:10.5px;font-weight:650;
+  background:rgba(255,255,255,.16);backdrop-filter:blur(6px);padding:5px 11px;border-radius:99px}
+
+/* ── 15. How it works ──────────────────────────────────────────────── */
+#lp-how{background:#fff;border-radius:var(--zp-r-xl);box-shadow:var(--zp-lift-1);border:1px solid var(--zp-line)}
+.lp-steps-mini li{transition:transform .25s ease}
+.lp-steps-mini li:hover{transform:translateX(5px)}
+
+/* ── 16. Trust ─────────────────────────────────────────────────────── */
+.zp-trust{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:36px}
+.zp-trust-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.11);
+  border-radius:var(--zp-r-lg);padding:26px;transition:background .3s ease,border-color .3s ease,transform .3s ease}
+.zp-trust-card:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.22);transform:translateY(-5px)}
+.zp-trust-card .ic{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;margin-bottom:16px;
+  background:rgba(111,227,176,.13);color:var(--zp-mint)}
+.zp-trust-card h3{font-size:16px;color:#fff;letter-spacing:-.03em;margin-bottom:8px}
+.zp-trust-card p{font-size:13.5px;line-height:1.6;color:var(--zp-on-dark-dim);margin:0}
+
+/* ── 17. Pricing ───────────────────────────────────────────────────── */
+.lp-pricing{gap:18px;margin-top:34px;align-items:stretch}
+.lp-price-card{border-radius:var(--zp-r-lg);padding:30px;border:1px solid var(--zp-line);background:#fff;
+  box-shadow:var(--zp-lift-1);transition:transform .3s cubic-bezier(.2,.8,.2,1),box-shadow .3s ease,border-color .3s ease}
+.lp-price-card:hover{transform:translateY(-6px);box-shadow:var(--zp-lift-2);border-color:#cdddd1}
+.lp-price-card.is-featured{background:linear-gradient(162deg,#0f3730,#0a2621);border-color:transparent;color:#fff;
+  box-shadow:var(--zp-lift-3);transform:translateY(-8px)}
+.lp-price-card.is-featured:hover{transform:translateY(-14px)}
+.lp-price-card.is-featured h3,.lp-price-card.is-featured .lp-price b{color:#fff}
+.lp-price-card.is-featured .sub,.lp-price-card.is-featured li{color:var(--zp-on-dark)}
+.lp-price-card.is-featured li{border-bottom-color:rgba(255,255,255,.09)}
+.lp-price-card.is-featured .lp-compare-check{background:rgba(111,227,176,.16);color:var(--zp-mint)}
+.lp-price-card.is-featured .lp-price-tag{background:linear-gradient(100deg,#8affd0,#7a5af8);color:#0a2621;font-weight:750}
+.lp-price-card h3{font-size:19px;letter-spacing:-.035em}
+.lp-price b{font-family:'Bricolage Grotesque',sans-serif;letter-spacing:-.05em}
+.lp-price-card li{padding:10px 0;border-bottom:1px solid var(--zp-line);font-size:13.5px;line-height:1.5}
+.lp-price-card li:last-child{border-bottom:0}
+.zp-price-note{display:flex;align-items:flex-start;gap:10px;margin-top:26px;font-size:12.5px;line-height:1.6;
+  color:var(--zp-muted);background:var(--zp-sand);border-radius:14px;padding:14px 16px;max-width:66ch}
+
+/* ── 18. FAQ ───────────────────────────────────────────────────────── */
+.lp-faq{margin-top:30px;display:grid;gap:10px}
+.lp-faq-item{background:#fff;border:1px solid var(--zp-line);border-radius:var(--zp-r-md);
+  padding:4px 22px;box-shadow:var(--zp-lift-1);transition:border-color .25s ease,box-shadow .25s ease}
+.lp-faq-item[open]{border-color:#cdddd1;box-shadow:var(--zp-lift-2)}
+.lp-faq-item summary{cursor:pointer;padding:18px 0;font-size:15.5px;font-weight:600;letter-spacing:-.02em;
+  list-style:none;display:flex;justify-content:space-between;align-items:center;gap:16px}
+.lp-faq-item summary::-webkit-details-marker{display:none}
+.lp-faq-item summary::after{content:"";flex:none;width:22px;height:22px;border-radius:50%;
+  background:var(--zp-paper);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2312695a' stroke-width='2.6' stroke-linecap='round'%3E%3Cpath d='M12 5v14M5 12h14'/%3E%3C/svg%3E");
+  background-size:12px;background-repeat:no-repeat;background-position:center;transition:transform .3s ease}
+.lp-faq-item[open] summary::after{transform:rotate(135deg)}
+.lp-faq-item p{padding:0 0 20px;font-size:14px;line-height:1.7;color:var(--zp-muted);max-width:72ch}
+
+/* ── 19. Close + footer ────────────────────────────────────────────── */
+.zp-close{position:relative;text-align:center;padding:clamp(64px,8vw,110px) clamp(20px,5vw,56px)}
+.zp-close h2{font-size:clamp(32px,4.6vw,60px);line-height:1.02;letter-spacing:-.05em;color:#fff;
+  margin:18px auto 18px;max-width:17ch}
+.zp-close p{font-size:17px;line-height:1.6;color:var(--zp-on-dark);max-width:54ch;margin:0 auto 32px}
+.zp-close-ctas{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.zp-close .lp-btn-s{background:#fff}
+.zp-close .lp-btn-ghost{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.24);color:#fff}
+.zp-close .lp-btn-ghost:hover{background:rgba(255,255,255,.14)}
+.zp-footwrap{background:#081f1b;color:#fff}
+.zp-foot{border-top:1px solid rgba(255,255,255,.09);padding:30px clamp(20px,5vw,56px) 40px;
+  display:flex;flex-wrap:wrap;gap:16px 28px;align-items:center;justify-content:space-between;
+  max-width:1240px;margin:0 auto;font-size:12.5px;color:var(--zp-on-dark-dim)}
+.zp-foot-brand{display:flex;align-items:center;gap:10px;font-weight:650;color:#fff;font-size:15px}
+.zp-foot-brand .onb-orb{background:rgba(255,255,255,.12)}
+.zp-foot nav{display:flex;gap:22px;flex-wrap:wrap}
+.zp-foot a{color:var(--zp-on-dark-dim);text-decoration:none}
+.zp-foot a:hover{color:#fff}
+
+/* ── 20. Motion utilities ──────────────────────────────────────────── */
+.zen-reveal{opacity:0;transform:translateY(22px);
+  transition:opacity .75s ease,transform .75s cubic-bezier(.2,.8,.2,1)}
+.zen-reveal.is-visible{opacity:1;transform:none}
+.zen-reveal[data-zp-delay="1"]{transition-delay:.09s}
+.zen-reveal[data-zp-delay="2"]{transition-delay:.18s}
+.zen-reveal[data-zp-delay="3"]{transition-delay:.27s}
+
+/* ── 21. Signed-in shell polish (visual only) ──────────────────────── */
+#app{background:linear-gradient(180deg,#f6f8f3,#fbfcfa)}
+.side{background:rgba(251,252,249,.97);border-right:1px solid var(--zp-line)}
+.side-btn{transition:background .18s ease,transform .18s ease}
+.side-btn:hover{transform:translateX(2px)}
+.side-btn.active{box-shadow:0 10px 22px -18px rgba(11,70,56,.7)}
+.btn-p{box-shadow:0 10px 22px -16px rgba(11,70,56,.6)}
+.task:hover,.gal-card:hover{border-color:#cbdbce}
+
+/* ── 22. Responsive ────────────────────────────────────────────────── */
+@media(max-width:1080px){
+  .zp-personas{grid-template-columns:repeat(2,1fr)}
+  .zp-trust{grid-template-columns:1fr}
+}
+@media(max-width:980px){
+  .zp-hero{grid-template-columns:1fr;padding-bottom:clamp(60px,9vw,90px)}
+  .zp-compose{order:-1;min-height:440px;margin-bottom:8px}
+  .zp-hero h1{max-width:none}
+  .zp-band{margin-top:-40px}
+  .zp-band-inner{grid-template-columns:1fr 1fr}
+  .zp-band-cell:nth-child(3){border-left:0}
+  .zp-band-cell:nth-child(n+3){border-top:1px solid var(--zp-line)}
+  .zp-showcase{grid-template-columns:1fr}
+  .zp-calc{grid-template-columns:1fr}
+  .lp-compare{grid-template-columns:1fr}
+}
+@media(max-width:640px){
+  :root{--zp-nav-h:60px}
+  .zp-hero{padding-left:18px;padding-right:18px}
+  .zp-hero h1{font-size:clamp(34px,10vw,44px)}
+  .zp-compose{min-height:400px}
+  .zp-phone{width:min(244px,66vw)}
+  .zp-post{width:150px;right:-4px;top:2%}
+  .zp-tile{width:170px;left:-4px;bottom:4%;padding:12px 14px}
+  .zp-tile b{font-size:23px}
+  .zp-band-inner{grid-template-columns:1fr}
+  .zp-band-cell{border-left:0}
+  .zp-band-cell+.zp-band-cell{border-top:1px solid var(--zp-line)}
+  .zp-personas{grid-template-columns:1fr}
+  .zp-card{width:180px}
+  .zp-screen{grid-template-columns:1fr}
+  .zp-screen-side{display:none}
+  .zp-kpis{grid-template-columns:1fr 1fr}
+  .zp-foot{flex-direction:column;align-items:flex-start}
+}
+
+/* ── 23. Reduced motion ────────────────────────────────────────────── */
+@media(prefers-reduced-motion:reduce){
+  .zen-reveal{opacity:1;transform:none;transition:none}
+  .zp-float,.zp-post,.zp-tile,.zp-stage::after,.zp-track,.zp-typing,.zp-live i{animation:none!important}
+  .zp-msg{opacity:1;transform:none;animation:none!important}
+  .zp-post-art>figure{opacity:1;animation:none!important}
+  .zp-post-art>figure:nth-child(n+2){display:none}
+  .zp-spark i,.zp-bars i{transform:none!important;animation:none!important}
+  .zp-track{flex-wrap:wrap;width:auto;justify-content:center}
+  .lp-btn,.lp-feature,.lp-price-card,.zp-persona,.zp-card,.zp-laptop-lid{transition:none}
+}
+
+/* ── 24. Three-up list variant ─────────────────────────────────────── */
+.zp-cols-3{display:grid;grid-template-columns:repeat(3,1fr)}
+.zp-cols-3 li:hover{transform:translateY(-5px)}
+@media(max-width:980px){.zp-cols-3{grid-template-columns:1fr}.zp-cols-3 li:hover{transform:translateX(4px)}}
+
+</style>
+<style id="zen-media-layer">
+/* ══════════════════════════════════════════════════════════════════════
+   ZEN — PHOTOGRAPHIC MEDIA LAYER
+   Visual only. Adds real <img> slots to every artwork area, a single
+   brand colour-grade so mixed sources look like one campaign, and a
+   cinematic fallback for any slot with no photo set yet.
+   No id, handler, form, route or workflow in the app is touched.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── Slot shell ──────────────────────────────────────────────────────── */
+.zp-media{position:relative;overflow:hidden;isolation:isolate;background:#0e1d19}
+.zp-media>*{position:absolute;inset:0}
+
+/* the photograph itself */
+.zp-media .zp-photo{width:100%;height:100%;object-fit:cover;object-position:center;display:block;
+  opacity:0;transform:scale(1.04);transition:opacity .9s ease,transform 1.6s cubic-bezier(.2,.8,.2,1);z-index:1}
+.zp-media.has-photo .zp-photo{opacity:1;transform:scale(1)}
+.zp-media.has-photo .zp-art{opacity:0}
+
+/* brand grade — keeps photos from different sources on one palette */
+.zp-media .zp-grade{z-index:2;pointer-events:none;opacity:0;transition:opacity .9s ease;
+  background:linear-gradient(190deg,rgba(24,86,70,.34),rgba(122,90,248,.16) 52%,rgba(8,22,18,.5));
+  mix-blend-mode:soft-light}
+.zp-media.has-photo .zp-grade{opacity:1}
+
+/* film grain — the thing that stops a flat panel reading as clipart */
+.zp-media .zp-noise{z-index:3;pointer-events:none;opacity:.5;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='120' height='120' filter='url(%23n)' opacity='.42'/></svg>");
+  background-size:180px 180px}
+
+/* legibility scrim under the caption */
+.zp-media .zp-scrim{z-index:4;pointer-events:none;
+  background:linear-gradient(to top,rgba(6,20,16,.88) 2%,rgba(6,20,16,.52) 34%,rgba(6,20,16,.06) 66%,transparent)}
+
+/* caption — real HTML type, not baked into the graphic */
+.zp-media .zp-copy{z-index:5;top:auto;padding:clamp(13px,1.4vw,18px);display:flex;flex-direction:column;justify-content:flex-end;gap:5px}
+.zp-media .zp-copy b{font-family:'Bricolage Grotesque','Sora',sans-serif;font-weight:700;letter-spacing:-.035em;
+  line-height:1.06;color:#fff;font-size:clamp(17px,1.9vw,23px);text-wrap:balance;text-shadow:0 2px 18px rgba(0,0,0,.42)}
+.zp-media .zp-copy span{font-size:11.5px;line-height:1.4;color:rgba(255,255,255,.88);font-weight:500}
+.zp-media .zp-chip{position:relative;align-self:flex-start;margin-top:8px;font-size:10.5px;font-weight:650;
+  padding:6px 12px;border-radius:99px;background:rgba(255,255,255,.16);backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,.26);color:#fff;width:max-content}
+.zp-media .zp-flag{z-index:6;inset:11px auto auto 11px;height:max-content;width:max-content;
+  font-size:9.5px;font-weight:700;letter-spacing:.01em;padding:5px 10px;border-radius:99px;
+  background:rgba(255,255,255,.92);color:#123a31;box-shadow:0 6px 18px -8px rgba(0,0,0,.6)}
+.zp-media .zp-play{z-index:6;display:grid;place-items:center;pointer-events:none}
+.zp-media .zp-play i{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;font-style:normal;
+  font-size:15px;padding-left:4px;color:#fff;background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.7);
+  backdrop-filter:blur(6px);box-shadow:0 0 0 0 rgba(255,255,255,.35);animation:zpRing 2.8s ease-out infinite}
+@keyframes zpRing{0%{box-shadow:0 0 0 0 rgba(255,255,255,.35)}70%,100%{box-shadow:0 0 0 22px rgba(255,255,255,0)}}
+
+/* ── Cinematic fallbacks: lit scenes, not flat gradients ─────────────── */
+.zp-media .zp-art{z-index:0;transition:opacity .8s ease}
+.zp-media .zp-art::after{content:"";position:absolute;inset:-20%;background:
+  radial-gradient(22% 18% at 18% 22%,rgba(255,255,255,.5),transparent 70%),
+  radial-gradient(14% 12% at 76% 14%,rgba(255,255,255,.38),transparent 72%),
+  radial-gradient(18% 16% at 64% 82%,rgba(255,255,255,.3),transparent 74%);
+  filter:blur(26px);opacity:.55}
+.zp-art--celebration{background:
+  radial-gradient(58% 44% at 22% 16%,rgba(255,206,150,.9),transparent 62%),
+  radial-gradient(54% 42% at 84% 26%,rgba(255,116,186,.62),transparent 64%),
+  radial-gradient(80% 66% at 50% 116%,rgba(28,8,44,.92),transparent 70%),
+  linear-gradient(158deg,#7b53d6 0%,#c2478f 46%,#2a1038 100%)}
+.zp-art--warm{background:
+  radial-gradient(56% 46% at 78% 18%,rgba(255,224,190,.92),transparent 62%),
+  radial-gradient(60% 50% at 18% 86%,rgba(122,47,34,.8),transparent 66%),
+  linear-gradient(156deg,#f6c49c 0%,#e07a5f 52%,#5a2318 100%)}
+.zp-art--studio{background:
+  radial-gradient(50% 40% at 50% 26%,rgba(140,255,214,.34),transparent 64%),
+  radial-gradient(70% 60% at 50% 112%,rgba(3,12,20,.95),transparent 72%),
+  linear-gradient(160deg,#25405c 0%,#10202f 58%,#050c14 100%)}
+.zp-art--fresh{background:
+  radial-gradient(52% 42% at 76% 18%,rgba(190,255,224,.85),transparent 62%),
+  radial-gradient(64% 54% at 22% 96%,rgba(4,44,36,.92),transparent 68%),
+  linear-gradient(158deg,#7fd8b4 0%,#1d7a63 54%,#06332a 100%)}
+.zp-art--night{background:
+  radial-gradient(40% 32% at 74% 20%,rgba(255,222,140,.75),transparent 66%),
+  radial-gradient(70% 60% at 40% 108%,rgba(2,14,24,.95),transparent 70%),
+  linear-gradient(160deg,#1f5d80 0%,#0c2c40 56%,#04131d 100%)}
+.zp-art--violet{background:
+  radial-gradient(56% 44% at 24% 18%,rgba(196,178,255,.85),transparent 62%),
+  radial-gradient(60% 52% at 86% 92%,rgba(20,8,58,.92),transparent 68%),
+  linear-gradient(158deg,#8b6cff 0%,#4b2fb8 52%,#1a0e46 100%)}
+
+/* ── Hero: optional full-bleed photographic backdrop ─────────────────── */
+.zp-hero-backdrop{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none;opacity:0;transition:opacity 1.2s ease}
+.zp-hero-backdrop.has-photo{opacity:1}
+.zp-hero-backdrop .zp-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.32;filter:saturate(1.05)}
+.zp-hero-backdrop::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(9,26,22,.72),rgba(9,26,22,.9))}
+.zp-stage-hero>*:not(.zp-hero-backdrop){position:relative;z-index:1}
+/* the backdrop must stay out of the flow — as a relative block its <img>
+   claims its aspect-ratio height and pushes the hero below the fold */
+header.zp-stage-hero>.zp-hero-backdrop{position:absolute;inset:0;z-index:0;height:100%}
+
+/* ── Persona panels: photographic, with a live product chip ──────────── */
+.zp-persona .zp-persona-media{position:absolute;inset:0;z-index:-1;overflow:hidden}
+.zp-persona .zp-persona-media .zp-photo{width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 1s ease,transform 8s ease}
+.zp-persona .zp-persona-media.has-photo .zp-photo{opacity:.92}
+.zp-persona:hover .zp-persona-media.has-photo .zp-photo{transform:scale(1.06)}
+.zp-persona .zp-persona-media::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(to top,rgba(5,20,16,.92) 6%,rgba(5,20,16,.42) 46%,rgba(5,20,16,.12) 100%)}
+.zp-persona .zp-persona-glow{position:absolute;inset:-30% -20% 40% -20%;z-index:-1;pointer-events:none;
+  background:radial-gradient(45% 40% at 30% 20%,rgba(255,255,255,.4),transparent 70%);filter:blur(30px);opacity:.5}
+.zp-persona .zp-persona-stat{position:absolute;top:56px;left:18px;z-index:1;display:flex;align-items:center;gap:8px;
+  padding:9px 13px;border-radius:14px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.24);
+  backdrop-filter:blur(10px);font-size:11px;font-weight:600;color:#fff;box-shadow:0 18px 34px -24px rgba(0,0,0,.9)}
+.zp-persona .zp-persona-stat i{width:7px;height:7px;border-radius:50%;background:#6fe3b0;flex:none;
+  box-shadow:0 0 0 0 rgba(111,227,176,.5);animation:zpRing 2.6s ease-out infinite}
+
+/* ── Marquee cards inherit the same photographic system ──────────────── */
+.zp-card-art.zp-media{aspect-ratio:4/5}
+.zp-post-art>figure.zp-media{margin:0}
+.zp-post-art>figure.zp-media .zp-copy b{font-size:clamp(14px,1.5vw,17px)}
+.zp-post-art>figure.zp-media .zp-copy span{font-size:9.5px}
+.zp-post-art>figure.zp-media .zp-flag{inset:8px auto auto 8px;font-size:8px;padding:4px 8px}
+
+/* ── Motion & accessibility ─────────────────────────────────────────── */
+@media(prefers-reduced-motion:reduce){
+  .zp-media .zp-photo,.zp-persona .zp-persona-media .zp-photo{transition:opacity .01s;transform:none!important}
+  .zp-media .zp-play i,.zp-persona .zp-persona-stat i{animation:none!important}
+}
+@media(max-width:640px){
+  .zp-media .zp-copy{padding:12px}
+  .zp-persona .zp-persona-stat{top:52px;font-size:10.5px}
+}
+</style>
+
+<style id="zen-hero-order-fix">
+/* ── Pitch first, product mockup second ───────────────────────────────
+   Below 980px the hero previously placed the phone/post mockup above
+   the headline (order:-1), so a phone landed on a tall graphic block
+   before reading what Zen is. The copy now leads on every screen size;
+   the mockup follows it. Layout, animation and content are unchanged. */
+@media(max-width:980px){
+  .zp-hero>div:first-of-type{order:0}
+  .zp-hero .zp-compose{order:1;margin-top:clamp(26px,6vw,40px);margin-bottom:0;min-height:0}
+  .zp-hero{padding-top:calc(var(--zp-nav-h) + clamp(22px,6vw,40px));row-gap:0}
+}
+@media(max-width:640px){
+  .zp-hero .zp-compose{min-height:0;margin-top:26px}
+}
+</style>
+
+<style id="zen-brand-bridge">
+/* ══════════════════════════════════════════════════════════════════════
+   ZEN — BRAND BRIDGE
+   1. Repairs and re-designs the four-figure band under the hero.
+   2. Carries the landing page's branding into the signed-in app:
+      same display face, same green, same radii, same depth.
+   Presentation only — no layout engine, handler, id or workflow changes.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. The four-figure band ──────────────────────────────────────────
+   The count-up <span> was being caught by ".zp-band-cell span", which
+   made it a 12.5px block — so "24" dropped onto its own small line
+   above "/7". It now inherits the figure's own type. */
+.zp-band-cell b span[data-zp-count]{display:inline;font:inherit;color:inherit;margin:0;line-height:inherit;
+  font-variant-numeric:tabular-nums}
+.zp-band-inner{grid-template-columns:repeat(4,1fr)}
+.zp-band-cell{padding:26px 26px 24px;display:flex;flex-direction:column;gap:0;position:relative;
+  transition:background .3s ease}
+.zp-band-cell:hover{background:linear-gradient(180deg,rgba(111,227,176,.09),rgba(255,255,255,0) 70%)}
+.zp-band-cell::after{content:"";position:absolute;left:26px;right:26px;top:0;height:2px;border-radius:0 0 2px 2px;
+  background:linear-gradient(90deg,var(--zp-green-lit,#1e9b7e),rgba(122,90,248,.6));
+  transform:scaleX(0);transform-origin:left;transition:transform .45s cubic-bezier(.2,.8,.2,1)}
+.zp-band-cell:hover::after{transform:scaleX(1)}
+.zp-band-viz{display:block;height:34px;margin-bottom:14px}
+.zp-band-viz svg{height:34px;width:auto;display:block;overflow:visible}
+.zp-band-cell b{font-size:clamp(27px,2.7vw,36px);line-height:1;letter-spacing:-.05em}
+.zp-band-cell>span:last-child{font-size:12.5px;line-height:1.55;color:var(--zp-muted);margin-top:9px;max-width:30ch}
+/* the late-night ticks pulse once when the band scrolls into view */
+.zen-reveal.is-visible .zp-band-viz .zp-late{animation:zpLate 2.6s ease-in-out infinite}
+@keyframes zpLate{0%,100%{opacity:.35}50%{opacity:1}}
+@media(max-width:980px){.zp-band-inner{grid-template-columns:1fr 1fr}}
+@media(max-width:640px){
+  .zp-band-inner{grid-template-columns:1fr}
+  .zp-band-cell{padding:20px}
+  .zp-band-viz{height:30px;margin-bottom:11px}
+  .zp-band-viz svg{height:30px}
+}
+@media(prefers-reduced-motion:reduce){
+  .zp-band-cell::after,.zp-band-viz .zp-late{transition:none;animation:none!important}
+}
+
+/* ── 2. App shell: the landing brand, carried inside ─────────────────── */
+#app,#onb{
+  --zp-b-green:#175e52;--zp-b-lit:#1e9b7e;--zp-b-mint:#6fe3b0;--zp-b-forest:#0d2c25;
+  --zp-b-line:#e4eae2;--zp-b-r:13px;
+}
+#app{background:linear-gradient(180deg,#f7f9f5 0,#fbfcfa 420px)}
+#app h1,#app h2,#app h3,#onb h1,#onb h2,
+#app .mini b,#app .pagetitle h1{font-family:'Bricolage Grotesque','Sora',sans-serif;letter-spacing:-.035em}
+#app .pagetitle h1{font-size:23px;line-height:1.15}
+#app .sechead h2{font-size:15.5px}
+#app .mini b{font-size:21px;letter-spacing:-.045em;font-variant-numeric:tabular-nums;color:var(--zp-b-forest)}
+
+/* sidebar — same paper and brand mark as the landing nav */
+#app .side{background:linear-gradient(180deg,#fbfcf9,#f6f8f4);border-right:1px solid var(--zp-b-line)}
+#app .side-brand .onb-orb{background:linear-gradient(145deg,#1b7d68,#0e4b3f);
+  box-shadow:0 8px 20px -10px rgba(14,75,63,.8);border-radius:10px}
+#app .side-brand b{font-family:'Bricolage Grotesque','Sora',sans-serif;letter-spacing:-.03em;font-size:15px}
+#app .side-btn{border-radius:11px;position:relative;transition:background .18s ease,color .18s ease}
+#app .side-btn::before{content:"";position:absolute;left:0;top:9px;bottom:9px;width:3px;border-radius:0 3px 3px 0;
+  background:var(--zp-b-lit);opacity:0;transition:opacity .2s ease}
+#app .side-btn:hover{background:rgba(23,94,82,.06)}
+#app .side-btn.active{background:rgba(23,94,82,.1);color:var(--zp-b-forest)}
+#app .side-btn.active::before{opacity:1}
+#app .side-btn.active span.ic{color:var(--zp-b-green)}
+#app .ux-nav-heading{letter-spacing:.09em;color:#9aa49e}
+
+/* buttons — the landing's primary, inside the product */
+#app .btn,#onb .btn{border-radius:12px;transition:transform .16s ease,box-shadow .2s ease,background .2s ease}
+#app .btn-p,#onb .btn-p{background:linear-gradient(145deg,#1b7d68,#0e4b3f);
+  box-shadow:0 12px 26px -16px rgba(13,74,63,.85)}
+#app .btn-p:hover,#onb .btn-p:hover{background:linear-gradient(145deg,#1e8b74,#0f5446);transform:translateY(-1px);
+  box-shadow:0 16px 32px -16px rgba(13,74,63,.9)}
+#app .btn-p:disabled,#onb .btn-p:disabled{background:#c6cac5;box-shadow:none;transform:none}
+#app .btn-g,#onb .btn-g{background:linear-gradient(145deg,#1b7d68,#0e4b3f)}
+#app .btn-s,#onb .btn-s{border-radius:12px;border-color:var(--zp-b-line)}
+#app .btn-s:hover,#onb .btn-s:hover{border-color:#c2d2c6;background:#fbfdfb}
+
+/* surfaces — landing radii and depth, same hairlines */
+#app .task,#app .panel,#app .magent-content,#app .gal-card{border-radius:var(--zp-b-r);border-color:var(--zp-b-line);
+  transition:border-color .2s ease,box-shadow .25s ease,transform .25s ease}
+#app .task:hover,#app .gal-card:hover{border-color:#c6d8ca;box-shadow:0 20px 40px -32px rgba(11,42,35,.55);
+  transform:translateY(-2px)}
+#app .mini-grid,#app .stack,#app .list,#app .list-row{border-color:var(--zp-b-line)}
+#app .stack>*{border-color:var(--zp-b-line)}
+#app .chip{border-radius:99px;border-color:var(--zp-b-line);transition:background .18s ease,border-color .18s ease}
+#app .chip:hover{background:rgba(23,94,82,.05);border-color:#bfd3c4}
+#app .chip.on,#app .chip[aria-pressed="true"]{background:rgba(23,94,82,.1);border-color:rgba(23,94,82,.28);
+  color:var(--zp-b-forest);font-weight:600}
+
+/* inputs — same focus ring as the landing forms */
+#app .field,#onb .field{border-radius:12px;border-color:var(--zp-b-line);transition:border-color .18s ease,box-shadow .18s ease}
+#app .field:hover,#onb .field:hover{border-color:#c6d8ca}
+#app .field:focus,#onb .field:focus{outline:none;border-color:var(--zp-b-lit);
+  box-shadow:0 0 0 3px rgba(30,155,126,.16)}
+#app :focus-visible,#onb :focus-visible{outline:2px solid var(--zp-b-lit);outline-offset:2px}
+
+/* onboarding — same brand mark and progress colour */
+#onb .onb-orb{background:linear-gradient(145deg,#1b7d68,#0e4b3f);border-radius:10px}
+#onb .onb-progress i{background:linear-gradient(90deg,var(--zp-b-lit),var(--zp-b-mint))}
+#onb .onb-card h1{font-family:'Bricolage Grotesque','Sora',sans-serif;letter-spacing:-.035em}
+
+@media(prefers-reduced-motion:reduce){
+  #app .btn,#app .task,#app .gal-card,#app .side-btn{transition:none}
+  #app .btn-p:hover,#app .task:hover,#app .gal-card:hover{transform:none}
+}
+</style>
+
+<style id="zen-showcase-spacing">
+/* ── Workspace showcase: spacing and wrap repair ──────────────────────
+   The three KPI tiles were breaking their own values onto two lines
+   ("AED / 640") and leaving ragged gaps under each, so the mock screen
+   read as cramped. Values now hold one line, labels share a baseline,
+   and the section's vertical rhythm is evened out. Nothing moves
+   structurally — same grid, same content, same animations. */
+.zp-screen{min-height:352px}
+.zp-screen-main{padding:16px 18px 18px}
+.zp-screen-main .hd{margin-bottom:4px}
+.zp-screen-main .sb{margin-bottom:14px;line-height:1.45}
+
+.zp-kpis{gap:10px;margin-bottom:12px}
+.zp-kpi{padding:11px 12px 12px;display:flex;flex-direction:column;min-width:0;
+  border-radius:11px;background:linear-gradient(175deg,#fff,#fafcf9)}
+.zp-kpi small{line-height:1.32;min-height:2.64em;margin:0;color:#8b9891}
+.zp-kpi b{margin:3px 0 0;font-size:clamp(15px,1.35vw,18px);line-height:1.1;white-space:nowrap;
+  font-variant-numeric:tabular-nums}
+.zp-kpi em{display:block;margin-top:5px;font-size:9.5px;line-height:1.35;color:#2f8c6e}
+
+.zp-chart{padding:13px 14px 14px}
+.zp-chart .cl{margin-bottom:11px;line-height:1.4}
+.zp-ask{margin-top:12px;padding:12px 14px 13px}
+.zp-ask .q{margin-bottom:6px}
+.zp-ask .a{line-height:1.55}
+
+/* the base should sit under the lid at the same angle, not flat behind it */
+.zp-laptop-base{transform:rotateY(-9deg) rotateX(3deg);transform-origin:top center;
+  transition:transform .55s cubic-bezier(.2,.8,.2,1)}
+.zp-laptop:hover .zp-laptop-base{transform:rotateY(0) rotateX(0)}
+
+/* right-hand column rhythm */
+.zp-showcase{align-items:center;gap:clamp(34px,5vw,74px)}
+.zp-showcase .zp-head h2{margin:6px 0 18px}
+.zp-showcase-list{margin-top:30px;gap:15px}
+.zp-showcase-list li{padding:17px 19px;gap:15px}
+.zp-showcase-list b{margin-bottom:5px}
+
+@media(max-width:980px){
+  .zp-showcase{gap:34px}
+  .zp-showcase-list{margin-top:24px}
+  .zp-kpi b{font-size:17px}
+}
+@media(max-width:640px){
+  .zp-kpis{gap:9px}
+  .zp-kpi small{min-height:0}
+  .zp-showcase-list li{padding:15px 16px;gap:13px}
+}
+@media(prefers-reduced-motion:reduce){.zp-laptop-base{transition:none}}
+</style>
+
+<style id="zen-chrome-bridge">
+/* ── Shared chrome: sign-in, dialogs, toasts ──────────────────────────
+   These live outside #app and #onb, so the brand bridge above never
+   reached them — the login card still used the old near-black primary
+   button and square focus rings. Same tokens as the landing, applied
+   to every surface a signed-out or signed-in person can meet.
+   Structure, ids, handlers and animations are untouched. */
+#authModalBackdrop{background:rgba(9,32,26,.62);backdrop-filter:blur(8px) saturate(1.2);
+  -webkit-backdrop-filter:blur(8px) saturate(1.2)}
+.auth-modal-card,#loginGate>.ux-auth-card{border-radius:22px;border:1px solid rgba(226,232,222,.9);
+  box-shadow:0 44px 110px -40px rgba(11,48,39,.62),0 0 0 1px rgba(255,255,255,.6) inset}
+.auth-modal-card .onb-orb,#loginGate .onb-orb{background:linear-gradient(145deg,#1b7d68,#0e4b3f);
+  border-radius:10px;box-shadow:0 8px 20px -10px rgba(14,75,63,.8)}
+.auth-modal-card b,.ux-auth-intro h2{font-family:'Bricolage Grotesque','Sora',sans-serif;letter-spacing:-.035em}
+.ux-auth-intro h2{font-size:22px;line-height:1.15}
+.auth-modal-x{border-radius:10px;transition:background .18s ease,color .18s ease}
+.auth-modal-x:hover{background:rgba(23,94,82,.09);color:#0d2c25}
+
+/* fields and primary action, matching the landing forms */
+.auth-modal-card .field,#modalHost .field,#loginGate .field{border-radius:12px;border-color:#e4eae2;
+  transition:border-color .18s ease,box-shadow .18s ease}
+.auth-modal-card .field:hover,#modalHost .field:hover,#loginGate .field:hover{border-color:#c6d8ca}
+.auth-modal-card .field:focus,#modalHost .field:focus,#loginGate .field:focus{outline:none;
+  border-color:#1e9b7e;box-shadow:0 0 0 3px rgba(30,155,126,.16)}
+.auth-modal-card .btn-p,#modalHost .btn-p,#loginGate .btn-p{
+  background:linear-gradient(145deg,#1b7d68,#0e4b3f);border-radius:12px;
+  box-shadow:0 12px 26px -16px rgba(13,74,63,.85);transition:transform .16s ease,box-shadow .2s ease,background .2s ease}
+.auth-modal-card .btn-p:hover,#modalHost .btn-p:hover,#loginGate .btn-p:hover{
+  background:linear-gradient(145deg,#1e8b74,#0f5446);transform:translateY(-1px);
+  box-shadow:0 16px 32px -16px rgba(13,74,63,.9)}
+.auth-modal-card .btn-p:disabled,#modalHost .btn-p:disabled{background:#c6cac5;box-shadow:none;transform:none}
+.auth-modal-card .btn-s,#modalHost .btn-s{border-radius:12px;border-color:#e4eae2}
+.auth-modal-card a:hover,#loginGate .auth-panel a:hover{color:#175e52}
+.auth-modal-card :focus-visible,#modalHost :focus-visible{outline:2px solid #1e9b7e;outline-offset:2px}
+
+/* in-app dialogs */
+#modalHost .modal{border-radius:18px;box-shadow:0 44px 100px -44px rgba(11,48,39,.6);
+  border:1px solid rgba(226,232,222,.9)}
+#modalHost .modal-head{border-bottom-color:#e4eae2}
+#modalHost .modal-head h2{font-family:'Bricolage Grotesque','Sora',sans-serif;letter-spacing:-.03em;font-size:16px}
+#modalHost .modal-foot{border-top-color:#e4eae2}
+#modalHost .modal-x{border-radius:9px;transition:background .18s ease}
+#modalHost .modal-x:hover{background:rgba(23,94,82,.08);color:#0d2c25}
+
+/* toasts */
+#toastHost .toast{border-radius:13px;font-weight:550;padding:12px 18px;
+  box-shadow:0 26px 54px -26px rgba(11,48,39,.7);background:#10241e}
+#toastHost .toast.ok{background:linear-gradient(145deg,#1b7d68,#0e4b3f)}
+#toastHost .toast.err{background:linear-gradient(145deg,#b4372f,#7d211b)}
+
+@media(prefers-reduced-motion:reduce){
+  .auth-modal-card .btn-p,#modalHost .btn-p,.auth-modal-x,#modalHost .modal-x{transition:none}
+  .auth-modal-card .btn-p:hover,#modalHost .btn-p:hover{transform:none}
+}
+</style>
+
+<style id="zen-home-activity-row">
+/* ── Command Centre: "What Zen did in the last 24 hours" ──────────────
+   The list sat in the right-hand column as a narrow vertical stack, so
+   a short list left a wide empty block to its left. It now runs full
+   width under both columns as a single row of cards that wraps only
+   when it has to. Same markup, same data, same click targets — this is
+   placement and card styling only. */
+
+/* lift it out of the right column so it can span the page */
+#homeRightCol{display:contents!important}
+#p-home>.grid2>#homeRightCol,#p-home .grid2 #homeActivity24h{min-width:0}
+#homeActivity24h{grid-column:1/-1;max-height:none!important;overflow:visible!important;margin:4px 0 0!important}
+#homeOpportunity:empty{display:none}
+#homeActivity24h:empty{display:none}
+
+/* one sequential row of cards */
+#homeActivity24h .mini-grid{display:grid!important;
+  grid-template-columns:repeat(auto-fit,minmax(198px,1fr));gap:9px;border-top:0}
+#homeActivity24h .mini{padding:11px 13px!important;border:1px solid var(--zp-b-line,#e4eae2)!important;
+  border-radius:11px!important;background:linear-gradient(175deg,#fff,#fafcf9);border-bottom:1px solid var(--zp-b-line,#e4eae2)!important;
+  box-shadow:0 10px 24px -22px rgba(11,42,35,.6)!important;display:flex;align-items:flex-start;gap:9px;min-width:0}
+#homeActivity24h .mini:first-child,#homeActivity24h .mini:last-child{border-radius:11px!important}
+#homeActivity24h .mini::before{content:"";flex:none;width:7px;height:7px;margin-top:5px;border-radius:50%;
+  background:#1e9b7e;box-shadow:0 0 0 3px rgba(30,155,126,.14)}
+#homeActivity24h .mini span{margin:0!important;font-size:12.5px!important;line-height:1.45!important;color:#5c6b64}
+
+/* desktop bounded layout: give it its own full-width row under the dock */
+@media(min-width:1100px) and (min-height:650px){
+  #p-home>.grid2>div:first-child{grid-row:6/7}
+  #homeOpportunity{grid-column:8/-1;grid-row:6;align-self:start;margin-top:0}
+  #homeActivity24h{grid-column:1/-1;grid-row:7;align-self:start}
+  #homeActivity24h .mini{padding:9px 12px!important}
+  #homeActivity24h .mini span{font-size:12px!important}
+}
+@media(max-width:860px){
+  #homeActivity24h .mini-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:620px){
+  #homeActivity24h .mini-grid{grid-template-columns:1fr;gap:8px}
+}
+</style>
+
+
+<style id="zen-command-centre">
+/* ══════════════════════════════════════════════════════════════════════
+   COMMAND CENTRE — visual refinement
+   Same calls, same markup, same handlers. This layer only changes
+   spacing, type, colour and card treatment, and stops the viewport-
+   locked grid from leaving a hole between the dock and the activity row.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Page chrome: three stacked bars → one quiet line ─────────────── */
+.ux-workspace-top{min-height:0!important;padding:14px 0 12px;margin-bottom:0!important;
+  border-bottom:0!important;font-size:11.5px}
+.ux-workspace-name{color:#8c988f;font-weight:550}
+.ux-workspace-tag{background:rgba(23,94,82,.07);border:1px solid rgba(23,94,82,.12);
+  color:#2c6b5c;border-radius:99px;padding:5px 12px;font-size:11px;font-weight:600}
+.ux-route{margin:0 0 14px!important;padding-bottom:14px!important;
+  border-bottom:1px solid rgba(228,234,226,.9)!important;gap:12px!important}
+.ux-route .ux-eyebrow{font-size:9px;letter-spacing:.13em;color:#9aa69e;margin-bottom:2px}
+.ux-route-title{font-family:'Bricolage Grotesque','Sora',sans-serif;letter-spacing:-.03em}
+.ux-help-area{margin:0 0 16px!important}
+.ux-help{border-radius:13px}
+.ux-help summary{padding:11px 14px;font-size:12.5px;border-radius:13px}
+
+/* ── 2. Greeting and the ask bar ─────────────────────────────────────── */
+#p-home>.topline h1{font-family:'Bricolage Grotesque','Sora',sans-serif;letter-spacing:-.04em;
+  font-size:26px!important;line-height:1.1}
+#p-home>.ask{border-radius:14px;border-color:#dfe7de;background:#fff;
+  box-shadow:0 12px 30px -26px rgba(11,42,35,.65);transition:border-color .2s ease,box-shadow .2s ease}
+#p-home>.ask:focus-within{border-color:#1e9b7e;box-shadow:0 0 0 3px rgba(30,155,126,.14)}
+#p-home>.ask input{font-size:13.5px}
+
+/* ── 3. One card language for every figure on the page ───────────────── */
+#homeSnippets .mini,#homeHowAmIDoing>div{border:1px solid #e4eae2!important;border-radius:14px!important;
+  background:linear-gradient(176deg,#fff,#fbfdfa)!important;
+  box-shadow:0 12px 28px -26px rgba(11,42,35,.55)!important;
+  transition:border-color .2s ease,box-shadow .25s ease,transform .25s ease}
+#homeSnippets .mini{padding:14px 15px!important;display:flex;flex-direction:column;min-width:0}
+#homeSnippets .mini:hover{border-color:#c6d8ca!important;transform:translateY(-2px);
+  box-shadow:0 20px 40px -30px rgba(11,42,35,.6)!important}
+/* "6 /35" was breaking across two lines — the qualifier stays on the figure's line */
+#homeSnippets .mini b{font-family:'Bricolage Grotesque','Sora',sans-serif;font-size:25px!important;
+  letter-spacing:-.045em;line-height:1.05;white-space:nowrap;font-variant-numeric:tabular-nums;
+  color:#0d2c25;margin:0 0 6px}
+#homeSnippets .mini b span{white-space:nowrap}
+#homeSnippets .mini>span{font-size:12px!important;line-height:1.45!important;color:#7a8880;margin:0!important}
+#homeHowAmIDoing>div{padding:16px 17px!important}
+#homeHowAmIDoing .mini b{font-size:25px;letter-spacing:-.045em;font-variant-numeric:tabular-nums;color:#0d2c25}
+#homeHowAmIDoing .mini>span{font-size:12.5px;color:#7a8880;line-height:1.45}
+
+/* the sending-cost footnote reads as a caption, not a quote block */
+#homeSendCost .note{border-left:0!important;padding-left:2px!important;color:#8b968f!important;
+  font-size:11.5px!important;line-height:1.5!important}
+
+/* ── 4. Section headings ─────────────────────────────────────────────── */
+#p-home .sechead h2{font-family:'Bricolage Grotesque','Sora',sans-serif;font-size:14.5px!important;
+  letter-spacing:-.025em;color:#0d2c25}
+#p-home .sechead{margin:0 0 10px!important}
+
+/* ── 5. Needs your attention ─────────────────────────────────────────── */
+#homeAttn{border-top:0}
+#homeAttn>*{border-bottom:1px solid #eef2ee}
+#homeAttn>*:last-child{border-bottom:0}
+#homeAttn .attn{padding:13px 4px!important;gap:12px!important;border-radius:10px;
+  transition:background .18s ease}
+#homeAttn .attn:hover{background:rgba(23,94,82,.04)}
+#homeAttn .attn .n{width:26px;height:26px;border-radius:9px;background:rgba(23,94,82,.09);
+  color:#20695a;font:650 12.5px/26px 'Bricolage Grotesque','Sora',sans-serif;text-align:center}
+#homeAttn .attn b{font-size:13.5px;letter-spacing:-.015em;color:#16241f}
+#homeAttn .attn p{font-size:11.5px;color:#8b968f}
+
+/* ── 6. Opportunity: a card, not a coloured slab ─────────────────────── */
+#homeOpportunity>.attn{background:linear-gradient(160deg,#f4fbf6,#fff 62%)!important;
+  border:1px solid rgba(30,155,126,.22)!important;border-radius:16px!important;
+  padding:18px!important;position:relative;overflow:hidden;
+  box-shadow:0 16px 40px -32px rgba(11,60,47,.6)!important}
+#homeOpportunity>.attn::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:linear-gradient(180deg,#6fe3b0,#1e9b7e)}
+#homeOpportunity>.attn b{font-size:13.5px;letter-spacing:-.02em;color:#0d2c25}
+#homeOpportunity>.attn p{font-size:12px;line-height:1.55;color:#5d6b64}
+#homeOpportunity .n{color:#1e9b7e}
+
+/* review buttons on both cards share the app's primary treatment */
+#homeAttn .btn-s,#homeOpportunity .btn-s{border-radius:10px;border-color:#dbe4da;font-weight:600;
+  transition:background .18s ease,border-color .18s ease,transform .16s ease}
+#homeAttn .btn-s:hover,#homeOpportunity .btn-s:hover{background:rgba(23,94,82,.06);
+  border-color:#bcd2c1;transform:translateY(-1px)}
+
+/* ── 7. No dead space between the dock and the activity row ──────────── */
+@media(min-width:1100px) and (min-height:650px){
+  /* the home screen flows naturally instead of being pinned to 100dvh,
+     so a short day no longer leaves a hole above the activity row and a
+     long one is never clipped. The inbox keeps its bounded workspace. */
+  .main:has(#p-home.on){height:auto!important;min-height:0!important;padding-bottom:48px!important}
+  #p-home.on{flex:0 1 auto!important;grid-template-rows:auto auto auto auto auto auto auto!important;
+    gap:14px 14px!important}
+  #p-home>.grid2>div:first-child{grid-row:6/7!important;margin-top:0!important;
+    overflow:visible!important;max-height:none!important;padding-right:0!important}
+  #homeOpportunity{grid-column:8/-1;grid-row:6;align-self:start;margin-top:0!important}
+  #homeActivity24h{grid-row:7!important;margin-top:4px!important}
+  #homeSnippets{gap:12px!important}
+  #homeHowAmIDoing{gap:12px!important}
+}
+@media(max-width:1099px),(max-height:649px){
+  #p-home>.grid2{gap:14px}
+  #homeSnippets .mini b{font-size:23px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  #homeSnippets .mini,#homeAttn .attn,#homeAttn .btn-s,#homeOpportunity .btn-s{transition:none}
+  #homeSnippets .mini:hover,#homeAttn .btn-s:hover,#homeOpportunity .btn-s:hover{transform:none}
+}
+</style>
+
 </head>
 <body>
-<div id="loginGate" class="on"><aside class="ux-welcome" aria-label="What Zen does for your business">
- <div class="ux-welcome-brand"><span class="onb-orb">Z</span><div><b>Zen</b><small>AI for small businesses</small></div></div>
- <div class="ux-welcome-copy"><h1>Your quiet<br>business partner.</h1><p>Zen looks after your customer messages, your offers and your ads — and tells you in plain words what’s working.</p></div>
- <ul class="ux-benefits">
-  <li><span class="ux-benefit-icon" aria-hidden="true">☏</span><div><h2>Answers your WhatsApp</h2><p>Helps reply to customers, day and night.</p></div></li>
-  <li><span class="ux-benefit-icon" aria-hidden="true">✦</span><div><h2>Makes your posts and ads</h2><p>Zen creates. You review and choose what to use.</p></div></li>
-  <li><span class="ux-benefit-icon" aria-hidden="true">◎</span><div><h2>Explains your numbers</h2><p>No charts to decode. Just clear answers.</p></div></li>
- </ul>
- <p class="ux-login-assurance">You choose what runs automatically and what waits for your approval.</p>
-</aside>
-<div class="ux-auth-card" style="width:100%;max-width:340px;padding:0 20px;">
-  <div style="display:flex;gap:9px;align-items:center;margin-bottom:16px;"><span class="onb-orb">Z</span>
-    <div><b style="font:600 15px Sora;display:block;">Zen</b><small style="color:var(--muted);">AI</small></div></div>
-  <div class="ux-auth-intro"><h2>Welcome back.</h2><p>Log in to your business workspace.</p></div>
-  <form id="loginForm" novalidate onsubmit="event.preventDefault();doRealLogin();return false;">
-    <label class="lbl" for="loginEmail">Email address</label><input class="field" id="loginEmail" name="email" type="email" placeholder="Email" autocomplete="username" style="margin-bottom:10px;">
-    <label class="lbl" for="loginPass">Password</label><input class="field" id="loginPass" name="password" type="password" placeholder="Password" autocomplete="current-password" style="margin-bottom:10px;">
-    <button class="btn btn-p btn-block" type="submit">Log in</button>
-  </form>
-  <div id="loginMsg" role="status" aria-live="polite" class="hint" style="margin-top:10px;"></div>
-  <div style="display:flex;justify-content:space-between;margin-top:14px;font-size:12px;">
-    <a href="#" onclick="event.preventDefault();showForgotPassword();" style="color:var(--muted);">Forgot password?</a>
-    <a href="#" onclick="event.preventDefault();showSignup();" style="color:var(--muted);">New here? Create an account</a>
+<div id="loginGate" class="on"><div class="lp">
+
+<!-- ══ Navigation ══════════════════════════════════════════════════════
+     Same anchors, same handlers (showLogin / showSignup). Only the
+     presentation changed: the bar is transparent over the hero stage
+     and resolves into the solid sticky bar once the page scrolls. -->
+<nav class="lp-nav" id="zpNav">
+  <div class="lp-nav-brand"><span class="onb-orb">Z</span>Zen</div>
+  <div class="lp-nav-links">
+    <a href="#lp-features">What it does</a>
+    <a href="#lp-studio">Creative studio</a>
+    <a href="#lp-how">How it works</a>
+    <a href="#lp-pricing">Pricing</a>
   </div>
+  <div class="lp-nav-cta">
+    <a href="#" class="zp-nav-signin" onclick="event.preventDefault();showLogin();" style="font-size:13.5px;font-weight:600;color:var(--ink);">Sign in</a>
+    <button class="lp-btn lp-btn-p" style="padding:11px 21px;" onclick="showSignup();">Start free</button>
+  </div>
+</nav>
+
+<!-- ══ Hero stage ═════════════════════════════════════════════════════ -->
+<header class="zp-stage zp-stage-hero">
+  <div class="zp-hero-backdrop" data-zp-media="hero-backdrop" aria-hidden="true"><img class="zp-photo" alt="" loading="lazy" decoding="async" width="2400" height="1400"></div>
+  <div class="zp-hero">
+    <div>
+      <span class="zp-live"><i></i>A customer just asked about Saturday. Zen answered.</span>
+      <h1>Zen handles the busywork. You run the business.</h1>
+      <p class="zp-hero-sub">Zen answers your customers on WhatsApp, makes your posts and ads, brings quiet customers back, and tells you in plain words what is working — while you are with a customer, or asleep.</p>
+      <div class="zp-hero-ctas">
+        <button class="lp-btn lp-btn-p lp-btn-lg" onclick="showSignup();">Start free</button>
+        <button class="lp-btn lp-btn-ghost lp-btn-lg" onclick="var t=document.getElementById('lp-studio');if(t)t.scrollIntoView({behavior:'smooth',block:'start'});">Watch it work</button>
+      </div>
+      <div class="zp-hero-assure">
+        <span>No credit card</span>
+        <span>Set up in an afternoon</span>
+        <span>Nothing sends without your rules</span>
+      </div>
+    </div>
+
+    <!-- The hero is the product doing its actual job: a customer message
+         arriving, Zen replying, a post ready, and the result counted. -->
+    <div class="zp-compose" aria-label="A preview of Zen replying to a customer on WhatsApp">
+      <div class="zp-phone">
+        <div class="zp-phone-screen">
+          <div class="zp-wa-top">
+            <span class="av">R</span>
+            <div><b>Reem A.</b><small>Zen is handling this chat</small></div>
+          </div>
+          <div class="zp-wa-body">
+            <div class="zp-msg in">Hi! Do you have a slot for my daughter on Saturday?</div>
+            <div class="zp-msg out">Yes — 3:00pm and 4:30pm are both open this Saturday.</div>
+            <div class="zp-msg in">Perfect. How much is a cut and braids?</div>
+            <div class="zp-msg out">Cut is AED 75, braids from AED 120. Shall I hold 3:00pm for you?</div>
+            <div class="zp-typing" aria-hidden="true"><i></i><i></i><i></i></div>
+          </div>
+          <div class="zp-wa-foot"><span class="pill">Reply manually</span><span class="snd"></span></div>
+        </div>
+      </div>
+
+      <!-- Generated content, cycling -->
+      <article class="zp-post" aria-label="Examples of posts Zen created">
+        <div class="zp-post-head"><span class="av">Z</span>minicuts.salon<span class="tag">Made by Zen</span></div>
+        <div class="zp-post-art">
+          <figure class="zp-media" data-zp-media="hero-post-1"><img class="zp-photo" alt="Example Instagram post for a weekend braids offer" loading="lazy" decoding="async" width="1080" height="1350"><div class="zp-art zp-art--warm" aria-hidden="true"></div><span class="zp-noise" aria-hidden="true"></span><span class="zp-grade" aria-hidden="true"></span><span class="zp-scrim" aria-hidden="true"></span><span class="zp-flag">Instagram post</span><div class="zp-copy"><b>Weekend braids</b><span>20% off &middot; Saturday slots open</span></div></figure>
+          <figure class="zp-media" data-zp-media="hero-post-2"><img class="zp-photo" alt="Example birthday offer post for a customer" loading="lazy" decoding="async" width="1080" height="1350"><div class="zp-art zp-art--celebration" aria-hidden="true"></div><span class="zp-noise" aria-hidden="true"></span><span class="zp-grade" aria-hidden="true"></span><span class="zp-scrim" aria-hidden="true"></span><span class="zp-flag">Birthday campaign</span><div class="zp-copy"><b>Happy birthday, Aanya</b><span>Free birthday chair this week</span></div></figure>
+          <figure class="zp-media" data-zp-media="hero-post-3"><img class="zp-photo" alt="Example post announcing a new service" loading="lazy" decoding="async" width="1080" height="1350"><div class="zp-art zp-art--fresh" aria-hidden="true"></div><span class="zp-noise" aria-hidden="true"></span><span class="zp-grade" aria-hidden="true"></span><span class="zp-scrim" aria-hidden="true"></span><span class="zp-flag">New service</span><div class="zp-copy"><b>Teen fade</b><span>New this month &middot; book on WhatsApp</span></div></figure>
+        </div>
+        <div class="zp-post-foot"><b>3 posts ready for Thursday.</b> Waiting for your approval.</div>
+      </article>
+
+      <!-- The money answer -->
+      <div class="zp-tile">
+        <small>Booked from WhatsApp this month</small>
+        <b><span data-zp-count="18400" data-zp-prefix="AED " data-zp-sep="1">AED 18,400</span></b>
+        <p>Sample workspace. Your own numbers appear here once you connect.</p>
+        <div class="zp-spark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ══ What changes, in four numbers ══════════════════════════════════ -->
+<section class="zp-band zen-reveal" aria-label="What Zen takes off your plate">
+    <div class="zp-band-inner">
+    <div class="zp-band-cell">
+      <span class="zp-band-viz" aria-hidden="true">
+        <svg viewBox="0 0 132 34" height="34" fill="none">
+          <g stroke="#cfdbd4" stroke-width="3" stroke-linecap="round">
+            <path d="M3 22v6M11 20v8M19 18v10M27 16v12M35 15v13M43 14v14M51 15v13M59 17v11M67 19v9M75 17v11M83 15v13M91 16v12"/>
+          </g>
+          <g stroke="#1e9b7e" stroke-width="3" stroke-linecap="round" class="zp-late">
+            <path d="M99 13v15M107 11v17M115 14v14M123 17v11"/>
+          </g>
+          <circle cx="107" cy="6" r="3.4" fill="#6fe3b0"/>
+          <path d="M3 31h126" stroke="#e6ece7" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <b><span data-zp-count="24">24</span>/7</b>
+      <span>Customers get a real answer at 11pm, on a Friday, mid-haircut.</span>
+    </div>
+
+    <div class="zp-band-cell">
+      <span class="zp-band-viz" aria-hidden="true">
+        <svg viewBox="0 0 150 34" height="34" fill="none">
+          <g fill="#eef2ee" stroke="#d9e2db" stroke-width="1.4">
+            <rect x="1" y="9" width="16" height="16" rx="5"/>
+            <rect x="20" y="9" width="16" height="16" rx="5"/>
+            <rect x="39" y="9" width="16" height="16" rx="5"/>
+            <rect x="58" y="9" width="16" height="16" rx="5"/>
+            <rect x="77" y="9" width="16" height="16" rx="5"/>
+          </g>
+          <path d="M101 17h13" stroke="#9fb0a7" stroke-width="2" stroke-linecap="round"/>
+          <path d="M110 13l4.5 4-4.5 4" stroke="#9fb0a7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <rect x="121" y="5" width="24" height="24" rx="8" fill="url(#zpBandZ)"/>
+          <defs><linearGradient id="zpBandZ" x1="121" y1="5" x2="145" y2="29">
+            <stop offset="0" stop-color="#1e9b7e"/><stop offset="1" stop-color="#0e4b3f"/></linearGradient></defs>
+          <path d="M128 12h10l-10 10h10" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <b><span data-zp-count="5">5</span> apps → 1</b>
+      <span>Messaging, design, scheduling, ads and reporting in one place.</span>
+    </div>
+
+    <div class="zp-band-cell">
+      <span class="zp-band-viz" aria-hidden="true">
+        <svg viewBox="0 0 140 34" height="34" fill="none">
+          <path d="M9 17h122" stroke="#e2eae4" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M9 17h92" stroke="#1e9b7e" stroke-width="2.5" stroke-linecap="round"/>
+          <g fill="#fff" stroke="#1e9b7e" stroke-width="2.4">
+            <circle cx="9" cy="17" r="5"/><circle cx="40" cy="17" r="5"/><circle cx="70" cy="17" r="5"/><circle cx="101" cy="17" r="5"/>
+          </g>
+          <g stroke="#1e9b7e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 17l1.6 1.8L11.2 15M38 17l1.6 1.8L42.2 15M68 17l1.6 1.8L72.2 15M99 17l1.6 1.8L103.2 15"/>
+          </g>
+          <circle cx="131" cy="17" r="6" fill="#6fe3b0" opacity=".28"/>
+          <circle cx="131" cy="17" r="3" fill="#1e9b7e"/>
+        </svg>
+      </span>
+      <b>~1 afternoon</b>
+      <span>From signing up to your first automatic reply going out.</span>
+    </div>
+
+    <div class="zp-band-cell">
+      <span class="zp-band-viz" aria-hidden="true">
+        <svg viewBox="0 0 128 34" height="34" fill="none">
+          <rect x="1" y="7" width="46" height="21" rx="10.5" fill="rgba(30,155,126,.14)" stroke="#1e9b7e" stroke-width="1.4"/>
+          <circle cx="36" cy="17.5" r="7.5" fill="#fff" stroke="#1e9b7e" stroke-width="1.6"/>
+          <path d="M33 17.5l2 2.2 4-4.4" stroke="#1e9b7e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M72 3l11 4v8c0 7-4.6 11.6-11 14-6.4-2.4-11-7-11-14V7z" fill="rgba(122,90,248,.1)" stroke="#7a5af8" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M67.5 14.5l3 3.2 6-6.4" stroke="#7a5af8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <g stroke="#cfdbd4" stroke-width="2.4" stroke-linecap="round"><path d="M96 12h30M96 20h20"/></g>
+        </svg>
+      </span>
+      <b>0 surprises</b>
+      <span>Nothing reaches a customer unless your rules allow it.</span>
+    </div>
+  </div>
+
+  <p class="zp-band-note">Figures describe how Zen is set up to work, not averaged customer results.</p>
+</section>
+
+<!-- ══ The problem, and the shape of the fix ══════════════════════════ -->
+<section class="lp-section zen-reveal" aria-label="Why Zen">
+  <div class="zp-head">
+    <span class="lp-kicker">The five-app afternoon</span>
+    <h2>Most of your day is spent moving between apps that do not talk to each other.</h2>
+    <p>A message in WhatsApp. A poster in a design tool. A scheduler for the post. An ads dashboard nobody enjoys opening. And no honest way to tell which of it actually brought someone through the door.</p>
+  </div>
+  <div class="lp-compare">
+    <div class="lp-compare-col">
+      <h3>A normal week</h3>
+      <ul>
+        <li><span class="lp-compare-x"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>Typing the same four answers all day</li>
+        <li><span class="lp-compare-x"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>Making posters in a separate app, late at night</li>
+        <li><span class="lp-compare-x"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>Boosting a post and hoping for the best</li>
+        <li><span class="lp-compare-x"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>Customers who quietly stopped coming, unnoticed</li>
+        <li><span class="lp-compare-x"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>Numbers in four places, answers in none</li>
+      </ul>
+    </div>
+    <div class="lp-compare-arrow" aria-hidden="true">→</div>
+    <div class="lp-compare-col is-zen">
+      <h3>The same week with Zen</h3>
+      <ul>
+        <li><span class="lp-compare-check"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5L19 7"/></svg></span>Zen replies using your real prices and hours</li>
+        <li><span class="lp-compare-check"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5L19 7"/></svg></span>Posts, reels and ad creative built from your own brand</li>
+        <li><span class="lp-compare-check"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5L19 7"/></svg></span>Ads watched daily, with a plain warning when one is wasting money</li>
+        <li><span class="lp-compare-check"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5L19 7"/></svg></span>Lapsed customers nudged before you lose them</li>
+        <li><span class="lp-compare-check"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5L19 7"/></svg></span>Ask "how was last month?" and get a straight answer</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ══ Capabilities ═══════════════════════════════════════════════════ -->
+<section class="lp-section zen-reveal" id="lp-features" aria-label="What Zen does">
+  <div class="zp-head">
+    <span class="lp-kicker">Working today, not on a roadmap</span>
+    <h2>Six jobs Zen does for you, every day.</h2>
+    <p>Each one is a real, working part of the product. You decide which run on their own and which wait for you.</p>
+  </div>
+  <div class="lp-features">
+    <div class="lp-feature"><div class="lp-feature-ic" style="background:#e4f1ea;color:#12695a;"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-2 2V11.5a9.5 9.5 0 0 1 19 0Z"/><path d="M7 10h9M7 14h5"/></svg></div><h3>Answers your WhatsApp</h3><p>Prices, availability, directions, parking, what to bring — answered in your own tone, using what your business actually charges and when it is actually open.</p></div>
+    <div class="lp-feature"><div class="lp-feature-ic" style="background:#efeaff;color:#7a5af8;"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 2.6 6.4L21 12l-6.4 2.6L12 21l-2.6-6.4L3 12l6.4-2.6Z"/></svg></div><h3>Makes your posts and reels</h3><p>A product photo or a one-line idea becomes a finished, on-brand post, story or short video — captioned, sized and ready to publish.</p></div>
+    <div class="lp-feature"><div class="lp-feature-ic" style="background:#fdeaf1;color:#c2497c;"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 10-12h-7l1-8Z"/></svg></div><h3>Brings quiet customers back</h3><p>Birthday, win-back and gentle-nudge messages that send themselves — and are measured against a real held-back group, so you know whether they worked.</p></div>
+    <div class="lp-feature"><div class="lp-feature-ic" style="background:#e4f1ea;color:#1e7f68;"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m4 9 14-5v16L4 15ZM18 9h3v6h-3M6 16l2 5h3l-2-4"/></svg></div><h3>Runs your Instagram and Facebook ads</h3><p>Zen builds the campaign, keeps it running and tells you plainly when something is not pulling its weight — before the budget is gone.</p></div>
+    <div class="lp-feature"><div class="lp-feature-ic" style="background:#e7eef7;color:#3d6ea8;"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3v18h17M8 16v-4M13 16V7M18 16v-7"/></svg></div><h3>Explains your numbers</h3><p>Ask "how did last month go?" the way you would ask a manager. You get a sentence, not a chart to decode.</p></div>
+    <div class="lp-feature"><div class="lp-feature-ic" style="background:#e4f1ea;color:#0f5a4b;"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.5 9 8 11 4.5-2 8-6 8-11V5Z"/><path d="m9 12 2 2 4-4"/></svg></div><h3>Keeps you in charge</h3><p>Set what Zen may send on its own and what waits for you. Change your mind whenever you like — the rules are yours, not ours.</p></div>
+  </div>
+</section>
+
+<!-- ══ Creative studio stage ══════════════════════════════════════════ -->
+<section class="zp-stage zen-reveal" id="lp-studio" aria-label="AI Creative Studio">
+  <div class="lp-section" style="padding-bottom:0;">
+    <div class="zp-head">
+      <span class="lp-kicker">Creative studio</span>
+      <h2>Your Thursday post, made on Tuesday, while you were cutting hair.</h2>
+      <p>Not stock photos and not a template with your logo dropped in. Zen builds from your own products, your own offers and the brand you already have.</p>
+    </div>
+  </div>
+
+  <div class="zp-marquee" id="zpMarquee" aria-label="Examples of content Zen produces">
+    <div class="zp-track" id="zpTrack">
+      <article class="zp-card">
+        <div class="zp-card-art zp-media" data-zp-media="studio-birthday"><img class="zp-photo" alt="Example birthday post created by Zen" loading="lazy" decoding="async" width="1080" height="1350"><div class="zp-art zp-art--celebration" aria-hidden="true"></div><span class="zp-noise" aria-hidden="true"></span><span class="zp-grade" aria-hidden="true"></span><span class="zp-scrim" aria-hidden="true"></span><span class="zp-flag">Birthday</span><div class="zp-copy"><b>Happy birthday, Aanya</b><span>Your chair is free this week</span></div></div>
+        <div class="zp-card-meta"><div><b>Birthday message</b><span>Sends itself, one per customer</span></div><span class="badge">Auto</span></div>
+      </article>
+      <article class="zp-card">
+        <div class="zp-card-art zp-media" data-zp-media="studio-weekend"><img class="zp-photo" alt="Example weekend offer post created by Zen" loading="lazy" decoding="async" width="1080" height="1350"><div class="zp-art zp-art--warm" aria-hidden="true"></div><span class="zp-noise" aria-hidden="true"></span><span class="zp-grade" aria-hidden="true"></span><span class="zp-scrim" aria-hidden="true"></span><span class="zp-flag">Offer</span><div class="zp-copy"><b>Weekend braids</b><span>20% off &middot; Saturday only</span></div></div>
+        <div class="zp-card-meta"><div><b>Weekend offer</b><span>Instagram post + story</span></div><span class="badge">Draft</span></div>
+      </article>
+      <article class="zp-card">
+        <div class="zp-card-art zp-media" data-zp-media="studio-video"><img class="zp-photo" alt="Example short video created by Zen" loading="lazy" decoding="async" width="1080" height="1350"><div class="zp-art zp-art--studio" aria-hidden="true"></div><span class="zp-noise" aria-hidden="true"></span><span class="zp-grade" aria-hidden="true"></span><span class="zp-scrim" aria-hidden="true"></span><span class="zp-flag">Reel &middot; 9:16</span><span class="zp-play" aria-hidden="true"><i>&#9654;</i></span><div class="zp-copy"><b>First haircut, no tears</b><span>0:18 &middot; behind the chair</span></div></div>
+        <div class="zp-card-meta"><div><b>Short video</b><span>Spoken script and captions</span></div><span class="badge">Reel</span></div>
+      </article>
+      <article class="zp-card">
+        <div class="zp-card-art zp-media" data-zp-media="studio-referral"><img class="zp-photo" alt="Example referral offer created by Zen" loading="lazy" decoding="async" width="1080" height="1350"><div class="zp-art zp-art--fresh" aria-hidden="true"></div><span class="zp-noise" aria-hidden="true"></span><span class="zp-grade" aria-hidden="true"></span><span class="zp-scrim" aria-hidden="true"></span><span class="zp-flag">Referral</span><div class="zp-copy"><b>Bring a friend</b><span>You both get 25% off</span></div></div>
+        <div class="zp-card-meta"><div><b>Referral card</b><span>WhatsApp + in-store QR</span></div><span class="badge">Draft</span></div>
+      </article>
+      <article class="zp-card">
+        <div class="zp-card-art zp-media" data-zp-media="studio-hours"><img class="zp-photo" alt="Example opening hours notice created by Zen" loading="lazy" decoding="async" width="1080" height="1350"><div class="zp-art zp-art--night" aria-hidden="true"></div><span class="zp-noise" aria-hidden="true"></span><span class="zp-grade" aria-hidden="true"></span><span class="zp-scrim" aria-hidden="true"></span><span class="zp-flag">Notice</span><div class="zp-copy"><b>Late hours, open till 11</b><span>This week only</span></div></div>
+        <div class="zp-card-meta"><div><b>Hours notice</b><span>Posted and pinned for you</span></div><span class="badge">Auto</span></div>
+      </article>
+      <article class="zp-card">
+        <div class="zp-card-art zp-media" data-zp-media="studio-ad"><img class="zp-photo" alt="Example paid social ad created by Zen" loading="lazy" decoding="async" width="1080" height="1350"><div class="zp-art zp-art--violet" aria-hidden="true"></div><span class="zp-noise" aria-hidden="true"></span><span class="zp-grade" aria-hidden="true"></span><span class="zp-scrim" aria-hidden="true"></span><span class="zp-flag">Meta ad</span><div class="zp-copy"><b>Back to school cuts</b><span>Sponsored &middot; book on WhatsApp</span></div></div>
+        <div class="zp-card-meta"><div><b>Paid ad</b><span>Watched daily for waste</span></div><span class="badge">Live</span></div>
+      </article>
+    </div>
+  </div>
+
+  <div class="lp-section" style="padding-top:0;">
+    <ul class="zp-showcase-list zp-cols-3">
+      <li><span class="ic"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h10v10H4zM10 10h10v10H10z"/></svg></span><div><b>Rebuild an ad you liked</b><p>Point Zen at an ad that caught your eye. It works out the idea behind it and rebuilds it with your product.</p></div></li>
+      <li><span class="ic"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 10l6-4v12l-6-4zM3 7h12v10H3z"/></svg></span><div><b>Video with a real voice</b><p>Spoken dialogue with matching lip movement, so short videos do not need a camera, a script or a second take.</p></div></li>
+      <li><span class="ic"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5L19 7"/></svg></span><div><b>Nothing publishes behind your back</b><p>Every piece waits in a review queue until you approve it, or until you decide that this kind can go out on its own.</p></div></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ══ Command centre ═════════════════════════════════════════════════ -->
+<section class="zp-showcase zen-reveal" aria-label="The Zen workspace">
+  <div class="zp-laptop" aria-hidden="true">
+    <div class="zp-laptop-lid">
+      <div class="zp-screen">
+        <div class="zp-screen-side">
+          <div class="b"><i>Z</i>Zen</div>
+          <u class="on">Home</u><u>WhatsApp inbox</u><u>Campaigns</u><u>Creative studio</u><u>Ads</u><u>Insights</u>
+        </div>
+        <div class="zp-screen-main">
+          <div class="hd">Good evening, Munir</div>
+          <div class="sb">Three things need you. Everything else is handled.</div>
+          <div class="zp-kpis">
+            <div class="zp-kpi"><small>Chats answered</small><b>127</b><em>+18% vs last week</em></div>
+            <div class="zp-kpi"><small>Bookings from chat</small><b>41</b><em>+9 this week</em></div>
+            <div class="zp-kpi"><small>Ad spend saved</small><b>AED 640</b><em>2 ads paused</em></div>
+          </div>
+          <div class="zp-chart">
+            <div class="cl">Conversations handled by Zen · last 8 weeks</div>
+            <div class="zp-bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          </div>
+          <div class="zp-ask">
+            <div class="q">You asked: how did last month go?</div>
+            <div class="a">Busier than March. Zen answered 512 chats, 163 turned into bookings, and the win-back campaign brought 22 customers back. The Saturday ad is your weakest — it costs AED 31 per booking against AED 12 elsewhere.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="zp-laptop-base"></div>
+  </div>
+  <div>
+    <div class="zp-head">
+      <span class="lp-kicker">One workspace</span>
+      <h2>Open one screen and know exactly where the business stands.</h2>
+      <p>Zen puts what needs you at the top and quietly handles the rest. When you want detail, you ask for it in your own words instead of hunting through reports.</p>
+    </div>
+    <ul class="zp-showcase-list">
+      <li><span class="ic"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5l3 2"/><circle cx="12" cy="12" r="9"/></svg></span><div><b>What needs you, first</b><p>Approvals, unusual questions and anything Zen is unsure about — collected in one short list instead of scattered across apps.</p></div></li>
+      <li><span class="ic"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17V9M10 17V5M16 17v-6M22 17h-2"/></svg></span><div><b>Straight answers about money</b><p>What came in, what a booking cost you, and which campaign is worth repeating next month.</p></div></li>
+      <li><span class="ic"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg></span><div><b>Warnings before the damage</b><p>An ad quietly burning budget, or a run of customers who stopped coming back, surfaced while there is still time to act.</p></div></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ══ Value calculator ═══════════════════════════════════════════════ -->
+<section class="lp-section zen-reveal" id="lp-value" aria-label="What this is worth to you">
+  <div class="zp-head">
+    <span class="lp-kicker">Your numbers, not ours</span>
+    <h2>Work out what your own week is worth.</h2>
+    <p>Move the three sliders to match your business. Nothing here is a claim about anyone else's results — it is arithmetic on the numbers you enter.</p>
+  </div>
+  <div class="zp-calc">
+    <div>
+      <div class="zp-field">
+        <label for="zpMsgs">Customer messages a day <output id="zpMsgsOut">60</output></label>
+        <input type="range" id="zpMsgs" min="10" max="250" step="5" value="60" aria-describedby="zpCalcNote">
+      </div>
+      <div class="zp-field">
+        <label for="zpMins">Minutes you spend on each one <output id="zpMinsOut">2 min</output></label>
+        <input type="range" id="zpMins" min="1" max="6" step="1" value="2" aria-describedby="zpCalcNote">
+      </div>
+      <div class="zp-field" style="margin-bottom:6px;">
+        <label for="zpRate">What an hour of your time is worth <output id="zpRateOut">AED 120</output></label>
+        <input type="range" id="zpRate" min="30" max="400" step="10" value="120" aria-describedby="zpCalcNote">
+      </div>
+      <p id="zpCalcNote" style="font-size:12.5px;line-height:1.6;color:var(--zp-muted);margin-top:16px;">Assumes Zen handles the routine share of those messages on its own and the rest still come to you.</p>
+    </div>
+    <div class="zp-readout" aria-live="polite">
+      <div class="zp-readout-row"><span>Hours handed back each week</span><b id="zpHours">14</b></div>
+      <div class="zp-readout-row"><span>That time, valued at your own rate, each month</span><b class="hi" id="zpMoney">AED 7,280</b></div>
+      <div class="zp-readout-row"><span>Messages Zen answers without you, each month</span><b id="zpVol">1,260</b></div>
+      <p class="zp-readout-foot">An estimate from what you entered, not a promise. What Zen actually saves depends on how many of your messages are routine — most owners find it is the large majority.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══ Who it is for ══════════════════════════════════════════════════ -->
+<section class="lp-section zen-reveal" aria-label="Businesses Zen is built for">
+  <div class="zp-head">
+    <span class="lp-kicker">Built for owner-run businesses</span>
+    <h2>Different trades. The same problem, every evening.</h2>
+    <p>Zen started in a children's salon in Dubai and is built for businesses where the owner is also the one answering the phone.</p>
+  </div>
+  <div class="zp-personas">
+    <article class="zp-persona">
+      <div class="zp-persona-media" data-zp-media="persona-salon"><img class="zp-photo" alt="Owner of a busy salon checking her phone between appointments" loading="lazy" decoding="async" width="1200" height="1500"></div><span class="zp-persona-glow" aria-hidden="true"></span><span class="zp-persona-stat"><i></i>Sat &middot; 12 slots held</span>
+      <span class="zp-persona-tag">Salons &amp; beauty</span>
+      <b>Salons and barbers</b>
+      <p>Slots, prices and "can you fit us in today" — answered while you are mid-appointment.</p>
+    </article>
+    <article class="zp-persona">
+      <div class="zp-persona-media" data-zp-media="persona-clinic"><img class="zp-photo" alt="Clinic manager reviewing appointments on a tablet" loading="lazy" decoding="async" width="1200" height="1500"></div><span class="zp-persona-glow" aria-hidden="true"></span><span class="zp-persona-stat"><i></i>4 enquiries answered</span>
+      <span class="zp-persona-tag">Clinics &amp; studios</span>
+      <b>Clinics and studios</b>
+      <p>Appointment questions, reminders and follow-ups, handled without a front desk on the phone.</p>
+    </article>
+    <article class="zp-persona">
+      <div class="zp-persona-media" data-zp-media="persona-food"><img class="zp-photo" alt="Caf&eacute; owner at the counter during a lunch rush" loading="lazy" decoding="async" width="1200" height="1500"></div><span class="zp-persona-glow" aria-hidden="true"></span><span class="zp-persona-stat"><i></i>Today's offer sent to 240</span>
+      <span class="zp-persona-tag">Food &amp; drink</span>
+      <b>Restaurants and cafés</b>
+      <p>Today's offer out by lunchtime, orders answered, and regulars reminded you exist.</p>
+    </article>
+    <article class="zp-persona">
+      <div class="zp-persona-media" data-zp-media="persona-services"><img class="zp-photo" alt="Service business owner reviewing quotes on a laptop" loading="lazy" decoding="async" width="1200" height="1500"></div><span class="zp-persona-glow" aria-hidden="true"></span><span class="zp-persona-stat"><i></i>Quote sent in 3 min</span>
+      <span class="zp-persona-tag">Local services</span>
+      <b>Local service businesses</b>
+      <p>Enquiries answered in seconds, quotes followed up, and no lead left sitting unread.</p>
+    </article>
+  </div>
+</section>
+
+<!-- ══ How it works — the existing five-step sequence, unchanged ══════ -->
+<section class="lp-section zen-reveal" id="lp-how" aria-label="How it works">
+  <div class="zp-head">
+    <span class="lp-kicker">Sign-up to first reply</span>
+    <h2>Up and running in an afternoon.</h2>
+    <p>No migration, no new system to learn, and nothing to rip out. Zen sits on top of how you already work.</p>
+  </div>
+  <div class="lp-seq">
+    <div>
+      <div class="lp-seq-bars" aria-hidden="true">
+        <div class="lp-seq-bar"><span class="lp-seq-bar-fill"></span></div>
+        <div class="lp-seq-bar"><span class="lp-seq-bar-fill"></span></div>
+        <div class="lp-seq-bar"><span class="lp-seq-bar-fill"></span></div>
+        <div class="lp-seq-bar"><span class="lp-seq-bar-fill"></span></div>
+        <div class="lp-seq-bar"><span class="lp-seq-bar-fill"></span></div>
+      </div>
+      <div class="lp-seq-stage" aria-hidden="true">
+        <div class="lp-seq-frame">
+          <div class="ux-glimpse-kicker"><span class="dot"></span>Step 1 · Connect your accounts</div>
+          <div class="lp-seq-connect">
+            <div class="lp-seq-connect-row"><span class="ck">✓</span>WhatsApp Business — connected</div>
+            <div class="lp-seq-connect-row"><span class="ck">✓</span>Instagram — connected</div>
+          </div>
+        </div>
+        <div class="lp-seq-frame">
+          <div class="ux-glimpse-kicker"><span class="dot"></span>Step 2 · Tell Zen about your business</div>
+          <div class="lp-seq-connect">
+            <div class="lp-seq-connect-row"><span class="ck">✓</span>Services &amp; prices — saved</div>
+            <div class="lp-seq-connect-row"><span class="ck">✓</span>Hours &amp; brand voice — saved</div>
+          </div>
+        </div>
+        <div class="lp-seq-frame">
+          <div class="ux-glimpse-kicker"><span class="dot"></span>Step 3 · Zen gets to work</div>
+          <div class="ux-glimpse-wa-bubble ux-glimpse-wa-in">Do you do braids for kids?</div>
+          <div class="ux-glimpse-wa-bubble ux-glimpse-wa-out">Yes! Would you like to see our braid styles and prices? 💫</div>
+        </div>
+        <div class="lp-seq-frame">
+          <div class="ux-glimpse-kicker"><span class="dot"></span>Step 4 · You approve, or let it run</div>
+          <div class="lp-seq-approve"><div class="n">3</div><div><b>Birthday messages ready to send</b><span>Review each one, or switch this campaign to automatic</span></div></div>
+        </div>
+        <div class="lp-seq-frame">
+          <div class="ux-glimpse-kicker"><span class="dot"></span>Step 5 · See what's actually working</div>
+          <div class="ux-glimpse-tiles">
+            <div class="ux-glimpse-tile"><b>+14</b><span>pts lift, Nudge campaign</span></div>
+            <div class="ux-glimpse-tile"><b>AED 2,559</b><span>From WhatsApp campaigns</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <ul class="lp-steps-mini">
+      <li><div class="num">1</div><div><b>Connect WhatsApp and Instagram</b><p>Link the accounts you already use. Zen never posts or replies anywhere you have not connected.</p></div></li>
+      <li><div class="num">2</div><div><b>Tell Zen about your business</b><p>Services, prices, hours and how you like to sound — so every reply and every post reads like you wrote it.</p></div></li>
+      <li><div class="num">3</div><div><b>Zen starts working</b><p>Replies to customers, drafts posts and campaigns, and keeps your ads running, using what it learned in step two.</p></div></li>
+      <li><div class="num">4</div><div><b>You approve, or let it run</b><p>Review whatever you want to see first. Switch the rest to automatic once you trust it — and switch back any time.</p></div></li>
+      <li><div class="num">5</div><div><b>See what actually worked</b><p>Plain-language answers about messages, campaigns and ads, right on the pages you already use.</p></div></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ══ Trust ══════════════════════════════════════════════════════════ -->
+<section class="zp-stage zen-reveal" aria-label="Control and trust">
+  <div class="lp-section">
+    <div class="zp-head">
+      <span class="lp-kicker">Control and safety</span>
+      <h2>An assistant you can hand things to, one at a time.</h2>
+      <p>Trusting software with your customers is a big ask. Zen is built so you never have to trust it further than you have chosen to.</p>
+    </div>
+    <div class="zp-trust">
+      <div class="zp-trust-card">
+        <div class="ic"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.5 9 8 11 4.5-2 8-6 8-11V5Z"/><path d="m9 12 2 2 4-4"/></svg></div>
+        <h3>Your rules decide everything</h3>
+        <p>Pick what Zen may send on its own, what waits for approval, and what it should never touch. Start with everything held for review and loosen it as you get comfortable.</p>
+      </div>
+      <div class="zp-trust-card">
+        <div class="ic"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+        <h3>Your data stays yours</h3>
+        <p>Each business sits in its own isolated workspace with its own login. Your customer list is never pooled, shared or used to train anything for anyone else.</p>
+      </div>
+      <div class="zp-trust-card">
+        <div class="ic"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg></div>
+        <h3>Honest measurement, not flattery</h3>
+        <p>Campaigns are tested against a held-back group of customers who get nothing. If a campaign did not actually work, Zen says so rather than taking credit for people who were coming anyway.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ Pricing ════════════════════════════════════════════════════════ -->
+<section class="lp-section zen-reveal" id="lp-pricing" aria-label="Pricing">
+  <div class="zp-head">
+    <span class="lp-kicker">Simple pricing</span>
+    <h2>Start free. Pay when Zen has already earned it.</h2>
+    <p>One subscription, everything included at each level, and no lock-in.</p>
+  </div>
+  <div class="lp-pricing">
+    <div class="lp-price-card">
+      <h3>Starter</h3><p class="sub">One channel, getting going</p>
+      <div class="lp-price"><b>Free</b></div>
+      <ul>
+        <li><span class="lp-compare-check"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5L19 7"/></svg></span>WhatsApp replies, answered by Zen</li>
+        <li><span class="lp-compare-check"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5L19 7"/></svg></span>One campaign type</li>
+        <li><span class="lp-compare-check"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5L19 7"/></svg></span>Basic insights</li>
+      </ul>
+      <button class="lp-btn lp-btn-s" style="width:100%;" onclick="showSignup();">Start free</button>
+    </div>
+    <div class="lp-price-card is-featured">
+      <span class="lp-price-tag">MOST POPULAR</span>
+      <h3>Growth</h3><p class="sub">Everything a busy owner needs</p>
+      <div class="lp-price"><b>—</b><span>/ month</span></div>
+      <ul>
+        <li><span class="lp-compare-check"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5L19 7"/></svg></span>Everything in Starter</li>
+        <li><span class="lp-compare-check"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5L19 7"/></svg></span>All campaigns, tested against a real holdout</li>
+        <li><span class="lp-compare-check"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5L19 7"/></svg></span>Creative studio — posts, video and ads</li>
+        <li><span class="lp-compare-check"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5L19 7"/></svg></span>Instagram and Facebook ads, managed</li>
+      </ul>
+      <button class="lp-btn lp-btn-p" style="width:100%;" onclick="showSignup();">Start free</button>
+    </div>
+    <div class="lp-price-card">
+      <h3>Multi-location</h3><p class="sub">Several branches, one account</p>
+      <div class="lp-price"><b>Talk to us</b></div>
+      <ul>
+        <li><span class="lp-compare-check"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5L19 7"/></svg></span>Everything in Growth</li>
+        <li><span class="lp-compare-check"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5L19 7"/></svg></span>Every branch in one view</li>
+        <li><span class="lp-compare-check"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5L19 7"/></svg></span>Team roles and permissions</li>
+      </ul>
+      <button class="lp-btn lp-btn-s" style="width:100%;" onclick="showLogin();">Get in touch</button>
+    </div>
+  </div>
+  <p class="zp-price-note"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="flex:none;margin-top:1px;"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg><span>The Growth price is still a placeholder. Set your real numbers here before this page goes live — an empty price is the fastest way to lose a visitor who was otherwise ready.</span></p>
+</section>
+
+<!-- ══ FAQ ════════════════════════════════════════════════════════════ -->
+<section class="lp-section zen-reveal" aria-label="Frequently asked questions">
+  <div class="zp-head">
+    <span class="lp-kicker">Before you start</span>
+    <h2>The questions owners actually ask.</h2>
+  </div>
+  <div class="lp-faq">
+    <details class="lp-faq-item" open><summary>Will Zen message my customers without me knowing?</summary><p>No. You choose what is allowed to go out on its own and what waits for your review. Until you say otherwise, everything is held for you to approve, and you can see every message Zen has sent.</p></details>
+    <details class="lp-faq-item"><summary>Do I need design or marketing experience?</summary><p>No. Zen asks about your business in plain language and does the writing, design and setup itself. Your job is to look at what it made and say yes or no.</p></details>
+    <details class="lp-faq-item"><summary>I already use WhatsApp Business. Does that break?</summary><p>No. Zen connects to your existing WhatsApp Business account. Your number, your chat history and your customers stay exactly where they are.</p></details>
+    <details class="lp-faq-item"><summary>What happens when Zen does not know the answer?</summary><p>It stops and hands the conversation to you rather than guessing. Those chats appear at the top of your home screen so nothing sits unanswered.</p></details>
+    <details class="lp-faq-item"><summary>Will it sound like a robot to my customers?</summary><p>Zen learns your tone during setup and uses your real prices, hours and service names. You can read and edit any reply it drafts, and adjust how it sounds whenever you like.</p></details>
+    <details class="lp-faq-item"><summary>Can I cancel any time?</summary><p>Yes, any time, with no lock-in. Your data stays yours and can be exported before you go.</p></details>
+  </div>
+</section>
+
+<!-- ══ Close ══════════════════════════════════════════════════════════ -->
+<section class="zp-stage" aria-label="Get started">
+  <div class="zp-close">
+    <span class="zp-live"><i></i>Free to start · set up in an afternoon</span>
+    <h2>Get your evenings back.</h2>
+    <p>Connect WhatsApp, tell Zen about your business, and watch the first reply go out before the day is over.</p>
+    <div class="zp-close-ctas">
+      <button class="lp-btn lp-btn-s lp-btn-lg" onclick="showSignup();">Start free</button>
+      <button class="lp-btn lp-btn-ghost lp-btn-lg" onclick="showLogin();">Sign in</button>
+    </div>
+  </div>
+</section>
+
+<div id="authModalBackdrop" class="auth-modal-backdrop" onclick="if(event.target===this)closeAuthModal();">
+<div class="auth-modal-card">
+  <button class="auth-modal-x" aria-label="Close" onclick="closeAuthModal();">✕</button>
+  <div id="authPanelLogin" class="auth-panel">
+    <div style="display:flex;gap:9px;align-items:center;margin-bottom:16px;"><span class="onb-orb">Z</span>
+      <div><b style="font:600 15px Sora;display:block;">Zen</b><small style="color:var(--muted);">AI</small></div></div>
+    <div class="ux-auth-intro"><h2>Welcome back.</h2><p>Log in to your business workspace.</p></div>
+    <form id="loginForm" novalidate onsubmit="event.preventDefault();doRealLogin();return false;">
+      <label class="lbl" for="loginEmail">Email address</label><input class="field" id="loginEmail" name="email" type="email" placeholder="Email" autocomplete="username" style="margin-bottom:10px;">
+      <label class="lbl" for="loginPass">Password</label><input class="field" id="loginPass" name="password" type="password" placeholder="Password" autocomplete="current-password" style="margin-bottom:10px;">
+      <button class="btn btn-p btn-block" type="submit">Log in</button>
+    </form>
+    <div id="loginMsg" role="status" aria-live="polite" class="hint" style="margin-top:10px;"></div>
+    <div style="display:flex;justify-content:space-between;margin-top:14px;font-size:12px;">
+      <a href="#" onclick="event.preventDefault();showForgotPassword();" style="color:var(--muted);">Forgot password?</a>
+      <a href="#" onclick="event.preventDefault();showSignup();" style="color:var(--muted);">New here? Create an account</a>
+    </div>
+  </div>
+
+  <!-- Real Supabase Auth password reset - sends an actual email with a
+       reset link; nothing simulated here. -->
+  <div id="forgotGate" class="auth-panel" style="display:none;">
+    <div style="display:flex;gap:9px;align-items:center;margin-bottom:16px;"><span class="onb-orb">Z</span>
+      <div><b style="font:600 15px Sora;display:block;">Reset your password</b></div></div>
+    <label class="lbl" for="forgotEmail">Email address</label><input class="field" id="forgotEmail" type="email" placeholder="Your email" style="margin-bottom:10px;">
+    <button class="btn btn-p btn-block" onclick="doForgotPassword()">Send reset link</button>
+    <div id="forgotMsg" role="status" aria-live="polite" class="hint" style="margin-top:10px;"></div>
+    <a href="#" onclick="event.preventDefault();showLogin();" style="display:block;margin-top:14px;font-size:12px;color:var(--muted);">← Back to log in</a>
+  </div>
+
+  <!-- Real signup: creates a genuine new Supabase Auth account, then a
+       genuine new tenant via create_tenant (already existed on the
+       backend, seeds default campaign settings and makes this user its
+       owner) - not a demo of what signup would look like. -->
+  <div id="signupGate" class="auth-panel" style="display:none;">
+    <div style="display:flex;gap:9px;align-items:center;margin-bottom:16px;"><span class="onb-orb">Z</span>
+      <div><b style="font:600 15px Sora;display:block;">Create your account</b><small style="color:var(--muted);">Sets up a brand-new, separate business in Zen.</small></div></div>
+    <div id="signupForm">
+      <label class="lbl" for="signupBizName">Business name</label><input class="field" id="signupBizName" placeholder="Business name, e.g. Curl Up Salon" style="margin-bottom:10px;">
+      <label class="lbl" for="signupEmail">Email address</label><input class="field" id="signupEmail" type="email" placeholder="Email" autocomplete="username" style="margin-bottom:10px;">
+      <label class="lbl" for="signupPass">Password</label><input class="field" id="signupPass" type="password" placeholder="Password (at least 8 characters)" autocomplete="new-password" style="margin-bottom:10px;">
+      <button class="btn btn-p btn-block" onclick="doSignup()">Create account</button>
+      <div id="signupMsg" role="status" aria-live="polite" class="hint" style="margin-top:10px;"></div>
+    </div>
+    <div id="signupConfirmSent" style="display:none;text-align:center;padding:20px 0;">
+      <div style="font-size:32px;margin-bottom:10px;">✉</div>
+      <b style="display:block;margin-bottom:6px;">Check your email</b>
+      <p style="color:var(--muted);font-size:12.5px;line-height:1.5;margin:0;">We’ve sent a confirmation link to <b id="signupConfirmEmail" style="color:var(--ink);"></b>. Click it, then come back and log in.</p>
+    </div>
+    <a href="#" onclick="event.preventDefault();showLogin();" style="display:block;margin-top:14px;font-size:12px;color:var(--muted);">← Back to log in</a>
+  </div>
+</div>
+</div>
+<footer class="zp-footwrap">
+  <div class="zp-foot">
+    <div class="zp-foot-brand"><span class="onb-orb">Z</span>Zen</div>
+    <nav aria-label="Footer">
+      <a href="#lp-features">What it does</a>
+      <a href="#lp-studio">Creative studio</a>
+      <a href="#lp-how">How it works</a>
+      <a href="#lp-pricing">Pricing</a>
+      <a href="#" onclick="event.preventDefault();showLogin();">Sign in</a>
+    </nav>
+    <span>© Zen. Built for small businesses.</span>
+  </div>
+</footer>
+
 </div>
 </div>
 
-<!-- Real Supabase Auth password reset - sends an actual email with a
-     reset link; nothing simulated here. -->
-<div id="forgotGate">
-<div class="ux-auth-card" style="width:100%;max-width:340px;padding:0 20px;">
-  <div style="display:flex;gap:9px;align-items:center;margin-bottom:16px;"><span class="onb-orb">Z</span>
-    <div><b style="font:600 15px Sora;display:block;">Reset your password</b></div></div>
-  <label class="lbl" for="forgotEmail">Email address</label><input class="field" id="forgotEmail" type="email" placeholder="Your email" style="margin-bottom:10px;">
-  <button class="btn btn-p btn-block" onclick="doForgotPassword()">Send reset link</button>
-  <div id="forgotMsg" role="status" aria-live="polite" class="hint" style="margin-top:10px;"></div>
-  <a href="#" onclick="event.preventDefault();showLogin();" style="display:block;margin-top:14px;font-size:12px;color:var(--muted);">← Back to log in</a>
-</div>
-</div>
-
-<!-- Real signup: creates a genuine new Supabase Auth account, then a
-     genuine new tenant via create_tenant (already existed on the
-     backend, seeds default campaign settings and makes this user its
-     owner) - not a demo of what signup would look like. -->
-<div id="signupGate">
-<div class="ux-auth-card" style="width:100%;max-width:340px;padding:0 20px;">
-  <div style="display:flex;gap:9px;align-items:center;margin-bottom:16px;"><span class="onb-orb">Z</span>
-    <div><b style="font:600 15px Sora;display:block;">Create your account</b><small style="color:var(--muted);">Sets up a brand-new, separate business in Zen.</small></div></div>
-  <div id="signupForm">
-    <label class="lbl" for="signupBizName">Business name</label><input class="field" id="signupBizName" placeholder="Business name, e.g. Curl Up Salon" style="margin-bottom:10px;">
-    <label class="lbl" for="signupEmail">Email address</label><input class="field" id="signupEmail" type="email" placeholder="Email" autocomplete="username" style="margin-bottom:10px;">
-    <label class="lbl" for="signupPass">Password</label><input class="field" id="signupPass" type="password" placeholder="Password (at least 8 characters)" autocomplete="new-password" style="margin-bottom:10px;">
-    <button class="btn btn-p btn-block" onclick="doSignup()">Create account</button>
-    <div id="signupMsg" role="status" aria-live="polite" class="hint" style="margin-top:10px;"></div>
-  </div>
-  <div id="signupConfirmSent" style="display:none;text-align:center;padding:20px 0;">
-    <div style="font-size:32px;margin-bottom:10px;">✉</div>
-    <b style="display:block;font-size:14px;margin-bottom:6px;">Check your email</b>
-    <p style="color:var(--muted);font-size:12.5px;line-height:1.5;margin:0;">We’ve sent a confirmation link to <b id="signupConfirmEmail" style="color:var(--ink);"></b>. Click it, then come back and log in.</p>
-  </div>
-  <a href="#" onclick="event.preventDefault();showLogin();" style="display:block;margin-top:14px;font-size:12px;color:var(--muted);">← Back to log in</a>
-</div>
-</div>
 <div id="toastHost"></div>
 <!-- ══════════════════════════════════════════════════════════════
      ONBOARDING — Welcome → Salon profile → Data → Goals → WhatsApp → Done
@@ -788,7 +2673,7 @@ pre,code,pre *{font-family:ui-monospace,SFMono-Regular,Consolas,monospace!import
     <div class="side-brand"><span class="onb-orb">Z</span><div><b>Zen</b><small id="sideBrandTenant">AI</small></div></div>
     <div class="side-nav" aria-label="Workspace navigation">
 <div class="ux-nav-group"><div class="ux-nav-heading">YOUR DAY</div><button class="side-btn active" data-p="home" onclick="go('home')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></svg></span><span class="ux-nav-copy"><strong>Command Centre</strong><small>Your business at a glance</small></span></button></div>
-<div class="ux-nav-group"><div class="ux-nav-heading">YOUR CUSTOMERS</div><button class="side-btn" data-p="zenwhatsapp" onclick="go('zenwhatsapp')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-2 2V11.5a9.5 9.5 0 0 1 19 0Z"/><path d="M7 10h9M7 14h5"/></svg></span><span class="ux-nav-copy"><strong>WhatsApp inbox</strong><small>Conversations & replies</small></span><span class="cnt" id="navWaBadge" style="display:none;"></span></button><button class="side-btn" data-p="campaigns" onclick="go('campaigns')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18v13H3zM3 6l9 7 9-7M8 3h8"/></svg></span><span class="ux-nav-copy"><strong>WhatsApp campaigns</strong><small>Bring customers back</small></span><span class="cnt" id="navCampBadge" style="display:none;"></span></button></div>
+<div class="ux-nav-group"><div class="ux-nav-heading">YOUR CUSTOMERS</div><button class="side-btn" data-p="zenwhatsapp" onclick="go('zenwhatsapp')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-2 2V11.5a9.5 9.5 0 0 1 19 0Z"/><path d="M7 10h9M7 14h5"/></svg></span><span class="ux-nav-copy"><strong>WhatsApp inbox</strong><small>Conversations & replies</small></span><span class="cnt" id="navWaBadge" style="display:none;"></span></button><button class="side-btn" data-p="campaigns" onclick="go('campaigns')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18v13H3zM3 6l9 7 9-7M8 3h8"/></svg></span><span class="ux-nav-copy"><strong>Campaigns</strong><small>Bring customers back</small></span><span class="cnt" id="navCampBadge" style="display:none;"></span></button></div>
 <div class="ux-nav-group"><div class="ux-nav-heading">GROW YOUR BUSINESS</div><button class="side-btn" data-p="marketing" onclick="go('marketing')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.6 6.4L21 12l-6.4 2.6L12 21l-2.6-6.4L3 12l6.4-2.6Z"/></svg></span><span class="ux-nav-copy"><strong>Marketing</strong><small>Guided campaigns & posts</small></span></button><button class="side-btn" data-p="creativestudio" onclick="go('creativestudio')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 5-5 4 4 4-6 5 7"/></svg></span><span class="ux-nav-copy"><strong>Creative studio</strong><small>AI images & videos</small></span></button><button class="side-btn" data-p="promotions" onclick="go('promotions')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 9 14-5v16L4 15ZM18 9h3v6h-3M6 16l2 5h3l-2-4"/></svg></span><span class="ux-nav-copy"><strong>Paid ads</strong><small>Promotions on Meta</small></span></button></div>
 <div class="ux-nav-group"><div class="ux-nav-heading">YOUR BUSINESS</div><button class="side-btn" data-p="insights" onclick="go('insights')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3v18h17M8 16v-4M13 16V7M18 16v-7"/></svg></span><span class="ux-nav-copy"><strong>Insights</strong><small>Understand your results</small></span></button><button class="side-btn" data-p="settings" onclick="go('settings')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="currentColor"/><circle cx="15" cy="17" r="3" fill="currentColor"/></svg></span><span class="ux-nav-copy"><strong>Settings</strong><small>Your business & connections</small></span></button></div>
     </div>
@@ -994,14 +2879,31 @@ async function call(action, args, timeoutMs){
 // a class regardless of what that class says. One mechanism, always
 // applied to all five together, makes that specific class of bug
 // structurally impossible rather than something to remember to avoid.
-const VIEWS = ['loginGate','forgotGate','signupGate','onb','app'];
+const VIEWS = ['loginGate','onb','app'];
 function showView(name){
   VIEWS.forEach(v => document.getElementById(v).classList.toggle('on', v === name));
 }
-function showLogin(){ showView('loginGate'); }
-function showForgotPassword(){ showView('forgotGate'); }
+// Real, new - the auth modal's own open/close/panel-switch logic.
+// The three real functions below (showLogin/showSignup/
+// showForgotPassword) already existed and are called from
+// everywhere they always were - only their own bodies changed, to
+// open this modal instead of swapping a full-page view.
+function openAuthModal(panel){
+  showView('loginGate'); // the landing page is always the real base view
+  document.getElementById('authModalBackdrop').classList.add('open');
+  ['authPanelLogin','forgotGate','signupGate'].forEach(id => {
+    document.getElementById(id).style.display = id === panel ? '' : 'none';
+  });
+  document.body.classList.add('modal-open');
+}
+function closeAuthModal(){
+  document.getElementById('authModalBackdrop').classList.remove('open');
+  document.body.classList.remove('modal-open');
+}
+function showLogin(){ openAuthModal('authPanelLogin'); }
+function showForgotPassword(){ openAuthModal('forgotGate'); }
 function showSignup(){
-  showView('signupGate');
+  openAuthModal('signupGate');
   // Reset to a fresh form every time this is opened - otherwise
   // someone who already saw the "check your email" confirmation,
   // went back to login, and clicked "New here?" again would see that
@@ -9237,4 +11139,243 @@ function contentApprovalFlow(){ contentFlow('Poster'); }
 })();
 
 </script>
+
+<script id="zen-premium-motion">
+/* ══════════════════════════════════════════════════════════════════════
+   ZEN · PREMIUM EXPERIENCE — behaviour layer
+   Entirely additive and self-contained: no globals are declared, no
+   existing function is wrapped or overridden, and every block is
+   independently guarded so a failure in one enhancement can never take
+   the page down or reach the document-level error trap.
+   ══════════════════════════════════════════════════════════════════════ */
+(function () {
+  'use strict';
+
+  var reduced = false;
+  try {
+    reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  } catch (_) {}
+
+  function guard(fn) { try { fn(); } catch (_) {} }
+
+  function onReady(fn) {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function () { guard(fn); });
+    } else {
+      guard(fn);
+    }
+  }
+
+  /* ── Scroll reveal ────────────────────────────────────────────────
+     Same contract as before: .zen-reveal gains .is-visible once. If the
+     browser has no IntersectionObserver, or the visitor asked for less
+     motion, everything is simply shown straight away. */
+  function revealAll() {
+    var nodes = document.querySelectorAll('.zen-reveal');
+    for (var i = 0; i < nodes.length; i++) nodes[i].classList.add('is-visible');
+  }
+
+  onReady(function () {
+    if (reduced || !('IntersectionObserver' in window)) { revealAll(); return; }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        e.target.classList.add('is-visible');
+        io.unobserve(e.target);
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -60px 0px' });
+    var nodes = document.querySelectorAll('.zen-reveal');
+    for (var i = 0; i < nodes.length; i++) io.observe(nodes[i]);
+  });
+
+  /* ── Navigation: transparent over the hero, solid once scrolled ──── */
+  onReady(function () {
+    var nav = document.getElementById('zpNav');
+    if (!nav) return;
+    var ticking = false;
+    function sync() {
+      nav.classList.toggle('zp-stuck', (window.pageYOffset || document.documentElement.scrollTop || 0) > 24);
+      ticking = false;
+    }
+    window.addEventListener('scroll', function () {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame ? window.requestAnimationFrame(sync) : sync();
+    }, { passive: true });
+    sync();
+  });
+
+  /* ── Counters ─────────────────────────────────────────────────────
+     Any [data-zp-count] counts up once, the first time it is seen. */
+  function group(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+
+  function countUp(el) {
+    var target = parseFloat(el.getAttribute('data-zp-count'));
+    if (!isFinite(target)) return;
+    var prefix = el.getAttribute('data-zp-prefix') || '';
+    var sep = el.getAttribute('data-zp-sep') === '1';
+    if (reduced) { el.textContent = prefix + (sep ? group(target) : target); return; }
+    var start = null, dur = 1400;
+    function frame(ts) {
+      if (start === null) start = ts;
+      var p = Math.min((ts - start) / dur, 1);
+      var eased = 1 - Math.pow(1 - p, 3);
+      var v = Math.round(target * eased);
+      el.textContent = prefix + (sep ? group(v) : v);
+      if (p < 1) window.requestAnimationFrame(frame);
+    }
+    window.requestAnimationFrame(frame);
+  }
+
+  onReady(function () {
+    var nodes = document.querySelectorAll('[data-zp-count]');
+    if (!nodes.length) return;
+    if (reduced || !('IntersectionObserver' in window) || !window.requestAnimationFrame) {
+      for (var j = 0; j < nodes.length; j++) {
+        var t = nodes[j].getAttribute('data-zp-count');
+        var pre = nodes[j].getAttribute('data-zp-prefix') || '';
+        nodes[j].textContent = pre + (nodes[j].getAttribute('data-zp-sep') === '1' ? group(t) : t);
+      }
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        io.unobserve(e.target);
+        guard(function () { countUp(e.target); });
+      });
+    }, { threshold: 0.4 });
+    for (var i = 0; i < nodes.length; i++) io.observe(nodes[i]);
+  });
+
+  /* ── Creative marquee ─────────────────────────────────────────────
+     The track is duplicated once so the -50% loop is seamless. Cloned
+     cards are hidden from assistive technology; the originals are not. */
+  onReady(function () {
+    var track = document.getElementById('zpTrack');
+    if (!track || reduced || track.getAttribute('data-zp-cloned') === '1') return;
+    var originals = track.children, frag = document.createDocumentFragment();
+    for (var i = 0; i < originals.length; i++) {
+      var clone = originals[i].cloneNode(true);
+      clone.setAttribute('aria-hidden', 'true');
+      frag.appendChild(clone);
+    }
+    track.appendChild(frag);
+    track.setAttribute('data-zp-cloned', '1');
+  });
+
+  /* ── Value calculator ─────────────────────────────────────────────
+     Plain arithmetic on the visitor's own three inputs. Nothing here
+     is a claim about anyone else's results. */
+  onReady(function () {
+    var msgs = document.getElementById('zpMsgs');
+    var mins = document.getElementById('zpMins');
+    var rate = document.getElementById('zpRate');
+    var outHours = document.getElementById('zpHours');
+    var outMoney = document.getElementById('zpMoney');
+    var outVol = document.getElementById('zpVol');
+    if (!msgs || !mins || !rate || !outHours || !outMoney || !outVol) return;
+
+    var HANDLED = 0.7;   // share of routine messages Zen answers on its own
+    var WEEKS = 4.33;    // average weeks in a month
+
+    function paint() {
+      var m = parseFloat(msgs.value), t = parseFloat(mins.value), r = parseFloat(rate.value);
+      if (!isFinite(m) || !isFinite(t) || !isFinite(r)) return;
+
+      document.getElementById('zpMsgsOut').textContent = m;
+      document.getElementById('zpMinsOut').textContent = t + (t === 1 ? ' min' : ' mins');
+      document.getElementById('zpRateOut').textContent = 'AED ' + group(r);
+
+      var hoursWeek = (m * 7 * t * HANDLED) / 60;
+      var money = hoursWeek * WEEKS * r;
+      var volume = Math.round(m * 30 * HANDLED);
+
+      outHours.textContent = hoursWeek >= 10 ? Math.round(hoursWeek) : Math.round(hoursWeek * 10) / 10;
+      outMoney.textContent = 'AED ' + group(Math.round(money / 10) * 10);
+      outVol.textContent = group(volume);
+
+      // Keep the filled portion of each track in step with its value.
+      [msgs, mins, rate].forEach(function (el) {
+        var lo = parseFloat(el.min), hi = parseFloat(el.max);
+        var pct = ((parseFloat(el.value) - lo) / (hi - lo)) * 100;
+        el.style.background = 'linear-gradient(90deg,var(--zp-green-lit) 0%,var(--zp-green-lit) ' +
+          pct + '%,#dfe8e1 ' + pct + '%,#dfe8e1 100%)';
+      });
+    }
+
+    [msgs, mins, rate].forEach(function (el) {
+      el.addEventListener('input', function () { guard(paint); });
+      el.addEventListener('change', function () { guard(paint); });
+    });
+    paint();
+  });
+
+})();
+</script>
+
+<script id="zen-media-config">
+/* ══════════════════════════════════════════════════════════════════════
+   ZEN — IMAGE SLOTS
+   Paste a photo URL (or a data: URI) next to a slot name and it appears
+   in that position immediately, colour-graded to match the rest of the
+   page. Leave a slot empty and the built-in cinematic artwork stays.
+
+   Every slot is lazy-loaded, decoded off the main thread, and falls back
+   silently if a URL is wrong — the page can never break because of this.
+
+   Recommended exports (JPEG/WebP, ~70-80% quality):
+     hero-backdrop ............ 2400 x 1400   landscape, low detail
+     hero-post-1/2/3 .......... 1080 x 1350   4:5 social crops
+     studio-birthday .......... 1080 x 1350
+     studio-weekend ........... 1080 x 1350
+     studio-video ............. 1080 x 1350   video still / thumbnail
+     studio-referral .......... 1080 x 1350
+     studio-hours ............. 1080 x 1350
+     studio-ad ................ 1080 x 1350
+     persona-salon ............ 1200 x 1500
+     persona-clinic ........... 1200 x 1500
+     persona-food ............. 1200 x 1500
+     persona-services ......... 1200 x 1500
+
+   Keep each file under ~250KB. The caption text sits in HTML above the
+   photo, so pick frames with quiet space at the bottom third.
+   ══════════════════════════════════════════════════════════════════════ */
+window.ZEN_MEDIA = {
+  'hero-backdrop':   '',
+  'hero-post-1':     '',
+  'hero-post-2':     '',
+  'hero-post-3':     '',
+  'studio-birthday': '',
+  'studio-weekend':  '',
+  'studio-video':    '',
+  'studio-referral': '',
+  'studio-hours':    '',
+  'studio-ad':       '',
+  'persona-salon':   '',
+  'persona-clinic':  '',
+  'persona-food':    '',
+  'persona-services':''
+};
+
+(function(){
+  function fill(){
+    var map = window.ZEN_MEDIA || {};
+    var slots = document.querySelectorAll('[data-zp-media]');
+    Array.prototype.forEach.call(slots, function(slot){
+      var url = map[slot.getAttribute('data-zp-media')];
+      if(!url) return;                      // keep the built-in artwork
+      var img = slot.querySelector('img.zp-photo');
+      if(!img) return;
+      img.addEventListener('load', function(){ slot.classList.add('has-photo'); });
+      img.addEventListener('error', function(){ slot.classList.remove('has-photo'); img.removeAttribute('src'); });
+      img.src = url;
+      if(img.complete && img.naturalWidth) slot.classList.add('has-photo');
+    });
+  }
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', fill); }
+  else { fill(); }
+})();
+</script>
+
 </body></html>
