@@ -3214,6 +3214,18 @@ async function csRecoverGeneration(generationId, itemType, btnEl){
   toast('Saved', 'ok');
   btnEl.closest('.gal-card').remove();
 }
+// Real, new - asked for directly: the other option for something
+// unsaved, alongside Save. Deletes the real generation row itself,
+// not a content item - an unsaved generation was never attached to
+// one, so there is nothing else to remove.
+async function csDeleteGeneration(generationId, btnEl){
+  if (!confirm('Delete this permanently? This cannot be undone.')) return;
+  btnEl.disabled = true; btnEl.textContent = 'Deleting\u2026';
+  const j = await call('delete_approval_item', { type: 'generation', id: generationId });
+  if (!j.ok){ toast(j.error, 'err'); btnEl.disabled = false; btnEl.textContent = 'Delete'; return; }
+  toast('Deleted', 'ok');
+  btnEl.closest('.gal-card').remove();
+}
 async function creativestudio(){
   STATE.lastPage='creativestudio';
   const p = el('p-creativestudio');
@@ -3298,7 +3310,10 @@ async function creativestudio(){
       '<div class="gal-grid">' + uj.generations.map(g =>
         '<div class="gal-card" style="cursor:default;">' +
           (g.is_video ? '<video src="'+esc(g.output_url)+'" class="gal-media" muted></video>' : '<img src="'+esc(g.output_url)+'" class="gal-media" loading="lazy">') +
-          '<div class="gal-body"><button class="btn btn-s btn-sm" onclick="csRecoverGeneration(\''+g.id+'\',\''+(g.is_video?'video':'image')+'\',this)">Save this</button></div>' +
+          '<div class="gal-body" style="display:flex;gap:6px;">' +
+            '<button class="btn btn-s btn-sm" onclick="csRecoverGeneration(\''+g.id+'\',\''+(g.is_video?'video':'image')+'\',this)">Save this</button>' +
+            '<button class="btn btn-ghost btn-sm" style="color:#a02020;" onclick="csDeleteGeneration(\''+g.id+'\',this)">Delete</button>' +
+          '</div>' +
         '</div>').join('') + '</div>';
     p.appendChild(box);
   });
