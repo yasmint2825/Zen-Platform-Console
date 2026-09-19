@@ -2337,7 +2337,17 @@ async function whatsappSettingsPanel(){
       // receive a message and fragment into a duplicate conversation
       // the next time that real customer writes in.
       '<button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="waCheckMalformedNumbers()">\ud83d\udd0d Check for broken phone numbers</button>' +
-      '<div id="waMalformedArea" style="margin-top:10px;"></div>', true) +
+      '<div id="waMalformedArea" style="margin-top:10px;"></div>' +
+      // Real, new section - asked for directly: a number can
+      // genuinely be subscribed to this same webhook while staying
+      // connected elsewhere for sending - confirmed with a real,
+      // reported case, not hypothetical. Each one has a real, explicit
+      // checkbox: unchecked means the number is fully ignored, exactly
+      // as before this existed - adding a number here never silently
+      // starts acting on it.
+      '<div class="sechead" style="margin-top:14px;"><h2 style="font-size:14px;">Additional WhatsApp numbers</h2></div>' +
+      '<p class="note" style="margin-top:0;">A second number can send its messages here too, even while staying connected elsewhere \u2014 only if you switch it on below.</p>' +
+      '<div id="waSecondaryArea"><div class="loading-block"><span class="spin"></span></div></div>', true) +
 
     section('Reply assistant \u2014 what it knows',
       '<p class="note" style="margin-top:0;">The assistant may only say what is listed below. Anything missing, it flags for a person rather than guessing \u2014 a wrong price sent over WhatsApp is a promise that has to be honoured or retracted.</p>' +
@@ -2405,6 +2415,44 @@ async function whatsappSettingsPanel(){
           ? '<div class="list">' + templates.templates.slice(0,8).map(t => insLine(t.name, t.status||'Approved')).join('') + '</div>'
           : '<p class="note">No templates found on this account yet.</p>'
         : ''));
+  waLoadSecondaryNumbers();
+}
+async function waLoadSecondaryNumbers(){
+  const area = el('waSecondaryArea');
+  const j = await call('list_secondary_whatsapp_numbers', {});
+  if (!j.ok){ area.innerHTML = errBlock(j.error, ''); return; }
+  area.innerHTML =
+    (j.numbers.length ? '<div class="list">' + j.numbers.map(n =>
+      '<div class="list-row"><span><b>'+esc(n.display_label||n.phone_number_id)+'</b><div class="sub">'+esc(n.phone_number_id)+'</div></span>' +
+      '<label style="display:flex;align-items:center;gap:6px;font-size:12px;"><input type="checkbox" '+(n.is_enabled?'checked':'')+' onchange="waToggleSecondaryNumber(\''+n.id+'\',this.checked)"> Enabled</label>' +
+      '</div>').join('') + '</div>' : '<p class="note">No additional numbers added yet.</p>') +
+    '<button class="btn btn-s btn-sm" style="margin-top:8px;" onclick="waAddSecondaryNumberForm()">+ Add a number</button>' +
+    '<div id="waAddSecondaryArea" style="margin-top:8px;"></div>';
+}
+async function waToggleSecondaryNumber(id, isEnabled){
+  const j = await call('set_secondary_whatsapp_number_enabled', { id, is_enabled: isEnabled });
+  if (!j.ok){ toast(j.error, 'err'); waLoadSecondaryNumbers(); return; }
+  toast(isEnabled ? 'Enabled \u2014 its real messages will start arriving here' : 'Disabled \u2014 its messages will go back to being ignored here', 'ok');
+}
+function waAddSecondaryNumberForm(){
+  el('waAddSecondaryArea').innerHTML =
+    '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;">' +
+    '<label class="lbl">Phone number ID (from Meta\u2019s WhatsApp Manager \u2014 not the phone number itself)</label><input class="field" id="waSecPhoneId" style="margin-bottom:8px;">' +
+    '<label class="lbl">Label (optional, just for you)</label><input class="field" id="waSecLabel" placeholder="e.g. Second line" style="margin-bottom:8px;">' +
+    '<label class="lbl">Access token (only needed if Zen should send replies too \u2014 leave blank to just receive)</label><input class="field" id="waSecToken" type="password" style="margin-bottom:10px;">' +
+    '<button class="btn btn-p btn-sm" onclick="waSaveSecondaryNumber()">Save</button>' +
+    '</div>';
+}
+async function waSaveSecondaryNumber(){
+  const phoneId = (el('waSecPhoneId').value||'').trim();
+  if (!phoneId){ toast('Phone number ID is required.', 'err'); return; }
+  const j = await call('add_secondary_whatsapp_number', {
+    phone_number_id: phoneId, display_label: (el('waSecLabel').value||'').trim()||undefined,
+    access_token: (el('waSecToken').value||'').trim()||undefined,
+  });
+  if (!j.ok){ toast(j.error, 'err'); return; }
+  toast('Added \u2014 remember to switch it on below', 'ok');
+  waLoadSecondaryNumbers();
 }
 
 // Plain-English rendering of the real strategy rows - the same
