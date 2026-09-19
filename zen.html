@@ -2131,6 +2131,355 @@ header.zp-stage-hero>.zp-hero-backdrop{position:absolute;inset:0;z-index:0;heigh
 }
 </style>
 
+<style id="zen-loop-section">
+/* ── The marketing loop ───────────────────────────────────────────────
+   Six steps that read left to right and wrap on smaller screens, with
+   the feedback step marked as the one that closes the circle. */
+.zp-loop{list-style:none;margin:34px 0 0;padding:0;display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;counter-reset:zloop}
+.zp-loop-step{position:relative;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+  border-radius:18px;padding:20px 20px 22px;transition:background .25s ease,border-color .25s ease,transform .25s ease}
+.zp-loop-step:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.22);transform:translateY(-3px)}
+.zp-loop-n{display:grid;place-items:center;width:28px;height:28px;border-radius:10px;
+  background:rgba(111,227,176,.14);color:var(--zp-mint,#6fe3b0);font:650 12.5px/1 'Bricolage Grotesque','Sora',sans-serif;
+  margin-bottom:13px}
+.zp-loop-step b{display:block;font-family:'Bricolage Grotesque','Sora',sans-serif;font-size:16px;
+  letter-spacing:-.03em;color:#fff;margin-bottom:6px}
+.zp-loop-step p{margin:0;font-size:13px;line-height:1.6;color:var(--zp-on-dark-dim,rgba(224,240,233,.72))}
+/* arrows between steps on the wide layout */
+.zp-loop-step::after{content:"";position:absolute;right:-11px;top:34px;width:10px;height:10px;
+  border-top:1.6px solid rgba(255,255,255,.28);border-right:1.6px solid rgba(255,255,255,.28);
+  transform:rotate(45deg);pointer-events:none}
+.zp-loop-step:nth-child(3n)::after,.zp-loop-step:last-child::after{display:none}
+.zp-loop-step.is-return{border-color:rgba(111,227,176,.35);
+  background:linear-gradient(160deg,rgba(111,227,176,.14),rgba(255,255,255,.04))}
+
+.zp-loop-return{display:flex;gap:14px;align-items:flex-start;margin-top:20px;padding:18px 20px;
+  border-radius:16px;border:1px dashed rgba(111,227,176,.34);background:rgba(111,227,176,.06)}
+.zp-loop-return-ic{flex:none;width:34px;height:34px;border-radius:11px;display:grid;place-items:center;
+  background:rgba(111,227,176,.16);color:var(--zp-mint,#6fe3b0)}
+.zp-loop-return b{display:block;font-size:14px;color:#fff;letter-spacing:-.02em;margin-bottom:4px}
+.zp-loop-return span{font-size:12.5px;line-height:1.6;color:var(--zp-on-dark-dim,rgba(224,240,233,.72))}
+
+.zp-loop-chips{display:flex;flex-wrap:wrap;gap:9px;margin-top:22px}
+.zp-loop-chip{font-size:12px;font-weight:550;color:#d9ece3;padding:8px 14px;border-radius:99px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14)}
+.zp-loop-chip::before{content:"✦";margin-right:8px;color:var(--zp-mint,#6fe3b0);font-size:10px}
+
+@media(max-width:980px){
+  .zp-loop{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .zp-loop-step:nth-child(3n)::after{display:block}
+  .zp-loop-step:nth-child(2n)::after,.zp-loop-step:last-child::after{display:none}
+}
+@media(max-width:640px){
+  .zp-loop{grid-template-columns:1fr;gap:12px}
+  .zp-loop-step{padding:17px 18px}
+  .zp-loop-step::after{display:none!important}
+  .zp-loop-return{flex-direction:column;gap:11px}
+}
+@media(prefers-reduced-motion:reduce){
+  .zp-loop-step{transition:none}.zp-loop-step:hover{transform:none}
+}
+</style>
+
+
+<style id="zen-watch-demo">
+/* ── "Watch it work": one demo that covers both halves of Zen ──────────
+   The hero's second button used to drop people into the Creative Studio
+   showcase, which only told the Instagram half of the story. This plays
+   the whole loop — goal, plan, content, ads, WhatsApp replies, and the
+   conversions that go back to Meta — with a rail you can click. */
+.zw{display:grid;grid-template-columns:1.06fr .94fr;gap:clamp(26px,3.6vw,52px);align-items:start;margin-top:34px}
+
+/* stage */
+.zw-stage{position:relative;min-height:368px;background:linear-gradient(168deg,rgba(255,255,255,.07),rgba(255,255,255,.03));
+  border:1px solid rgba(255,255,255,.12);border-radius:22px;padding:clamp(18px,2.2vw,26px);
+  box-shadow:0 40px 90px -50px rgba(0,0,0,.9)}
+.zw-frame{position:absolute;inset:clamp(18px,2.2vw,26px);opacity:0;transform:translateY(10px);
+  pointer-events:none;transition:opacity .45s ease,transform .45s cubic-bezier(.2,.8,.2,1);
+  display:flex;flex-direction:column;justify-content:center;gap:15px}
+.zw-frame.is-on{opacity:1;transform:none;pointer-events:auto}
+.zw-kicker{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:650;color:#bfe3d4;
+  letter-spacing:.01em}
+.zw-kicker .dot{width:7px;height:7px;border-radius:50%;background:#6fe3b0;flex:none}
+.zw-say{margin:0;font-size:12.5px;line-height:1.6;color:rgba(224,240,233,.7)}
+
+/* white content cards inside the dark stage */
+.zw-goal,.zw-plan,.zw-content,.zw-publish,.zw-advice,.zw-chat,.zw-conv,.zw-again{
+  background:#fff;border-radius:16px;padding:16px 17px;color:#16241f;
+  box-shadow:0 22px 50px -34px rgba(0,0,0,.8)}
+
+/* 1 · goal */
+.zw-goal{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center}
+.zw-goal-big{display:flex;align-items:baseline;gap:9px;padding-right:18px;border-right:1px solid #eef2ee}
+.zw-goal-big b{font:700 46px/1 'Bricolage Grotesque','Sora',sans-serif;letter-spacing:-.05em;color:#0d2c25}
+.zw-goal-big span{font-size:12px;line-height:1.35;color:#7a8880}
+.zw-goal-rows{display:grid;gap:7px;min-width:0}
+.zw-row{display:flex;justify-content:space-between;gap:12px;font-size:12px;color:#7a8880;
+  padding:7px 10px;border-radius:9px;background:#f6f9f5}
+.zw-row b{color:#16241f;font-size:12.5px;white-space:nowrap}
+
+/* 2 · planner */
+.zw-plan{display:grid;gap:8px}
+.zw-week{display:flex;align-items:center;gap:7px}
+.zw-week small{width:52px;flex:none;font-size:10.5px;color:#8b968f}
+.zw-week i{height:15px;border-radius:5px;flex:1;display:block}
+.is-post{background:linear-gradient(90deg,#cfe9d9,#a8dcc3)}
+.is-reel{background:linear-gradient(90deg,#c9d7f5,#9ab5ee)}
+.is-ad{background:linear-gradient(90deg,#f7ddb4,#eebd76)}
+.is-wa{background:linear-gradient(90deg,#bfeccd,#7fd89c)}
+.zw-legend{display:flex;flex-wrap:wrap;gap:9px 16px;font-size:11px;color:rgba(224,240,233,.7)}
+.zw-legend span{display:inline-flex;align-items:center;gap:6px}
+.zw-legend i{width:11px;height:11px;border-radius:4px;display:block}
+
+/* 3 · content */
+.zw-content{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px}
+.zw-thumb{position:relative;margin:0;border-radius:12px;overflow:hidden;min-height:132px;display:flex;
+  align-items:flex-end;padding:10px;color:#fff}
+.zw-thumb figcaption{position:relative;z-index:1}
+.zw-thumb b{display:block;font-size:11.5px;letter-spacing:-.01em}
+.zw-thumb span{display:block;font-size:10px;color:rgba(255,255,255,.85);margin-top:2px}
+.zw-thumb::before{content:"";position:absolute;inset:0;z-index:0}
+.zw-thumb::after{content:"";position:absolute;inset:0;z-index:0;
+  background:linear-gradient(to top,rgba(6,20,16,.8),transparent 62%)}
+.zw-thumb--reel::before{background:linear-gradient(150deg,#2b5f8f,#0f2438)}
+.zw-thumb--post::before{background:linear-gradient(150deg,#e08b62,#7a2f22)}
+.zw-thumb--story::before{background:linear-gradient(150deg,#7b6bd0,#2b2352)}
+.zw-play{position:absolute;inset:0;z-index:1;display:grid;place-items:center;font-size:13px;
+  color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.5)}
+
+/* 4 · publish */
+.zw-publish{display:grid;gap:9px}
+.zw-pub-row{display:flex;align-items:center;gap:10px;font-size:12.5px;color:#41514a;
+  padding:10px 12px;border-radius:11px;background:#f6f9f5}
+.zw-pub-row.is-paid{background:linear-gradient(120deg,#fdf4e6,#fffaf2);color:#7a5e2e}
+.zw-tick{width:20px;height:20px;border-radius:50%;background:#1e9b7e;color:#fff;font-size:10px;
+  display:grid;place-items:center;flex:none}
+.zw-pub-row.is-paid .zw-tick{background:#e0a145}
+
+/* 5 · advice */
+.zw-advice{display:grid;gap:8px}
+.zw-advice-row{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;
+  padding:11px 13px;border-radius:12px;border:1px solid #e8ece7}
+.zw-advice-row.is-warn{border-color:#f0dcc0;background:linear-gradient(120deg,#fdf6ec,#fff)}
+.zw-advice-row b{font-size:12.5px;letter-spacing:-.01em}
+.zw-advice-row span{grid-column:1;font-size:11px;color:#8b968f}
+.zw-advice-row em{grid-row:1/3;font-style:normal;font-size:11px;font-weight:650;color:#fff;
+  background:linear-gradient(145deg,#1b7d68,#0e4b3f);padding:7px 13px;border-radius:9px;white-space:nowrap}
+.zw-advice-row.is-warn em{background:linear-gradient(145deg,#c78a3a,#96631f)}
+
+/* 6 · whatsapp */
+.zw-chat{padding:14px 15px}
+.zw-chat-head{display:flex;align-items:center;gap:9px;padding-bottom:10px;margin-bottom:11px;
+  border-bottom:1px solid #eef2ee}
+.zw-av{width:28px;height:28px;border-radius:50%;background:linear-gradient(140deg,#2aa17b,#128c7e);
+  color:#fff;display:grid;place-items:center;font:700 11px 'Bricolage Grotesque',sans-serif;flex:none}
+.zw-chat-head b{display:block;font-size:12.5px}
+.zw-chat-head small{font-size:10.5px;color:#8b968f}
+.zw-bub{max-width:82%;font-size:12px;line-height:1.5;padding:9px 12px;border-radius:14px;margin-bottom:7px}
+.zw-bub.in{background:#f2f4f0;border-bottom-left-radius:5px}
+.zw-bub.out{background:#dcf7e3;margin-left:auto;border-bottom-right-radius:5px;color:#12352a}
+
+/* 7 · conversions */
+.zw-conv{display:grid;gap:14px}
+.zw-conv-flow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.zw-node{font-size:11.5px;font-weight:600;padding:9px 14px;border-radius:99px;background:#f0f5ef;color:#41514a}
+.zw-node.is-meta{background:rgba(30,155,126,.12);color:#166b58}
+.zw-arrow{flex:1;min-width:22px;height:1.5px;background:linear-gradient(90deg,#cfdbd4,#8fc9b3);position:relative}
+.zw-arrow::after{content:"";position:absolute;right:0;top:-3px;width:7px;height:7px;
+  border-top:1.5px solid #8fc9b3;border-right:1.5px solid #8fc9b3;transform:rotate(45deg)}
+.zw-conv-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.zw-conv-stats>div{padding:12px 13px;border-radius:12px;background:#f6f9f5}
+.zw-conv-stats b{display:block;font:700 21px/1 'Bricolage Grotesque','Sora',sans-serif;letter-spacing:-.04em;color:#0d2c25}
+.zw-conv-stats span{display:block;font-size:11px;color:#7a8880;margin-top:5px}
+
+/* 8 · loop again */
+.zw-again{text-align:center;padding:22px 20px}
+.zw-again-ic{width:42px;height:42px;border-radius:14px;margin:0 auto 12px;display:grid;place-items:center;
+  background:rgba(30,155,126,.12);color:#1e9b7e}
+.zw-again b{display:block;font-family:'Bricolage Grotesque','Sora',sans-serif;font-size:17px;
+  letter-spacing:-.03em;margin-bottom:7px}
+.zw-again p{margin:0 auto 16px;font-size:12.5px;line-height:1.6;color:#7a8880;max-width:44ch}
+
+/* which half of Zen a step belongs to */
+.zw-tag{margin-left:auto;font-size:9.5px;font-weight:700;letter-spacing:.02em;padding:4px 9px;border-radius:99px;
+  background:rgba(122,90,248,.18);color:#c9bcff}
+.zw-tag.is-wa-tag{background:rgba(111,227,176,.18);color:#6fe3b0}
+.zw-tag.is-ask-tag{background:rgba(245,190,90,.18);color:#f3cf8a}
+
+/* 6 · ask zen */
+.zw-ask{background:#fff;border-radius:16px;padding:16px 17px;color:#16241f;display:grid;gap:11px;
+  box-shadow:0 22px 50px -34px rgba(0,0,0,.8)}
+.zw-ask-q{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:#16241f;
+  padding:11px 13px;border-radius:12px;background:#f5f8f4}
+.zw-ask-ic{width:22px;height:22px;border-radius:7px;flex:none;display:grid;place-items:center;font-size:11px;
+  font-weight:700;background:linear-gradient(145deg,#1b7d68,#0e4b3f);color:#fff}
+.zw-ask-a{padding:0 2px}
+.zw-ask-a p{margin:0 0 7px;font-size:12.5px;line-height:1.6;color:#41514a}
+.zw-ask-a p b{color:#0d2c25}
+.zw-ask-flag{color:#8a6a2f!important;background:linear-gradient(120deg,#fdf6ec,#fffdf8);
+  border-radius:10px;padding:9px 11px;margin:0!important}
+.zw-ask-more{display:flex;flex-wrap:wrap;gap:7px}
+.zw-ask-more span{font-size:10.5px;color:#7a8880;padding:6px 11px;border-radius:99px;border:1px solid #e8ece7}
+.zw-kicker{width:100%}
+
+/* closing line on the last frame */
+.zw-close{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:space-between;
+  padding:13px 15px;border-radius:14px;background:rgba(111,227,176,.08);border:1px solid rgba(111,227,176,.22)}
+.zw-close p{margin:0;font-size:12.5px;line-height:1.5;color:rgba(224,240,233,.82)}
+.zw-close p b{color:#fff}
+
+/* step 1 pairs the goal with the planner */
+.zw-goal .zw-plan{box-shadow:none;padding:0;background:none}
+
+/* hero entry points */
+.zw-jump{display:inline-flex;align-items:center;gap:7px;flex-wrap:wrap}
+.zw-jump-btn{font-size:12.5px;font-weight:600;color:rgba(224,240,233,.86);background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.2);border-radius:99px;padding:9px 15px;cursor:pointer;
+  transition:background .18s ease,border-color .18s ease,transform .16s ease}
+.zw-jump-btn:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.38);transform:translateY(-1px)}
+.zw-jump-btn .zw-jump-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:8px;vertical-align:1px}
+.zw-jump-btn.is-meta .zw-jump-dot{background:#9f8dff}
+.zw-jump-btn.is-wa .zw-jump-dot{background:#6fe3b0}
+.zw-jump-btn.is-ask .zw-jump-dot{background:#f3cf8a}
+.zw-jump-lab{font-size:12px;color:rgba(224,240,233,.55);margin-right:2px}
+
+/* rail */
+.zw-rail{list-style:none;margin:0;padding:0;display:grid;gap:5px}
+.zw-step{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;width:100%;text-align:left;
+  background:none;border:1px solid transparent;border-radius:13px;padding:11px 13px;cursor:pointer;
+  position:relative;transition:background .2s ease,border-color .2s ease}
+.zw-step:hover{background:rgba(255,255,255,.06)}
+.zw-step.is-on{background:rgba(255,255,255,.08);border-color:rgba(111,227,176,.3)}
+.zw-n{width:26px;height:26px;border-radius:9px;display:grid;place-items:center;flex:none;
+  background:rgba(255,255,255,.1);color:rgba(224,240,233,.8);
+  font:650 12px/1 'Bricolage Grotesque','Sora',sans-serif}
+.zw-step.is-on .zw-n{background:rgba(111,227,176,.18);color:#6fe3b0}
+.zw-step b{display:block;font-size:13.5px;color:rgba(224,240,233,.9);letter-spacing:-.015em}
+.zw-step.is-on b{color:#fff}
+.zw-step small{display:block;font-size:11.5px;color:rgba(224,240,233,.55);margin-top:2px}
+.zw-bar{position:absolute;left:13px;right:13px;bottom:6px;height:2px;border-radius:2px;
+  background:rgba(255,255,255,.1);overflow:hidden;opacity:0;transition:opacity .2s ease}
+.zw-step.is-on .zw-bar{opacity:1}
+.zw-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#1e9b7e,#6fe3b0)}
+.zw-step.is-on.is-playing .zw-bar i{animation:zwFill 3.2s linear forwards}
+@keyframes zwFill{to{width:100%}}
+.zw-step:focus-visible{outline:2px solid #6fe3b0;outline-offset:3px}
+
+@media(max-width:980px){
+  .zw{grid-template-columns:1fr;gap:22px}
+  .zw-stage{min-height:430px}
+  .zw-rail{grid-template-columns:repeat(2,minmax(0,1fr));display:grid}
+  .zw-step small{display:none}
+}
+@media(max-width:640px){
+  .zw-stage{min-height:470px;padding:16px}
+  .zw-frame{inset:16px}
+  .zw-goal{grid-template-columns:1fr}
+  .zw-goal-big{border-right:0;border-bottom:1px solid #eef2ee;padding:0 0 12px}
+  .zw-content{grid-template-columns:1fr 1fr}
+  .zw-thumb--story{display:none}
+  .zw-conv-stats{grid-template-columns:1fr}
+  .zw-rail{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){
+  .zw-frame{transition:none}
+  .zw-step.is-on.is-playing .zw-bar i{animation:none;width:100%}
+}
+</style>
+
+<script id="zen-watch-demo-js">
+/* Plays the eight frames in order, pausing while a person is reading or
+   hovering, and jumping straight to whichever step they click. Entirely
+   self-contained; if anything here fails the first frame simply stays up. */
+(function(){
+  function start(){
+    var root = document.getElementById('zwDemo');
+    if(!root) return;
+    var frames = root.querySelectorAll('[data-zw-frame]');
+    var steps  = root.querySelectorAll('[data-zw-go]');
+    if(!frames.length || !steps.length) return;
+
+    var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var DUR = 3200, i = 0, timer = null, paused = false;
+
+    function show(n, playing){
+      i = (n + frames.length) % frames.length;
+      for(var f = 0; f < frames.length; f++) frames[f].classList.toggle('is-on', f === i);
+      for(var s = 0; s < steps.length; s++){
+        var on = s === i;
+        steps[s].classList.toggle('is-on', on);
+        steps[s].classList.remove('is-playing');
+        steps[s].setAttribute('aria-current', on ? 'step' : 'false');
+      }
+      if(playing && !reduced){
+        // restart the progress bar animation on the active step
+        void steps[i].offsetWidth;
+        steps[i].classList.add('is-playing');
+      }
+    }
+    function tick(){ if(!paused) show(i + 1, true); queue(); }
+    function queue(){ clearTimeout(timer); if(!reduced) timer = setTimeout(tick, DUR); }
+
+    for(var s = 0; s < steps.length; s++){
+      (function(btn){
+        btn.addEventListener('click', function(){
+          show(parseInt(btn.getAttribute('data-zw-go'), 10), true);
+          queue();
+        });
+      })(steps[s]);
+    }
+    root.addEventListener('mouseenter', function(){ paused = true;  }, true);
+    root.addEventListener('mouseleave', function(){ paused = false; }, true);
+    root.addEventListener('focusin',   function(){ paused = true;  });
+    root.addEventListener('focusout',  function(){ paused = false; });
+    document.addEventListener('visibilitychange', function(){ paused = document.hidden; });
+
+    show(0, true);
+    queue();
+
+    /* Entry points from the hero: scroll here and open a specific step.
+       zwGo(0) starts at the Meta half, zwGo(3) at the WhatsApp half. */
+    window.zwGo = function(n){
+      var sec = document.getElementById('lp-watch');
+      if(sec) sec.scrollIntoView({behavior: reduced ? 'auto' : 'smooth', block:'start'});
+      show(parseInt(n, 10) || 0, true);
+      queue();
+    };
+  }
+  window.zwGo = window.zwGo || function(){
+    var sec = document.getElementById('lp-watch');
+    if(sec) sec.scrollIntoView({behavior:'smooth', block:'start'});
+  };
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', start); }
+  else { start(); }
+})();
+</script>
+
+<style id="zen-ask-section">
+/* ── Ask Zen: its own section, deliberately outside the marketing loop ── */
+.za{display:grid;grid-template-columns:1.02fr .98fr;gap:clamp(28px,4vw,62px);align-items:center}
+.za-copy h2{font-size:clamp(28px,3.6vw,44px);line-height:1.07;letter-spacing:-.042em;margin:6px 0 16px;max-width:20ch}
+.za-copy>p{font-size:15.5px;line-height:1.68;color:var(--zp-muted);max-width:56ch;margin:0}
+.za-points{list-style:none;padding:0;margin:26px 0 28px;display:grid;gap:13px}
+.za-points li{display:flex;gap:13px;align-items:flex-start}
+.za-points .za-ic{flex:none;width:32px;height:32px;border-radius:11px;display:grid;place-items:center;
+  background:rgba(23,94,82,.08);color:#1e7a66;font-size:14px}
+.za-points b{display:block;font-size:14px;letter-spacing:-.02em;margin-bottom:3px;color:var(--zp-ink)}
+.za-points div{font-size:12.8px;line-height:1.6;color:var(--zp-muted)}
+.za-panel{position:relative}
+.za-panel .zw-ask{box-shadow:0 34px 76px -44px rgba(11,48,35,.55);border:1px solid var(--zp-line);
+  padding:20px 21px;gap:13px}
+.za-panel .zw-ask-q{font-size:13.5px;padding:13px 15px}
+.za-panel .zw-ask-a p{font-size:13px}
+.za-panel .zw-ask-more span{font-size:11px}
+.za-note{margin:13px 2px 0;font-size:11.5px;color:var(--zp-muted)}
+@media(max-width:980px){
+  .za{grid-template-columns:1fr;gap:30px}
+  .za-copy h2{max-width:none}
+}
+</style>
+
 </head>
 <body>
 <div id="loginGate" class="on"><div class="lp">
@@ -2163,7 +2512,7 @@ header.zp-stage-hero>.zp-hero-backdrop{position:absolute;inset:0;z-index:0;heigh
       <p class="zp-hero-sub">Zen answers your customers on WhatsApp, makes your posts and ads, brings quiet customers back, and tells you in plain words what is working — while you are with a customer, or asleep.</p>
       <div class="zp-hero-ctas">
         <button class="lp-btn lp-btn-p lp-btn-lg" onclick="showSignup();">Start free</button>
-        <button class="lp-btn lp-btn-ghost lp-btn-lg" onclick="var t=document.getElementById('lp-studio');if(t)t.scrollIntoView({behavior:'smooth',block:'start'});">Watch it work</button>
+        <button class="lp-btn lp-btn-ghost lp-btn-lg" onclick="zwGo(0);">Watch it work</button><span class="zw-jump"><span class="zw-jump-lab">Jump to</span><button type="button" class="zw-jump-btn is-meta" onclick="zwGo(0);"><span class="zw-jump-dot"></span>Meta &amp; Instagram</button><button type="button" class="zw-jump-btn is-wa" onclick="zwGo(3);"><span class="zw-jump-dot"></span>WhatsApp</button><button type="button" class="zw-jump-btn is-ask" onclick="var t=document.getElementById('lp-ask');if(t)t.scrollIntoView({behavior:'smooth',block:'start'});"><span class="zw-jump-dot"></span>Ask Zen</button></span>
       </div>
       <div class="zp-hero-assure">
         <span>No credit card</span>
@@ -2502,12 +2851,102 @@ header.zp-stage-hero>.zp-hero-backdrop{position:absolute;inset:0;z-index:0;heigh
   </div>
 </section>
 
+<!-- ══ Watch it work — the whole loop in about fifteen seconds ════════ -->
+<section class="zp-stage zen-reveal" id="lp-watch" aria-label="Watch Zen work">
+  <div class="lp-section">
+    <div class="zp-head">
+      <span class="lp-kicker">Watch it work · about 15 seconds</span>
+      <h2>One goal in. A month of marketing, and every reply, out.</h2>
+      <p>The whole loop: the plan, the content, the ad moves, the WhatsApp conversations those ads open and the bookings reported back to Meta. Jump to any step.</p>
+    </div>
+
+    <div class="zw" id="zwDemo">
+      <div class="zw-stage">
+        <div class="zw-frame is-on" data-zw-frame="0">
+          <div class="zw-kicker"><span class="dot"></span>Step 1 · Your goal becomes the month's plan<span class="zw-tag">Meta</span></div>
+          <div class="zw-goal">
+            <div class="zw-goal-big"><b>20</b><span>more bookings<br>AED 1,500</span></div>
+            <div class="zw-plan">
+              <div class="zw-week"><small>Wk 1</small><i class="is-post"></i><i class="is-ad"></i></div>
+              <div class="zw-week"><small>Wk 2</small><i class="is-reel"></i><i class="is-ad"></i><i class="is-wa"></i></div>
+              <div class="zw-week"><small>Wk 3</small><i class="is-post"></i><i class="is-ad"></i><i class="is-wa"></i></div>
+              <div class="zw-week"><small>Wk 4</small><i class="is-reel"></i><i class="is-wa"></i></div>
+            </div>
+          </div>
+          <p class="zw-say">Zen works backwards from the goal into a week-by-week plan, budget split included.</p>
+        </div>
+
+        <div class="zw-frame" data-zw-frame="1">
+          <div class="zw-kicker"><span class="dot"></span>Step 2 · It makes the work, then posts it<span class="zw-tag">Meta</span></div>
+          <div class="zw-content">
+            <figure class="zw-thumb zw-thumb--reel"><figcaption><b>UGC reel · 0:18</b><span>Voiceover, captions</span></figcaption><span class="zw-play">▶</span></figure>
+            <figure class="zw-thumb zw-thumb--post"><figcaption><b>Feed post</b><span>Weekend braids, 20% off</span></figcaption></figure>
+            <figure class="zw-thumb zw-thumb--story"><figcaption><b>Story</b><span>Saturday slots left</span></figcaption></figure>
+          </div>
+          <div class="zw-pub-row is-paid"><span class="zw-tick">✦</span>Posted to Instagram &amp; Facebook — AED 300 behind the braids post, it is already outperforming</div>
+        </div>
+
+        <div class="zw-frame" data-zw-frame="2">
+          <div class="zw-kicker"><span class="dot"></span>Step 3 · Zen tells you what to change<span class="zw-tag">Meta</span></div>
+          <div class="zw-advice">
+            <div class="zw-advice-row is-warn"><b>Pause the Tuesday ad</b><span>AED 31 a booking against AED 12 elsewhere</span><em>Pause</em></div>
+            <div class="zw-advice-row"><b>Move AED 200 to the Saturday reel</b><span>Same audience, three times the replies</span><em>Approve</em></div>
+          </div>
+          <p class="zw-say">Recommendations with the number behind them, and a button — not a report to read.</p>
+        </div>
+
+        <div class="zw-frame" data-zw-frame="3">
+          <div class="zw-kicker"><span class="dot"></span>Step 4 · The ad opens a chat, not a form<span class="zw-tag is-wa-tag">WhatsApp</span></div>
+          <div class="zw-chat">
+            <div class="zw-chat-head"><span class="zw-av">R</span><div><b>Reem A.</b><small>Came from the braids ad · 9:12pm</small></div></div>
+            <div class="zw-bub in">Saw your reel — do you do braids for kids?</div>
+            <div class="zw-bub out">We do! Saturday 3:00pm is free, braids from AED 120. Shall I hold it?</div>
+            <div class="zw-bub in">Yes please 🙏</div>
+            <div class="zw-bub out">Held for Reem, Saturday 3:00pm 💫</div>
+          </div>
+          <p class="zw-say">Answered in four seconds, at 9pm, with your real prices — while you were with a customer.</p>
+        </div>
+
+        <div class="zw-frame" data-zw-frame="4">
+          <div class="zw-kicker"><span class="dot"></span>Step 5 · The booking goes back to Meta<span class="zw-tag">Meta</span></div>
+          <div class="zw-conv">
+            <div class="zw-conv-flow">
+              <span class="zw-node">Chat booked</span>
+              <span class="zw-arrow" aria-hidden="true"></span>
+              <span class="zw-node">Conversion sent</span>
+              <span class="zw-arrow" aria-hidden="true"></span>
+              <span class="zw-node is-meta">Next month aims better</span>
+            </div>
+            <div class="zw-conv-stats">
+              <div><b>12</b><span>bookings reported this month</span></div>
+              <div><b>AED 31 → 12</b><span>cost per booking</span></div>
+            </div>
+          </div>
+          <div class="zw-close">
+            <p>No agency, no retainer, no second tool. <b>Zen runs the loop.</b></p>
+            <button class="lp-btn lp-btn-p" onclick="showSignup();">Start free</button>
+          </div>
+        </div>
+      </div>
+
+      <ol class="zw-rail" id="zwRail">
+        <li><button type="button" class="zw-step is-on" data-zw-go="0"><span class="zw-n">1</span><span><b>Goal &amp; plan</b><small>20 bookings, AED 1,500</small></span><span class="zw-bar"><i></i></span></button></li>
+        <li><button type="button" class="zw-step" data-zw-go="1"><span class="zw-n">2</span><span><b>Content &amp; posting</b><small>Reels, posts, stories</small></span><span class="zw-bar"><i></i></span></button></li>
+        <li><button type="button" class="zw-step" data-zw-go="2"><span class="zw-n">3</span><span><b>Ad moves</b><small>Pause, shift, retry</small></span><span class="zw-bar"><i></i></span></button></li>
+        <li><button type="button" class="zw-step" data-zw-go="3"><span class="zw-n">4</span><span><b>WhatsApp replies</b><small>Answered and booked</small></span><span class="zw-bar"><i></i></span></button></li>
+        <li><button type="button" class="zw-step" data-zw-go="4"><span class="zw-n">5</span><span><b>Back to Meta</b><small>Cost per booking falls</small></span><span class="zw-bar"><i></i></span></button></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+
 <!-- ══ How it works — the existing five-step sequence, unchanged ══════ -->
 <section class="lp-section zen-reveal" id="lp-how" aria-label="How it works">
   <div class="zp-head">
-    <span class="lp-kicker">Sign-up to first reply</span>
-    <h2>Up and running in an afternoon.</h2>
-    <p>No migration, no new system to learn, and nothing to rip out. Zen sits on top of how you already work.</p>
+    <span class="lp-kicker">Sign-up to first booking</span>
+    <h2>Set up in an afternoon. Running your marketing by the weekend.</h2>
+    <p>No migration, no new system to learn, nothing to rip out. You connect the accounts you already use, tell Zen about the business once, and give it a goal.</p>
   </div>
   <div class="lp-seq">
     <div>
@@ -2524,6 +2963,7 @@ header.zp-stage-hero>.zp-hero-backdrop{position:absolute;inset:0;z-index:0;heigh
           <div class="lp-seq-connect">
             <div class="lp-seq-connect-row"><span class="ck">✓</span>WhatsApp Business — connected</div>
             <div class="lp-seq-connect-row"><span class="ck">✓</span>Instagram — connected</div>
+            <div class="lp-seq-connect-row"><span class="ck">✓</span>Facebook Page &amp; ad account — connected</div>
           </div>
         </div>
         <div class="lp-seq-frame">
@@ -2534,32 +2974,133 @@ header.zp-stage-hero>.zp-hero-backdrop{position:absolute;inset:0;z-index:0;heigh
           </div>
         </div>
         <div class="lp-seq-frame">
-          <div class="ux-glimpse-kicker"><span class="dot"></span>Step 3 · Zen gets to work</div>
-          <div class="ux-glimpse-wa-bubble ux-glimpse-wa-in">Do you do braids for kids?</div>
-          <div class="ux-glimpse-wa-bubble ux-glimpse-wa-out">Yes! Would you like to see our braid styles and prices? 💫</div>
+          <div class="ux-glimpse-kicker"><span class="dot"></span>Step 3 · Give Zen the month's goal</div>
+          <div class="lp-seq-approve"><div class="n">20</div><div><b>More bookings in November, AED 1,500 to spend</b><span>Zen builds the plan: posts, campaigns and ad budget, week by week</span></div></div>
         </div>
         <div class="lp-seq-frame">
-          <div class="ux-glimpse-kicker"><span class="dot"></span>Step 4 · You approve, or let it run</div>
-          <div class="lp-seq-approve"><div class="n">3</div><div><b>Birthday messages ready to send</b><span>Review each one, or switch this campaign to automatic</span></div></div>
+          <div class="ux-glimpse-kicker"><span class="dot"></span>Step 4 · The ad runs, the chat opens</div>
+          <div class="ux-glimpse-wa-bubble ux-glimpse-wa-in">Saw your reel — do you do braids for kids?</div>
+          <div class="ux-glimpse-wa-bubble ux-glimpse-wa-out">We do! Saturday 3:00pm is free, braids from AED 120. Shall I hold it? 💫</div>
         </div>
         <div class="lp-seq-frame">
-          <div class="ux-glimpse-kicker"><span class="dot"></span>Step 5 · See what's actually working</div>
+          <div class="ux-glimpse-kicker"><span class="dot"></span>Step 5 · Bookings reported back to Meta</div>
           <div class="ux-glimpse-tiles">
+            <div class="ux-glimpse-tile"><b>AED 12</b><span>Cost per booking, down from 31</span></div>
             <div class="ux-glimpse-tile"><b>+14</b><span>pts lift, Nudge campaign</span></div>
-            <div class="ux-glimpse-tile"><b>AED 2,559</b><span>From WhatsApp campaigns</span></div>
           </div>
         </div>
       </div>
     </div>
     <ul class="lp-steps-mini">
-      <li><div class="num">1</div><div><b>Connect WhatsApp and Instagram</b><p>Link the accounts you already use. Zen never posts or replies anywhere you have not connected.</p></div></li>
-      <li><div class="num">2</div><div><b>Tell Zen about your business</b><p>Services, prices, hours and how you like to sound — so every reply and every post reads like you wrote it.</p></div></li>
-      <li><div class="num">3</div><div><b>Zen starts working</b><p>Replies to customers, drafts posts and campaigns, and keeps your ads running, using what it learned in step two.</p></div></li>
-      <li><div class="num">4</div><div><b>You approve, or let it run</b><p>Review whatever you want to see first. Switch the rest to automatic once you trust it — and switch back any time.</p></div></li>
-      <li><div class="num">5</div><div><b>See what actually worked</b><p>Plain-language answers about messages, campaigns and ads, right on the pages you already use.</p></div></li>
+      <li><div class="num">1</div><div><b>Connect WhatsApp, Instagram and Facebook</b><p>The accounts you already use. Zen never posts, replies or spends anywhere you have not connected.</p></div></li>
+      <li><div class="num">2</div><div><b>Tell Zen about your business, once</b><p>Services, prices, hours and how you like to sound — so every reply, post and ad reads like you wrote it.</p></div></li>
+      <li><div class="num">3</div><div><b>Give it the month's goal and budget</b><p>"20 more bookings, AED 1,500." Zen works backwards into a week-by-week plan you can change.</p></div></li>
+      <li><div class="num">4</div><div><b>Zen makes and publishes the work</b><p>Feed posts, stories, reels and UGC-style video from your own photos — scheduled, then promoted where it is worth the spend.</p></div></li>
+      <li><div class="num">5</div><div><b>Every reply lands in WhatsApp</b><p>The ad opens a chat instead of a form. Zen answers in seconds with your real prices and holds the slot.</p></div></li>
+      <li><div class="num">6</div><div><b>What booked goes back to Meta</b><p>Zen reports which conversations became customers, so the targeting sharpens and budget moves to what converts.</p></div></li>
     </ul>
   </div>
 </section>
+
+<!-- ══ Campaigns that send themselves ════════════════════════════════ -->
+<section class="zp-stage zen-reveal" id="lp-campaigns" aria-label="Campaigns Zen runs for you">
+  <div class="lp-section">
+    <div class="zp-head">
+      <span class="lp-kicker">Campaigns, running quietly in the background</span>
+      <h2>The messages you never get around to sending.</h2>
+      <p>Zen watches who has gone quiet, who is celebrating, and who asked about a price but never came in — then sends the right message at the right time, in your voice. If they reply, it keeps the conversation going and books them.</p>
+    </div>
+
+    <ol class="zp-loop">
+      <li class="zp-loop-step">
+        <span class="zp-loop-n">◷</span>
+        <b>Lapsed customers</b>
+        <p>"We have not seen Amira in eleven weeks." A win-back offer goes out before she finds another salon.</p>
+      </li>
+      <li class="zp-loop-step">
+        <span class="zp-loop-n">↻</span>
+        <b>Nudge the nearly-booked</b>
+        <p>Asked about prices on Tuesday, never came back. A single follow-up two days later, not a pile of them.</p>
+      </li>
+      <li class="zp-loop-step">
+        <span class="zp-loop-n">✦</span>
+        <b>Birthdays</b>
+        <p>The week before, not the day after. A free birthday chair, sent to the right child's parent automatically.</p>
+      </li>
+      <li class="zp-loop-step">
+        <span class="zp-loop-n">◔</span>
+        <b>Fill a quiet day</b>
+        <p>Tuesday is looking empty. Zen offers the open slots to nearby regulars rather than discounting to everyone.</p>
+      </li>
+      <li class="zp-loop-step">
+        <span class="zp-loop-n">◎</span>
+        <b>Replies that sound like you</b>
+        <p>When someone answers, Zen carries on the conversation, checks the calendar, holds the slot — and hands anything unusual to you.</p>
+      </li>
+      <li class="zp-loop-step is-return">
+        <span class="zp-loop-n">◫</span>
+        <b>Measured against a held-back group</b>
+        <p>Zen deliberately does not message a slice of the list, then compares. The lift you see is real, not a flattering total.</p>
+      </li>
+    </ol>
+
+    <div class="zp-loop-return">
+      <span class="zp-loop-return-ic" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2 4 5v6c0 5 3.5 9 8 11 4.5-2 8-6 8-11V5Z"/><path d="m9 12 2 2 4-4"/>
+        </svg>
+      </span>
+      <div>
+        <b>Nothing sends until you say so — or until you decide it can.</b>
+        <span>Review every message, approve a batch at a time, or switch a campaign to automatic once you trust it. You can switch it back on any Tuesday you like.</span>
+      </div>
+    </div>
+
+    <div class="zp-loop-chips" aria-label="Examples of messages Zen sends">
+      <span class="zp-loop-chip">"Hi Reem — Layla is due for a trim. Saturday 3pm is free."</span>
+      <span class="zp-loop-chip">"Happy birthday, Aanya! Your birthday chair is on us this week."</span>
+      <span class="zp-loop-chip">"+14 pts lift against the held-back group"</span>
+      <span class="zp-loop-chip">"AED 2,559 from WhatsApp campaigns, net of sending cost"</span>
+    </div>
+  </div>
+</section>
+
+<!-- ══ Ask Zen — separate from marketing: your business, in plain words ══ -->
+<section class="lp-section zen-reveal" id="lp-ask" aria-label="Ask Zen about your business">
+  <div class="za">
+    <div class="za-copy">
+      <span class="lp-kicker">Ask Zen · not a marketing tool</span>
+      <h2>The other half: ask your business a question, get a straight answer.</h2>
+      <p>Campaigns and ads are one job. This is the other one. Zen reads everything the business has done — bookings, chats, spend, customers who stopped coming — and answers in the words you asked in. No filters to set, no report to export, no dashboard to learn.</p>
+      <ul class="za-points">
+        <li><span class="za-ic" aria-hidden="true">◴</span><div><b>It answers from your real data</b>Bookings, WhatsApp threads, campaign results and ad spend — the same numbers your pages show, not an estimate.</div></li>
+        <li><span class="za-ic" aria-hidden="true">◇</span><div><b>It volunteers the bad news</b>If something is quietly losing money or a group of customers has drifted away, it says so without being asked.</div></li>
+        <li><span class="za-ic" aria-hidden="true">◈</span><div><b>Ask in any words, any language</b>"How did last month go", "kitna business hua", "who hasn't visited since June" — all the same question to Zen.</div></li>
+      </ul>
+      <button class="lp-btn lp-btn-p lp-btn-lg" onclick="showSignup();">Try it on your own numbers</button>
+    </div>
+
+    <div class="za-panel">
+      <div class="zw-ask">
+        <div class="zw-ask-q"><span class="zw-ask-ic">?</span>How did last month go?</div>
+        <div class="zw-ask-a">
+          <p>Busier than October. Zen answered <b>512 chats</b>, 163 turned into bookings, and the win-back campaign brought <b>22 customers</b> back. Saturday is your strongest day by some distance.</p>
+          <p class="zw-ask-flag">Worth knowing: the Tuesday ad is costing AED 31 a booking against AED 12 everywhere else.</p>
+        </div>
+        <div class="zw-ask-more">
+          <span>Who hasn't visited since June?</span>
+          <span>Is the birthday campaign working?</span>
+          <span>What did braids bring in this quarter?</span>
+          <span>Which ad brought the most bookings?</span>
+        </div>
+      </div>
+      <p class="za-note">Answers are drawn from your own workspace. Nothing here is a sample once you connect.</p>
+    </div>
+  </div>
+</section>
+
+
+
 
 <!-- ══ Trust ══════════════════════════════════════════════════════════ -->
 <section class="zp-stage zen-reveal" aria-label="Control and trust">
