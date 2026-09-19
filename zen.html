@@ -2050,6 +2050,30 @@ header.zp-stage-hero>.zp-hero-backdrop{position:absolute;inset:0;z-index:0;heigh
 }
 </style>
 
+<style id="zen-link-polish">
+/* ── Navigation links ─────────────────────────────────────────────────
+   The browser's default underline was showing on every nav item, on top
+   of the hover underline the design already draws. Navigation is a set
+   of destinations, not prose, so the underline is carried by hover and
+   focus only. Links inside body copy keep their underline, because
+   there it is the only signal that text is clickable. */
+.lp-nav a,.lp-nav-links a,.zp-nav-signin,.lp-nav-brand{text-decoration:none}
+.lp-nav-links a::after{height:1.5px}
+.zp-nav-signin{position:relative;padding:4px 0;transition:color .2s ease}
+.zp-nav-signin::after{content:"";position:absolute;left:0;right:100%;bottom:0;height:1.5px;border-radius:2px;
+  background:currentColor;opacity:.55;transition:right .28s cubic-bezier(.2,.8,.2,1)}
+.zp-nav-signin:hover::after{right:0}
+.lp-nav a:focus-visible{outline:2px solid #6fe3b0;outline-offset:6px;border-radius:4px}
+
+/* in-page links keep the underline, set a little away from the baseline */
+.lp p a,.lp-faq a,.zp-head p a,.zp-band-note a,.lp-price-note a{
+  text-underline-offset:3px;text-decoration-thickness:1px}
+
+@media(prefers-reduced-motion:reduce){
+  .lp-nav-links a::after,.zp-nav-signin::after{transition:none}
+}
+</style>
+
 </head>
 <body>
 <div id="loginGate" class="on"><div class="lp">
