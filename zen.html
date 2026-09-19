@@ -1483,6 +1483,7 @@ async function home(){
     // A highlight only - the real detail for each already lives on
     // its own page.
     '<div id="homeSnippets" class="mini-grid" style="margin-bottom:2px;"><div class="loading-block"><span class="spin"></span></div></div>' +
+    '<div id="homeSendCost"></div>' +
     '<div id="homeActivity24h"></div>' +
     // Real "how am I doing" row, in plain language - this week vs
     // last week, this month vs last month, this quarter vs the same
@@ -1537,10 +1538,16 @@ async function home(){
         '<span>WhatsApp messages, last 24h \u2014 '+wa.from_ads+' from ads, '+wa.organic+' other</span></div>' +
       '<div class="mini" style="cursor:pointer;" onclick="go(\'zenwhatsapp\')"><b>'+ql.last_24h+' <span style="font-size:12px;font-weight:500;color:var(--muted);">/ '+ql.last_7d+'</span></b>' +
         '<span>Qualified leads \u2014 last 24h / last 7 days</span></div>' +
-      '<div class="mini" style="cursor:pointer;" onclick="go(\'promotions\')"><b>AED '+money(rev.whatsapp_campaigns)+'</b>' +
-        '<span>From WhatsApp campaigns, last 90 days</span></div>' +
+      '<div class="mini" style="cursor:pointer;" onclick="go(\'zenwhatsapp\')"><b>AED '+money(rev.whatsapp_campaigns_net)+'</b>' +
+        '<span>From WhatsApp campaigns, net of sending cost \u2014 last 90 days</span></div>' +
       '<div class="mini" style="cursor:pointer;" onclick="go(\'promotions\')"><b>AED '+money(rev.meta_ads)+'</b>' +
         '<span>From Meta ads, last 90 days</span></div>';
+    // Real note on the real sending-cost math behind the net figure
+    // above, same real numbers as the WhatsApp Insights page itself
+    // shows - not re-derived, just carried over and made visible here
+    // too, so the net figure doesn't look unexplained.
+    el('homeSendCost').innerHTML = rev.whatsapp_messages_sent ?
+      '<p class="note" style="margin-top:2px;">Sending cost about AED '+rev.whatsapp_sending_cost.toFixed(2)+' ('+money(rev.whatsapp_messages_sent)+' messages at Meta\u2019s $0.05 each) against AED '+money(rev.whatsapp_campaigns)+' in revenue \u2014 net AED '+money(rev.whatsapp_campaigns_net)+'.</p>' : '';
     // Real, new - what Zen itself actually did in the last 24 hours,
     // asked for directly: genuine campaign sends by name, real
     // replies sent, and when the ad-strategy engine last actually
@@ -1961,6 +1968,15 @@ async function zenwhatsapp(){
   p.innerHTML =
     '<div class="topline"><div class="pagetitle"><div class="kicker">ZenWhatsApp</div><h1>Conversations.</h1>' +
     '<p>Zen answers most of these itself. The ones it could not are at the top.</p></div></div>' +
+    // Real, new - find whether one particular customer has ever
+    // messaged, by name or number. The inbox list below only ever
+    // shows the most recently active conversations, so someone who
+    // messaged a while ago, or whose thread has since been pushed
+    // down by everyone else's, would not be visible there at all.
+    '<div class="ask" style="margin-bottom:14px;"><span class="spark">\ud83d\udd0d</span>' +
+      '<input id="waSearchInput" placeholder="Find a customer by name or number\u2026" onkeydown="if(event.key===\'Enter\')waSearchCustomer(this.value)">' +
+      '<button class="btn btn-p btn-sm" onclick="waSearchCustomer(document.getElementById(\'waSearchInput\').value)">Find</button></div>' +
+    '<div id="waSearchResult"></div>' +
     '<div class="subtabs" id="waTabs">' +
       '<button class="active" onclick="waSubTab(\'chat\')">Chat</button>' +
       '<button onclick="waSubTab(\'history\')">History</button>' +
@@ -2060,6 +2076,33 @@ async function waAutoRefresh(){
   // either way, since it doesn't contain the file input or the draft.
   const draftBox = el('waReplyBox');
   if (!WA_PICKER_OPEN && (!draftBox || !draftBox.value.trim())) waSelect(WA_ACTIVE);
+}
+// Real, new - answers directly whether one particular customer has
+// ever sent a WhatsApp message, by name or number, without depending
+// on them being among the handful of most recently active
+// conversations the inbox list itself shows.
+async function waSearchCustomer(query){
+  query = (query || '').trim();
+  const box = el('waSearchResult');
+  if (!query){ box.innerHTML = ''; return; }
+  box.innerHTML = '<div class="loading-block" style="padding:10px 0;"><span class="spin"></span></div>';
+  const j = await call('search_whatsapp_customer', {query});
+  if (!j.ok){ box.innerHTML = '<p class="note" style="color:#a02020;">'+esc(j.error)+'</p>'; return; }
+  if (!j.found){
+    box.innerHTML = '<div class="attn"><div class="n">\u2014</div><div><b>No messages found</b><p>Nobody matching "'+esc(query)+'" has sent or received a WhatsApp message.</p></div></div>';
+    return;
+  }
+  box.innerHTML = j.matches.map(m => {
+    const name = m.customer_name || m.mobile;
+    const isIg = m.channel === 'instagram';
+    const inWaCache = WA_CACHE.some(c => c.mobile === m.mobile);
+    return '<div class="attn">' + avatar(name, 34) +
+      '<div><b>'+esc(name)+'</b> <span style="font-size:10px;color:'+(isIg?'#c13584':'#25d366')+';">'+(isIg?'\ud83d\udcf8 Instagram':'\ud83d\udcac WhatsApp')+'</span>' +
+      (m.from_ad?' <span style="font-size:10px;color:var(--muted);">\ud83d\udce3 from an ad</span>':'') +
+      '<p>'+m.total+' message'+(m.total===1?'':'s')+' total \u2014 last '+(m.last_direction==='in'?'from them':'from us')+', '+ago(m.last_at)+': \u201c'+esc(String(m.last_body||'').slice(0,80))+'\u201d</p></div>' +
+      (inWaCache ? '<button class="btn btn-s btn-sm" onclick="waSubTab(\'chat\');waSelect(\''+esc(m.mobile)+'\')">Open</button>' : '<span class="sub" style="font-size:10px;">Not in the recent list</span>') +
+      '</div>';
+  }).join('');
 }
 function waSubTab(name){
   document.querySelectorAll('#waTabs button').forEach((b,i)=>b.classList.toggle('active', (name==='chat'?0:1)===i));
@@ -3474,7 +3517,17 @@ async function renderPerformanceTab(){
     '<div class="sechead" style="margin-top:18px;"><h2>Report conversions back to Meta</h2></div>' +
     '<p class="note" style="margin-top:0;">Tells Meta which real sales came from an ad, so it can optimize delivery toward people who actually convert - not just click.</p>' +
     '<button class="btn btn-s btn-sm" onclick="sendAdConversionsFlow()">Send unreported conversions now</button>' +
-    '<div id="sendConversionsResult" style="margin-top:8px;"></div>';
+    '<div id="sendConversionsResult" style="margin-top:8px;"></div>' +
+    // Real, new - for the real, common case with no WhatsApp message
+    // at all: a customer who saw the ad and walked in directly. No
+    // click ID exists for these, so Meta is told about the real
+    // visit itself (hashed phone and name) and does its own matching
+    // on its side - not a guaranteed trail, but a real, honest shot
+    // at attribution where otherwise there would be none.
+    '<div class="sechead" style="margin-top:18px;"><h2>Report in-person visits Meta might match to an ad</h2></div>' +
+    '<p class="note" style="margin-top:0;">For customers who saw an ad and came straight into the salon, with no WhatsApp message and no click to track. Meta tries to match the visit to someone who saw an ad using phone and name - it won\u2019t catch every one, but otherwise these are invisible to Meta entirely.</p>' +
+    '<button class="btn btn-s btn-sm" onclick="sendOfflineConversionsFlow()">Send unreported visits now</button>' +
+    '<div id="sendOfflineConversionsResult" style="margin-top:8px;"></div>';
 }
 async function sendAdConversionsFlow(){
   const box = el('sendConversionsResult');
@@ -3484,6 +3537,18 @@ async function sendAdConversionsFlow(){
   box.innerHTML = j.sent
     ? '<p class="note" style="color:var(--green);">\u2713 Reported '+j.sent+' real conversion'+(j.sent>1?'s':'')+' to Meta.'+(j.no_visit_yet?' '+j.no_visit_yet+' more are being tracked, waiting to see if they convert.':'')+'</p>'
     : '<p class="note">'+(j.note||('Nothing new to report right now.'+(j.no_visit_yet?' '+j.no_visit_yet+' conversation(s) are still being watched for a real visit.':'')))+'</p>';
+  if (j.failed) box.innerHTML += '<p class="note" style="color:#a02020;">'+j.failed+' failed to send. '+(j.errors||[]).join('; ')+'</p>';
+}
+async function sendOfflineConversionsFlow(){
+  const box = el('sendOfflineConversionsResult');
+  box.innerHTML = '<div class="loading-block"><span class="spin"></span>Checking for real, unreported visits\u2026</div>';
+  const j = await call('send_offline_conversions', {});
+  if (!j.ok){ box.innerHTML = errBlock(j.error, ''); return; }
+  box.innerHTML = j.sent
+    ? '<p class="note" style="color:var(--green);">\u2713 Reported '+j.sent+' real visit'+(j.sent>1?'s':'')+' to Meta for matching.</p>'
+    : '<p class="note">'+(j.note||'Nothing new to report right now.')+'</p>';
+  if (j.note && j.sent) box.innerHTML += '<p class="note">'+esc(j.note)+'</p>';
+  if (j.caveat) box.innerHTML += '<p class="note">'+esc(j.caveat)+'</p>';
   if (j.failed) box.innerHTML += '<p class="note" style="color:#a02020;">'+j.failed+' failed to send. '+(j.errors||[]).join('; ')+'</p>';
 }
 async function renderAdSetsTab(){
