@@ -2074,6 +2074,63 @@ header.zp-stage-hero>.zp-hero-backdrop{position:absolute;inset:0;z-index:0;heigh
 }
 </style>
 
+<style id="zen-onboarding-bridge">
+/* ── New-user wizard ──────────────────────────────────────────────────
+   The earlier bridge only reached the wizard's shell (orb, progress,
+   heading, buttons, fields). Its actual content — the goal cards, the
+   step rail, Zen's speech bubble — still used the old near-black and
+   flat grey. Same markup, same onbGo()/onbSkip() handlers and step
+   logic; colour, radius and depth only. */
+
+/* shell */
+#onb .onb-top{background:transparent;border-bottom:1px solid rgba(228,234,226,.8)}
+#onb .onb-skip{border-radius:9px;padding:7px 11px;transition:background .18s ease,color .18s ease}
+#onb .onb-skip:hover{background:rgba(23,94,82,.07);color:#0d2c25}
+#onb .onb-progress{background:#eaeee9}
+#onb .onb-kicker{color:#1e9b7e;letter-spacing:.11em;font-size:10px}
+#onb .onb-card h1{font-size:25px;line-height:1.16}
+#onb .onb-card>p.sub{font-size:14px;color:#6d7c74}
+#onb .onb-foot{border-top-color:rgba(228,234,226,.9)}
+
+/* Zen's voice — used here and on the app pages, kept identical in both */
+#onb .zen-avatar,#app .zen-avatar{background:linear-gradient(145deg,#1b7d68,#0e4b3f);border-radius:9px;
+  box-shadow:0 6px 16px -10px rgba(14,75,63,.9)}
+#onb .zen-bubble,#app .zen-bubble{background:linear-gradient(160deg,#f2faf5,#eaf4ef);
+  border:1px solid rgba(30,155,126,.16);border-radius:4px 16px 16px 16px;padding:13px 16px;
+  box-shadow:0 10px 26px -24px rgba(11,42,35,.6)}
+
+/* step rail */
+#onb .wiz-step{border-top-width:2.5px;border-top-color:#e6ebe6;padding-top:10px;transition:border-color .3s ease,color .3s ease}
+#onb .wiz-step.done{border-top-color:#6fe3b0}
+#onb .wiz-step.now{border-top-color:#1e9b7e;color:#0d2c25}
+
+/* the choice cards — the wizard's main visual */
+#onb .src-grid,#app .src-grid{gap:11px}
+#onb .src,#app .src{border-radius:14px;border-color:#e4eae2;padding:16px 17px;
+  background:linear-gradient(176deg,#fff,#fbfdfa);
+  box-shadow:0 10px 26px -26px rgba(11,42,35,.5);
+  transition:border-color .2s ease,box-shadow .25s ease,transform .2s ease,background .2s ease}
+#onb .src:hover,#app .src:hover{border-color:#c2d6c7;transform:translateY(-2px);
+  box-shadow:0 18px 38px -30px rgba(11,42,35,.6)}
+#onb .src.sel,#app .src.sel{border-color:#1e9b7e;background:linear-gradient(160deg,#f3fbf6,#fff 70%);
+  box-shadow:inset 0 0 0 1px #1e9b7e,0 16px 34px -30px rgba(11,60,47,.7)}
+#onb .src-ic,#app .src-ic{width:40px;height:40px;border-radius:12px;background:rgba(23,94,82,.08);
+  color:#1e7a66;border:1px solid rgba(23,94,82,.1)}
+#onb .src.sel .src-ic,#app .src.sel .src-ic{background:rgba(30,155,126,.16);border-color:rgba(30,155,126,.28)}
+#onb .src b,#app .src b{font-size:14px;letter-spacing:-.015em;color:#16241f}
+#onb .src span,#app .src span{font-size:12px;color:#7a8880;margin-top:3px}
+#onb .src .chev,#app .src .chev{color:#b7c2bb;transition:transform .2s ease,color .2s ease}
+#onb .src:hover .chev,#app .src:hover .chev{color:#1e9b7e;transform:translateX(2px)}
+
+#onb .wiz-actions{margin-top:28px}
+
+@media(prefers-reduced-motion:reduce){
+  #onb .src,#app .src,#onb .src .chev,#app .src .chev,#onb .wiz-step,#onb .onb-skip{transition:none}
+  #onb .src:hover,#app .src:hover{transform:none}
+  #onb .src:hover .chev,#app .src:hover .chev{transform:none}
+}
+</style>
+
 </head>
 <body>
 <div id="loginGate" class="on"><div class="lp">
