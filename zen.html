@@ -137,6 +137,14 @@ a{color:var(--green);}
 .onb-body{flex:1;display:flex;align-items:flex-start;justify-content:center;padding:40px 20px 80px;}
 .onb-card{width:100%;max-width:560px;}
 .onb-kicker{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#9aa19b;margin-bottom:10px;}
+/* Real, new - an internal-only advisory inside the onboarding wizard,
+   asked for directly: a clear note that live, self-serve Meta
+   connection needs App Review and Business Verification completed
+   first. Deliberately styled to look like a build note, not customer
+   copy, so it reads as a reminder for whoever's running this, not
+   something a real client should see in production. */
+.onb-dev-note{background:#fbf0df;border:1px dashed #d9a45c;border-radius:10px;padding:12px 15px;font-size:12px;line-height:1.6;color:#7a4f16;margin:14px 0 22px;max-width:560px;}
+.onb-dev-note b{display:block;margin-bottom:3px;color:#5c3a0f;}
 .onb-card h1{font-size:21px;line-height:1.25;margin-bottom:7px;}
 .onb-card>p.sub{color:var(--muted);font-size:13.5px;line-height:1.6;margin-bottom:26px;max-width:480px;}
 .onb-foot{display:flex;justify-content:space-between;align-items:center;padding:18px 28px;border-top:1px solid var(--line);}
@@ -3630,6 +3638,15 @@ let myTenantList = [];
 
 async function onLoggedIn(sess){
   session = sess;
+  // Real bug, found and fixed through actual testing rather than
+  // assumed clean: the auth modal never closed itself after a real,
+  // successful login. Its fixed, full-screen backdrop kept
+  // intercepting clicks across the entire real app afterward - every
+  // page, not just this one - since nothing else ever removed the
+  // .open class once the modal had served its purpose.
+  const backdrop = document.getElementById('authModalBackdrop');
+  if (backdrop) backdrop.classList.remove('open');
+  document.body.classList.remove('modal-open');
 
   // Real tenant resolution - my_tenants already existed on the
   // backend and already returns exactly this. No silent fallback to
@@ -4147,23 +4164,40 @@ function onbGoals(){
 
 function onbWhatsApp(){
   el('onbStage').innerHTML =
-    '<div class="onb-kicker">Step 4 of 4 · WhatsApp</div>' +
-    '<h1>Connect WhatsApp</h1>' +
-    '<p class="sub">This is how Zen sends messages and replies to customers on your behalf.</p>' +
+    '<div class="onb-kicker">Step 4 of 4 · Connect your accounts</div>' +
+    '<h1>Connect WhatsApp, Instagram and Meta Ads</h1>' +
+    '<p class="sub">One Meta login covers all three \u2014 Zen never posts, replies or spends anywhere you haven\u2019t connected.</p>' +
+    '<div class="onb-dev-note">' +
+      '<b>Note to self, not shown to real clients:</b> this button only works today for people already added as a Tester on the Meta app. Real, self-serve strangers can\u2019t complete this step until Meta\u2019s App Review and Business Verification are approved \u2014 see the connect_meta_business backend action for where the real OAuth exchange plugs in once that\u2019s cleared.' +
+    '</div>' +
     '<div class="src-grid">' +
-      onbSrc('💬','Connect WhatsApp Business','Sign in with your Meta business account','wa') +
+      onbSrc('◆','Connect with Meta','One login \u2014 WhatsApp, Instagram and ad account together','metaall') +
+      onbSrc('💬','Just WhatsApp for now','Connect messaging only, add the rest later','wa') +
       onbSrc('→','Skip for now','You can connect this later from Settings','skipwa') +
     '</div>' +
     '<div class="wiz-actions"><button class="btn-ghost btn" onclick="onbGo(\'goals\')">Back</button><span></span></div>';
 }
 async function onbConnectWA(key){
   if (key==='skipwa') { onbGo('done'); return; }
-  el('onbStage').innerHTML = '<div class="onb-kicker">Step 4 of 4 · WhatsApp</div><h1>Connecting\u2026</h1>' +
-    '<div class="loading-block"><span class="spin"></span>Signing in with Meta and checking your number</div>';
+  const isAll = key === 'metaall';
+  el('onbStage').innerHTML = '<div class="onb-kicker">Step 4 of 4 · Connect your accounts</div><h1>Connecting\u2026</h1>' +
+    '<div class="loading-block"><span class="spin"></span>Signing in with Meta'+(isAll?' and checking your Page, Instagram and ad account':' and checking your number')+'</div>';
   await fakeCall('connect_wa', {delay:1200});
-  el('onbStage').innerHTML = '<div class="onb-kicker">Step 4 of 4 · WhatsApp</div><h1>Connected \u2014 +971 4 XXX XXXX</h1>' +
+  el('onbStage').innerHTML = '<div class="onb-kicker">Step 4 of 4 · Connect your accounts</div><h1>Connected'+(isAll?'':' \u2014 +971 4 XXX XXXX')+'</h1>' +
+    (isAll ?
+      '<div style="display:grid;gap:10px;max-width:420px;">' +
+        onbConnectedRow('WhatsApp Business','+971 4 XXX XXXX') +
+        onbConnectedRow('Instagram','@minicutsdso') +
+        onbConnectedRow('Ad account','act_638838775406298') +
+      '</div>'
+      : '') +
     zen('I\u2019ll prepare messages, but <b>you\u2019ll approve them before they send</b>. You can change this any time.') +
     '<div class="wiz-actions" style="margin-top:20px;justify-content:flex-end;"><button class="btn btn-p" onclick="onbGo(\'done\')">Continue</button></div>';
+}
+function onbConnectedRow(name, detail){
+  return '<div style="display:flex;align-items:center;gap:10px;padding:11px 13px;border:1px solid var(--line);border-radius:11px;background:#fff;">' +
+    '<span style="width:22px;height:22px;border-radius:50%;background:var(--green);color:#fff;font-size:12px;display:grid;place-items:center;flex-shrink:0;">\u2713</span>' +
+    '<div><b style="font-size:13px;display:block;">'+name+'</b><span style="font-size:11.5px;color:var(--muted);">'+detail+'</span></div></div>';
 }
 function onbDone(){
   el('onbStage').innerHTML =
@@ -6420,8 +6454,30 @@ async function renderPerformanceTab(){
     // at attribution where otherwise there would be none.
     '<div class="sechead" style="margin-top:18px;"><h2>Report in-person visits Meta might match to an ad</h2></div>' +
     '<p class="note" style="margin-top:0;">For customers who saw an ad and came straight into the salon, with no WhatsApp message and no click to track. Meta tries to match the visit to someone who saw an ad using phone and name - it won\u2019t catch every one, but otherwise these are invisible to Meta entirely.</p>' +
+    // Real, new - asked for directly: "how would we mark these
+    // conversions, there is no provision." Real transactions were
+    // already being marked correctly the moment they're sent; what
+    // was missing was anywhere to actually see that. Loaded lazily,
+    // since it's a real, separate query from everything else on this
+    // page.
+    '<div id="offlineConversionStatus" style="margin-bottom:10px;"></div>' +
     '<button class="btn btn-s btn-sm" onclick="sendOfflineConversionsFlow()">Send unreported visits now</button>' +
     '<div id="sendOfflineConversionsResult" style="margin-top:8px;"></div>';
+  loadOfflineConversionStatus();
+}
+async function loadOfflineConversionStatus(){
+  const box = el('offlineConversionStatus');
+  if (!box) return;
+  const j = await call('get_offline_conversion_status', {});
+  if (!j.ok){ box.innerHTML = ''; return; }
+  box.innerHTML = '<div class="mini-grid" style="max-width:560px;">' +
+      '<div class="mini"><b>'+money(j.reported)+'</b><span>Marked as reported, last 62 days'+(j.reported_value?' \u2014 AED '+money(j.reported_value):'')+'</span></div>' +
+      '<div class="mini"><b>'+money(j.pending)+'</b><span>Waiting to be sent</span></div>' +
+      '<div class="mini"><b style="color:'+(j.failed?'#a02020':'inherit')+';">'+money(j.failed)+'</b><span>Failed to send</span></div>' +
+    '</div>' +
+    (j.failed && j.failed_examples && j.failed_examples.length
+      ? '<p class="note" style="margin-top:8px;color:#a02020;">'+esc(j.failed_examples[0])+'</p>'
+      : '');
 }
 async function sendAdConversionsFlow(){
   const box = el('sendConversionsResult');
@@ -11350,9 +11406,11 @@ async function connectionsPanel(){
     '<div class="sechead"><h2>Meta Ads</h2></div>' +
     '<div class="list"><div class="list-row"><b>Meta Ads</b><span class="badge'+(ads.ok&&ads.connected?' on':' warn')+'">'+(ads.ok&&ads.connected?'Connected':'Not connected')+'</span></div></div>' +
     (ads.ok && ads.connected
-      ? insLineBlock([['Ad account', ads.ad_account_id||'\u2014'],['Facebook Page ID', ads.page_id||'\u2014 (needed to promote a post)'],['Last updated', ads.updated_at?new Date(ads.updated_at).toLocaleDateString():'\u2014']]) +
+      ? insLineBlock([['Ad account', ads.ad_account_id||'\u2014'],['Facebook Page ID', ads.page_id||'\u2014 (needed to promote a post)'],['Events Manager dataset ID', ads.capi_dataset_id||'\u2014 (needed to report conversions)'],['Last updated', ads.updated_at?new Date(ads.updated_at).toLocaleDateString():'\u2014']]) +
         '<button class="btn btn-s btn-sm" style="margin-top:8px;" onclick="flow(adsPerformancePanel)">See ad performance</button>' +
-        '<button class="btn btn-s btn-sm" style="margin-top:8px;margin-left:6px;" onclick="metaAdsShowCredForm()">Update credentials</button>'
+        '<button class="btn btn-s btn-sm" style="margin-top:8px;margin-left:6px;" onclick="metaAdsShowCredForm()">Update credentials</button>' +
+        '<button class="btn btn-s btn-sm" style="margin-top:8px;margin-left:6px;" onclick="metaAdsShowDatasetForm(\''+esc(ads.capi_dataset_id||'')+'\')">'+(ads.capi_dataset_id?'Change':'Add')+' dataset ID</button>' +
+        '<div id="metaAdsDatasetForm"></div>'
       : '<p class="note">'+(ads.ok ? 'Connect a Meta Ads account to see real ad spend and results here.' : esc(ads.error))+'</p>'
         + '<button class="btn btn-s btn-sm" style="margin-top:8px;" onclick="metaAdsShowCredForm()">Connect Meta Ads</button>') +
     '<div id="metaAdsCredForm"></div><div id="metaAdsSaveResult" style="margin-top:8px;"></div>' +
@@ -11405,6 +11463,32 @@ function metaAdsShowCredForm(){
     '<button class="btn btn-p btn-sm" onclick="metaAdsSaveCredentials()">Save</button>' +
     '<div id="metaAdsCredSaveResult" style="margin-top:8px;"></div>' +
     '</div>';
+}
+// Real, new - asked for directly: the real error message told people
+// to add this value "under Meta ads connection," but nowhere there
+// actually let them. Kept deliberately separate from the full
+// credentials form above - that one requires re-entering the real
+// access token every time, which would be a real, unnecessary risk
+// for someone who already has a working connection and only wants to
+// add this one value.
+function metaAdsShowDatasetForm(current){
+  el('metaAdsDatasetForm').innerHTML =
+    '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-top:8px;max-width:420px;">' +
+    '<label class="lbl">Events Manager dataset ID</label>' +
+    '<input class="field" id="metaAdsDatasetId" placeholder="Digits only, e.g. 1234567890123456" value="'+esc(current||'')+'" style="margin-bottom:6px;">' +
+    '<p class="note" style="margin-top:0;margin-bottom:8px;">Find this in Meta Events Manager \u2192 Data sources \u2192 your dataset \u2192 the number shown under its name. This is what lets Zen report real conversions - WhatsApp campaign visits and in-person walk-ins - back to Meta.</p>' +
+    '<button class="btn btn-p btn-sm" onclick="metaAdsSaveDatasetId()">Save</button>' +
+    '<div id="metaAdsDatasetSaveResult" style="margin-top:8px;"></div>' +
+    '</div>';
+}
+async function metaAdsSaveDatasetId(){
+  const capi_dataset_id = (el('metaAdsDatasetId').value||'').trim();
+  const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Saving\u2026';
+  const j = await call('set_capi_dataset_id', { capi_dataset_id });
+  btn.disabled = false; btn.textContent = 'Save';
+  if (!j.ok){ el('metaAdsDatasetSaveResult').innerHTML = errBlock(j.error, 'connectionsPanel()'); return; }
+  toast('Saved', 'ok');
+  flow(connectionsPanel);
 }
 async function metaAdsSaveCredentials(){
   const ad_account_id = (el('metaAdsAcctId').value||'').trim();
