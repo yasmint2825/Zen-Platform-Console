@@ -6589,6 +6589,10 @@ async function sendOfflineConversionsFlow(){
   if (j.note && j.sent) box.innerHTML += '<p class="note">'+esc(j.note)+'</p>';
   if (j.caveat) box.innerHTML += '<p class="note">'+esc(j.caveat)+'</p>';
   if (j.failed) box.innerHTML += '<p class="note" style="color:#a02020;">'+j.failed+' failed to send. '+(j.errors||[]).join('; ')+'</p>';
+  // Real bug, found while answering a real question about this: the
+  // status widget above never refreshed after a real send completed,
+  // so it could keep showing stale, pre-send numbers indefinitely.
+  loadOfflineConversionStatus();
 }
 async function renderAdSetsTab(){
   const body = el('promotionsBody');
