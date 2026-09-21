@@ -532,7 +532,7 @@ button,a,input,select,textarea{touch-action:manipulation}button{transition:backg
 .ux-workspace-name{font-weight:600}.ux-workspace-tag{background:#e7eee4;border:1px solid #dbe6d5;border-radius:30px;padding:5px 12px;font-size:11px;color:#3f644e}
 .ux-route{display:none;gap:15px;align-items:center;margin:0 0 28px;padding-bottom:25px;border-bottom:1px solid var(--line)}.ux-route-icon{width:52px;height:52px;background:#e5eee1;border:1px solid #d7e4d1;border-radius:17px;display:grid;place-items:center;flex-shrink:0;color:#3c6c50}.ux-route-icon svg{width:25px;height:25px}
 .ux-eyebrow{font-size:9px;letter-spacing:.14em;color:#6e8071;font-weight:750;line-height:1.5;margin-bottom:4px}.ux-route-title{font-size:23px;line-height:1.25;font-weight:720;letter-spacing:-.035em}.ux-route-desc{font-size:12.5px;color:var(--muted);margin-top:6px}
-.main:has(#p-home.on) .ux-route-home,.main:has(#p-campaigns.on) .ux-route-campaigns,.main:has(#p-zenwhatsapp.on) .ux-route-zenwhatsapp,.main:has(#p-marketing.on) .ux-route-marketing,.main:has(#p-creativestudio.on) .ux-route-creativestudio,.main:has(#p-promotions.on) .ux-route-promotions,.main:has(#p-insights.on) .ux-route-insights,.main:has(#p-settings.on) .ux-route-settings,.main:has(#p-flow.on) .ux-route-flow{display:flex}
+.main:has(#p-home.on) .ux-route-home,.main:has(#p-campaigns.on) .ux-route-campaigns,.main:has(#p-zenwhatsapp.on) .ux-route-zenwhatsapp,.main:has(#p-creativestudio.on) .ux-route-creativestudio,.main:has(#p-promotions.on) .ux-route-promotions,.main:has(#p-insights.on) .ux-route-insights,.main:has(#p-settings.on) .ux-route-settings,.main:has(#p-flow.on) .ux-route-flow{display:flex}
 .topline{margin-bottom:22px;gap:14px;flex-wrap:wrap}.pagetitle h1{font-size:25px;font-weight:690;line-height:1.28;margin-bottom:8px}.pagetitle p{font-size:13.5px;line-height:1.7;max-width:700px}.kicker{color:#758677;font-size:10px}
 .page>.topline .kicker{display:none} /* repeated route label is already in the shell */
 .btn{border-radius:11px;min-height:44px;padding:11px 17px;font-size:13px;justify-content:center;line-height:1.4}.btn-p,.btn-g{background:#22634e;color:#fff;box-shadow:0 3px 7px #164b3613}.btn-p:hover,.btn-g:hover{background:#184a3b}.btn-s{border-color:#cfdbd1}.btn-s:hover{background:#f1f6ef;border-color:#9eb79f}.btn-ghost:hover{background:#e9eee7}.btn-sm{min-height:38px;padding:8px 12px;font-size:12px}
@@ -3379,7 +3379,7 @@ header.zp-stage-hero>.zp-hero-backdrop{position:absolute;inset:0;z-index:0;heigh
     <div class="side-nav" aria-label="Workspace navigation">
 <div class="ux-nav-group"><div class="ux-nav-heading">YOUR DAY</div><button class="side-btn active" data-p="home" onclick="go('home')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></svg></span><span class="ux-nav-copy"><strong>Command Centre</strong><small>Your business at a glance</small></span></button></div>
 <div class="ux-nav-group"><div class="ux-nav-heading">YOUR CUSTOMERS</div><button class="side-btn" data-p="zenwhatsapp" onclick="go('zenwhatsapp')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-2 2V11.5a9.5 9.5 0 0 1 19 0Z"/><path d="M7 10h9M7 14h5"/></svg></span><span class="ux-nav-copy"><strong>WhatsApp inbox</strong><small>Conversations & replies</small></span><span class="cnt" id="navWaBadge" style="display:none;"></span></button><button class="side-btn" data-p="campaigns" onclick="go('campaigns')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18v13H3zM3 6l9 7 9-7M8 3h8"/></svg></span><span class="ux-nav-copy"><strong>Campaigns</strong><small>Bring customers back</small></span><span class="cnt" id="navCampBadge" style="display:none;"></span></button></div>
-<div class="ux-nav-group"><div class="ux-nav-heading">GROW YOUR BUSINESS</div><button class="side-btn" data-p="marketing" onclick="go('marketing')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.6 6.4L21 12l-6.4 2.6L12 21l-2.6-6.4L3 12l6.4-2.6Z"/></svg></span><span class="ux-nav-copy"><strong>Marketing</strong><small>Guided campaigns & posts</small></span></button><button class="side-btn" data-p="creativestudio" onclick="go('creativestudio')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 5-5 4 4 4-6 5 7"/></svg></span><span class="ux-nav-copy"><strong>Creative studio</strong><small>AI images & videos</small></span></button><button class="side-btn" data-p="promotions" onclick="go('promotions')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 9 14-5v16L4 15ZM18 9h3v6h-3M6 16l2 5h3l-2-4"/></svg></span><span class="ux-nav-copy"><strong>Paid ads</strong><small>Promotions on Meta</small></span></button></div>
+<div class="ux-nav-group"><div class="ux-nav-heading">GROW YOUR BUSINESS</div><button class="side-btn" data-p="creativestudio" onclick="go('creativestudio')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 5-5 4 4 4-6 5 7"/></svg></span><span class="ux-nav-copy"><strong>Creative studio</strong><small>AI images & videos</small></span></button><button class="side-btn" data-p="promotions" onclick="go('promotions')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 9 14-5v16L4 15ZM18 9h3v6h-3M6 16l2 5h3l-2-4"/></svg></span><span class="ux-nav-copy"><strong>Posting &amp; Ads</strong><small>Promotions on Meta</small></span></button></div>
 <div class="ux-nav-group"><div class="ux-nav-heading">YOUR BUSINESS</div><button class="side-btn" data-p="insights" onclick="go('insights')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3v18h17M8 16v-4M13 16V7M18 16v-7"/></svg></span><span class="ux-nav-copy"><strong>Insights</strong><small>Understand your results</small></span></button><button class="side-btn" data-p="settings" onclick="go('settings')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="currentColor"/><circle cx="15" cy="17" r="3" fill="currentColor"/></svg></span><span class="ux-nav-copy"><strong>Settings</strong><small>Your business & connections</small></span></button></div>
     </div>
     <div class="side-foot"><div class="ux-account-label">YOUR ACCOUNT <span>Click below to log out</span></div>
@@ -3399,9 +3399,9 @@ header.zp-stage-hero>.zp-hero-backdrop{position:absolute;inset:0;z-index:0;heigh
 <div class="ux-route ux-route-home"><div class="ux-route-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></svg></div><div><div class="ux-eyebrow">YOUR DAY, AT A GLANCE</div><p class="ux-route-title">Command Centre</p></div></div>
 <div class="ux-route ux-route-campaigns"><div class="ux-route-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18v13H3zM3 6l9 7 9-7M8 3h8"/></svg></div><div><div class="ux-eyebrow">YOUR CUSTOMERS</div><p class="ux-route-title">WhatsApp campaigns</p></div></div>
 <div class="ux-route ux-route-zenwhatsapp"><div class="ux-route-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-2 2V11.5a9.5 9.5 0 0 1 19 0Z"/><path d="M7 10h9M7 14h5"/></svg></div><div><div class="ux-eyebrow">YOUR CUSTOMERS</div><p class="ux-route-title">WhatsApp inbox</p></div></div>
-<div class="ux-route ux-route-marketing"><div class="ux-route-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.6 6.4L21 12l-6.4 2.6L12 21l-2.6-6.4L3 12l6.4-2.6Z"/></svg></div><div><div class="ux-eyebrow">GROW YOUR BUSINESS</div><p class="ux-route-title">Marketing</p></div></div>
+<section class="page" id="p-marketing" style="display:none;"></section>
 <div class="ux-route ux-route-creativestudio"><div class="ux-route-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 5-5 4 4 4-6 5 7"/></svg></div><div><div class="ux-eyebrow">GROW YOUR BUSINESS</div><p class="ux-route-title">Creative studio</p></div></div>
-<div class="ux-route ux-route-promotions"><div class="ux-route-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 9 14-5v16L4 15ZM18 9h3v6h-3M6 16l2 5h3l-2-4"/></svg></div><div><div class="ux-eyebrow">GROW YOUR BUSINESS</div><p class="ux-route-title">Paid ads · Promotions</p></div></div>
+<div class="ux-route ux-route-promotions"><div class="ux-route-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 9 14-5v16L4 15ZM18 9h3v6h-3M6 16l2 5h3l-2-4"/></svg></div><div><div class="ux-eyebrow">GROW YOUR BUSINESS</div><p class="ux-route-title">Posting &amp; Ads</p></div></div>
 <div class="ux-route ux-route-insights"><div class="ux-route-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3v18h17M8 16v-4M13 16V7M18 16v-7"/></svg></div><div><div class="ux-eyebrow">YOUR BUSINESS</div><p class="ux-route-title">Insights</p></div></div>
 <div class="ux-route ux-route-settings"><div class="ux-route-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="currentColor"/><circle cx="15" cy="17" r="3" fill="currentColor"/></svg></div><div><div class="ux-eyebrow">YOUR BUSINESS</div><p class="ux-route-title">Settings</p></div></div>
 <div class="ux-route ux-route-flow"><div class="ux-route-icon"><span aria-hidden="true">✦</span></div><div><div class="ux-eyebrow">ONE STEP AT A TIME</div><p class="ux-route-title">Your current task</p></div></div>
@@ -6093,7 +6093,7 @@ function campaignDetail(id){
 // ad, and managing the real ad sets that result, rather than splitting
 // these across separate top-level destinations.
 function promotionsTabBar(active){
-  const tabs = [['audiences','Audiences'],['posts','Posts'],['adsets','Ad sets'],['performance','Performance']];
+  const tabs = [['schedule','Schedule'],['audiences','Audiences'],['posts','Posts'],['adsets','Ad sets'],['performance','Performance']];
   return '<div class="subtabs">' + tabs.map(t =>
     '<button class="'+(t[0]===active?'active':'')+'" onclick="promotions(\''+t[0]+'\')">'+t[1]+'</button>').join('') + '</div>';
 }
@@ -6174,35 +6174,34 @@ async function csCheckAllVideos(btnEl){
 async function creativestudio(){
   STATE.lastPage='creativestudio';
   const p = el('p-creativestudio');
-  // Real, medium-height loading placeholder while real preview images
-  // load/generate in the background - never blocks the home screen on
-  // a first-time generation, which can genuinely take up to a minute.
+  // Real, new - asked for directly: every card here now uses the
+  // same real card shape, with a real, static icon instead of the
+  // old cardMedia() fallback, which showed a spinner that never
+  // actually resolved (no image URL was ever passed in). Simple,
+  // original stroke icons, matching the same style already used
+  // throughout the rest of the app - not a faked photographic
+  // thumbnail, since nothing was actually generated for these.
   const CARD_DEFS = [
-    ['clone', 'Clone an Ad', 'Recreate the strategy of a reference ad you like, using your own product.', 'flow(()=>cloneAdFlow())'],
-    ['variations', 'Create Variations', 'Pick an existing creative and generate a real, controlled edit of it \u2014 you choose what to keep and what to change.', 'flow(()=>variationsFlow())'],
-    ['ugc', 'Create UGC Video', 'A realistic creator-style video, with real spoken dialogue and genuine lip-sync.', 'flow(()=>ugcVideoFlow())'],
-    ['talking', 'Talking Head', 'A presenter-led video using one of your existing avatars.', 'flow(()=>talkingHeadFlow())'],
-    ['trend', 'Recreate a Trend', 'Describe a trend\u2019s concept and recreate its structure with your own brand.', 'flow(()=>trendRecreationFlow())'],
+    ['magent', 'Marketing Agent \u2014 guided', 'Goal \u2192 Audience \u2192 Creative \u2192 Generate \u2192 Publish \u2192 Promote, one guided flow.', 'flow(()=>marketingAgentWizard())',
+      '<path d="m12 3 2.6 6.4L21 12l-6.4 2.6L12 21l-2.6-6.4L3 12l6.4-2.6Z"/>'],
+    ['linklaunch', 'Build from your link or product', 'Paste a product link or describe what you\u2019re promoting \u2014 ad-ready creatives in minutes.', 'flow(()=>linkLaunchFlow())',
+      '<path d="M9 15l6-6M10 7l1-1a3.5 3.5 0 0 1 5 5l-1 1M14 17l-1 1a3.5 3.5 0 0 1-5-5l1-1"/>'],
+    ['ugc', 'Create UGC Video', 'A realistic creator-style video, with real spoken dialogue and genuine lip-sync.', 'flow(()=>ugcVideoFlow())',
+      '<rect x="2.5" y="6" width="14" height="12" rx="2.5"/><path d="m16.5 10.5 5-3v9l-5-3Z"/>'],
+    ['talking', 'Talking Head', 'A presenter-led video using one of your existing avatars.', 'flow(()=>talkingHeadFlow())',
+      '<circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7"/>'],
   ];
-  // Real fix, given the wide-banner approach still wasn't right: the
-  // actual, more robust solution isn't more cropping adjustment on a
-  // fundamentally mismatched shape - it's removing the mismatch.
-  // Real image models handle a square portrait well; they don't
-  // reliably handle an extreme wide-short crop of a person's face and
-  // shoulders. Generating square (matching this thumbnail's own real
-  // shape, set below) and displaying at a genuinely small, square
-  // thumbnail avoids fighting an unnatural aspect ratio altogether.
-  const cardMedia = (key, imgUrl) => imgUrl
-    ? '<img src="'+esc(imgUrl)+'" style="width:56px;height:56px;border-radius:10px;object-fit:cover;display:block;flex-shrink:0;" loading="lazy">'
-    : '<div style="width:56px;height:56px;border-radius:10px;background:var(--green-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span class="spin"></span></div>';
-  const studioCard = (key, title, desc, fn, imgUrl) =>
+  const cardMedia = (icon) =>
+    '<div style="width:44px;height:44px;border-radius:10px;background:var(--green-soft);color:var(--green);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+      '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'+icon+'</svg></div>';
+  const studioCard = (key, title, desc, fn, icon) =>
     '<button class="task" id="studioCard_'+key+'" style="border:1.5px solid var(--line);text-align:left;display:flex;gap:12px;align-items:flex-start;" onclick="'+fn+'">' +
-      cardMedia(key, imgUrl) + '<div><div class="task-top"><b>'+title+'</b></div><span>'+desc+'</span></div></button>';
+      cardMedia(icon) + '<div><div class="task-top"><b>'+title+'</b></div><span>'+desc+'</span></div></button>';
   p.innerHTML =
     '<div class="topline"><div class="pagetitle"><div class="kicker">AI Creative Studio</div><h1>Turn a reference into your own ad.</h1>' +
     '<p>Start from an idea, a reference, or a product \u2014 Zen builds the creative and hands it straight into your real ad workflow.</p></div></div>' +
     '<div class="grid3" style="margin-top:14px;">' +
-      CARD_DEFS.map(c => studioCard(c[0], c[1], c[2], c[3], null)).join('') +
+      CARD_DEFS.map(c => studioCard(c[0], c[1], c[2], c[3], c[4])).join('') +
     '</div>' +
     // Real, new section - reported directly ("why can't I see
     // everything saved for approval"): a real, complete backend
@@ -6277,49 +6276,6 @@ async function creativestudio(){
     '<button class="btn btn-ghost btn-sm" onclick="csCheckAllVideos(this)">Check every video ever generated, including unfinished drafts</button>' +
     '<div id="csAllVideosResult" style="margin-top:8px;"></div>';
   p.appendChild(videoCheckBox);
-  // Real, actually-generated preview images - your own real product
-  // and people imagery, generated once and cached, not stock photos
-  // or another site's own screenshots (neither of which can honestly
-  // be reused here). Loaded after the cards themselves render, so a
-  // slow first-time generation never blocks the page. Real bug fixed
-  // here too: the backend now genuinely polls when Replicate's own
-  // 60-second sync wait isn't enough, which can push its real total
-  // time close to two minutes - this timeout is set safely above
-  // that real worst case, not the arbitrary 90s it was before, which
-  // could cut the request off before the backend's own real fix ever
-  // got a chance to finish.
-  call('get_studio_preview_images', {}, 150000).then(imgJ => {
-    // Real, direct way to validate whether these are actually being
-    // reused - logged plainly so this is checkable in the browser
-    // console rather than taken on faith. "hit" means the real,
-    // previously-generated images were reused; "generated" means real
-    // new ones were just made in this request, which is expected once
-    // (first visit, or right after a real prompt/version change) but
-    // a real sign of a caching problem if it keeps happening on every
-    // single visit.
-    console.log('[Creative Studio] preview image cache status:', imgJ.cache_status || (imgJ.ok ? 'unknown' : 'request failed'), imgJ.cache_save_error ? ('- save error: '+imgJ.cache_save_error) : '');
-    CARD_DEFS.forEach(c => {
-      const url = imgJ.ok ? imgJ.images?.[c[0]] : null;
-      const cardEl = el('studioCard_'+c[0]);
-      const mediaEl = cardEl && cardEl.querySelector('div,img');
-      if (!mediaEl) return;
-      if (url) { mediaEl.outerHTML = cardMedia(c[0], url); return; }
-      // Real, honest fallback - reported directly ("not loading"): a
-      // card whose real image never came back (the request failed, or
-      // this one genuinely never finished generating) was left with an
-      // indefinitely spinning placeholder forever, which looks
-      // identical to "still loading" even once the real attempt is
-      // long over. Swapped for a real, static icon instead, once the
-      // call has genuinely finished one way or another.
-      mediaEl.outerHTML = '<div style="width:56px;height:56px;border-radius:10px;background:var(--green-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px;">\ud83d\uddbc\ufe0f</div>';
-    });
-  }).catch(() => {
-    CARD_DEFS.forEach(c => {
-      const cardEl = el('studioCard_'+c[0]);
-      const mediaEl = cardEl && cardEl.querySelector('div,img');
-      if (mediaEl) mediaEl.outerHTML = '<div style="width:56px;height:56px;border-radius:10px;background:var(--green-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px;">\ud83d\uddbc\ufe0f</div>';
-    });
-  });
   const j = await call('list_all_content_items', {});
   const items = (j.ok ? j.items : []).slice(0, 8);
   // Real, readable status labels - reported directly ("I see status
@@ -6345,17 +6301,18 @@ async function creativestudio(){
           '<div class="gal-body"><span class="gal-label">'+esc(it.title||'Untitled')+'</span><span class="gal-sub">'+esc(STATUS_LABELS[it.status]||it.status||'')+'</span></div>' +
         '</div>';
       }).join('') + '</div>'
-    : '<p class="note">Nothing generated yet \u2014 start with Clone an Ad above.</p>';
+    : '<p class="note">Nothing generated yet \u2014 start with one of the options above.</p>';
 }
 async function promotions(tab){
-  tab = tab || 'audiences';
+  tab = tab || 'schedule';
   STATE.lastPage='promotions';
   const p = el('p-promotions');
   p.innerHTML =
-    '<div class="topline"><div class="pagetitle"><div class="kicker">Promotions</div><h1>Reach the right people with the right ad.</h1>' +
+    '<div class="topline"><div class="pagetitle"><div class="kicker">Posting &amp; Ads</div><h1>Reach the right people with the right ad.</h1>' +
     '<p>Who to target, what to show them, and how it\u2019s doing \u2014 one real home for the whole ad workflow, not four separate places.</p></div></div>' +
     promotionsTabBar(tab) +
     '<div id="promotionsBody"><div class="loading-block"><span class="spin"></span></div></div>';
+  if (tab === 'schedule') { renderScheduleTab(); return; }
   if (tab === 'adsets') { renderAdSetsTab(); return; }
   if (tab === 'audiences') { renderAudiencesTab(); return; }
   if (tab === 'performance') { renderPerformanceTab(); return; }
@@ -6959,14 +6916,8 @@ function marketing(){
   p.innerHTML =
     '<div class="topline"><div class="pagetitle"><div class="kicker">Marketing</div><h1>What would you like to create?</h1>' +
     '<p>Start with the outcome. Zen uses your salon\u2019s look and voice behind the scenes.</p></div></div>' +
-    '<button class="task" style="border:1.5px solid var(--green);margin-bottom:14px;" onclick="flow(()=>marketingAgentWizard())"><div class="task-top"><b>\u2726 Marketing Agent \u2014 guided</b> <span class="note" style="font-weight:600;color:var(--green);">Recommended</span></div><span>Goal \u2192 Audience/Persona \u2192 Creative \u2192 Generate \u2192 Publish \u2192 Promote, one guided flow. Also shows any campaigns you\u2019ve already started, so you can pick up where you left off.</span></button>' +
-    '<button class="task" style="border:1.5px solid var(--ink);margin-bottom:14px;" onclick="flow(()=>linkLaunchFlow())"><div class="task-top"><b>\ud83d\udd17 Build from your link or product</b> <span class="note" style="font-weight:600;">Fast</span></div><span>Paste a product link, an Instagram post, or describe what you\u2019re promoting \u2014 Zen builds real ad-ready creatives in every size and a ready-to-launch campaign in minutes, not a full guided flow.</span></button>' +
     '<div class="grid3">' +
-      mktTask('▣','Make a poster','A single Instagram-ready image','poster') +
-      mktTask('▶','Make a video','A short reel with scenes and captions','video') +
       mktTask('▦','Make a carousel','A multi-slide story','carousel') +
-      mktTask('✦','Let Zen suggest','Based on what\u2019s working right now','suggest') +
-      mktTask('▤','Publishing schedule','See what\u2019s coming up','schedule') +
     '</div>' +
     '<div class="sechead"><h2>Recently created</h2></div>' +
     '<div class="list" id="mktRecent"></div>';
@@ -9788,6 +9739,31 @@ function suggestFlow(){
 // real database at all. A real "Save for approval" click had nowhere
 // to actually be seen afterward. Grouped by real status so an
 // approved-but-not-yet-scheduled item is genuinely findable.
+// Real, new - "Move Publishing Schedule as first tab under Posting &
+// Ads," asked for directly. Same real query and same real row
+// rendering as the old scheduleFlow overlay below (kept working, in
+// case anything still links to it directly) - just rendered inline
+// into this tab's body instead of a separate flow() page, since it's
+// now a permanent home, not a one-off destination.
+async function renderScheduleTab(){
+  const j = await call('list_all_content_items', {});
+  if (!j.ok){ el('promotionsBody').innerHTML = errBlock(j.error, "promotions('schedule')"); return; }
+  const items = j.items || [];
+  const groups = [
+    ['approved', 'Approved \u2014 ready to schedule or publish'],
+    ['scheduled', 'Scheduled'],
+    ['creative_ready', 'Awaiting review'],
+    ['published', 'Published'],
+  ];
+  el('promotionsBody').innerHTML =
+    (items.length === 0 ? '<p class="note" style="margin-top:10px;">Nothing here yet.</p>' : '') +
+    groups.map(([status, label]) => {
+      const inGroup = items.filter(it => it.status === status);
+      if (!inGroup.length) return '';
+      return '<div class="sechead"><h2>'+label+' ('+inGroup.length+')</h2></div>' +
+        inGroup.map(scheduleItemRow).join('');
+    }).join('');
+}
 async function scheduleFlow(){
   el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
     '<h1 style="font-size:22px;">Publishing schedule</h1><div class="loading-block"><span class="spin"></span></div>';
