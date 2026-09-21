@@ -2488,6 +2488,81 @@ header.zp-stage-hero>.zp-hero-backdrop{position:absolute;inset:0;z-index:0;heigh
 }
 </style>
 
+<style id="zen-wide-screens">
+/* ═════════════════════════════════════════════════════════════════
+   LARGE-SCREEN SCALING  (presentation only — no markup, no script)
+
+   Every landing section was capped at a fixed 1200–1240px. That is
+   ~86% of a 14" laptop (1440px), which is why it looks right there,
+   but only ~64% of a 1920px monitor — the content stops growing and
+   the sides turn into empty bands, while the nav keeps stretching
+   edge to edge, so the logo and the headline drift apart.
+
+   These rules only apply from 1600px up; below that nothing here
+   matches and the page renders exactly as before. Containers grow in
+   steps to keep roughly the laptop proportion, the key type scales
+   with them, and the nav is pulled in to line up with the content.
+   ═════════════════════════════════════════════════════════════════ */
+
+@media (min-width:1600px){
+  :root{ --zp-wide:1400px; --zp-wide-s:1360px; }
+}
+@media (min-width:1880px){
+  :root{ --zp-wide:1560px; --zp-wide-s:1520px; }
+}
+@media (min-width:2400px){
+  :root{ --zp-wide:1840px; --zp-wide-s:1800px; }
+}
+
+@media (min-width:1600px){
+  /* Wide containers (hero, showcase, footer) */
+  .lp .zp-hero,
+  .lp .zp-showcase,
+  .lp .zp-foot{ max-width:var(--zp-wide); }
+
+  /* Standard sections and the counter band */
+  .lp .lp-section,
+  .lp .zp-band{ max-width:var(--zp-wide-s); }
+
+  /* Nav: line the logo and CTA up with the content edge instead of
+     the screen edge. 56px = the sections' own inner padding at this
+     size, so the logo sits directly above the headline. */
+  .lp .lp-nav{
+    padding-left:max(56px, calc((100vw - var(--zp-wide)) / 2 + 56px));
+    padding-right:max(56px, calc((100vw - var(--zp-wide)) / 2 + 56px));
+  }
+
+  /* Type grows with the frame so the wider layout doesn't read empty */
+  .lp .zp-hero h1{ font-size:80px; }
+  .lp .zp-hero-sub{ font-size:20px; }
+  .lp .zp-head{ max-width:820px; }
+  .lp .zp-head h2{ font-size:54px; }
+  .lp .zp-head p{ font-size:17.5px; }
+
+  /* The hero mockup is fixed-size; scale it (visual only — transforms
+     don't affect layout) so it fills its wider column. */
+  .lp .zp-compose{ transform:scale(1.08); transform-origin:center; }
+}
+
+@media (min-width:1880px){
+  .lp .zp-hero h1{ font-size:88px; }
+  .lp .zp-hero-sub{ font-size:21px; }
+  .lp .zp-head{ max-width:880px; }
+  .lp .zp-head h2{ font-size:58px; }
+  .lp .zp-head p{ font-size:18px; }
+  .lp .zp-compose{ transform:scale(1.16); }
+}
+
+@media (min-width:2400px){
+  .lp .zp-hero h1{ font-size:106px; }
+  .lp .zp-hero-sub{ font-size:24px; }
+  .lp .zp-head{ max-width:1000px; }
+  .lp .zp-head h2{ font-size:68px; }
+  .lp .zp-head p{ font-size:20px; }
+  .lp .zp-compose{ transform:scale(1.36); }
+}
+
+</style>
 </head>
 <body>
 <div id="loginGate" class="on"><div class="lp">
@@ -6453,7 +6528,7 @@ async function renderPerformanceTab(){
     // on its side - not a guaranteed trail, but a real, honest shot
     // at attribution where otherwise there would be none.
     '<div class="sechead" style="margin-top:18px;"><h2>Report in-person visits Meta might match to an ad</h2></div>' +
-    '<p class="note" style="margin-top:0;">For customers who saw an ad and came straight into the salon, with no WhatsApp message and no click to track. Meta tries to match the visit to someone who saw an ad using phone and name - it won\u2019t catch every one, but otherwise these are invisible to Meta entirely.</p>' +
+    '<p class="note" style="margin-top:0;">For customers who came straight into the salon with no WhatsApp message and no click to track. Only visits where <b>"how they heard about you"</b> is recorded as Instagram are included - Meta then tries to match the visit to someone who saw an ad, using phone and name. It won\u2019t catch every one, but otherwise these are invisible to Meta entirely.</p>' +
     // Real, new - asked for directly: "how would we mark these
     // conversions, there is no provision." Real transactions were
     // already being marked correctly the moment they're sent; what
@@ -6461,7 +6536,19 @@ async function renderPerformanceTab(){
     // since it's a real, separate query from everything else on this
     // page.
     '<div id="offlineConversionStatus" style="margin-bottom:10px;"></div>' +
-    '<button class="btn btn-s btn-sm" onclick="sendOfflineConversionsFlow()">Send unreported visits now</button>' +
+    // Real, new - asked for directly: a real, optional way to send a
+    // smaller, more recent batch first (e.g. matching how long the
+    // current ad has actually been running) rather than always
+    // clearing the full 62-day backlog in one go.
+    '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+      '<select id="offlineConvWindow" class="field" style="width:auto;min-width:170px;margin:0;">' +
+        '<option value="7">Last 7 days</option>' +
+        '<option value="14">Last 14 days</option>' +
+        '<option value="30">Last 30 days</option>' +
+        '<option value="62" selected>All unreported (62 days)</option>' +
+      '</select>' +
+      '<button class="btn btn-s btn-sm" onclick="sendOfflineConversionsFlow()">Send unreported visits now</button>' +
+    '</div>' +
     '<div id="sendOfflineConversionsResult" style="margin-top:8px;"></div>';
   loadOfflineConversionStatus();
 }
@@ -6491,11 +6578,13 @@ async function sendAdConversionsFlow(){
 }
 async function sendOfflineConversionsFlow(){
   const box = el('sendOfflineConversionsResult');
+  const windowSel = el('offlineConvWindow');
+  const days = windowSel ? Number(windowSel.value) : 62;
   box.innerHTML = '<div class="loading-block"><span class="spin"></span>Checking for real, unreported visits\u2026</div>';
-  const j = await call('send_offline_conversions', {});
+  const j = await call('send_offline_conversions', { days });
   if (!j.ok){ box.innerHTML = errBlock(j.error, ''); return; }
   box.innerHTML = j.sent
-    ? '<p class="note" style="color:var(--green);">\u2713 Reported '+j.sent+' real visit'+(j.sent>1?'s':'')+' to Meta for matching.</p>'
+    ? '<p class="note" style="color:var(--green);">\u2713 Reported '+j.sent+' real visit'+(j.sent>1?'s':'')+' to Meta for matching'+(j.window_days?' (last '+j.window_days+' days)':'')+'.</p>'
     : '<p class="note">'+(j.note||'Nothing new to report right now.')+'</p>';
   if (j.note && j.sent) box.innerHTML += '<p class="note">'+esc(j.note)+'</p>';
   if (j.caveat) box.innerHTML += '<p class="note">'+esc(j.caveat)+'</p>';
@@ -11474,12 +11563,27 @@ function metaAdsShowCredForm(){
 function metaAdsShowDatasetForm(current){
   el('metaAdsDatasetForm').innerHTML =
     '<div style="background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-top:8px;max-width:420px;">' +
+    // Real, new - asked for directly, after Events Manager turned out
+    // to show nothing at all: a WhatsApp-linked dataset isn't
+    // something to go find in Meta's UI, it's created (or found, if
+    // it already exists) by a real call Zen can make directly, using
+    // the Page already connected here.
+    '<button class="btn btn-p btn-sm" style="width:100%;margin-bottom:10px;" onclick="metaAdsCreateDataset()">\u2726 Create or find my dataset automatically</button>' +
+    '<p class="note" style="margin:0 0 12px;text-align:center;">or enter one manually \u2193</p>' +
     '<label class="lbl">Events Manager dataset ID</label>' +
     '<input class="field" id="metaAdsDatasetId" placeholder="Digits only, e.g. 1234567890123456" value="'+esc(current||'')+'" style="margin-bottom:6px;">' +
     '<p class="note" style="margin-top:0;margin-bottom:8px;">Find this in Meta Events Manager \u2192 Data sources \u2192 your dataset \u2192 the number shown under its name. This is what lets Zen report real conversions - WhatsApp campaign visits and in-person walk-ins - back to Meta.</p>' +
-    '<button class="btn btn-p btn-sm" onclick="metaAdsSaveDatasetId()">Save</button>' +
+    '<button class="btn btn-s btn-sm" onclick="metaAdsSaveDatasetId()">Save</button>' +
     '<div id="metaAdsDatasetSaveResult" style="margin-top:8px;"></div>' +
     '</div>';
+}
+async function metaAdsCreateDataset(){
+  const btn = event.target; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Asking Meta\u2026';
+  const j = await call('create_meta_dataset', {});
+  btn.disabled = false; btn.innerHTML = '\u2726 Create or find my dataset automatically';
+  if (!j.ok){ el('metaAdsDatasetSaveResult').innerHTML = errBlock(j.error, 'connectionsPanel()'); return; }
+  toast('Dataset ready: ' + j.capi_dataset_id, 'ok');
+  flow(connectionsPanel);
 }
 async function metaAdsSaveDatasetId(){
   const capi_dataset_id = (el('metaAdsDatasetId').value||'').trim();
