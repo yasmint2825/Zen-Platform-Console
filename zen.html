@@ -145,6 +145,71 @@ a{color:var(--green);}
    something a real client should see in production. */
 .onb-dev-note{background:#fbf0df;border:1px dashed #d9a45c;border-radius:10px;padding:12px 15px;font-size:12px;line-height:1.6;color:#7a4f16;margin:14px 0 22px;max-width:560px;}
 .onb-dev-note b{display:block;margin-bottom:3px;color:#5c3a0f;}
+/* ── Creative Studio wizard (template-driven workflows) ───────────── */
+#p-creativestudio button.sw-wf-off{cursor:default;opacity:.62;background:#fafbf9}
+#p-creativestudio button.sw-wf-off:hover{box-shadow:none;border-color:var(--line)}
+#p-creativestudio .task span.sw-soon,.sw-soon{display:inline-block;width:auto;margin-top:8px;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:#eef1ec;border-radius:99px;padding:3px 9px}
+.sw-brandsw{display:flex;gap:10px;align-items:flex-start;max-width:820px;border:1px solid var(--line);background:#fff;border-radius:12px;padding:12px 14px;margin:0 0 14px;cursor:pointer}
+.sw-brandsw b{font-size:13px;display:block}
+.sw-brandsw small{display:block;font-size:12px;color:var(--muted);line-height:1.5;margin-top:2px}
+.sw-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.sw-bar .field{flex:1 1 220px;margin:0}
+.sw-chip{border:1px solid var(--line);background:#fff;border-radius:99px;padding:7px 13px;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--ink)}
+.sw-chip[aria-pressed="true"]{background:var(--green);border-color:var(--green);color:#fff}
+.sw-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.sw-concept{position:relative;border:1.5px solid var(--line);background:#fff;border-radius:14px;padding:16px;cursor:pointer;display:flex;flex-direction:column;gap:8px;min-height:170px;text-align:left}
+.sw-concept:hover{border-color:#8cb096}
+.sw-concept:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.sw-concept.sel{border-color:var(--green);box-shadow:0 0 0 3px var(--green-soft)}
+.sw-concept b{font-size:14px;line-height:1.35}
+.sw-concept p{margin:0;font-size:12px;line-height:1.55;color:var(--muted)}
+.sw-sugg{display:inline-block;margin-left:6px;vertical-align:middle;font-size:10px;font-weight:700;letter-spacing:.03em;color:var(--green);background:var(--green-soft);border-radius:99px;padding:2px 7px}
+.sw-alias{font-size:11px;color:#9aa19b;font-family:ui-monospace,Menlo,monospace}
+.sw-star{position:absolute;top:10px;right:10px;border:0;background:none;font-size:18px;line-height:1;cursor:pointer;color:#b9c2b8;padding:4px}
+.sw-star[aria-pressed="true"]{color:#d9a13b}
+.sw-ic{width:40px;height:40px;border-radius:10px;background:var(--green-soft);color:var(--green);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sw-req{font-size:10.5px;font-weight:700;border-radius:99px;padding:2px 8px;margin-left:6px;vertical-align:middle}
+.sw-req.r{background:#fbeee0;color:#9a5412}.sw-req.o{background:#eef1ec;color:var(--muted)}
+.sw-asset{border:1px solid var(--line);border-radius:13px;background:#fff;padding:14px 16px;margin-bottom:12px}
+.sw-thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.sw-thumbs img{width:84px;height:84px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
+.sw-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 16px;max-width:820px}
+.sw-form .full{grid-column:1/-1}
+.sw-pills{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 14px}
+.sw-pill{border:1.5px solid var(--line);background:#fff;border-radius:11px;padding:9px 13px;font-size:12.5px;cursor:pointer;text-align:left;line-height:1.35}
+.sw-pill small{display:block;color:var(--muted);font-size:11px}
+.sw-pill[aria-pressed="true"]{border-color:var(--green);box-shadow:0 0 0 3px var(--green-soft)}
+.sw-swatch{display:inline-block;width:16px;height:16px;border-radius:50%;border:1px solid #0002;vertical-align:middle;margin-right:4px}
+.sw-brief{border:1px solid var(--line);border-radius:13px;background:#fff;max-width:820px}
+.sw-brief-row{display:grid;grid-template-columns:130px 1fr auto;gap:12px;padding:8px 16px;border-top:1px solid var(--line);font-size:13px;align-items:center}
+.sw-brief-row:first-child{border-top:0}
+.sw-brief-row>span:first-child{color:var(--muted);font-weight:600}
+.sw-code{white-space:pre-wrap;background:#f6f7f5;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:12px;line-height:1.55;max-height:260px;overflow:auto}
+.sw-results{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.sw-result{border:1px solid var(--line);border-radius:14px;background:#fff;overflow:hidden;display:flex;flex-direction:column}
+.sw-result.hl{box-shadow:0 0 0 3px var(--green)}
+.sw-media{aspect-ratio:1/1;background:#f1f3ef;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.sw-media img{width:100%;height:100%;object-fit:contain;background:#f1f3ef}
+.sw-rbody{padding:12px 13px;display:flex;flex-direction:column;gap:8px}
+.sw-rlabel{font-size:12.5px;font-weight:700}
+.sw-actions{display:flex;gap:6px;flex-wrap:wrap}
+.sw-actions .btn{min-height:32px;padding:5px 10px;font-size:12px}
+.sw-refine{border-top:1px solid var(--line);padding-top:8px}.sw-refine summary{cursor:pointer;font-size:12.5px;font-weight:600;color:var(--green);list-style:none}.sw-refine summary::-webkit-details-marker{display:none}.sw-refine summary:after{content:" \25BE"}.sw-refine[open] summary:after{content:" \25B4"}.sw-rgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}.sw-rgrid .btn{min-height:32px;padding:5px 8px;font-size:12px;justify-content:center;width:100%;border:1px solid var(--line);background:#fff}.sw-rgrid .btn:hover{border-color:#8cb096}
+.sw-panel{border:1px solid var(--line);border-radius:12px;background:#fafbf9;padding:12px}
+.sw-models{display:grid;gap:10px;max-width:760px;margin-bottom:18px}
+.sw-model{display:flex;gap:12px;align-items:flex-start;border:1.5px solid var(--line);border-radius:13px;background:#fff;padding:13px 15px;cursor:pointer}
+.sw-model:has(input:checked){border-color:var(--green);box-shadow:0 0 0 3px var(--green-soft)}
+.sw-model input{margin-top:3px}
+.sw-model b{font-size:13.5px}
+.sw-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.sw-chip-s{font-size:11px;border-radius:99px;padding:2px 9px;background:#eef1ec;color:var(--muted)}
+.sw-chip-s.good{background:var(--green-soft);color:var(--green)}
+.sw-chip-s.warn{background:#fbeee0;color:#9a5412}
+.sw-vbadge{position:absolute;top:8px;left:8px;background:#101814cc;color:#fff;font-size:11px;font-weight:700;border-radius:99px;padding:3px 9px}
+.sw-media video{width:100%;height:100%;object-fit:contain;background:#101814}
+.sw-canvas{max-width:100%;border-radius:10px;border:1px solid var(--line);background:#f1f3ef;display:block}
+@media(max-width:900px){.sw-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){.sw-grid,.sw-form,.sw-text-grid{grid-template-columns:1fr!important}.sw-brief-row{grid-template-columns:1fr auto}.sw-brief-row>span:first-child{grid-column:1/-1}}
 .onb-card h1{font-size:21px;line-height:1.25;margin-bottom:7px;}
 .onb-card>p.sub{color:var(--muted);font-size:13.5px;line-height:1.6;margin-bottom:26px;max-width:480px;}
 .onb-foot{display:flex;justify-content:space-between;align-items:center;padding:18px 28px;border-top:1px solid var(--line);}
@@ -3410,7 +3475,7 @@ header.zp-stage-hero>.zp-hero-backdrop{position:absolute;inset:0;z-index:0;heigh
 <details class="ux-help ux-help-zenwhatsapp" data-guide="zenwhatsapp" open><summary><span class="ux-guide-spark" aria-hidden="true">✦</span><span class="ux-guide-title">Your inbox, one conversation at a time</span><span class="ux-guide-toggle"><span class="ux-guide-hide">Hide guide</span><span class="ux-guide-show">Show guide</span><span aria-hidden="true">⌃</span></span></summary><ol class="ux-help-grid"><li><span class="ux-guide-step" aria-hidden="true">1</span><div><h3>Choose a customer</h3><p>Unread conversations appear at the top.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">2</span><div><h3>Catch up quickly</h3><p>Read the messages and check what Zen has replied.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">3</span><div><h3>Reply with confidence</h3><p>Type your message, add an image if needed, then Send.</p></div></li></ol></details>
 <details class="ux-help ux-help-campaigns" data-guide="campaigns" open><summary><span class="ux-guide-spark" aria-hidden="true">✦</span><span class="ux-guide-title">Bring customers back with a useful message</span><span class="ux-guide-toggle"><span class="ux-guide-hide">Hide guide</span><span class="ux-guide-show">Show guide</span><span aria-hidden="true">⌃</span></span></summary><ol class="ux-help-grid"><li><span class="ux-guide-step" aria-hidden="true">1</span><div><h3>Pick a campaign</h3><p>Choose the customer group you want to reach.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">2</span><div><h3>Check how it sends</h3><p>Review the audience and automatic or approval settings.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">3</span><div><h3>See the response</h3><p>Check who messaged and who returned afterwards.</p></div></li></ol></details>
 <details class="ux-help ux-help-marketing" data-guide="marketing" open><summary><span class="ux-guide-spark" aria-hidden="true">✦</span><span class="ux-guide-title">Have a goal? Zen will help you get started.</span><span class="ux-guide-toggle"><span class="ux-guide-hide">Hide guide</span><span class="ux-guide-show">Show guide</span><span aria-hidden="true">⌃</span></span></summary><ol class="ux-help-grid"><li><span class="ux-guide-step" aria-hidden="true">1</span><div><h3>Start with your goal</h3><p>Choose the guided Marketing Agent if you need a hand.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">2</span><div><h3>Create your content</h3><p>Use a product link, or choose a poster, video, or carousel.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">3</span><div><h3>Review your next move</h3><p>Check your content, then publish, schedule, or promote.</p></div></li></ol></details>
-<details class="ux-help ux-help-creativestudio" data-guide="creativestudio" open><summary><span class="ux-guide-spark" aria-hidden="true">✦</span><span class="ux-guide-title">Turn one idea into something worth sharing</span><span class="ux-guide-toggle"><span class="ux-guide-hide">Hide guide</span><span class="ux-guide-show">Show guide</span><span aria-hidden="true">⌃</span></span></summary><ol class="ux-help-grid"><li><span class="ux-guide-step" aria-hidden="true">1</span><div><h3>Choose your starting point</h3><p>Use a reference ad, existing creative, presenter, or trend.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">2</span><div><h3>Make it your own</h3><p>Follow the prompts with your product and brand details.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">3</span><div><h3>Review what you made</h3><p>Find saved work and items awaiting approval below.</p></div></li></ol></details>
+<details class="ux-help ux-help-creativestudio" data-guide="creativestudio" open><summary><span class="ux-guide-spark" aria-hidden="true">✦</span><span class="ux-guide-title">Turn one idea into something worth sharing</span><span class="ux-guide-toggle"><span class="ux-guide-hide">Hide guide</span><span class="ux-guide-show">Show guide</span><span aria-hidden="true">⌃</span></span></summary><ol class="ux-help-grid"><li><span class="ux-guide-step" aria-hidden="true">1</span><div><h3>Choose your starting point</h3><p>Pick a workflow and concept, or a guided or quick tool.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">2</span><div><h3>Make it your own</h3><p>Follow the prompts with your product and brand details.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">3</span><div><h3>Review what you made</h3><p>Find saved work and items awaiting approval below.</p></div></li></ol></details>
 <details class="ux-help ux-help-promotions" data-guide="promotions" open><summary><span class="ux-guide-spark" aria-hidden="true">✦</span><span class="ux-guide-title">Make your advertising easier to understand</span><span class="ux-guide-toggle"><span class="ux-guide-hide">Hide guide</span><span class="ux-guide-show">Show guide</span><span aria-hidden="true">⌃</span></span></summary><ol class="ux-help-grid"><li><span class="ux-guide-step" aria-hidden="true">1</span><div><h3>Choose who to reach</h3><p>Audiences are the people you want to see your ads.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">2</span><div><h3>Manage your ads</h3><p>Ad sets group ads with shared budgets and audiences.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">3</span><div><h3>Check your results</h3><p>Use Performance to understand how the ads are doing.</p></div></li></ol></details>
 <details class="ux-help ux-help-insights" data-guide="insights" open><summary><span class="ux-guide-spark" aria-hidden="true">✦</span><span class="ux-guide-title">You don’t need to be a numbers person.</span><span class="ux-guide-toggle"><span class="ux-guide-hide">Hide guide</span><span class="ux-guide-show">Show guide</span><span aria-hidden="true">⌃</span></span></summary><ol class="ux-help-grid"><li><span class="ux-guide-step" aria-hidden="true">1</span><div><h3>Ask in your own words</h3><p>Try a question about your business in the Ask box.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">2</span><div><h3>Explore one area</h3><p>Choose WhatsApp, Marketing, or Sales and Operations.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">3</span><div><h3>Find a customer</h3><p>Search by name or number to look into their history.</p></div></li></ol></details>
 <details class="ux-help ux-help-settings" data-guide="settings" open><summary><span class="ux-guide-spark" aria-hidden="true">✦</span><span class="ux-guide-title">A little setup helps Zen understand your business</span><span class="ux-guide-toggle"><span class="ux-guide-hide">Hide guide</span><span class="ux-guide-show">Show guide</span><span aria-hidden="true">⌃</span></span></summary><ol class="ux-help-grid"><li><span class="ux-guide-step" aria-hidden="true">1</span><div><h3>Start with the essentials</h3><p>Check your profile, services, prices, and opening hours.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">2</span><div><h3>Connect your channels</h3><p>Review your WhatsApp, Instagram, and ad connections.</p></div></li><li><span class="ux-guide-step" aria-hidden="true">3</span><div><h3>Choose your boundaries</h3><p>Set reply rules, automation preferences, and team access.</p></div></li></ol></details>
@@ -6171,6 +6236,697 @@ async function csCheckAllVideos(btnEl){
   }
   box.innerHTML = html || '<p class="note">No real video generation found at all for this account.</p>';
 }
+/* ══════════════════════════════════════════════════════════════════
+   CREATIVE STUDIO — config-driven wizard (Creative Recipe Engine)
+   This module holds NO concept knowledge. Every field, option, asset
+   slot, format, category filter and refinement is rendered from the
+   catalog the backend sends (list_studio_catalog). A new recipe record
+   appears here automatically; nothing in this file changes.
+   ══════════════════════════════════════════════════════════════════ */
+let SW = null;
+let SW_CATALOG = null;
+const SW_STEPS = ['Create', 'Concept', 'Assets', 'Details', 'Customize', 'Review', 'Generate'];
+// Presentational only: icon names come from config.
+const SW_ICONS = {
+  package: '<path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5Z"/><path d="m3 7.5 9 4.5 9-4.5M12 12v9"/>',
+  person: '<circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7"/>',
+  megaphone: '<path d="m4 9 14-5v16L4 15ZM18 9h3v6h-3M6 16l2 5h3l-2-4"/>',
+  storefront: '<path d="M3 9 5 4h14l2 5M3 9h18v2a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0Z"/><path d="M5 13v7h14v-7M10 20v-5h4v5"/>',
+  rocket: '<path d="M12 15c-2-2-3-5-3-8 0-2 1-4 3-5 2 1 3 3 3 5 0 3-1 6-3 8Z"/><path d="M9 11 6 14v4l3-2M15 11l3 3v4l-3-2M10 19h4"/>',
+  magazine: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/>',
+  billboard: '<rect x="3" y="4" width="18" height="10" rx="1.5"/><path d="M8 14v6M16 14v6M6 20h12"/>',
+  concept: '<path d="M4 8h3l2-3h6l2 3h3v11H4Z"/><circle cx="12" cy="13" r="3.5"/>',
+  dynamic: '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/><circle cx="12" cy="12" r="2.5"/>',
+};
+function swIcon(name, size) {
+  const s = size || 22;
+  return '<svg viewBox="0 0 24 24" width="' + s + '" height="' + s + '" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (SW_ICONS[name] || SW_ICONS.concept) + '</svg>';
+}
+async function swLoadCatalog(force) {
+  if (SW_CATALOG && !force) return SW_CATALOG;
+  const j = await call('list_studio_catalog', {});
+  if (j.ok) SW_CATALOG = j;
+  return j;
+}
+const swRecipe = (id) => SW_CATALOG && SW_CATALOG.recipes.find(r => r.id === (id || (SW && SW.recipeId)));
+const swWorkflow = (id) => SW_CATALOG && SW_CATALOG.workflows.find(w => w.id === (id || (SW && SW.workflowId)));
+const swFormatLabel = (id) => { const f = SW_CATALOG.formats.find(x => x.id === id); return f ? f.label : ''; };
+const swFieldByPath = (path) => Object.values(SW_CATALOG.fields).find(f => f.path === path);
+const swFieldByLayer = (role) => Object.values(SW_CATALOG.fields).find(f => f.textLayer === role);
+const swSlotByRole = (role) => Object.values(SW_CATALOG.assetSlots).find(s => s.role === role);
+
+function swWorkflowCards(workflows) {
+  return workflows.map(w =>
+    '<button class="task' + (w.enabled ? '' : ' sw-wf-off') + '" id="studioCard_wf_' + w.id + '" ' +
+      'style="border:1.5px solid var(--line);text-align:left;display:flex;gap:12px;align-items:flex-start;" ' +
+      (w.enabled ? 'onclick="flow(()=>studioWizard(\'' + w.id + '\'))"' : 'disabled aria-disabled="true"') + '>' +
+      '<div class="sw-ic" style="width:44px;height:44px;">' + swIcon(w.icon) + '</div>' +
+      '<div><div class="task-top"><b>' + esc(w.title) + '</b></div><span>' + esc(w.description) + '</span>' +
+      (w.enabled ? '' : '<span class="sw-soon">Coming in phase 2</span>') + '</div></button>'
+  ).join('');
+}
+
+function studioWizard(workflowId, recipeId) {
+  swInit(workflowId);
+  if (recipeId) swLoadCatalog().then(cj => { if (cj.ok && swRecipe(recipeId)) { SW.recipeId = recipeId; SW.output.aspectRatio = swRecipe(recipeId).formats.default; SW.step = 2; } swRender(); });
+  else swRender();
+}
+function swInit(workflowId) {
+  SW = { step: workflowId ? 1 : 0, workflowId: workflowId || null, recipeId: null, filter: 'all', search: '', helpGoal: null,
+    useBrandPreferences: false, promptOverride: null, review: null,
+    values: {}, assets: {}, output: { aspectRatio: null, variations: 2 }, requestId: null, results: [], prefilled: false, textEditor: null, busy: false };
+}
+function swPrefill() {
+  if (SW.prefilled || !SW_CATALOG) return;
+  const p = SW_CATALOG.prefill || { values: {}, assets: {} };
+  for (const [k, v] of Object.entries(p.values || {})) if (SW.values[k] === undefined || SW.values[k] === '') SW.values[k] = v;
+  for (const [k, v] of Object.entries(p.assets || {})) if (!SW.assets[k] || !SW.assets[k].length) SW.assets[k] = v.slice();
+  SW.prefilled = true;
+}
+
+async function swRender() {
+  const box = el('p-flow');
+  if (!SW_CATALOG) {
+    box.innerHTML = '<div class="loading-block"><span class="spin"></span>Loading Creative Studio\u2026</div>';
+    const j = await swLoadCatalog();
+    if (!j.ok) { box.innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' + errBlock(j.error, 'studioWizard()'); return; }
+  }
+  swPrefill();
+  const r = swRecipe(), wf = swWorkflow(), cat = SW_CATALOG;
+  box.innerHTML =
+    '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:12px;">\u2190 Back to Creative Studio</button>' +
+    '<h1 style="font-size:22px;margin:0 0 4px;">' + (wf ? esc(wf.title) : 'Creative Studio') + (r && SW.step > 1 ? ' \u00b7 ' + esc(r.title) : '') + '</h1>' +
+    swBrandSwitchHtml() +
+    wizSteps(SW_STEPS, SW.step) +
+    (cat.setup_needed ? '<div class="onb-dev-note" style="max-width:none;"><b>Setup needed before generating</b>' + esc(cat.setup_message || '') + '</div>' : '') +
+    '<div id="swBody">' + [swStepWorkflow, swStepConcept, swStepAssets, swStepDetails, swStepCustomize, swStepReview, swStepGenerate][SW.step]() + '</div>';
+  if (SW.step === 1) swRenderConcepts();
+  if (SW.step === 5) swLoadReview();
+  if (SW.step === 6) swRenderResults();
+}
+function swGo(step) { SW.step = step; swRender(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+// Off for every new request. Kept as you move through the wizard.
+function swBrandSwitchHtml() {
+  return '<label class="sw-brandsw"><input type="checkbox" id="swBrandPrefs" ' + (SW.useBrandPreferences ? 'checked ' : '') +
+    'onchange="SW.useBrandPreferences=this.checked;SW.promptOverride=null;if(SW.step===5)swLoadReview();">' +
+    '<span><b>Apply my brand preferences</b><small>Uses your approved colours, visual style and relevant brand rules. Leave this off to create the image only from your request, product reference and selected concept.</small></span></label>';
+}
+function swNav(backStep, nextLabel, nextFn, nextDisabled, reason) {
+  return '<div class="wiz-actions" style="margin-top:20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">' +
+    (backStep !== null ? '<button class="btn btn-ghost" onclick="swGo(' + backStep + ')">Back</button>' : '<span></span>') +
+    '<span style="flex:1"></span>' + (reason ? '<span class="note" style="margin:0;">' + esc(reason) + '</span>' : '') +
+    (nextLabel ? '<button class="btn btn-p" ' + (nextDisabled ? 'disabled' : '') + ' onclick="' + nextFn + '">' + esc(nextLabel) + '</button>' : '') + '</div>';
+}
+
+// ── Step 1: workflow ─────────────────────────────────────────────────
+function swStepWorkflow() {
+  return '<p class="note" style="margin-top:0;">Pick the kind of creative you need. Each one guides you through only what it needs.</p>' +
+    '<div class="grid3">' + swWorkflowCards(SW_CATALOG.workflows).replace(/flow\(\(\)=>studioWizard\('([a-z0-9_-]+)'\)\)/g, "swPickWorkflow('$1')") + '</div>';
+}
+function swPickWorkflow(id) { const w = swWorkflow(id); if (!w || !w.enabled) return; SW.workflowId = id; SW.recipeId = null; swGo(1); }
+
+// ── Step 2: concept (filters and categories from config) ─────────────
+function swStepConcept() {
+  const cat = SW_CATALOG;
+  const chips = [['all', 'All concepts'], ['recommended', 'Suggested for you'], ['recent', 'Recently used'], ['favourites', 'Favourites']]
+    .concat(Object.entries(cat.categories).map(([k, c]) => ['cat:' + k, c.label]));
+  const help = SW.filter === 'help'
+    ? '<div class="sw-panel" style="margin-bottom:14px;"><b style="font-size:13px;">What matters most for this image?</b><div class="sw-pills">' +
+        Object.entries(cat.helpGoals).map(([k, g]) => '<button class="sw-pill" aria-pressed="' + (SW.helpGoal === k) + '" onclick="SW.helpGoal=\'' + k + '\';swRenderConcepts()">' + esc(g.label) + '</button>').join('') + '</div></div>' : '';
+  return (cat.recipe_warnings && cat.recipe_warnings.length ? '<div class="onb-dev-note" style="max-width:none;"><b>Some custom concepts couldn\u2019t be loaded</b>' + cat.recipe_warnings.map(esc).join('<br>') + '</div>' : '') +
+    '<div class="sw-bar"><input class="field" id="swSearch" type="search" placeholder="Search concepts, e.g. splash, flat lay, luxury" value="' + esc(SW.search) + '" oninput="SW.search=this.value;swRenderConcepts()" aria-label="Search concepts">' +
+      chips.map(([k, l]) => '<button class="sw-chip" aria-pressed="' + (SW.filter === k) + '" onclick="SW.filter=\'' + k + '\';swGo(1)">' + esc(l) + '</button>').join('') +
+      '<button class="sw-chip" aria-pressed="' + (SW.filter === 'help') + '" onclick="SW.filter=\'help\';swGo(1)">\u2728 Help me choose</button></div>' +
+    help + '<div id="swConceptList"></div>' +
+    swNav(0, 'Continue', 'swGo(2)', !SW.recipeId, SW.recipeId ? '' : 'Choose a concept to continue');
+}
+function swFilteredRecipes() {
+  const cat = SW_CATALOG;
+  const list = cat.recipes.filter(r => r.workflow === SW.workflowId);
+  const byIds = (ids) => ids.map(id => list.find(r => r.id === id)).filter(Boolean);
+  const q = SW.search.trim().toLowerCase();
+  if (q) return list.filter(r => [r.title, r.description, r.bestFor, r.id, (r.tags || []).join(' ')].join(' ').toLowerCase().includes(q));
+  if (SW.filter === 'recommended') return byIds(cat.recommended[SW.workflowId] || []);
+  if (SW.filter === 'recent') return byIds(cat.recent_recipe_ids);
+  if (SW.filter === 'favourites') return list.filter(r => cat.favourites.includes(r.id));
+  if (SW.filter.startsWith('cat:')) return list.filter(r => r.category === SW.filter.slice(4));
+  if (SW.filter === 'help') { const g = SW.helpGoal && cat.helpGoals[SW.helpGoal]; return g ? byIds(g.ids) : []; }
+  // All concepts: every concept, with the ones suggested for this
+  // business first, so the default view keeps the suggestions useful.
+  const sug = cat.recommended[SW.workflowId] || [];
+  return [...byIds(sug), ...list.filter(r => !sug.includes(r.id))];
+}
+function swRenderConcepts() {
+  const box = el('swConceptList'); if (!box) return;
+  const list = swFilteredRecipes(), cat = SW_CATALOG, industry = cat.business && cat.business.industry;
+  const intro = SW.search.trim() || SW.filter !== 'recommended' ? '' : '<p class="note" style="margin:0 0 12px;">' +
+    (industry ? 'Suggested for ' + esc(industry) + ' \u2014 browse every concept under \u201cAll concepts\u201d.' : 'A good starting set \u2014 add your industry in Settings \u2192 Brand for tailored suggestions.') + '</p>';
+  const empty = { recent: 'Nothing used yet \u2014 concepts you generate with will show up here.', favourites: 'No favourites yet \u2014 tap \u2606 on any concept to keep it here.', help: 'Pick what matters most above and we\u2019ll narrow it down.' }[SW.filter] || 'No concepts match that search.';
+  box.innerHTML = intro + (list.length ? '<div class="sw-grid">' + list.map(r => swConceptCard(r, SW.recipeId === r.id, 'swPickRecipe')).join('') + '</div>' : '<p class="note">' + empty + '</p>');
+}
+// One concept card, shared by the wizard and the Creative Studio landing page.
+function swConceptCard(r, selected, pickFn) {
+  const cat = SW_CATALOG, fav = cat.favourites.includes(r.id), icon = (cat.categories[r.category] || {}).icon;
+  const suggested = Object.values(cat.recommended || {}).some(ids => ids.includes(r.id));
+  const pick = pickFn + '(\'' + r.id + '\')';
+  return '<div class="sw-concept' + (selected ? ' sel' : '') + '" role="button" tabindex="0" aria-pressed="' + !!selected + '" data-recipe="' + esc(r.id) + '" ' +
+      'onclick="' + pick + '" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();' + pick + '}">' +
+    '<button class="sw-star" aria-pressed="' + fav + '" aria-label="' + (fav ? 'Remove from' : 'Add to') + ' favourites" title="Favourite" onclick="event.stopPropagation();swToggleFav(\'' + r.id + '\',this)">' + (fav ? '\u2605' : '\u2606') + '</button>' +
+    '<div class="sw-ic">' + swIcon(icon, 20) + '</div><b>' + esc(r.title) + (suggested ? ' <span class="sw-sugg">Suggested</span>' : '') + '</b><p>' + esc(r.description) + '</p>' +
+    '<p><span style="color:var(--ink);font-weight:600;">Best for:</span> ' + esc(r.bestFor) + '</p><span class="sw-alias">' + esc(r.alias) + '</span></div>';
+}
+function swPickRecipe(id) {
+  SW.recipeId = id;
+  const r = swRecipe(id);
+  if (!r.formats.supported.includes(SW.output.aspectRatio)) SW.output.aspectRatio = r.formats.default;
+  swGo(1);
+}
+async function swToggleFav(id, btn) {
+  const fav = !SW_CATALOG.favourites.includes(id);
+  btn.disabled = true;
+  const j = await call('toggle_studio_favourite', { template_id: id, favourite: fav });
+  btn.disabled = false;
+  if (!j.ok) { toast(j.error, 'err'); return; }
+  SW_CATALOG.favourites = fav ? [...SW_CATALOG.favourites, id] : SW_CATALOG.favourites.filter(x => x !== id);
+  if (el('swConceptList')) swRenderConcepts();
+}
+
+// ── Step 3: assets (slots from config) ───────────────────────────────
+function swStepAssets() {
+  const r = swRecipe(), slots = [...r.assets.required, ...r.assets.optional];
+  const missing = r.assets.required.filter(s => !(SW.assets[s] || []).length);
+  return '<p class="note" style="margin-top:0;">Your originals are kept exactly as uploaded \u2014 Zen only ever works from copies.</p>' +
+    slots.map(id => {
+      const s = SW_CATALOG.assetSlots[id], req = r.assets.required.includes(id), have = SW.assets[id] || [];
+      return '<div class="sw-asset"><label class="lbl" for="swa_' + id + '">' + esc(s.label) + '<span class="sw-req ' + (req ? 'r">Required' : 'o">Optional' + (s.max > 1 ? ' \u00b7 up to ' + s.max : '')) + '</span></label>' +
+        '<p class="note" style="margin:2px 0 8px;">' + esc(s.help) + '</p>' +
+        (have.length < s.max ? '<input type="file" id="swa_' + id + '" accept="image/jpeg,image/png,image/webp" onchange="swUpload(this,\'' + id + '\')">' : '') +
+        '<div class="sw-thumbs">' + have.map((u, i) => '<img src="' + esc(u) + '" alt=""><button class="btn btn-ghost btn-sm" onclick="SW.assets[\'' + id + '\'].splice(' + i + ',1);swGo(2)">Remove</button>').join('') + '</div></div>';
+    }).join('') + '<div id="swUploadMsg"></div>' +
+    swNav(1, 'Continue', 'swGo(3)', missing.length > 0, missing.length ? 'Add ' + SW_CATALOG.assetSlots[missing[0]].label.toLowerCase() + ' to continue' : '');
+}
+async function swUpload(input, slotId) {
+  const file = input.files && input.files[0]; if (!file) return;
+  const msg = el('swUploadMsg');
+  if (file.size > 5 * 1024 * 1024) { toast('That image is over 5MB \u2014 please use a smaller one.', 'err'); input.value = ''; return; }
+  msg.innerHTML = '<div class="loading-block"><span class="spin"></span>Uploading\u2026</div>';
+  try {
+    const base64 = await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).split(',')[1]); fr.onerror = rej; fr.readAsDataURL(file); });
+    const j = await call('upload_product_photo', { image_base64: base64, content_type: file.type }, 60000);
+    if (!j.ok) { msg.innerHTML = errBlock(j.error, ''); return; }
+    const max = SW_CATALOG.assetSlots[slotId].max;
+    SW.assets[slotId] = max === 1 ? [j.image_url] : [...(SW.assets[slotId] || []), j.image_url].slice(0, max);
+    swGo(2);
+  } catch (e) { msg.innerHTML = errBlock(String((e && e.message) || e), ''); }
+  finally { input.value = ''; }
+}
+
+// ── Generic field renderer (field registry) ─────────────────────────
+function swFieldHtml(id, required) {
+  const f = SW_CATALOG.fields[id], v = SW.values[id];
+  const badge = required ? '<span class="sw-req r">Required</span>' : '';
+  const help = f.help ? '<p class="note" style="margin:-4px 0 10px;">' + esc(f.help) + '</p>' : '';
+  if (f.kind === 'checkbox') {
+    const colours = SW_CATALOG.brand_colours || [], off = f.requiresBrandColours && !colours.length;
+    return '<div class="full"><label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-bottom:10px;' + (off ? 'opacity:.6;' : '') + '"><input type="checkbox" id="swf_' + id + '" ' + (v ? 'checked ' : '') + (off ? 'disabled ' : '') +
+      'onchange="SW.values[\'' + id + '\']=this.checked"> ' + esc(f.label) + ' ' +
+      (f.requiresBrandColours ? (colours.length ? colours.map(x => '<span class="sw-swatch" style="background:' + esc(x) + '"></span>').join('') : '<span class="note" style="margin:0;">(add brand colours in Settings \u2192 Brand first)</span>') : '') + '</label>' + help + '</div>';
+  }
+  const label = '<label class="lbl" for="swf_' + id + '">' + esc(f.label) + badge + '</label>';
+  const onInput = 'oninput="SW.values[\'' + id + '\']=this.value;swCheckNav()"';
+  let control;
+  if (f.kind === 'select') control = '<select class="field" id="swf_' + id + '" onchange="SW.values[\'' + id + '\']=this.value" style="margin-bottom:10px;"><option value="">' + (f.group === 'style' ? 'Concept default' : 'Not specified') + '</option>' +
+    (SW_CATALOG.optionSets[f.optionSet] || []).map(o => '<option value="' + esc(o.value) + '"' + (v === o.value ? ' selected' : '') + '>' + esc(o.label) + '</option>').join('') + '</select>';
+  else if (f.kind === 'textarea') control = '<textarea class="field" id="swf_' + id + '" rows="2" maxlength="' + (f.maxLength || 200) + '" placeholder="' + esc(f.placeholder || '') + '" ' + onInput + ' style="margin-bottom:10px;">' + esc(v || '') + '</textarea>';
+  else control = '<input class="field" id="swf_' + id + '" maxlength="' + (f.maxLength || 200) + '" placeholder="' + esc(f.placeholder || '') + '" value="' + esc(v || '') + '" ' + onInput + ' style="margin-bottom:10px;">';
+  return '<div' + (f.kind === 'textarea' ? ' class="full"' : '') + '>' + label + control + help + '</div>';
+}
+function swGroupFields(group) {
+  const r = swRecipe(), order = Object.keys(SW_CATALOG.fields);
+  const ids = [...r.fields.required, ...r.fields.optional].filter(id => SW_CATALOG.fields[id] && SW_CATALOG.fields[id].group === group);
+  return ids.sort((a, b) => (r.fields.required.includes(b) - r.fields.required.includes(a)) || order.indexOf(a) - order.indexOf(b));
+}
+function swMissingRequired() {
+  const r = swRecipe();
+  return r.fields.required.filter(id => { const v = SW.values[id]; return v === undefined || v === '' || v === false; });
+}
+function swCheckNav() { const n = el('swStepNav'); if (n && SW.step === 3) n.innerHTML = swDetailsNav(); }
+
+// ── Step 4: details ──────────────────────────────────────────────────
+function swDetailsNav() {
+  const m = swMissingRequired();
+  return swNav(2, 'Continue', 'swGo(4)', m.length > 0, m.length ? 'Add ' + SW_CATALOG.fields[m[0]].label.toLowerCase() + ' to continue' : '');
+}
+function swStepDetails() {
+  const b = SW_CATALOG.business && SW_CATALOG.business.name, r = swRecipe();
+  return '<p class="note" style="margin-top:0;">' + (b ? 'Filled in from ' + esc(b) + '\u2019s profile where we could. ' : '') + 'Only the required items are needed \u2014 the rest sharpens the result.</p>' +
+    '<div class="sw-form">' + swGroupFields('details').map(id => swFieldHtml(id, r.fields.required.includes(id))).join('') + '</div>' +
+    '<div id="swStepNav">' + swDetailsNav() + '</div>';
+}
+
+// ── Step 5: customize ────────────────────────────────────────────────
+function swStepCustomize() {
+  const r = swRecipe(), o = SW.output, r2 = r.fields.required;
+  return '<label class="lbl">Format</label><div class="sw-pills">' +
+      r.formats.supported.map(id => '<button class="sw-pill" aria-pressed="' + (o.aspectRatio === id) + '" onclick="SW.output.aspectRatio=\'' + id + '\';swGo(4)">' + id + '<small>' + esc(swFormatLabel(id)) + '</small></button>').join('') + '</div>' +
+    '<label class="lbl">How many variations</label><div class="sw-pills">' +
+      Array.from({ length: SW_CATALOG.limits.maxVariations }, (_, i) => i + 1).map(n => '<button class="sw-pill" aria-pressed="' + (o.variations === n) + '" onclick="SW.output.variations=' + n + ';swGo(4)">' + n + '</button>').join('') + '</div>' +
+    swImageModelHtml() +
+    '<details style="max-width:820px;"><summary style="cursor:pointer;font-weight:600;font-size:13px;margin-bottom:10px;">Advanced options</summary>' +
+      '<div class="sw-form">' + swGroupFields('style').map(id => swFieldHtml(id, r2.includes(id))).join('') + '</div></details>' +
+    swNav(3, 'Review brief', 'swGo(5)', false, '');
+}
+
+// Per-job image model, defaulting to Settings -> AI models. Models that
+// can't use the product photo or can't post to Instagram are listed but
+// disabled, with the reason, so the choice is always an informed one.
+function swImageModelHtml() {
+  const list = (SW_CATALOG.models && SW_CATALOG.models.image) || [];
+  if (!list.length) return '';
+  const ok = (m) => m.keepsProduct && m.publishable;   // publishable now includes PNG models Zen converts
+  const configured = (SW_CATALOG.image_model || {}).configured;
+  const def = list.find(m => m.model === configured);
+  // Only an explicit change counts as a pick. Until then nothing is
+  // sent and the job follows Settings -> AI models, so a later change
+  // to the default still applies and the backend can explain fallbacks.
+  const effective = SW.output.imageModel || (def && ok(def) ? def.model : (list.find(ok) || {}).model);
+  const why = (m) => !m.keepsProduct ? ' \u2014 can\u2019t use your product photo' : m.convertsForPublishing ? ' \u2014 PNG, converted to JPEG for Instagram' : '';
+  const warn = !SW.output.imageModel && def && !ok(def)
+    ? '<p class="note" style="margin:0 0 6px;color:#9a5412;">Your default (' + esc(def.label) + ')' + esc(why(def)) + ', so Zen will use ' + esc((list.find(m => m.model === effective) || {}).label || 'another model') + ' unless you pick one.</p>' : '';
+  return '<label class="lbl" for="swImageModel">Image model</label>' +
+    '<select class="field" id="swImageModel" style="max-width:420px;margin-bottom:4px;" onchange="SW.output.imageModel=this.value">' +
+      list.map(m => '<option value="' + esc(m.model) + '"' + (m.model === effective ? ' selected' : '') + (ok(m) ? '' : ' disabled') + '>' +
+        esc(m.label) + (m.model === configured ? ' (your default)' : '') + (m.approxPrice ? ' \u00b7 ~' + esc(m.approxPrice) + '/image' : '') + why(m) + '</option>').join('') +
+    '</select>' + warn + '<p class="note" style="margin:0 0 14px;">Prices are approximate, per image \u2014 your Replicate bill is what counts. Just for this creation. Videos you make from these images use <b>' + esc((SW_CATALOG.video_model || {}).label || '') + '</b> unless you pick another in the video panel. Defaults are set in <a href="#" onclick="event.preventDefault();flow(()=>aiModelSettings())">Settings \u2192 AI models</a>.</p>';
+}
+
+// ── Step 6: review ───────────────────────────────────────────────────
+const swPayload = (extra) => Object.assign({ workflow_id: SW.workflowId, recipe_id: SW.recipeId, values: SW.values, assets: SW.assets, output: SW.output,
+  use_brand_preferences: SW.useBrandPreferences === true, prompt_override: SW.promptOverride || undefined }, extra || {});
+const swStepReview = () => '<div id="swReview"><div class="loading-block"><span class="spin"></span>Putting your brief together\u2026</div></div>';
+async function swLoadReview() {
+  const j = await call('compose_studio_prompt', swPayload(SW.regeneratePrompt ? { regenerate_prompt: true } : null), 90000);
+  SW.regeneratePrompt = false;
+  const box = el('swReview'); if (!box) return;
+  if (!j.ok) { box.innerHTML = errBlock(j.error, 'swGo(5)'); return; }
+  SW.review = j;
+  if (!j.valid) {
+    box.innerHTML = '<div class="onb-dev-note" style="max-width:820px;"><b>Fix before generating</b>' + j.errors.map(esc).join('<br>') + '</div>' + swNav(4, '', '', true, '');
+    return;
+  }
+  const editStep = { Workflow: 0, Concept: 1, Assets: 2, Intent: 3, Product: 3, Audience: 3, Offer: 3, Text: 3, Format: 4, Style: 4, Model: 4 };
+  box.innerHTML =
+    (j.requires_clarification && j.clarifying_question ? '<div class="onb-dev-note" style="max-width:820px;"><b>Zen has a question</b>' + esc(j.clarifying_question) + '</div>' : '') +
+    (j.fallback_used ? '<div class="onb-dev-note" style="max-width:820px;"><b>Simplified prompt used</b>Zen could not compose a full prompt this time, so it used a simplified one built from your request, the product reference and the concept. You can edit it below or try Regenerate prompt.</div>' : '') +
+    (j.adapter && j.adapter.note ? '<p class="note" style="max-width:820px;">\u2139\ufe0f ' + esc(j.adapter.note) + '</p>' : '') +
+    '<div class="sw-brief">' + Object.entries(j.brief).map(([k, v]) =>
+      '<div class="sw-brief-row"><span>' + esc(k) + '</span><span>' + esc(v) + '</span>' +
+      (editStep[k] !== undefined ? '<button class="btn btn-ghost btn-sm" onclick="swGo(' + editStep[k] + ')">Edit</button>' : '<span></span>') + '</div>').join('') + '</div>' +
+    (j.assumptions && j.assumptions.length ? '<p class="note" style="max-width:820px;"><b>Assumptions:</b> ' + j.assumptions.map(esc).join(' \u00b7 ') + '</p>' : '') +
+    '<p class="note" style="max-width:820px;">Prompt written by <b>' + esc(j.prompt_model || 'Zen (simplified)') + '</b>' + (j.prompt_cached ? ' (reused)' : '') + (j.prompt_edited ? ' \u00b7 edited by you' : '') +
+      ' \u00b7 image generated by <b>' + esc(j.adapter.label) + '</b></p>' +
+    '<details style="max-width:820px;margin-top:14px;"' + (j.fallback_used || j.prompt_edited ? ' open' : '') + '><summary style="cursor:pointer;font-weight:600;font-size:13px;">Advanced: view and edit the prompt</summary>' +
+      '<p class="note">This is what the image model is asked to draw. Edit it if you want to be more specific \u2014 your words are used exactly.</p>' +
+      '<p class="note" style="margin-top:0;">Built from ' + j.sections.length + ' parts \u2014 the prompt model writes the main instruction; Zen adds the fixed rules.</p>' +
+      '<div class="sw-brief" style="margin-bottom:10px;">' + j.sections.map(s => '<div class="sw-brief-row"><span>' + esc(s.block.replace(/_/g, ' ')) + '<br><small style="font-weight:400;">from ' + esc(s.owner) + '</small></span><span>' + esc(s.text) + '</span><span></span></div>').join('') + '</div>' +
+      '<textarea class="field" id="swPromptEdit" rows="7" style="font-size:12.5px;line-height:1.55;">' + esc(j.generation_prompt || j.prompt) + '</textarea>' +
+      '<div class="sw-actions" style="margin:8px 0 12px;">' +
+        '<button class="btn btn-s btn-sm" onclick="swUseEditedPrompt()">Use my edited prompt</button>' +
+        '<button class="btn btn-ghost btn-sm" onclick="swRegeneratePrompt()">Regenerate prompt</button>' +
+        (SW.promptOverride ? '<button class="btn btn-ghost btn-sm" onclick="SW.promptOverride=null;swLoadReview();">Back to Zen\u2019s prompt</button>' : '') +
+      '</div>' +
+      '<p class="lbl" style="margin-top:10px;">Exactly what the image model receives</p><div class="sw-code">' + esc(j.prompt) + '</div>' +
+      (j.negative_constraints && j.negative_constraints.length ? '<p class="lbl" style="margin-top:10px;">Must not appear</p><div class="sw-code">' + esc(j.negative_constraints.join(', ')) + '</div>' : '') +
+      '</details>' +
+    swNav(4, 'Generate ' + j.variations + ' variation' + (j.variations > 1 ? 's' : ''), 'swGenerate()', !!SW_CATALOG.setup_needed, SW_CATALOG.setup_needed ? 'Run the database setup first' : '');
+}
+function swUseEditedPrompt() {
+  const v = (el('swPromptEdit') || {}).value || '';
+  if (!v.trim()) { toast('The prompt can\u2019t be empty.', 'err'); return; }
+  SW.promptOverride = v.trim();
+  toast('Using your edited prompt.', 'ok');
+  swLoadReview();
+}
+function swRegeneratePrompt() {
+  SW.promptOverride = null; SW.regeneratePrompt = true;
+  el('swReview').innerHTML = '<div class="loading-block"><span class="spin"></span>Writing a fresh prompt\u2026</div>';
+  swLoadReview();
+}
+// ── Step 7: generate & refine ────────────────────────────────────────
+function swStepGenerate() {
+  return '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;"><span id="swStatus" class="note" style="margin:0;flex:1;"></span>' +
+    '<span id="swCancelWrap"></span><button class="btn btn-ghost btn-sm" onclick="swGo(5)">Back to brief</button>' +
+    '<button class="btn btn-s btn-sm" onclick="studioWizard(\'' + SW.workflowId + '\')">Start a new one</button></div>' +
+    '<div id="swResults" class="sw-results"></div><div id="swTextEditor" style="margin-top:16px;"></div>';
+}
+async function swGenerate() {
+  if (SW.busy) return; SW.busy = true;
+  const j = await call('create_studio_request', swPayload());
+  SW.busy = false;
+  if (!j.ok) { toast(j.error, 'err'); return; }
+  SW.requestId = j.request_id;
+  SW_CATALOG.recent_recipe_ids = [SW.recipeId, ...SW_CATALOG.recent_recipe_ids.filter(x => x !== SW.recipeId)];
+  if (j.adapter_note) toast(j.adapter_note, 'ok');
+  const start = SW.results.length;
+  for (let i = 0; i < j.variations; i++) SW.results.push({ key: 'r' + Date.now() + i, requestId: j.request_id, index: i, status: 'generating', label: 'Variation ' + (i + 1), aspectRatio: j.aspect_ratio });
+  swGo(6);
+  await Promise.all(SW.results.slice(start).map(r => swRunVariation(r)));
+}
+async function swRunVariation(r) {
+  r.status = 'generating'; r.error = null; swRenderResults();
+  const j = await call('generate_studio_variation', { request_id: r.requestId, variation_index: r.index }, 180000);
+  if (j.generation && j.generation.status === 'succeeded') { r.status = 'done'; r.gen = j.generation; r.warning = j.generation.warning || null; }
+  else { r.status = j.request_status === 'cancelled' ? 'cancelled' : 'failed'; r.error = j.error || 'Something went wrong.'; }
+  swRenderResults();
+}
+async function swCancel() {
+  if (!SW.requestId) return;
+  const j = await call('cancel_studio_request', { request_id: SW.requestId });
+  toast(j.ok ? (j.note || 'Cancelled') : j.error, j.ok ? 'ok' : 'err');
+}
+function swRenderResults() {
+  const box = el('swResults'); if (!box) return;
+  const recipe = swRecipe(), gen = SW.results.filter(r => r.status === 'generating').length;
+  const done = SW.results.filter(r => r.status === 'done').length, failed = SW.results.filter(r => r.status === 'failed').length;
+  const cw = el('swCancelWrap'); if (cw) cw.innerHTML = gen && SW.requestId ? '<button class="btn btn-ghost btn-sm" onclick="swCancel()">Cancel</button>' : '';
+  const st = el('swStatus');
+  if (st) st.textContent = gen ? 'Generating ' + gen + ' image' + (gen > 1 ? 's' : '') + '\u2026 this usually takes 20\u201360 seconds each.' : (done + ' ready' + (failed ? ', ' + failed + ' failed' : '') + '. Earlier versions stay here as you refine.');
+  const overlay = swSlotByRole('overlay'), hasOverlay = overlay && (SW.assets[overlay.id] || []).length;
+  box.innerHTML = SW.results.map(r => {
+    const ratio = (r.aspectRatio || '1:1').replace(':', '/');
+    const isVideo = r.kind === 'video';
+    const media = r.status === 'done' ? '<div class="sw-media" style="aspect-ratio:' + ratio + ';position:relative;">' + (isVideo
+        ? '<video src="' + esc(r.gen.output_url) + '" controls playsinline loop muted preload="metadata" aria-label="' + esc(r.label) + '"></video><span class="sw-vbadge">▶ Video</span>'
+        : '<img src="' + esc(r.gen.output_url) + '" alt="' + esc(r.label) + '" loading="lazy">') + '</div>'
+      : isVideo && r.status === 'generating' ? '<div class="sw-media" style="aspect-ratio:' + ratio + ';flex-direction:column;gap:8px;"><span class="spin"></span><span class="note" style="margin:0;text-align:center;padding:0 12px;">' + esc(r.note || 'Making your video… usually 1–4 minutes. You can keep working.') + '</span></div>'
+      : '<div class="sw-media" style="aspect-ratio:' + ratio + ';">' + (r.status === 'generating' ? '<span class="spin"></span>' : '<span class="note" style="padding:14px;text-align:center;">' + (r.status === 'cancelled' ? 'Cancelled' : 'Not generated') + '</span>') + '</div>';
+    let actions = '';
+    if (r.status === 'done' && isVideo) {
+      const k = "'" + r.key + "'";
+      actions = '<div class="sw-actions">' +
+          (r.itemId ? '<button class="btn btn-s" disabled>Saved \u2713</button>' : '<button class="btn btn-p" onclick="swSave(' + k + ',this)">Save to library</button>') +
+          '<button class="btn btn-ghost" onclick="swDownload(\'' + esc(r.gen.output_url) + '\',\'' + esc(r.gen.id) + '\',\'mp4\')">Download</button>' +
+          (r.sourceKey && swFind(r.sourceKey) ? '<button class="btn btn-ghost" onclick="swAskVideo(\'' + r.sourceKey + '\')">Different motion</button>' : '') + '</div>' +
+        '<p class="note" style="margin:0;">Posting videos to Instagram from Zen isn\u2019t available yet \u2014 save or download it to post.</p><div id="swAsk_' + r.key + '"></div>';
+    } else if (r.status === 'done') {
+      const k = "'" + r.key + "'";
+      const refine = (recipe ? recipe.refinements : []).map(t => SW_CATALOG.refinements.find(x => x.type === t)).filter(Boolean)
+        .map(d => '<button class="btn btn-ghost" onclick="' + (d.needsNote || d.picksFormat ? 'swAsk' : 'swRefine') + '(' + k + ',\'' + d.type + '\')">' + esc(d.label) + '</button>').join('');
+      actions = '<div class="sw-actions">' +
+          (r.itemId ? '<button class="btn btn-s" onclick="swOpenPublishing(' + k + ')">Saved \u2713 \u00b7 Open</button>' : '<button class="btn btn-p" onclick="swSave(' + k + ',this)">Save to library</button>') +
+          '<button class="btn btn-s" onclick="swOpenPublishing(' + k + ')">Publish or promote</button>' +
+          '<button class="btn btn-ghost" onclick="swDownload(\'' + esc(r.gen.output_url) + '\',\'' + esc(r.gen.id) + '\')">Download</button></div>' +
+        (r.textLayer
+          ? '<div class="sw-actions"><button class="btn btn-ghost" onclick="swShowClean(' + k + ')">Remove text</button><button class="btn btn-ghost" onclick="swOpenText(\'' + r.sourceKey + '\')">Edit text</button></div>'
+          : '<div class="sw-actions"><button class="btn btn-s" onclick="swAskVideo(' + k + ')">\u25b6 Make it a video</button><button class="btn btn-ghost" onclick="swOpenText(' + k + ')">Edit text</button>' + (hasOverlay ? '<button class="btn btn-ghost" onclick="swOpenText(' + k + ',true)">Add logo</button>' : '') + '</div>' +
+            '<details class="sw-refine"><summary>Refine this image</summary><div class="sw-rgrid">' + refine + '</div></details>') +
+        '<div id="swAsk_' + r.key + '"></div>';
+    } else if (r.status === 'failed') {
+      actions = '<p class="note" style="margin:0;color:#a02020;">' + esc(r.error) + '</p><div class="sw-actions"><button class="btn btn-s" onclick="swRetry(\'' + r.key + '\')">Retry</button></div>';
+    }
+    return '<div class="sw-result" id="swRes_' + r.key + '">' + media + '<div class="sw-rbody"><span class="sw-rlabel">' + esc(r.label) + '</span>' +
+      (r.warning ? '<p class="note" style="margin:0;color:#9a5412;">' + esc(r.warning) + '</p>' : '') + actions + '</div></div>';
+  }).join('');
+}
+const swFind = (key) => SW.results.find(r => r.key === key);
+function swRetry(key) { const r = swFind(key); if (r) swRunVariation(r); }
+function swAsk(key, type) {
+  const box = el('swAsk_' + key); if (!box) return;
+  const d = SW_CATALOG.refinements.find(x => x.type === type);
+  box.innerHTML = '<div class="sw-panel">' + (d.picksFormat
+    ? '<label class="lbl">New format</label><div class="sw-pills" style="margin-bottom:8px;">' + SW_CATALOG.formats.map(f => '<button class="sw-pill" onclick="swRefine(\'' + key + '\',\'' + type + '\',null,\'' + f.id + '\')">' + f.id + '<small>' + esc(f.label) + '</small></button>').join('') + '</div>'
+    : '<label class="lbl" for="swNote_' + key + '">' + esc(d.label) + ' to\u2026</label><input class="field" id="swNote_' + key + '" placeholder="' + esc(d.notePlaceholder) + '" style="margin-bottom:8px;">' +
+      '<button class="btn btn-p btn-sm" onclick="swRefine(\'' + key + '\',\'' + type + '\',el(\'swNote_' + key + '\').value)">Apply</button>') +
+    ' <button class="btn btn-ghost btn-sm" onclick="el(\'swAsk_' + key + '\').innerHTML=\'\'">Cancel</button></div>';
+  box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+async function swRefine(key, type, note, aspectRatio) {
+  const src = swFind(key); if (!src || !src.gen) return;
+  const d = SW_CATALOG.refinements.find(x => x.type === type);
+  if (d.needsNote && !String(note || '').trim()) { toast('Describe the change first.', 'err'); return; }
+  const j = await call('refine_studio_result', { generation_id: src.gen.id, type, note: note || '', aspect_ratio: aspectRatio || null });
+  if (!j.ok) { toast(j.error, 'err'); return; }
+  const r = { key: 'r' + Date.now(), requestId: j.request_id, index: 0, status: 'generating', aspectRatio: j.aspect_ratio, label: d.label + ' \u00b7 from ' + src.label };
+  SW.results.push(r); swRenderResults();
+  const c = el('swRes_' + r.key); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  await swRunVariation(r);
+}
+function swShowClean(key) {
+  const r = swFind(key), src = r && swFind(r.sourceKey); if (!src) return;
+  const card = el('swRes_' + src.key);
+  if (card) { card.classList.add('hl'); card.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => card.classList.remove('hl'), 2200); }
+  toast('The clean, text-free original is always kept \u2014 it\u2019s highlighted.', 'ok');
+}
+async function swDownload(url, id, ext) {
+  try {
+    const blob = await (await fetch(url)).blob();
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'zen-creative-' + String(id).slice(0, 8) + '.' + (ext || 'jpg');
+    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  } catch (e) { window.open(url, '_blank', 'noopener'); }
+}
+function swProductName() { const f = swFieldByPath('product.name'); return (f && SW.values[f.id]) || ''; }
+async function swSave(key, btn) {
+  const r = swFind(key); if (!r || !r.gen) return null;
+  if (r.itemId) return r.itemId;
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Saving\u2026'; }
+  const recipe = swRecipe(), cta = swFieldByLayer('cta');
+  const j = await call('attach_generation_to_content_item', {
+    generation_id: r.gen.id, title: (swProductName() || 'Product') + ' \u2014 ' + (recipe ? recipe.title : 'Creative Studio'),
+    caption: '', cta: (cta && SW.values[cta.id]) || '', aspect_ratio: r.aspectRatio || '1:1', item_type: r.kind === 'video' ? 'video' : 'image',
+  });
+  if (!j.ok) { if (btn) { btn.disabled = false; btn.textContent = 'Save to library'; } toast(j.error, 'err'); return null; }
+  r.itemId = j.item.id;
+  call('record_studio_destination', { request_id: r.requestId, content_plan_item_id: r.itemId, destination: 'creative_library' });
+  toast('Saved to your library \u2014 it\u2019s waiting for review in Posting & Ads \u2192 Schedule.', 'ok');
+  swRenderResults();
+  return r.itemId;
+}
+async function swOpenPublishing(key) {
+  const itemId = await swSave(key); if (!itemId) return;
+  flow(() => scheduleItemDetail(itemId));
+  toast('Approve it here, then schedule or publish. Once it\u2019s live, \u201cPromote this post\u201d runs it as a Meta ad.', 'ok');
+}
+
+// ── Exact text & logo layer (drawn by Zen, not the AI) ───────────────
+function swOpenText(key, focusLogo) {
+  const r = swFind(key); if (!r || !r.gen) return;
+  const lay = (role) => { const f = swFieldByLayer(role); return (f && SW.values[f.id]) || ''; };
+  const overlay = swSlotByRole('overlay'), logoUrl = overlay && (SW.assets[overlay.id] || [])[0];
+  SW.textEditor = { key, headline: lay('headline'), sub: lay('sub'), price: lay('price'), cta: lay('cta'), position: 'bottom', theme: 'dark', logo: !!(focusLogo && logoUrl), logoUrl };
+  const colours = SW_CATALOG.brand_colours || [];
+  el('swTextEditor').innerHTML = '<div class="sw-panel" style="max-width:860px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><b>Exact text & logo \u00b7 ' + esc(r.label) + '</b><button class="btn btn-ghost btn-sm" onclick="el(\'swTextEditor\').innerHTML=\'\';SW.textEditor=null;">Close</button></div>' +
+    '<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;" class="sw-text-grid"><div>' +
+      [['headline', 'Headline', 'e.g. Weekend Special'], ['sub', 'Supporting text', 'e.g. Homemade, no preservatives'], ['price', 'Price', 'e.g. AED 25'], ['cta', 'Call to action', 'e.g. Order on WhatsApp']]
+        .map(([k, l, ph]) => '<label class="lbl" for="swT_' + k + '">' + l + '</label><input class="field" id="swT_' + k + '" placeholder="' + ph + '" value="' + esc(SW.textEditor[k]) + '" oninput="SW.textEditor.' + k + '=this.value;swDrawText()" style="margin-bottom:8px;">').join('') +
+      '<label class="lbl" for="swT_pos">Position</label><select class="field" id="swT_pos" onchange="SW.textEditor.position=this.value;swDrawText()" style="margin-bottom:8px;"><option value="bottom">Bottom</option><option value="top">Top</option></select>' +
+      '<label class="lbl" for="swT_theme">Style</label><select class="field" id="swT_theme" onchange="SW.textEditor.theme=this.value;swDrawText()" style="margin-bottom:8px;"><option value="dark">White text on dark band</option><option value="light">Dark text on light band</option>' + (colours.length ? '<option value="brand">Brand colour band</option>' : '') + '</select>' +
+      (logoUrl ? '<label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-bottom:10px;"><input type="checkbox" ' + (SW.textEditor.logo ? 'checked ' : '') + 'onchange="SW.textEditor.logo=this.checked;swDrawText()"> Add my logo</label>' : '<p class="note">Add a logo in the Assets step to place it here.</p>') +
+      '<button class="btn btn-p btn-sm" onclick="swSaveText(this)">Save this version</button> <span class="note" style="margin:0;">The clean original is kept.</span>' +
+    '</div><div><canvas id="swCanvas" class="sw-canvas"></canvas><div id="swTextMsg"></div></div></div></div>';
+  el('swTextEditor').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  swDrawText();
+}
+function swLoadImg(url) {
+  return new Promise((res, rej) => { const im = new Image(); im.crossOrigin = 'anonymous'; im.onload = () => res(im); im.onerror = () => rej(new Error('Couldn\u2019t load the image for editing.')); im.src = url + (url.includes('?') ? '&' : '?') + 'cors=1'; });
+}
+function swWrap(ctx, text, maxW) {
+  const words = String(text).split(/\s+/).filter(Boolean), lines = []; let line = '';
+  for (const w of words) { const t = line ? line + ' ' + w : w; if (ctx.measureText(t).width > maxW && line) { lines.push(line); line = w; } else line = t; }
+  if (line) lines.push(line); return lines.slice(0, 3);
+}
+async function swDrawText() {
+  const te = SW.textEditor; if (!te) return;
+  const r = swFind(te.key), cv = el('swCanvas'); if (!r || !cv) return;
+  try {
+    if (!te.img || te.imgFor !== r.gen.output_url) { te.img = await swLoadImg(r.gen.output_url); te.imgFor = r.gen.output_url; }
+    if (te.logo && te.logoUrl && !te.logoImg) te.logoImg = await swLoadImg(te.logoUrl);
+  } catch (e) { el('swTextMsg').innerHTML = errBlock(e.message, ''); return; }
+  const W = te.img.naturalWidth, H = te.img.naturalHeight; cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d'); ctx.drawImage(te.img, 0, 0, W, H);
+  const brand = (SW_CATALOG.brand_colours || [])[0] || '#1f5f4f';
+  const bg = te.theme === 'light' ? 'rgba(255,255,255,0.88)' : te.theme === 'brand' ? brand : 'rgba(16,24,20,0.72)';
+  const fg = te.theme === 'light' ? '#18211c' : '#ffffff';
+  const pad = Math.round(W * 0.05), maxW = W - pad * 2, hS = Math.round(W * 0.065), sS = Math.round(W * 0.036), cS = Math.round(W * 0.036);
+  const font = (w, s) => w + ' ' + s + 'px system-ui, -apple-system, Segoe UI, sans-serif';
+  ctx.font = font(700, hS); const hL = te.headline ? swWrap(ctx, te.headline, maxW) : [];
+  ctx.font = font(500, sS); const sub = [te.sub, te.price].filter(Boolean).join('  \u00b7  '); const sL = sub ? swWrap(ctx, sub, maxW) : [];
+  const ctaH = te.cta ? Math.round(cS * 2.3) : 0;
+  const blockH = hL.length * hS * 1.15 + sL.length * sS * 1.4 + (ctaH ? ctaH + pad * 0.5 : 0);
+  if (blockH > 0) {
+    const bandH = blockH + pad * 2, y0 = te.position === 'top' ? 0 : H - bandH;
+    ctx.fillStyle = bg; ctx.fillRect(0, y0, W, bandH);
+    let y = y0 + pad; ctx.fillStyle = fg; ctx.textBaseline = 'top';
+    ctx.font = font(700, hS); for (const l of hL) { ctx.fillText(l, pad, y); y += hS * 1.15; }
+    ctx.font = font(500, sS); for (const l of sL) { ctx.fillText(l, pad, y); y += sS * 1.4; }
+    if (te.cta) {
+      y += pad * 0.5; ctx.font = font(700, cS);
+      const cw = ctx.measureText(te.cta).width + cS * 2, rr = ctaH / 2;
+      ctx.fillStyle = te.theme === 'light' ? brand : '#ffffff';
+      ctx.beginPath(); ctx.moveTo(pad + rr, y); ctx.arcTo(pad + cw, y, pad + cw, y + ctaH, rr); ctx.arcTo(pad + cw, y + ctaH, pad, y + ctaH, rr); ctx.arcTo(pad, y + ctaH, pad, y, rr); ctx.arcTo(pad, y, pad + cw, y, rr); ctx.fill();
+      ctx.fillStyle = te.theme === 'light' ? '#ffffff' : '#18211c'; ctx.textBaseline = 'middle'; ctx.fillText(te.cta, pad + cS, y + ctaH / 2);
+    }
+  }
+  if (te.logo && te.logoImg) {
+    const lw = Math.round(W * 0.16), lh = Math.round(lw * te.logoImg.naturalHeight / te.logoImg.naturalWidth);
+    ctx.drawImage(te.logoImg, W - lw - pad, te.position === 'top' ? H - lh - pad : pad, lw, lh);
+  }
+}
+async function swSaveText(btn) {
+  const te = SW.textEditor, r = te && swFind(te.key), cv = el('swCanvas'); if (!r || !cv) return;
+  if (!te.headline && !te.sub && !te.price && !te.cta && !te.logo) { toast('Add some text or your logo first.', 'err'); return; }
+  let dataUrl;
+  try { dataUrl = cv.toDataURL('image/jpeg', 0.92); }
+  catch (e) { el('swTextMsg').innerHTML = errBlock('This image can\u2019t be edited in the browser because of its storage settings (cross-origin). Download it instead, or check the storage bucket\u2019s CORS settings.', ''); return; }
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Saving\u2026';
+  const j = await call('save_studio_text_layer', { generation_id: r.gen.id, image_base64: dataUrl.split(',')[1], layer: { headline: te.headline, sub: te.sub, price: te.price, cta: te.cta, position: te.position, theme: te.theme, logo: te.logo } }, 60000);
+  btn.disabled = false; btn.textContent = 'Save this version';
+  if (!j.ok) { toast(j.error, 'err'); return; }
+  const nr = { key: 'r' + Date.now(), requestId: r.requestId, index: null, status: 'done', gen: { id: j.generation.id, output_url: j.generation.output_url }, aspectRatio: r.aspectRatio, label: 'With text \u00b7 ' + r.label, textLayer: true, sourceKey: r.key };
+  SW.results.push(nr); el('swTextEditor').innerHTML = ''; SW.textEditor = null; swRenderResults();
+  const c = el('swRes_' + nr.key); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  toast('Saved as a new version \u2014 the clean original is still there.', 'ok');
+}
+
+// ── Settings → AI models (image + video, one place) ─────────────────
+async function aiModelSettings() {
+  const box = el('p-flow');
+  box.innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:16px;">\u2190 Back</button>' +
+    '<h1 style="font-size:22px;">AI models</h1><p class="sub" style="margin-top:2px;max-width:760px;">Choose which models create your images and videos. Creative Studio and your content plans use these. If a model can\u2019t do a particular job \u2014 for example, it can\u2019t use your product photo \u2014 Zen switches to one that can and tells you why.</p>' +
+    '<div id="aiModelsBody"><div class="loading-block"><span class="spin"></span></div></div>';
+  const j = await call('list_generation_models', {});
+  const body = el('aiModelsBody'); if (!body) return;
+  if (!j.ok) { body.innerHTML = errBlock(j.error, 'aiModelSettings()'); return; }
+  const cur = { image: j.current.image || j.defaults.image, video: j.current.video || j.defaults.video };
+  const chip = (cls, t) => '<span class="sw-chip-s ' + cls + '">' + t + '</span>';
+  body.innerHTML =
+    '<div class="sechead"><h2>Images</h2></div><div class="sw-models">' + j.image.map(m =>
+      '<label class="sw-model"><input type="radio" name="aiImage" value="' + esc(m.model) + '"' + (cur.image === m.model ? ' checked' : '') + '><div><b>' + esc(m.label) + '</b>' + (m.model === j.defaults.image ? ' <span style="color:var(--muted);font-size:12px;font-weight:400;">\u00b7 recommended</span>' : '') +
+        '<div class="sw-chips">' +
+          (m.keepsProduct ? chip('good', '\u2713 Keeps your product accurate' + (m.maxReferenceImages > 1 ? ' \u00b7 up to ' + m.maxReferenceImages + ' photos' : ' \u00b7 1 photo')) : chip('warn', 'Can\u2019t use your product photo')) +
+          (m.convertsForPublishing ? chip('good', '\u2713 PNG, converted to JPEG for Instagram') : m.publishable ? chip('good', '\u2713 Instagram-ready JPG') : chip('warn', 'Can\u2019t post to Instagram')) +
+          (m.approxPrice ? chip('', '\u2248 ' + esc(m.approxPrice) + ' per image') : '') +
+        '</div></div></label>').join('') + '</div>' +
+    '<div class="sechead"><h2>Videos</h2></div><div class="sw-models">' + j.video.map(m =>
+      '<label class="sw-model"><input type="radio" name="aiVideo" value="' + esc(m.model) + '"' + (cur.video === m.model ? ' checked' : '') + '><div><b>' + esc(m.label) + '</b>' + (m.model === j.defaults.video ? ' <span style="color:var(--muted);font-size:12px;font-weight:400;">\u00b7 recommended</span>' : '') +
+        '<div class="sw-chips">' + chip('', 'Up to ' + m.maxDuration + ' seconds') + chip(m.audio ? 'good' : '', m.audio ? 'Adds sound' : 'Silent') +
+          chip('', '\u2248 $' + (m.estCostPerSecond * 6).toFixed(2) + ' for 6 seconds') + '</div></div></label>').join('') + '</div>' +
+    '<p class="note" style="max-width:760px;">Video costs are estimates from published per-second rates; your Replicate account shows what\u2019s actually billed.</p>' +
+    '<button class="btn btn-p" onclick="aiModelSave(this)">Save</button><div id="aiModelsMsg" style="margin-top:10px;"></div>';
+}
+async function aiModelSave(btn) {
+  const image = (document.querySelector('input[name=aiImage]:checked') || {}).value;
+  const video = (document.querySelector('input[name=aiVideo]:checked') || {}).value;
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Saving\u2026';
+  const j = await call('set_generation_models', { image_model: image, video_model: video });
+  btn.disabled = false; btn.textContent = 'Save';
+  if (!j.ok) { el('aiModelsMsg').innerHTML = errBlock(j.error, ''); return; }
+  SW_CATALOG = null; // Creative Studio picks up the change next time it opens
+  toast('Saved \u2014 new images and videos will use these models.', 'ok');
+}
+
+// ── Video: animate an approved image ────────────────────────────────
+function swAskVideo(key) {
+  const src = swFind(key); if (!src || !src.gen) return;
+  const v = SW_CATALOG.video, def = SW_CATALOG.video_model, vlist = (SW_CATALOG.models && SW_CATALOG.models.video) || [];
+  SW.videoModel = SW.videoModel || def.configured;
+  // Everything below (lengths, sound, cost, label) comes from the model
+  // actually picked, so switching models can't show another's options.
+  const vm = vlist.find(m => m.model === SW.videoModel) || def;
+  SW.videoDraft = SW.videoDraft || { move: v.cameraMoves[0].value, duration: Math.min(v.defaultDuration, vm.maxDuration), audio: vm.audio };
+  const d = SW.videoDraft, durations = v.durations.filter(x => x <= vm.maxDuration);
+  if (!durations.includes(d.duration)) d.duration = durations[durations.length - 1] || vm.maxDuration;
+  const cost = (d.duration * vm.estCostPerSecond).toFixed(2);
+  el('swAsk_' + key).innerHTML = '<div class="sw-panel"><b style="font-size:13px;">Make a video from this image</b>' +
+    (vlist.length ? '<label class="lbl" for="swVideoModel" style="margin-top:8px;">Video model</label><select class="field" id="swVideoModel" style="margin-bottom:8px;" onchange="SW.videoModel=this.value;swAskVideo(\'' + key + '\')">' +
+      vlist.map(m => '<option value="' + esc(m.model) + '"' + (m.model === SW.videoModel ? ' selected' : '') + '>' + esc(m.label) + (m.model === def.configured ? ' (your default)' : '') + ' \u00b7 up to ' + m.maxDuration + 's \u00b7 ~$' + Number(m.estCostPerSecond).toFixed(2) + '/s</option>').join('') + '</select>' : '') +
+    '<p class="note" style="margin:4px 0 8px;">Zen animates this exact image, so your product stays as it looks here.</p>' +
+    '<label class="lbl">Camera movement</label><div class="sw-pills" style="margin-bottom:6px;">' + v.cameraMoves.map(m => '<button class="sw-pill" aria-pressed="' + (d.move === m.value) + '" onclick="SW.videoDraft.move=\'' + m.value + '\';swAskVideo(\'' + key + '\')">' + esc(m.label) + '</button>').join('') + '</div>' +
+    '<label class="lbl">Length</label><div class="sw-pills" style="margin-bottom:6px;">' + durations.map(s => '<button class="sw-pill" aria-pressed="' + (d.duration === s) + '" onclick="SW.videoDraft.duration=' + s + ';swAskVideo(\'' + key + '\')">' + s + 's</button>').join('') + '</div>' +
+    (vm.audioToggle ? '<label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-bottom:8px;"><input type="checkbox" ' + (d.audio ? 'checked ' : '') + 'onchange="SW.videoDraft.audio=this.checked"> Add sound</label>'
+      : '<p class="note" style="margin:0 0 8px;">' + (vm.audio ? esc(vm.label) + ' adds its own sound.' : esc(vm.label) + ' makes silent videos.') + '</p>') +
+    '<p class="note" style="margin:0 0 10px;">Made with <b>' + esc(vm.label) + '</b> \u00b7 about $' + cost + ' \u00b7 usually 1\u20134 minutes \u00b7 <a href="#" onclick="event.preventDefault();flow(()=>aiModelSettings())">change model</a></p>' +
+    '<button class="btn btn-p btn-sm" onclick="swStartVideo(\'' + key + '\',this)">Make video</button> <button class="btn btn-ghost btn-sm" onclick="el(\'swAsk_' + key + '\').innerHTML=\'\'">Cancel</button></div>';
+  el('swAsk_' + key).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+async function swStartVideo(key, btn) {
+  const src = swFind(key); if (!src || !src.gen) return;
+  const d = SW.videoDraft;
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Starting\u2026';
+  const j = await call('start_studio_video', { generation_id: src.gen.id, camera_move: d.move, duration: d.duration, audio: d.audio, video_model: SW.videoModel });
+  btn.disabled = false; btn.textContent = 'Make video';
+  if (!j.ok) { toast(j.error, 'err'); return; }
+  (j.notes || []).forEach(n => toast(n, 'ok'));
+  const r = { key: 'v' + Date.now(), kind: 'video', requestId: j.request_id, index: 0, status: 'generating', gen: { id: j.generation_id }, aspectRatio: src.aspectRatio, sourceKey: src.key,
+    label: 'Video \u00b7 ' + j.duration + 's \u00b7 from ' + src.label };
+  SW.results.push(r); el('swAsk_' + key).innerHTML = ''; swRenderResults();
+  const c = el('swRes_' + r.key); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  swPollVideo(r);
+}
+async function swPollVideo(r) {
+  const started = Date.now(), limit = 10 * 60 * 1000;
+  while (r.status === 'generating' && Date.now() - started < limit) {
+    await new Promise(res => setTimeout(res, SW_VIDEO_POLL_MS));
+    if (!SW || !SW.results.includes(r)) return;       // user started something else
+    const j = await call('check_studio_video', { generation_id: r.gen.id });
+    if (!j.ok) continue;                                // transient - keep waiting
+    if (j.status === 'succeeded') { r.status = 'done'; r.gen.output_url = j.output_url; }
+    else if (j.status === 'failed') { r.status = 'failed'; r.error = j.error; }
+    swRenderResults();
+  }
+  if (r.status === 'generating') { r.note = 'Still working \u2014 it\u2019ll appear in Studio history when it\u2019s ready.'; swRenderResults(); }
+}
+let SW_VIDEO_POLL_MS = 5000;
+
+// ── History ──────────────────────────────────────────────────────────
+async function swLoadHistory(boxId) {
+  const box = el(boxId); if (!box) return;
+  const j = await call('list_studio_history', { limit: 12 });
+  if (!j.ok) { box.innerHTML = '<p class="note">' + esc(j.error) + '</p>'; return; }
+  const all = j.requests || [];
+  const rootOf = (r) => { let x = r, guard = 0; while (x && x.parent_request_id && guard++ < 8) { const p = all.find(q => q.id === x.parent_request_id); if (!p) break; x = p; } return x ? x.id : r.id; };
+  const videosByRoot = {}; all.filter(r => r.output_kind === 'video').forEach(r => { const k = rootOf(r); videosByRoot[k] = (videosByRoot[k] || 0) + 1; });
+  const reqs = all.filter(r => !r.parent_request_id);
+  if (!reqs.length) { box.innerHTML = '<p class="note">Nothing created with Creative Studio yet \u2014 pick a workflow above to start.</p>'; return; }
+  const nameField = SW_CATALOG ? swFieldByPath('product.name') : null;
+  box.innerHTML = '<div class="gal-grid">' + reqs.map(r => {
+    const out = r.outputs[0];
+    const label = { completed: 'Ready', partially_completed: 'Partly ready', failed: 'Failed', generating: 'Generating', queued: 'Queued', cancelled: 'Cancelled' }[r.status] || r.status;
+    const name = (nameField && r.inputs && r.inputs[nameField.id]) || 'Untitled';
+    return '<div class="gal-card" role="button" tabindex="0" onclick="flow(()=>swOpenRequest(\'' + r.id + '\'))" onkeydown="if(event.key===\'Enter\')flow(()=>swOpenRequest(\'' + r.id + '\'))">' +
+      (out ? '<img src="' + esc(out.output_url) + '" class="gal-media" loading="lazy" alt="">' : '<div class="gal-media" style="display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;">' + esc(label) + '</div>') +
+      '<div class="gal-body"><span class="gal-label">' + esc(name) + '</span><span class="gal-sub">' + esc(r.template_title) + ' \u00b7 ' + esc(label) + (videosByRoot[r.id] ? ' \u00b7 \u25b6 ' + videosByRoot[r.id] + ' video' + (videosByRoot[r.id] > 1 ? 's' : '') : '') + '</span></div></div>';
+  }).join('') + '</div>';
+}
+async function swOpenRequest(requestId) {
+  el('p-flow').innerHTML = '<div class="loading-block"><span class="spin"></span>Opening\u2026</div>';
+  const [cat, j] = await Promise.all([swLoadCatalog(), call('get_studio_request', { request_id: requestId })]);
+  if (!cat.ok || !j.ok) { el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="flowBack()">\u2190 Back</button>' + errBlock((cat.ok ? j : cat).error, 'swOpenRequest(\'' + requestId + '\')'); return; }
+  const q = j.request;
+  swInit(q.workflow_id);
+  Object.assign(SW, { recipeId: q.template_id, requestId: q.id, prefilled: true, step: 6, values: Object.assign({}, q.inputs || {}), assets: Object.assign({}, q.assets || {}) });
+  Object.assign(SW.output, q.customization || {});
+  const refByReq = {}; (j.refinements || []).forEach(d => { refByReq[d.id] = d; });
+  const byGenId = {}, slotLatest = {};
+  (j.generations || []).forEach(g => { if (g.studio_variation_index !== null) slotLatest[g.studio_request_id + ':' + g.studio_variation_index] = g; });
+  SW.results = [];
+  (j.generations || []).forEach(g => {
+    if (g.studio_variation_index !== null && slotLatest[g.studio_request_id + ':' + g.studio_variation_index] !== g) return;
+    const isText = g.studio_variation_index === null; if (isText && g.status !== 'succeeded') return;
+    const isVid = !!(g.model_params && g.model_params.media === 'video');
+    const ref = refByReq[g.studio_request_id], d = ref && ref.refinement && SW_CATALOG.refinements.find(x => x.type === ref.refinement.type);
+    const srcId = g.model_params && g.model_params.source_generation_id, src = srcId ? byGenId[srcId] : null;
+    const r = { key: 'h' + g.id.replace(/-/g, '').slice(0, 10), requestId: g.studio_request_id, index: isText ? null : g.studio_variation_index,
+      aspectRatio: (ref && ref.refinement && ref.refinement.aspect_ratio) || (src && src.aspectRatio) || q.aspect_ratio, gen: g, error: g.error,
+      status: g.status === 'succeeded' ? 'done' : g.status === 'processing' ? 'generating' : 'failed',
+      label: isVid ? 'Video' + (g.model_params.duration ? ' \u00b7 ' + g.model_params.duration + 's' : '') + (src ? ' \u00b7 from ' + src.label : '') : isText ? 'With text' + (src ? ' \u00b7 ' + src.label : '') : g.studio_request_id === q.id ? 'Variation ' + (g.studio_variation_index + 1) : (d ? d.label : 'Change'),
+      textLayer: isText, sourceKey: src ? src.key : null, kind: isVid ? 'video' : 'image' };
+    byGenId[g.id] = r; SW.results.push(r);
+  });
+  swRender();
+  SW.results.filter(r => r.kind === 'video' && r.status === 'generating').forEach(r => swPollVideo(r));   // resume videos still being made
+  if (SW.results.some(r => r.kind !== 'video' && r.status === 'generating')) toast('Some images were still generating \u2014 reopen this in a minute to see them.', 'ok');
+}
+
 async function creativestudio(){
   STATE.lastPage='creativestudio';
   const p = el('p-creativestudio');
@@ -6198,11 +6954,19 @@ async function creativestudio(){
     '<button class="task" id="studioCard_'+key+'" style="border:1.5px solid var(--line);text-align:left;display:flex;gap:12px;align-items:flex-start;" onclick="'+fn+'">' +
       cardMedia(icon) + '<div><div class="task-top"><b>'+title+'</b></div><span>'+desc+'</span></div></button>';
   p.innerHTML =
-    '<div class="topline"><div class="pagetitle"><div class="kicker">AI Creative Studio</div><h1>Turn a reference into your own ad.</h1>' +
-    '<p>Start from an idea, a reference, or a product \u2014 Zen builds the creative and hands it straight into your real ad workflow.</p></div></div>' +
-    '<div class="grid3" style="margin-top:14px;">' +
+    '<div class="topline"><div class="pagetitle"><div class="kicker">AI Creative Studio</div><h1>Create images that sell your product.</h1>' +
+    '<p>Choose what you want to make, add your product, and Zen builds on-brand creative that goes straight into your library, posting schedule and Meta ads.</p></div></div>' +
+    // Real, new - the seven template-driven workflows, same card shape
+    // as the tools below so both rows line up. Loaded from the real
+    // registry; Phase 2 workflows show as clearly disabled, not dead.
+    '<div class="sechead" style="margin-top:6px;"><h2>Create from a concept</h2></div>' +
+    '<div class="grid3" id="csWorkflows"><div class="loading-block"><span class="spin"></span></div></div>' +
+    '<div class="sechead" style="margin-top:18px;"><h2>Guided & quick tools</h2></div>' +
+    '<div class="grid3">' +
       CARD_DEFS.map(c => studioCard(c[0], c[1], c[2], c[3], c[4])).join('') +
     '</div>' +
+    '<div class="sechead" style="margin-top:18px;"><h2>Studio history</h2></div>' +
+    '<div id="csStudioHistory"><div class="loading-block"><span class="spin"></span></div></div>' +
     // Real, new section - reported directly ("why can't I see
     // everything saved for approval"): a real, complete backend
     // action for exactly this already existed, correctly aggregating
@@ -6214,6 +6978,12 @@ async function creativestudio(){
     '<div id="csApprovals"><div class="loading-block"><span class="spin"></span></div></div>' +
     '<div class="sechead" style="margin-top:18px;"><h2>Recent creative projects</h2></div>' +
     '<div id="csRecentProjects"><div class="loading-block"><span class="spin"></span></div></div>';
+  swLoadCatalog().then(cj => {
+    const box = el('csWorkflows'); if (!box) return;
+    box.innerHTML = cj.ok ? swWorkflowCards(cj.workflows) : '<p class="note">' + esc(cj.error) + '</p>';
+    if (cj.ok) swLoadHistory('csStudioHistory');
+    else { const h = el('csStudioHistory'); if (h) h.innerHTML = ''; }
+  });
   call('list_all_approvals', {}).then(aj => {
     // Real, explicit scope - asked for directly: only real, generated
     // creative belongs on this screen, not a pending WhatsApp reply
@@ -7794,7 +8564,7 @@ async function ugcVideoFlow(){
   UGC_STATE = {};
   el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Loading your products\u2026</div>', '', 'Create UGC Video');
   const j = await call('list_product_library', {});
-  UGC_STATE.products = j.ok ? j.products : [];
+  UGC_STATE.products = (j.ok && j.products) || [];
   el('p-flow').innerHTML = llShell(
     zen('Select a product or service to promote, or add a new one.') +
     (UGC_STATE.products.length ? '<div class="gal-grid" style="max-width:560px;margin-bottom:12px;">' + UGC_STATE.products.map(p =>
@@ -8127,7 +8897,7 @@ async function talkingHeadFlow(){
   TALK_STATE = {};
   el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Loading your avatars\u2026</div>', '', 'Talking Head');
   const j = await call('list_avatar_library', {});
-  TALK_STATE.avatars = j.ok ? j.avatars : [];
+  TALK_STATE.avatars = (j.ok && j.avatars) || [];
   el('p-flow').innerHTML = llShell(
     zen('Pick an existing avatar as your presenter \u2014 Zen writes a real spoken line and animates it with genuine lip-sync.') +
     (TALK_STATE.avatars.length ? '<input class="field" placeholder="Search your avatars\u2026" oninput="talkingHeadFilterAvatars(this)" style="margin-bottom:10px;">' +
@@ -10957,10 +11727,11 @@ async function settings(){
     ['♙','Team members','Who can use Zen','team',true],
     ['⌾','Permissions','What each person can do',null,null],
     ['⚑','Notifications','What Zen tells you and when',null,null],
-    ['▣','Billing','Which AI model each feature uses, and what it costs','billing',null],
+    ['\u2726','AI models','Which models create your images and videos','aimodels',null],
+    ['▣','Billing','Which language model each feature uses, and what it costs','billing',null],
   ];
   el('setList').innerHTML = rows.map(r =>
-    '<div class="list-row" style="cursor:pointer;" onclick="'+(r[3]==='whatsapp'?"flow(()=>whatsappSettingsPanel())":r[3]==='billing'?"flow(()=>billingModelSettings())":r[3]==='avatars'?"flow(()=>avatarLibrarySettings())":r[3]==='gallery'?"flow(()=>salonGallerySettings())":r[3]==='autopilot'?"flow(()=>autopilotSettings())":r[3]==='services'?"flow(()=>servicesPanel())":r[3]?"flow(()=>settingsDetail('"+r[3]+"'))":"toast('This screen would open here.')")+'">' +
+    '<div class="list-row" style="cursor:pointer;" onclick="'+(r[3]==='whatsapp'?"flow(()=>whatsappSettingsPanel())":r[3]==='billing'?"flow(()=>billingModelSettings())":r[3]==='aimodels'?"flow(()=>aiModelSettings())":r[3]==='avatars'?"flow(()=>avatarLibrarySettings())":r[3]==='gallery'?"flow(()=>salonGallerySettings())":r[3]==='autopilot'?"flow(()=>autopilotSettings())":r[3]==='services'?"flow(()=>servicesPanel())":r[3]?"flow(()=>settingsDetail('"+r[3]+"'))":"toast('This screen would open here.')")+'">' +
     '<span style="display:flex;gap:12px;align-items:center;"><span style="width:30px;height:30px;border-radius:9px;background:#eef0ed;display:grid;place-items:center;">'+r[0]+'</span>' +
     '<span><b>'+r[1]+'</b><div class="sub">'+r[2]+'</div></span></span>' +
     (r[4]!==null ? '<span class="badge '+(r[4]?'on':'warn')+'">'+(r[4]?'Done':'Not yet')+'</span>' : '<span style="color:var(--muted);">›</span>') +
@@ -11702,7 +12473,7 @@ async function brandSettingsTab(){
         '<div style="flex:1;"><label class="lbl">Accent colour</label><input class="field" id="bsAccent" value="'+esc(s.accent_color||'')+'" placeholder="#4E5FC8"></div>' +
       '</div>' +
       '<label class="lbl">Visual brand description</label><textarea class="field" id="bsVisual" style="min-height:70px;margin-bottom:10px;" placeholder="What the brand looks like, in a sentence or two.">'+esc(s.visual_brand_description||'')+'</textarea>' +
-      '<label class="lbl">Default image model'+tip('Used for content plan generation. Creative Lab has its own separate choice per generation.')+'</label>' +
+      '<label class="lbl">Default image model'+tip('Used for content plans and Creative Studio. Manage image and video models together in Settings \u2192 AI models.')+'</label>' +
       '<select class="field" id="bsImageModel" style="margin-bottom:4px;">' +
         [['black-forest-labs/flux-2-pro','flux-2-pro (default)'],['black-forest-labs/flux-1.1-pro','flux-1.1-pro'],
          ['black-forest-labs/flux-2-max','flux-2-max (highest fidelity)'],['black-forest-labs/flux-kontext-pro','flux-kontext-pro (reference-image editing)']]
