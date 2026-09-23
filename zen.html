@@ -3978,6 +3978,27 @@ function fakeCall(name, {delay=700, fail=false}={}) {
 }
 
 // Shortened previews say so, instead of looking like a cut-off message.
+// A content item's media may be a video - Creative Studio saves videos
+// into the same library. These used to render inside an <img>, which
+// showed nothing at all in Posting & Ads.
+function isVideoMedia(it){
+  const u = String((it && (it.generated_image_url || it.media_url)) || '');
+  return !!(it && it.item_type === 'video') || /\.(mp4|webm|mov)(\?|$)/i.test(u);
+}
+function itemThumb(it, px){
+  const u = it && it.generated_image_url; if (!u) return '';
+  const s = 'width:'+px+'px;height:'+px+'px;object-fit:cover;border-radius:8px;';
+  return isVideoMedia(it)
+    ? '<span style="position:relative;display:inline-block;flex-shrink:0;"><video src="'+esc(u)+'" style="'+s+'display:block;" muted playsinline preload="metadata"></video>'
+      + '<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;text-shadow:0 1px 4px #0008;font-size:'+Math.round(px/2.6)+'px;">\u25b6</span></span>'
+    : '<img src="'+esc(u)+'" style="'+s+'" loading="lazy">';
+}
+function itemMediaLarge(it){
+  const u = it && it.generated_image_url; if (!u) return '';
+  return isVideoMedia(it)
+    ? '<video src="'+esc(u)+'" style="width:100%;max-width:320px;border-radius:13px;margin-bottom:12px;display:block;" controls playsinline preload="metadata"></video>'
+    : '<img src="'+esc(u)+'" style="width:100%;max-width:320px;border-radius:13px;margin-bottom:12px;">';
+}
 function shortPreview(s, n){ s = String(s==null?'':s); return s.length > n ? s.slice(0, n - 1).trimEnd() + '\u2026' : s; }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 // Real, shared across every wizard step that can offer back a
@@ -7454,7 +7475,7 @@ function adSetPickerRow(it, adsetId){
   const when = it.created_at ? new Date(it.created_at).toLocaleDateString() : '';
   return '<div class="list-row" style="cursor:pointer;padding:6px 2px;" onclick="adSetAttachCreative(\''+adsetId+'\',\''+it.id+'\')">' +
     '<div style="display:flex;gap:8px;align-items:center;">' +
-      (it.generated_image_url ? '<img src="'+esc(it.generated_image_url)+'" style="width:32px;height:32px;object-fit:cover;border-radius:6px;" loading="lazy">' : thumb(it.item_type||'image')) +
+      (it.generated_image_url ? itemThumb(it, 32) : thumb(it.item_type||'image')) +
       '<span><b style="font-size:13px;">'+esc(it.title||'Untitled')+'</b><div class="sub" style="font-size:11px;">'+esc(when)+'</div></span>' +
     '</div></div>';
 }
@@ -8466,14 +8487,14 @@ async function variationsFlow(){
   VAR_STATE = {};
   el('p-flow').innerHTML = llShell('<div class="loading-block"><span class="spin"></span>Loading your past creatives\u2026</div>', '', 'Create Variations');
   const j = await call('list_all_content_items', {});
-  const items = (j.ok ? j.items : []).filter(it => it.generated_image_url);
+  const items = (j.ok ? j.items : []).filter(it => it.generated_image_url && !isVideoMedia(it));   // variations need a still image
   VAR_STATE.items = items;
   el('p-flow').innerHTML = llShell(
     zen('Pick a creative you\u2019ve already made \u2014 Zen generates a real, controlled variation of it: you say what to keep and what to change.') +
     (items.length ? '<div style="max-height:320px;overflow-y:auto;">' + items.map(it =>
       '<div class="list-row" style="cursor:pointer;padding:6px 2px;" onclick="variationsPickSource(\''+it.id+'\')">' +
         '<div style="display:flex;gap:8px;align-items:center;">' +
-          (it.generated_image_url ? '<img src="'+esc(it.generated_image_url)+'" style="width:36px;height:36px;object-fit:cover;border-radius:6px;" loading="lazy">' : thumb(it.item_type||'image')) +
+          (it.generated_image_url ? itemThumb(it, 36) : thumb(it.item_type||'image')) +
           '<span><b style="font-size:13px;">'+esc(it.title||'Untitled')+'</b></span>' +
         '</div></div>').join('') + '</div>'
       : '<p class="note">Nothing generated yet \u2014 create something first from Marketing.</p>'),
@@ -10567,7 +10588,7 @@ function scheduleItemRow(it){
   const slideBadge = it.is_carousel ? ' \u00b7 '+(it.carousel_slides ? it.carousel_slides.length : (it.slide_count||'?'))+' slides' : '';
   return '<div class="list-row" style="cursor:pointer;" onclick="scheduleItemDetail(\''+it.id+'\')">' +
     '<div style="display:flex;gap:12px;align-items:center;">' +
-      (it.generated_image_url ? '<img src="'+esc(it.generated_image_url)+'" style="width:44px;height:44px;object-fit:cover;border-radius:8px;" loading="lazy">' : thumb(it.item_type||'image')) +
+      (it.generated_image_url ? itemThumb(it, 44) : thumb(it.item_type||'image')) +
       '<div><b>'+esc(it.title||'Untitled')+'</b><div class="sub">'+esc(it.item_type||'')+esc(slideBadge)+' \u00b7 '+esc(when)+'</div></div>' +
     '</div>' +
     '<span class="badge'+(it.status==='published'?' on':'')+'">'+esc(it.status)+'</span></div>';
@@ -10588,7 +10609,7 @@ async function scheduleItemDetail(id){
         it.carousel_slides.map(s => '<img src="'+esc(s.image_url||'')+'" style="width:150px;height:150px;object-fit:cover;border-radius:10px;flex-shrink:0;" loading="lazy">').join('') +
       '</div>' +
       '<p class="note" style="margin:0 0 10px;">Carousel \u2014 '+it.carousel_slides.length+' slides</p>'
-    : (it.generated_image_url ? '<img src="'+esc(it.generated_image_url)+'" style="width:100%;max-width:320px;border-radius:13px;margin-bottom:12px;">' : '');
+    : itemMediaLarge(it);
   el('p-flow').innerHTML =
     '<button class="btn btn-ghost btn-sm" onclick="flow(scheduleFlow)" style="margin-bottom:16px;">\u2190 Back</button>' +
     mediaBlock +
