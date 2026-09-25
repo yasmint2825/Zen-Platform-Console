@@ -358,6 +358,11 @@ label.lbl{display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:v
   transition:box-shadow .15s,border-color .15s,transform .15s;}
 .gal-card:hover{border-color:#c9d0c9;box-shadow:0 4px 14px rgba(0,0,0,.07);transform:translateY(-2px);}
 .gal-card.selected{border-color:var(--green);box-shadow:0 0 0 2px var(--green-soft);}
+.gal-card{position:relative;}
+.gal-dl{position:absolute;top:6px;left:6px;z-index:2;width:26px;height:26px;border:none;border-radius:50%;
+  background:rgba(0,0,0,.55);color:#fff;font-size:14px;line-height:1;cursor:pointer;opacity:0;transition:opacity .15s;}
+.gal-card:hover .gal-dl,.gal-dl:focus{opacity:1;}
+@media (hover:none){.gal-dl{opacity:1;}}
 .gal-card .gal-media{width:100%;aspect-ratio:1;object-fit:cover;background:var(--bg);display:block;}
 .gal-card .gal-media.gal-portrait{aspect-ratio:9/16;}
 .gal-card video.gal-media{background:#111;}
@@ -7791,6 +7796,17 @@ function swContextSearchInput(value){
   swRenderConcepts();
 }
 
+// The step footer is rendered before a concept exists, so it still says
+// "choose a concept" and stays disabled. Without this the wizard cannot
+// be continued after picking one.
+function swRefreshConceptNav(){
+  const bar = document.querySelector('#swBody .wiz-actions'); if (!bar) return;
+  const next = bar.querySelector('.btn-p'); if (next) next.disabled = !SW.recipeId;
+  const hint = bar.querySelector('.wiz-hint, .note');
+  if (hint) hint.textContent = SW.recipeId
+    ? 'Continue when this is the concept you want.'
+    : 'Choose a concept to continue';
+}
 function swPickRecipe(id) {
   SW.recipeId = id;
   const r = swRecipe(id);
@@ -7800,6 +7816,7 @@ function swPickRecipe(id) {
   // preview step. We stay here, mark the card selected and show a visual
   // example before the user commits assets or enters the production flow.
   swRenderConcepts();
+  swRefreshConceptNav();
   requestAnimationFrame(() => {
     const preview = el('swContextPreview');
     if (preview) preview.scrollIntoView({ behavior:'smooth', block:'nearest' });
@@ -8132,7 +8149,8 @@ function swRegeneratePrompt() {
 // ── Step 7: generate & refine ────────────────────────────────────────
 function swStepGenerate() {
   return '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;"><span id="swStatus" class="note" style="margin:0;flex:1;"></span>' +
-    '<span id="swCancelWrap"></span><button class="btn btn-ghost btn-sm" onclick="swGo(5)">Back to brief</button>' +
+    '<span id="swCancelWrap"></span><span id="swDownloadAllWrap"></span>' +
+    '<button class="btn btn-ghost btn-sm" onclick="swGo(5)">Back to brief</button>' +
     '<button class="btn btn-s btn-sm" onclick="studioWizard(\'' + SW.workflowId + '\')">Start a new one</button></div>' +
     '<div id="swResults" class="sw-results"></div><div id="swTextEditor" style="margin-top:16px;"></div>';
 }
@@ -8193,6 +8211,12 @@ function swRenderResults() {
   const recipe = swRecipe(), gen = SW.results.filter(r => r.status === 'generating').length;
   const done = SW.results.filter(r => r.status === 'done').length, failed = SW.results.filter(r => r.status === 'failed').length;
   const cw = el('swCancelWrap'); if (cw) cw.innerHTML = gen && SW.requestId ? '<button class="btn btn-ghost btn-sm" onclick="swCancel()">Cancel</button>' : '';
+  // Offer one press for everything finished, as soon as there is more
+  // than a single image to save.
+  const dw = el('swDownloadAllWrap');
+  if (dw) dw.innerHTML = done > 1
+    ? '<button class="btn btn-s btn-sm" onclick="swDownloadAll()">Download all ' + done + '</button>'
+    : '';
   const st = el('swStatus');
   if (st) st.textContent = gen ? 'Generating ' + gen + ' image' + (gen > 1 ? 's' : '') + '\u2026 this usually takes 20\u201360 seconds each.' : (done + ' ready' + (failed ? ', ' + failed + ' failed' : '') + '. Earlier versions stay here as you refine.');
   const hasOverlay = !!swBrandLogo();
@@ -8287,6 +8311,30 @@ async function swDownload(url, id, ext) {
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'zen-creative-' + String(id).slice(0, 8) + '.' + (ext || 'jpg');
     document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
   } catch (e) { window.open(url, '_blank', 'noopener'); }
+}
+// Downloads several files one after another. Browsers block a burst of
+// simultaneous downloads, so they are spaced out and the count is
+// reported when it finishes.
+async function zenDownloadMany(items, label){
+  if (!items || !items.length){ toast('Nothing to download yet.', 'err'); return; }
+  toast('Downloading ' + items.length + ' file' + (items.length === 1 ? '' : 's') + '\u2026', 'ok');
+  let done = 0;
+  for (const it of items){
+    try {
+      await swDownload(it.url, it.id || String(done), it.ext);
+      done++;
+    } catch (e) { /* keep going: one failure should not stop the rest */ }
+    await new Promise(r => setTimeout(r, 450));
+  }
+  toast(done === items.length
+    ? 'Saved ' + done + ' file' + (done === 1 ? '' : 's') + ' to your downloads.'
+    : done + ' of ' + items.length + ' saved \u2014 the rest could not be fetched.', done === items.length ? 'ok' : 'err');
+}
+// Everything finished in this studio session.
+function swDownloadAll(){
+  const ready = SW.results.filter(r => r.status === 'done' && r.gen && r.gen.output_url)
+    .map(r => ({ url: r.gen.output_url, id: r.gen.id, ext: r.kind === 'video' ? 'mp4' : undefined }));
+  zenDownloadMany(ready, 'creative');
 }
 function swProductName() { const f = swFieldByPath('product.name'); return (f && SW.values[f.id]) || ''; }
 async function swSave(key, btn) {
@@ -8495,12 +8543,25 @@ async function swLoadHistory(boxId) {
   const reqs = all.filter(r => !r.parent_request_id);
   if (!reqs.length) { box.innerHTML = '<p class="note">Nothing created with Creative Studio yet \u2014 pick a workflow above to start.</p>'; return; }
   const nameField = SW_CATALOG ? swFieldByPath('product.name') : null;
-  box.innerHTML = '<div class="gal-grid">' + reqs.map(r => {
+  // Everything on this screen, in one press.
+  // Every image in the library, not just the cover of each creation -
+  // a single request often holds two or three variations.
+  const downloadable = reqs.flatMap(r => (r.outputs || []))
+    .filter(o => o && o.output_url && !/\.(mp4|webm|mov)(\?|$)/i.test(o.output_url))
+    .map(o => ({ url: o.output_url, id: o.id }));
+  window.__csDownloadable = downloadable;
+  box.innerHTML = (downloadable.length > 1
+      ? '<div class="sw-actions" style="margin-bottom:12px;"><button class="btn btn-s btn-sm" ' +
+        'onclick="zenDownloadMany(window.__csDownloadable)">Download all ' + downloadable.length + ' images</button></div>'
+      : '') +
+    '<div class="gal-grid">' + reqs.map(r => {
     const out = r.outputs[0];
     const label = { completed: 'Ready', partially_completed: 'Partly ready', failed: 'Failed', generating: 'Generating', queued: 'Queued', cancelled: 'Cancelled' }[r.status] || r.status;
     const name = (nameField && r.inputs && r.inputs[nameField.id]) || 'Untitled';
     return '<div class="gal-card" role="button" tabindex="0" onclick="flow(()=>swOpenRequest(\'' + r.id + '\'))" onkeydown="if(event.key===\'Enter\')flow(()=>swOpenRequest(\'' + r.id + '\'))">' +
-      (out ? '<img src="' + esc(out.output_url) + '" class="gal-media" loading="lazy" alt="">' : '<div class="gal-media" style="display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;">' + esc(label) + '</div>') +
+      (out ? '<button type="button" class="gal-dl" title="Download" aria-label="Download this image" ' +
+              'onclick="event.stopPropagation();swDownload(\'' + esc(out.output_url) + '\',\'' + esc(out.id || r.id) + '\')">\u2193</button>' +
+             '<img src="' + esc(out.output_url) + '" class="gal-media" loading="lazy" alt="">' : '<div class="gal-media" style="display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;">' + esc(label) + '</div>') +
       '<div class="gal-body"><span class="gal-label">' + esc(name) + '</span><span class="gal-sub">' + esc(r.template_title) + ' \u00b7 ' + esc(label) + (videosByRoot[r.id] ? ' \u00b7 \u25b6 ' + videosByRoot[r.id] + ' video' + (videosByRoot[r.id] > 1 ? 's' : '') : '') + '</span></div></div>';
   }).join('') + '</div>';
 }
