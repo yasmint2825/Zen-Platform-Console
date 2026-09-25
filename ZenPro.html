@@ -5621,7 +5621,7 @@ async function zenHomeRun(){
   const j=await call('zen_chat',{message,context:{page:'home'}},60000);
   if(!j.ok){ box.innerHTML=errBlock(j.error,''); return; }
   if(j.intent==='question'||j.intent==='explain'){
-    const a=await call('ask_question',{question:message});
+    const a=await call('ask_question',{question:message},60000);
     box.innerHTML='<div class="zen-home-response"><span class="zen-response-mark">✦</span><div><b>'+esc((j.card&&j.card.title)||'Zen found this')+'</b><p>'+(a.ok?esc(a.answer||'').replace(/\n/g,'<br>'):esc(a.error||''))+'</p><button onclick="go(\'insights\')">Explore in Results →</button></div></div>';
     return;
   }
@@ -5842,7 +5842,7 @@ async function zcSend(){
   if (j.intent === 'question' || j.intent === 'explain'){
     if (j.card) zcSay(zcCard(j.card, '<button class="btn btn-ghost btn-sm" onclick="go(\'insights\')">Open Results</button>'));
     // The answer itself comes from the existing audited, read-only path.
-    const a = await call('ask_question', { question: text });
+    const a = await call('ask_question', { question: text }, 60000);
     zcSay(a.ok ? esc(a.answer || '').replace(/\n/g, '<br>') : '<span class="note">' + esc(a.error) + '</span>');
     return;
   }
@@ -5883,7 +5883,7 @@ async function askZen(q,targetId){
   q=(q||'').trim(); if(!q) return;
   const out = el(targetId); if(!out) return;
   out.innerHTML = zen('<span class="zen-typing"><i></i><i></i><i></i></span>');
-  const j = await call('ask_question', { question: q });
+  const j = await call('ask_question', { question: q }, 60000);
   out.innerHTML = j.ok
     ? zen(esc(j.answer||'').replace(/\n/g,'<br>'))
     : '<div class="empty-block">'+emptyIcon('\u2620')+'<h2>Could not answer that</h2><p>'+esc(j.error)+'</p></div>';
@@ -7753,153 +7753,34 @@ function swSetConceptThumb(recipe, imageUrl){
   node.classList.add('has-real-thumb');
   node.innerHTML = '<img src="' + esc(imageUrl) + '" alt="' + esc('Example output for ' + recipe.title) + '" loading="eager" decoding="async">';
 }
-async function swEnsureConceptThumb(recipe){
-  const spec = swContextPreviewSpec(recipe);
-  const mem = STUDIO_CONTEXT_PREVIEW_MEM.get(spec.key);
-  if (mem && mem.image_url) { swSetConceptThumb(recipe, mem.image_url); return mem; }
-  const local = swPreviewLocalRead(spec.key);
-  if (local && local.image_url) {
-    STUDIO_CONTEXT_PREVIEW_MEM.set(spec.key, local); swSetConceptThumb(recipe, local.image_url); return local;
-  }
-  const db = await swPreviewDbRead(spec.key);
-  if (db && db.status === 'ready' && db.image_url) {
-    STUDIO_CONTEXT_PREVIEW_MEM.set(spec.key, db); swPreviewLocalWrite(spec.key, db); swSetConceptThumb(recipe, db.image_url); return db;
-  }
-  if (STUDIO_CONTEXT_PREVIEW_PENDING.has(spec.key)) {
-    const item = await STUDIO_CONTEXT_PREVIEW_PENDING.get(spec.key);
-    if (item && item.image_url) swSetConceptThumb(recipe, item.image_url);
-    return item;
-  }
-  const task = (async()=>{
-    let claim = await swPreviewClaim(spec);
-    if (!claim.claimed && claim.row && claim.row.status === 'ready' && claim.row.image_url) return claim.row;
-    if (!claim.claimed && claim.row && claim.row.status === 'generating') {
-      const shared = await swPreviewWaitForReady(spec.key);
-      if (shared && shared.image_url) return shared;
-    }
-    // The example must come from the same pipeline the owner's own
-    // image would: the concept's visual profile, lighting, background,
-    // vibrancy and guardrails. A prompt written in the browser would
-    // show them something they will never actually get.
-    let previewPrompt = spec.prompt;
-    try {
-      const composed = await call('compose_studio_prompt', {
-        workflow_id: recipe.workflow || 'product', recipe_id: recipe.id,
-        values: swPreviewExampleValues(recipe),
-        assets: {}, output: { aspectRatio: '4:5', variations: 1 },
-        use_brand_preferences: false,   // an example, not this business's brand
-        deterministic: true,            // the concept's visual language, no model call
-        preview: true,                  // an example of the concept, with no real product
-      }, 60000);
-      if (composed && composed.ok && composed.valid && composed.prompt) previewPrompt = composed.prompt;
-    } catch (e) { /* fall back to the local description */ }
-    const gen = await call('run_generation', {
-      compiled_prompt: previewPrompt,
-      purpose: 'concept_preview',   // an example of the concept, not the owner's work
-      model: 'black-forest-labs/flux-2-pro',
-      reference_asset_urls: [],
-      aspect_ratio: '4:3'
-    }, 90000);
-    if (!gen.ok || !gen.output_url) return null;
-    const item = {context_key:spec.key,title:spec.title,caption:spec.caption,image_url:gen.output_url,status:'ready',prompt:spec.prompt};
-    await swPreviewDbSave(spec, gen.output_url);
-    swPreviewLocalWrite(spec.key, item);
-    STUDIO_CONTEXT_PREVIEW_MEM.set(spec.key, item);
-    return item;
-  })();
-  STUDIO_CONTEXT_PREVIEW_PENDING.set(spec.key, task);
-  const item = await task;
-  STUDIO_CONTEXT_PREVIEW_PENDING.delete(spec.key);
-  if (item && item.image_url) swSetConceptThumb(recipe, item.image_url);
-  return item;
-}
-function swDrainThumbQueue(){
-  while (STUDIO_THUMB_WORKERS < STUDIO_THUMB_CONCURRENCY && STUDIO_THUMB_QUEUE.length) {
-    const recipe = STUDIO_THUMB_QUEUE.shift();
-    STUDIO_THUMB_WORKERS++;
-    swEnsureConceptThumb(recipe).catch(()=>null).finally(()=>{ STUDIO_THUMB_WORKERS--; swDrainThumbQueue(); });
-  }
-}
-// Each preview is a real generated image, so warming the whole grid
-// costs real money on the first visit. Zen warms only the few concepts
-// an owner is most likely to open; the rest keep their drawn placeholder
-// until they are actually chosen, and are generated then.
-const STUDIO_THUMB_WARM_LIMIT = 6;
-async function swWarmConceptThumbs(recipes){
-  if (!recipes || !recipes.length) return;
-  let budget = STUDIO_THUMB_WARM_LIMIT;
-  for (const recipe of recipes) {
-    const spec = swContextPreviewSpec(recipe);
-    const mem = STUDIO_CONTEXT_PREVIEW_MEM.get(spec.key);
-    const local = mem && mem.image_url ? mem : swPreviewLocalRead(spec.key);
-    if (local && local.image_url) { swSetConceptThumb(recipe, local.image_url); continue; }
-    if (budget <= 0) continue;   // the rest wait until they are picked
-    budget--;
-    if (!STUDIO_THUMB_QUEUE.some(r=>r.id===recipe.id)) STUDIO_THUMB_QUEUE.push(recipe);
-  }
-  swDrainThumbQueue();
-}
-// Keeps the step footer honest once a concept is chosen.
-function swRefreshConceptNav(){
-  const bar = document.querySelector('#swBody .wiz-actions'); if (!bar) return;
-  const next = bar.querySelector('.btn-p'); if (!next) return;
-  next.disabled = !SW.recipeId;
-  const hint = bar.querySelector('.wiz-hint, .note');
-  if (hint) hint.textContent = SW.recipeId
-    ? 'Preview shown above \u2014 continue when this is the result you want.'
-    : 'Choose a concept to continue';
-}
-function swPickRecipe(id) {
-  SW.recipeId = id;
-  const r = swRecipe(id);
-  if (!r) return;
-  if (!r.formats.supported.includes(SW.output.aspectRatio)) SW.output.aspectRatio = r.formats.default;
-  // Context preview requirement: choosing the concept is a deliberate
-  // preview step. We stay here, mark the card selected and show a visual
-  // example before the user commits assets or enters the production flow.
-  // The one they picked is worth a real image, so it jumps the queue.
-  if (r) swEnsureConceptThumb(r).catch(() => null);
-  swRenderConcepts();
-  // The footer was rendered before a concept existed, so it still says
-  // "choose a concept". Without this the wizard cannot be continued.
-  swRefreshConceptNav();
-  requestAnimationFrame(() => {
-    const preview = el('swContextPreview');
-    if (preview) preview.scrollIntoView({ behavior:'smooth', block:'nearest' });
-  });
-}
-
-/* ── Studio context preview cache ────────────────────────────────────
-   Shared cache hierarchy:
-   1) in-memory Map (instant during the current session)
-   2) Supabase studio_context_previews (permanent, cross-user)
-   3) localStorage fallback (works even before the DB migration exists)
-
-   Generation uses Zen's existing run_generation action. A DB row is claimed
-   before generation so concurrent users do not intentionally create the same
-   preview twice. A unique context_key enforces one canonical preview/context.
-   ─────────────────────────────────────────────────────────────────── */
+// Concept examples are curated, not generated on demand. Zen shows the
+// image stored for a concept and nothing else: no prompt is composed, no
+// image is generated, and nothing is charged for simply browsing the
+// concept list. Images are loaded into studio_context_previews
+// separately; a concept without one keeps its drawn placeholder.
+// Concept keys carry a version so a change in how examples are made
+// invalidates every cache at once.
+const STUDIO_CONTEXT_PREVIEW_LS = 'zen_studio_context_previews_v1';
 const STUDIO_CONTEXT_PREVIEW_MEM = new Map();
 const STUDIO_CONTEXT_PREVIEW_PENDING = new Map();
-// Previews are cached in three places: this browser's memory, its
-// localStorage, and the shared table every business reads. Deleting the
-// rows alone would leave browsers showing the old image, so the version
-// below is part of the cache key. Bump it whenever the way previews are
-// generated changes, and all three caches miss at once - the preview is
-// then regenerated once, for everyone.
-//
-// v2: previews used to be generated with the concept's own name as the
-// product ("a person holding Person With The Product"), which gave the
-// image model nothing and produced a man at a laptop every time.
 const STUDIO_PREVIEW_VERSION = 'v2';
-
 function swContextKey(recipe){
   const raw = (recipe && (recipe.alias || recipe.id || recipe.title)) || '';
   const base = raw.toLowerCase().replace(/^\/+/, '').replace(/[^a-z0-9]+/g,'');
   return base + '_' + STUDIO_PREVIEW_VERSION;
 }
-// Nothing of ours is kept in localStorage any more, so there is
-// nothing to prune.
+// Previews are read from the database only - nothing is cached in the
+// browser and nothing is generated.
+function swPreviewLocalRead(){ return null; }
+// Fetch the stored examples for the concepts on screen. A read, not a
+// generation: browsing the concept list costs nothing.
+async function swWarmConceptThumbs(recipes){
+  if (!recipes || !recipes.length) return;
+  for (const recipe of recipes.slice(0, 24)) {
+    swEnsureConceptThumb(recipe).catch(() => null);
+  }
+}
+
 function swContextSearchInput(value){
   SW.search = value || '';
   const q = SW.search.trim().toLowerCase();
@@ -7909,48 +7790,22 @@ function swContextSearchInput(value){
   }
   swRenderConcepts();
 }
-// A preview needs a real subject. Passing the concept's own name
-// ("Person With The Product") gave the image model nothing to work with,
-// so it fell back to its own defaults - which is why every UGC example
-// came back as a man at a laptop.
-//
-// These examples are deliberately varied in who appears and where, and
-// chosen deterministically from the concept id so a given concept always
-// shows the same example (the previews are shared and cached).
-const PREVIEW_PEOPLE = [
-  { who: 'a woman in her thirties', where: 'a sunlit kitchen' },
-  { who: 'a mother and her young daughter', where: 'a bright living room' },
-  { who: 'a man in his forties', where: 'a small café table' },
-  { who: 'a young woman in her twenties', where: 'a tiled bathroom counter' },
-  { who: 'a grandmother and her grandson', where: 'a family kitchen' },
-  { who: 'a teenage girl', where: 'a bedroom desk by a window' },
-  { who: 'a father holding a toddler', where: 'a hallway by the front door' },
-  { who: 'a woman in her fifties', where: 'a garden table outdoors' },
-];
-const PREVIEW_PRODUCTS = [
-  'a pastel blue haircare spray bottle', 'a glass jar of mango pickle', 'a matte black smart watch',
-  'a ceramic coffee cup', 'a tube of hand cream', 'a boxed set of kids hair clips',
-  'a stainless steel water bottle', 'a folded cotton towel',
-];
-function swPreviewPick(key, list){
-  let h = 7; for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
-  return list[h % list.length];
+
+function swPickRecipe(id) {
+  SW.recipeId = id;
+  const r = swRecipe(id);
+  if (!r) return;
+  if (!r.formats.supported.includes(SW.output.aspectRatio)) SW.output.aspectRatio = r.formats.default;
+  // Context preview requirement: choosing the concept is now a deliberate
+  // preview step. We stay here, mark the card selected and show a visual
+  // example before the user commits assets or enters the production flow.
+  swRenderConcepts();
+  requestAnimationFrame(() => {
+    const preview = el('swContextPreview');
+    if (preview) preview.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  });
 }
-// The example values a preview is generated from - a concrete product,
-// and for people-led concepts a described person and place.
-function swPreviewExampleValues(recipe){
-  const key = swContextKey(recipe);
-  const product = swPreviewPick(key, PREVIEW_PRODUCTS);
-  const values = { productName: product };
-  const peopleConcept = /ugc|selfie|testimonial|creator|reaction|person|people|customer|staff|team|service|haircut|birthday/i
-    .test(key + ' ' + (recipe.title || '') + ' ' + (recipe.category || ''));
-  if (peopleConcept) {
-    const person = swPreviewPick(key + 'p', PREVIEW_PEOPLE);
-    values.personDescription = person.who;
-    values.sceneLocation = person.where;
-  }
-  return values;
-}
+
 function swContextPreviewSpec(recipe){
   const key = swContextKey(recipe), title = recipe.title || recipe.alias || 'Creative context';
   const base = 'Premium commercial visual preview for an AI creative studio context. Cohesive Zen preview style: sophisticated editorial art direction, bright natural-to-studio lighting, realistic materials, clean modern composition, premium SaaS marketing quality, subtle violet accent only where appropriate, no watermark, no UI labels, no gibberish text, no brand logos.';
@@ -7973,16 +7828,25 @@ function swContextPreviewSpec(recipe){
   }
   return { key, title, prompt, caption };
 }
-// Previews live in Supabase, not in the browser. The only cache left is
-// STUDIO_CONTEXT_PREVIEW_MEM, which lasts for this page view and is gone
-// on refresh - so what an owner sees is always what the database holds.
-function swPreviewLocalRead(key){ return null; }
 
-function swPreviewLocalWrite(key, value){ return; }
+async function swEnsureConceptThumb(recipe){
+  const spec = swContextPreviewSpec(recipe);
+  const mem = STUDIO_CONTEXT_PREVIEW_MEM.get(spec.key);
+  if (mem && mem.image_url) { swSetConceptThumb(recipe, mem.image_url); return mem; }
+  if (STUDIO_CONTEXT_PREVIEW_PENDING.has(spec.key)) return STUDIO_CONTEXT_PREVIEW_PENDING.get(spec.key);
+  const task = (async () => {
+    const row = await swPreviewDbRead(spec.key);
+    if (row && row.image_url) {
+      STUDIO_CONTEXT_PREVIEW_MEM.set(spec.key, row);
+      swSetConceptThumb(recipe, row.image_url);
+      return row;
+    }
+    return null;   // no example yet: the placeholder stays
+  })();
+  STUDIO_CONTEXT_PREVIEW_PENDING.set(spec.key, task);
+  try { return await task; } finally { STUDIO_CONTEXT_PREVIEW_PENDING.delete(spec.key); }
+}
 
-// Concept previews are shared by every business - one example per
-// concept, generated once and reused. Reads and writes go through the
-// server so the browser cannot overwrite what everybody else sees.
 async function swPreviewDbRead(key){
   try {
     const j = await call('get_concept_preview', { context_key: key }, 20000);
@@ -8026,42 +7890,25 @@ function swPreviewErrorHtml(spec){
   return '<section class="sw-context-preview"><div class="sw-context-preview-inner"><div class="sw-context-preview-media sw-context-preview-error"><div class="sw-context-preview-state"><div><b>Preview could not be created</b><span>The context itself still works. You can retry the visual preview without affecting your creative flow.</span><br><button class="btn btn-s btn-sm" onclick="swShowContextPreview(\''+esc(swRecipe().id)+'\',true)">Retry preview</button></div></div></div><div class="sw-context-preview-copy"><span class="sw-context-preview-badge">CONTEXT</span><h3>'+esc(spec.title)+'</h3><p>'+esc(spec.caption)+'</p></div></div></section>';
 }
 async function swShowContextPreview(recipeId, force){
-  const host = el('swContextPreview'), recipe = swRecipe(recipeId);
-  if (!host || !recipe) return;
+  // Curated examples only: this shows what is stored for the concept and
+  // never generates. A concept with no example says so plainly.
+  const host = el('swContextPreview'); if (!host) return;
+  const recipe = swRecipe(recipeId); if (!recipe) return;
   const spec = swContextPreviewSpec(recipe);
-  if (!force && STUDIO_CONTEXT_PREVIEW_MEM.has(spec.key)) { host.innerHTML = swPreviewHtml(spec,STUDIO_CONTEXT_PREVIEW_MEM.get(spec.key)); return; }
-  if (!force) {
-    const local = swPreviewLocalRead(spec.key);
-    if (local && local.image_url) { STUDIO_CONTEXT_PREVIEW_MEM.set(spec.key,local); host.innerHTML=swPreviewHtml(spec,local); return; }
-    const db = await swPreviewDbRead(spec.key);
-    if (!el('swContextPreview') || SW.recipeId!==recipeId) return;
-    if (db && db.status==='ready' && db.image_url) { STUDIO_CONTEXT_PREVIEW_MEM.set(spec.key,db); swPreviewLocalWrite(spec.key,db); host.innerHTML=swPreviewHtml(spec,db); return; }
+  const mem = STUDIO_CONTEXT_PREVIEW_MEM.get(spec.key);
+  if (!force && mem && mem.image_url) { host.innerHTML = swPreviewHtml(spec, mem); return; }
+  host.innerHTML = swPreviewLoadingHtml(spec, true);
+  const row = await swPreviewDbRead(spec.key);
+  if (!el('swContextPreview') || SW.recipeId !== recipeId) return;
+  if (row && row.image_url) {
+    STUDIO_CONTEXT_PREVIEW_MEM.set(spec.key, row);
+    host.innerHTML = swPreviewHtml(spec, row);
+    return;
   }
-  if (STUDIO_CONTEXT_PREVIEW_PENDING.has(spec.key)) { host.innerHTML=swPreviewLoadingHtml(spec,true); const item=await STUDIO_CONTEXT_PREVIEW_PENDING.get(spec.key); if(el('swContextPreview')&&SW.recipeId===recipeId) host.innerHTML=item?swPreviewHtml(spec,item):swPreviewErrorHtml(spec); return; }
-  const task=(async()=>{
-    let claim = force ? {claimed:true,row:null} : await swPreviewClaim(spec);
-    if (!claim.claimed && claim.row && claim.row.status==='ready' && claim.row.image_url) return claim.row;
-    if (!claim.claimed && claim.row && claim.row.status==='generating') {
-      const shared = await swPreviewWaitForReady(spec.key);
-      if (shared) return shared;
-      // Stale lock: continue rather than leaving the customer with no preview.
-    }
-    const gen = await call('run_generation',{compiled_prompt:spec.prompt,model:'black-forest-labs/flux-2-pro',reference_asset_urls:[],aspect_ratio:'4:3'},90000);
-    if (!gen.ok || !gen.output_url) return null;
-    const item={context_key:spec.key,title:spec.title,caption:spec.caption,image_url:gen.output_url,status:'ready',prompt:spec.prompt};
-    await swPreviewDbSave(spec,gen.output_url);
-    swPreviewLocalWrite(spec.key,item);
-    STUDIO_CONTEXT_PREVIEW_MEM.set(spec.key,item);
-    return item;
-  })();
-  STUDIO_CONTEXT_PREVIEW_PENDING.set(spec.key,task);
-  host.innerHTML=swPreviewLoadingHtml(spec,!!(!force));
-  const item=await task;
-  STUDIO_CONTEXT_PREVIEW_PENDING.delete(spec.key);
-  if (!el('swContextPreview') || SW.recipeId!==recipeId) return;
-  host.innerHTML=item?swPreviewHtml(spec,item):swPreviewErrorHtml(spec);
+  host.innerHTML = '<div class="sw-panel"><b style="font-size:13px;">' + esc(recipe.title) + '</b>' +
+    '<p class="note" style="margin:4px 0 0;">' + esc(swConceptThumbCaption(recipe)) + '</p>' +
+    '<p class="note" style="margin:6px 0 0;">No example image for this concept yet \u2014 what you make will follow the description above.</p></div>';
 }
-
 async function swToggleFav(id, btn) {
   const fav = !SW_CATALOG.favourites.includes(id);
   btn.disabled = true;
@@ -8291,9 +8138,17 @@ function swStepGenerate() {
 }
 async function swGenerate() {
   if (SW.busy) return; SW.busy = true;
-  const j = await call('create_studio_request', swPayload());
+  // Preparing the brief reads the photo and writes the prompt, which can
+  // take well over the default twenty seconds. It used to time out on the
+  // first press and only work on the second, once the prompt was cached.
+  swSetGenerateBusy(true);
+  const j = await call('create_studio_request', swPayload(), 150000);
   SW.busy = false;
-  if (!j.ok) { toast(j.error, 'err'); return; }
+  swSetGenerateBusy(false);
+  if (!j.ok) {
+    toast(/too long/.test(j.error || '') ? 'Zen is still preparing your brief. Give it a few more seconds and press Generate again.' : j.error, 'err');
+    return;
+  }
   SW.requestId = j.request_id;
   SW_CATALOG.recent_recipe_ids = [SW.recipeId, ...SW_CATALOG.recent_recipe_ids.filter(x => x !== SW.recipeId)];
   if (j.adapter_note) toast(j.adapter_note, 'ok');
@@ -8301,6 +8156,20 @@ async function swGenerate() {
   for (let i = 0; i < j.variations; i++) SW.results.push({ key: 'r' + Date.now() + i, requestId: j.request_id, index: i, status: 'generating', label: 'Variation ' + (i + 1), aspectRatio: j.aspect_ratio });
   swGo(6);
   await Promise.all(SW.results.slice(start).map(r => swRunVariation(r)));
+}
+// While the brief is being prepared the button says so and cannot be
+// pressed twice - two presses used to create two separate requests.
+function swSetGenerateBusy(on){
+  const btn = document.querySelector('#swBody .wiz-actions .btn-p');
+  if (!btn) return;
+  if (on) {
+    btn.dataset.label = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spin"></span>Preparing your brief\u2026';
+  } else {
+    btn.disabled = false;
+    if (btn.dataset.label) btn.innerHTML = btn.dataset.label;
+  }
 }
 async function swRunVariation(r) {
   r.status = 'generating'; r.error = null; swRenderResults();
@@ -8380,7 +8249,7 @@ async function swRetryVideo(r) {
   if (!genId){ toast('The image this video came from is no longer in this session - open it from your library and make the video again.', 'err'); return; }
   const s = r.videoSettings || {};
   r.status = 'generating'; r.error = null; swRenderResults();
-  const j = await call('start_studio_video', { generation_id: genId, camera_move: s.move, duration: s.duration, audio: s.audio, video_model: s.model || SW.videoModel });
+  const j = await call('start_studio_video', { generation_id: genId, camera_move: s.move, duration: s.duration, audio: s.audio, video_model: s.model || SW.videoModel }, 120000);
   if (!j.ok){ r.status = 'failed'; r.error = j.error; swRenderResults(); return; }
   r.gen = { id: j.generation_id }; r.requestId = j.request_id;
   swRenderResults(); swPollVideo(r);
@@ -8587,7 +8456,7 @@ async function swStartVideo(key, btn) {
   const src = swFind(key); if (!src || !src.gen) return;
   const d = SW.videoDraft;
   btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Starting\u2026';
-  const j = await call('start_studio_video', { generation_id: src.gen.id, camera_move: d.move, duration: d.duration, audio: d.audio, video_model: SW.videoModel });
+  const j = await call('start_studio_video', { generation_id: src.gen.id, camera_move: d.move, duration: d.duration, audio: d.audio, video_model: SW.videoModel }, 120000);
   btn.disabled = false; btn.textContent = 'Make video';
   if (!j.ok) { toast(j.error, 'err'); return; }
   (j.notes || []).forEach(n => toast(n, 'ok'));
@@ -9487,11 +9356,22 @@ function cwChannelName(ch){
 }
 function cwItemsPanel(items, state){
   if (!items.length) return '';
-  const label = { waiting: 'Waiting', creating: 'Creating', ready: 'Ready to review', approved: 'Approved',
-    failed: 'Failed', scheduled: 'Scheduled', published: 'Published' };
+  const label = { waiting: 'Not created yet', creating: 'Zen is making this now\u2026', ready: 'Ready for you to review',
+    approved: 'Approved by you', failed: 'Didn\u2019t work \u2014 try again', scheduled: 'Scheduled', published: 'Published' };
   const ready = items.filter(i => i.status === 'ready').length;
+  const made = items.filter(i => ['ready', 'approved', 'scheduled', 'published'].includes(i.status)).length;
+  const creating = items.filter(i => i.status === 'creating').length;
+  // What this list means right now, in one line, so "Not created yet"
+  // never looks like something has stalled.
+  const lead = creating
+    ? '<p class="note" style="margin:0 0 10px;"><span class="spin"></span> Making your content \u2014 ' + made + ' of ' + items.length + ' done. You can leave this page; it carries on.</p>'
+    : made === 0
+      ? '<p class="note" style="margin:0 0 10px;">This is what Zen will make. Nothing has been created yet \u2014 press <b>Create the complete campaign</b> above to start.</p>'
+      : made < items.length
+        ? '<p class="note" style="margin:0 0 10px;">' + made + ' of ' + items.length + ' made so far.</p>'
+        : '<p class="note" style="margin:0 0 10px;">All ' + items.length + ' pieces are made. Review them, then schedule.</p>';
   return '<div class="sechead"><h2>Campaign content</h2>' +
-      (ready ? '<button class="btn btn-s btn-sm" onclick="cwApproveAll()">Approve all ' + ready + '</button>' : '') + '</div>' +
+      (ready ? '<button class="btn btn-s btn-sm" onclick="cwApproveAll()">Approve all ' + ready + '</button>' : '') + '</div>' + lead +
     '<div class="list">' + items.map(it =>
       '<div class="list-row"><div><b>' + esc(cwChannelName(it.channel)) + ' \u00b7 ' + esc(it.role || it.placement || '') + '</b>' +
       '<div class="sub">' + esc(label[it.status] || it.status) + (it.last_error ? ' \u2014 ' + esc(shortPreview(it.last_error, 70)) : '') + '</div></div>' +
@@ -9499,6 +9379,7 @@ function cwItemsPanel(items, state){
         (it.status === 'failed' ? '<button class="btn btn-s btn-sm" onclick="cwRetry(\'' + esc(it.id) + '\')">Retry</button>' : '') +
         (it.status === 'ready' ? '<button class="btn btn-s btn-sm" onclick="cwApproveItem(\'' + esc(it.id) + '\')">Approve</button>' : '') +
       '</div></div>').join('') + '</div>' +
+    (['approved', 'generating'].includes(state) ? cwResumeBar(items) : '') +
     (state === 'review' && !ready ? cwExecuteBar(items) : '');
 }
 // An owner should never discover after the fact that pieces were left out.
@@ -9523,15 +9404,48 @@ function cwResultsPanel(cmp){
 // Build 4: the pack runs item by item, so one failure costs one item.
 async function cwStartPack(){
   if (CW.busy) return; CW.busy = true;
-  const j = await call('start_campaign_pack', { campaign_id: CW.id });
+  const j = await call('start_campaign_pack', { campaign_id: CW.id }, 60000);
   if (!j.ok){ CW.busy = false; toast(j.error, 'err'); return; }
+  const queued = j.queued || [];
   await campaignWorkspace(CW.id);
-  for (const itemId of (j.queued || [])){
-    await call('generate_campaign_item', { item_id: itemId }, 180000);
-    await campaignWorkspace(CW.id);   // state comes back from the server each time
+
+  // Show each piece as it starts, not only when it finishes: a single
+  // image can take a minute, and a screen that says "not created yet"
+  // for four minutes looks broken.
+  const markCreating = (id) => {
+    const items = (CW.data && CW.data.items) || [];
+    const row = items.find(i => i.id === id);
+    if (row && row.status === 'waiting') { row.status = 'creating'; cwRender(); }
+  };
+  // Three at a time: the same limit the server uses for previews, and
+  // enough to cut the wait without flooding the image provider.
+  let cursor = 0, made = 0, failed = 0;
+  async function worker(){
+    while (cursor < queued.length){
+      const id = queued[cursor++];
+      markCreating(id);
+      const r = await call('generate_campaign_item', { item_id: id }, 180000);
+      if (r && r.ok && r.status !== 'failed') made++; else failed++;
+      await campaignWorkspace(CW.id);   // the server remains the source of truth
+    }
   }
+  await Promise.all([worker(), worker(), worker()]);
   CW.busy = false;
-  toast('Your campaign content is ready to review.', 'ok');
+  // Say what actually happened rather than announcing success regardless.
+  if (failed && made) toast(made + ' ready, ' + failed + " couldn't be made \u2014 you can retry those.", 'err');
+  else if (failed) toast("None of the content could be made \u2014 try again, or check your image model in Settings.", 'err');
+  else toast('All ' + made + ' pieces are ready to review.', 'ok');
+}
+
+// Generation stops if the tab is closed; the items stay where they were.
+// Reopening the campaign offers to carry on rather than starting again.
+function cwResumeBar(items){
+  const pending = items.filter(i => i.status === 'waiting' || i.status === 'creating').length;
+  if (!pending || CW.busy) return '';
+  return '<div class="sw-panel" style="max-width:820px;margin:10px 0;"><b style="font-size:13px;">' + pending +
+    ' piece' + (pending === 1 ? '' : 's') + ' still to make</b>' +
+    '<p class="note" style="margin:4px 0 8px;">Creating stopped, probably because the page was closed. Nothing is lost.</p>' +
+    '<button class="btn btn-p btn-sm" onclick="cwStartPack()">Carry on creating</button></div>';
 }
 // Retry everything that failed, not just the first one.
 async function cwRetryAllFailed(){
