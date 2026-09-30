@@ -110,6 +110,85 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   --shadow:0 12px 34px rgba(24,32,27,.08);--shadow-lg:0 24px 60px rgba(24,32,27,.16);
   --r:14px;--nav-w:216px;
 }
+/* Zen speaking: a recommendation the owner can take or ignore. */
+.zen-strip{display:flex;align-items:center;gap:12px;padding:12px 15px;margin-bottom:12px;border-radius:16px;
+  background:linear-gradient(120deg,#231a52 0%,#332a6b 55%,#4338ca 100%);color:#eef0ff;
+  box-shadow:0 1px 2px rgba(24,32,27,.04),0 8px 24px rgba(67,56,202,.14);}
+.zen-strip b{font-weight:600;font-size:13.5px;display:block;}
+.zen-strip small{color:#c9cdf5;font-size:12px;display:block;margin-top:2px;}
+.zen-strip-body{flex:1;min-width:0;}
+.zen-dot{width:8px;height:8px;border-radius:50%;background:#8b8ff5;flex:none;
+  box-shadow:0 0 0 0 rgba(139,143,245,.7);animation:zenPulse 2.4s infinite;}
+@keyframes zenPulse{70%{box-shadow:0 0 0 9px rgba(139,143,245,0);}100%{box-shadow:0 0 0 0 rgba(139,143,245,0);}}
+.zen-load{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;
+  background:#f3f2fb;color:#4b4a68;font-size:13px;margin-bottom:12px;}
+@media (prefers-reduced-motion: reduce){.zen-dot{animation:none;}}
+/* Room to breathe, and nothing shouting. Weight carries hierarchy far
+   better than bold does at this size. */
+.campaign-board > section{padding:20px 20px 18px!important;}
+.campaign-board .list-row{padding:14px 2px!important;}
+.campaign-board .campaign-board-head{margin-bottom:6px;}
+.campaign-board .campaign-board-head b{font-weight:500!important;font-size:14px;}
+.campaign-board .campaign-board-head small{display:block;margin-top:2px;}
+.cmp-open b,.appr-text b{font-weight:500!important;}
+.cmp-next{font-weight:400!important;}
+.icon-btn{color:#8d8ba3;}
+/* Selecting several at once. */
+.cmp-check{flex:none;display:grid;place-items:center;width:22px;}
+.cmp-check input{width:15px;height:15px;accent-color:var(--accent);cursor:pointer;}
+.cmp-row.is-sel{background:var(--accent-wash,#f4f3fd);border-radius:10px;}
+.mkt-selbar{display:flex;align-items:center;gap:8px;padding:9px 12px;margin-bottom:10px;
+  border-radius:10px;background:var(--accent-wash,#f4f3fd);font-size:12.5px;color:var(--ink);}
+.mkt-selbar span{flex:1;font-weight:400;}
+/* A field near the end of a page has nothing to scroll into, so its
+   dropdown flips upward. Room at the bottom lets every menu open the
+   way people expect. */
+#p-flow{padding-bottom:280px;}
+/* The left panel follows the Zen site: a quiet green for the page you
+   are on, rather than the violet the workspace uses for actions. That
+   keeps "where I am" and "what I can do" visually separate. */
+nav.side .side-btn.active{background:#e9ece8!important;color:#1c201d!important;}
+nav.side .side-btn.active .ic{color:var(--green)!important;}
+nav.side .side-btn.active strong{font-weight:500!important;}
+nav.side .ux-nav-heading{font-size:10.5px;letter-spacing:.09em;color:#8a8f86;font-weight:500;
+  margin:16px 0 6px;padding-left:10px;}
+nav.side .ux-nav-group:first-of-type .ux-nav-heading{margin-top:4px;}
+nav.side .side-btn strong{font-weight:500;}
+nav.side .side-brand{margin-bottom:6px;}
+/* Approval rows line up with the campaign rows above them. */
+.appr-row{display:flex;align-items:center;gap:12px;}
+.appr-main{flex:1;min-width:0;display:flex;gap:10px;align-items:center;}
+.appr-text{min-width:0;display:flex;flex-direction:column;gap:2px;}
+.appr-text b{font-weight:600;font-size:13.5px;line-height:1.3;}
+.appr-text .sub{font-weight:400;color:var(--muted);font-size:12px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.appr-actions{flex:none;display:flex;gap:4px;align-items:center;}
+@media(max-width:640px){.appr-row{flex-wrap:wrap;}.appr-actions{width:100%;justify-content:flex-end;}}
+/* Campaign rows: the goal is the only bold thing, everything lines up,
+   and the controls sit on the right instead of wrapping underneath. */
+.cmp-row{display:flex;align-items:center;gap:12px;}
+.cmp-open{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:2px;
+  background:none;border:0;padding:0;text-align:left;cursor:pointer;font:inherit;color:inherit;}
+.cmp-open b{font-weight:600;font-size:13.5px;line-height:1.3;}
+.cmp-open .sub{font-weight:400;color:var(--muted);font-size:12px;}
+.cmp-next{flex:none;white-space:nowrap;}
+/* Always there: a control you have to discover is not a control. */
+.cmp-actions{flex:none;display:flex;gap:2px;}
+.icon-btn{width:30px;height:30px;display:grid;place-items:center;border:0;border-radius:8px;
+  background:transparent;color:var(--muted);cursor:pointer;transition:background .15s,color .15s;}
+.icon-btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round;}
+.icon-btn:hover{background:#f1f0f7;color:var(--ink);}
+.icon-btn.danger:hover{background:#fdeceb;color:#b4342c;}
+.icon-btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px;}
+/* The next step is information, not a shout. */
+.cmp-next{font-weight:500!important;background:var(--green-soft,#eef6f1)!important;color:var(--ink)!important;
+  border:0!important;font-size:11.5px!important;}
+@media(max-width:640px){
+  .cmp-row{flex-wrap:wrap;}
+  .cmp-open{flex:1 1 100%;}
+  .cmp-next{order:3;}
+}
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;}
 body{background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans',-apple-system,'Segoe UI',sans-serif;
@@ -1723,7 +1802,9 @@ pre,code,pre *{font-family:ui-monospace,SFMono-Regular,Consolas,monospace!import
   linear-gradient(158deg,#8b6cff 0%,#4b2fb8 52%,#1a0e46 100%)}
 
 /* ── Hero: optional full-bleed photographic backdrop ─────────────────── */
-.zp-hero-backdrop{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none;opacity:0;transition:opacity 1.2s ease}
+/* The hero backdrop photo is gone; these rules are kept harmless in
+   case a page still references the class. */
+.zp-hero-backdrop{display:none}
 .zp-hero-backdrop.has-photo{opacity:1}
 .zp-hero-backdrop .zp-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.32;filter:saturate(1.05)}
 .zp-hero-backdrop::after{content:"";position:absolute;inset:0;
@@ -2888,7 +2969,7 @@ body{background:var(--z-canvas)!important;color:var(--z-ink)!important}
 .ux-nav-heading,.ux-account-label{letter-spacing:.13em!important;font-size:9.5px!important;color:#9a9ca4!important}
 
 /* HOME: operator briefing */
-.zen-command-hero{border:0!important;border-radius:30px!important;padding:42px 44px 36px!important;background:linear-gradient(118deg,#15171c 0%,#1c1d29 47%,#2d245e 100%)!important;color:white!important;box-shadow:0 28px 80px rgba(31,28,62,.18)!important;min-height:330px}
+.zen-command-hero{border:0!important;border-radius:30px!important;padding:42px 44px 36px!important;background:linear-gradient(118deg,#15171c 0%,#1c1d29 47%,#2d245e 100%)!important;color:white!important;box-shadow:0 28px 80px rgba(31,28,62,.18)!important;min-height:0}
 .zen-command-hero:before{background:radial-gradient(circle at 88% 18%,rgba(139,124,255,.40),transparent 26%),radial-gradient(circle at 8% 110%,rgba(75,140,255,.18),transparent 35%)!important}
 .zen-command-hero:after{content:"";position:absolute;right:-40px;bottom:-70px;width:320px;height:320px;border:1px solid rgba(255,255,255,.08);border-radius:50%;box-shadow:0 0 0 46px rgba(255,255,255,.025),0 0 0 92px rgba(255,255,255,.018);pointer-events:none}
 .zen-command-copy{max-width:760px!important}.zen-command-copy .kicker{color:#bcb3ff!important;font-weight:800!important;letter-spacing:.15em!important}
@@ -2896,7 +2977,15 @@ body{background:var(--z-canvas)!important;color:var(--z-ink)!important}
 .zen-command-copy p{max-width:720px;color:rgba(255,255,255,.72)!important;font-size:16px!important;line-height:1.65!important}
 .zen-command-orb{width:78px!important;height:78px!important;border-radius:26px!important;background:linear-gradient(145deg,#917dff,#5b48df 55%,#4b8cff)!important;box-shadow:0 20px 45px rgba(83,65,210,.45)!important;transform:rotate(-5deg)}
 .zen-command-box{background:rgba(255,255,255,.10)!important;border:1px solid rgba(255,255,255,.15)!important;border-radius:20px!important;padding:8px!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)!important;backdrop-filter:blur(12px)}
-.zen-command-box textarea{background:transparent!important;color:#fff!important;font-size:15px!important;min-height:74px!important;padding:15px 16px!important}.zen-command-box textarea::placeholder{color:rgba(255,255,255,.42)!important}
+/* This hero is a light card, so the goal box must be dark ink. It was
+   white here from when the hero was dark, which made everything the
+   owner typed invisible. */
+.zen-command-box textarea{background:transparent!important;color:#20251f!important;font-size:15px!important;min-height:74px!important;padding:15px 16px!important}
+.zen-command-box textarea::placeholder{color:#8a8f86!important}
+/* If the hero is ever dark again, the box follows it rather than
+   silently going white-on-white. */
+.zen-command-hero.is-dark .zen-command-box textarea{color:#fff!important}
+.zen-command-hero.is-dark .zen-command-box textarea::placeholder{color:rgba(255,255,255,.45)!important}
 .zen-command-box button{background:white!important;color:#262036!important;border-radius:14px!important;padding:0 22px!important;font-weight:800!important;box-shadow:0 12px 30px rgba(0,0,0,.15)!important}
 .zen-command-chips{margin-top:13px!important}.zen-command-chips button{background:rgba(255,255,255,.08)!important;color:rgba(255,255,255,.84)!important;border:1px solid rgba(255,255,255,.13)!important;border-radius:999px!important;padding:9px 13px!important;transition:.18s ease!important}.zen-command-chips button:hover{background:rgba(255,255,255,.16)!important;color:white!important;transform:translateY(-1px)}
 .zen-section-title{margin:30px 2px 12px!important}.zen-section-title b{font-size:21px!important}.zen-section-title small{font-size:13px!important;color:var(--z-muted)!important}.zen-section-title button{border-radius:999px!important}
@@ -3599,6 +3688,109 @@ label.lbl{color:#44464E!important;font-weight:600!important}
 #app .side-create-cta .ux-nav-copy strong{color:#4734ab!important}
 #app .side-create-cta .ux-nav-copy small{color:#6d6594!important;opacity:1!important}
 #app .side-create-cta:focus-visible{outline:3px solid #9685f2;outline-offset:2px}
+/* ═══ One scale, quietly ═════════════════════════════════════════════
+   The workspace had seventeen font sizes, a 54px headline and inputs
+   86px tall. None of that helps someone glance at their business between
+   customers. Five sizes, one grey for quiet buttons, inputs that look
+   like inputs. */
+.main h1, .zen-command-hero h1, .zen-command-copy h1, .page h1, .pagetitle h1{font-size:26px!important;line-height:1.25!important;
+  font-weight:600!important;letter-spacing:-.01em!important;}
+.main h2{font-size:16px!important;line-height:1.35!important;font-weight:500!important;}
+.main h3{font-size:14px!important;font-weight:500!important;}
+.main p, .main li, .main td, .main .sub{font-size:13.5px!important;line-height:1.55!important;}
+.main .note, .main small{font-size:12px!important;line-height:1.5!important;}
+.main .kicker, .main .ux-nav-heading{font-size:10.5px!important;letter-spacing:.08em!important;}
+/* Fields: readable, not shouting. */
+.main input.field, .main select.field{font-size:14px!important;height:44px!important;padding:0 12px!important;}
+.main textarea.field{font-size:14px!important;min-height:64px!important;
+  line-height:1.5!important;padding:12px!important;}
+.main .zen-command-hero .zen-command-box textarea,
+.zen-command-hero .zen-command-box textarea:not(.prompt-box){
+  font-size:14px!important;min-height:44px!important;height:44px!important;
+  line-height:1.5!important;padding:10px 12px!important;}
+/* Buttons: one primary, one secondary, one quiet - not five greys. */
+.main .btn{font-size:13px!important;font-weight:500!important;}
+.main .btn-sm{font-size:12.5px!important;}
+.main .btn-ghost{background:transparent!important;color:#5b5d66!important;border:0!important;}
+.main .btn-ghost:hover{background:#f1f0f7!important;color:#1c201d!important;}
+.main .btn-s{background:#fff!important;color:#1c201d!important;border:1px solid var(--line)!important;}
+.main .badge{font-size:11.5px!important;font-weight:400!important;}
+.main .sw-pill{font-size:12.5px!important;}
+/* Fields that carry no class still need to look like fields. */
+.main textarea:not(.prompt-box){font-size:14px!important;min-height:64px!important;max-height:120px;
+  line-height:1.5!important;padding:12px!important;}
+.main input[type="text"], .main input[type="number"], .main input[type="search"], .main select{
+  font-size:14px!important;}
+/* Three button voices, not eight: one primary, one bordered, one quiet.
+   Unclassed buttons default to quiet rather than inventing a shade. */
+.main button:not(.btn):not(.side-btn):not(.sw-pill):not(.icon-btn):not(.cmp-open):not([class*="cta"]):not(.sw-chip):not(.sw-concept):not(.sw-star):not(.zen-command-box button){
+  font-size:13px!important;color:#5b5d66!important;}
+.zen-command-box button{color:#fff!important;}
+.main .icon-btn{color:#8d8ba3!important;}
+.main .cmp-open{color:#1c201d!important;}
+
+/* ═══ Compact ════════════════════════════════════════════════════════
+   The hero was 346px tall before a single number appeared. Tightening
+   the shell, the cards and the gaps gets roughly a screenful back on
+   every page, which is the difference between glancing and scrolling. */
+.main{padding:22px 28px 48px!important;}
+.zen-command-hero{padding:24px 26px 22px!important;margin-bottom:16px!important;}
+.zen-command-copy{padding-right:24px!important;}
+.zen-command-hero .kicker{margin-bottom:2px!important;}
+.zen-command-hero h1{margin:0 0 6px!important;}
+.zen-command-hero p{margin:0 0 12px!important;max-width:640px;}
+.zen-command-orb{width:52px!important;height:52px!important;}
+/* Sections and cards: one rhythm instead of four. */
+.main .sechead{margin:18px 0 8px!important;}
+.main .card,.main .sw-panel,.main .zc-card,.main .task,.main .mini{padding:14px 16px!important;}
+.main .list-row{padding:11px 14px!important;}
+.main .grid3,.main .zen-signal-grid,.main .campaign-board{gap:12px!important;margin-top:12px!important;}
+.main .sw-actions{margin:12px 0!important;gap:8px!important;}
+.main p{margin:0 0 8px!important;}
+.main .note{margin:4px 0!important;}
+/* The guide strip at the top of a task repeats what the page already
+   says; it should not cost a third of the screen. */
+.ux-workspace-top,.ux-task-hero{padding:10px 14px!important;}
+/* The ask box does not need to be three lines tall before anything is
+   typed; it grows when there is something in it. */
+.zen-command-box{padding:6px!important;}
+.zen-command-box textarea{min-height:46px!important;padding:10px 12px!important;}
+.zen-command-chips{margin-top:10px!important;}
+/* The hero's own breathing room, once the type is smaller. */
+.zen-command-hero{padding:20px 24px 18px!important;}
+.zen-command-copy{padding-right:120px!important;}
+.zen-command-hero p{margin:0 0 10px!important;}
+.zen-command-box{margin-bottom:0!important;}
+/* The "your business assistant" strip repeats the page title. */
+.ux-task-hero,.ux-workspace-top{margin-bottom:10px!important;}
+/* The last of the hero's slack: the gap above the ask box, the chip row
+   and the decorative orb, which says nothing the headline does not. */
+.zen-command-hero .zen-command-box{margin-top:10px!important;}
+.zen-command-hero .zen-command-chips{margin-top:8px!important;}
+.zen-command-hero .zen-command-orb{display:none!important;}
+.zen-command-hero .zen-command-copy{padding-right:0!important;}
+.zen-command-hero .zen-command-answer{margin-top:10px!important;}
+.zen-command-orb{width:44px!important;height:44px!important;}
+
+/* ═══ Ask Zen ════════════════════════════════════════════════════════
+   Asking is about understanding the business, so it takes the brand
+   green. Violet stays for making and running things, which keeps the
+   two kinds of action apart at a glance. */
+.ux-workspace-tag{background:#e7f0ea!important;color:#175e52!important;
+  border:1px solid rgba(23,94,82,.18)!important;font-weight:500!important;}
+.ux-workspace-tag:hover{background:#dbe9e0!important;}
+/* The header pill is quiet; the hero button is the action. Both green,
+   so "ask" reads as one thing wherever it appears. */
+.zen-command-box .btn-p,.zen-command-box button,button[onclick*="askZen"]{
+  background:#175e52!important;border-color:#175e52!important;color:#fff!important;font-weight:500!important;}
+.zen-command-box button:hover,button[onclick*="askZen"]:hover{background:#12483f!important;}
+#zenChatOpen,.ux-workspace-tag{background:#e7f0ea!important;color:#175e52!important;
+  border:1px solid rgba(23,94,82,.18)!important;font-weight:500!important;}
+#zenChatOpen:hover,.ux-workspace-tag:hover{background:#dbe9e0!important;}
+.zen-command-box .btn-p:hover{background:#12483f!important;}
+
+
+
 </style>
 </head>
 <body>
@@ -3624,7 +3816,7 @@ label.lbl{color:#44464E!important;font-weight:600!important}
 
 <!-- ══ Hero stage ═════════════════════════════════════════════════════ -->
 <header class="zp-stage zp-stage-hero">
-  <div class="zp-hero-backdrop" data-zp-media="hero-backdrop" aria-hidden="true"><img class="zp-photo" alt="" loading="eager" fetchpriority="high" decoding="async" width="2400" height="1400"></div>
+  <!-- The translucent hero photo was removed: it sat at 32% opacity behind the headline, carried about 150 KB of inline image, and the gradient stage reads better without it. -->
   <div class="zp-hero">
     <div>
       <span class="zp-live"><i></i>Customer conversations, campaigns and insights in one place</span>
@@ -4483,20 +4675,7 @@ label.lbl{color:#44464E!important;font-weight:600!important}
      available contextually, without competing for space in the main nav.
      ══════════════════════════════════════════════════════════════ -->
 <div id="app">
-  <nav class="side" aria-label="Main navigation">
-    <div class="side-brand"><span class="onb-orb">Z</span><div><b>Zen</b><small id="sideBrandTenant">AI</small></div></div>
-    <div class="side-nav" aria-label="Workspace navigation">
-<div class="ux-nav-group"><div class="ux-nav-heading">GROW YOUR BUSINESS</div><button class="side-btn active" data-p="home" onclick="go('home')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z"/></svg></span><span class="ux-nav-copy"><strong>Zen</strong><small>Ask, decide and act</small></span></button>
-<button class="side-btn" data-p="marketing" onclick="go('marketing')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h10M4 17h7"/><circle cx="18" cy="16" r="3"/></svg></span><span class="ux-nav-copy"><strong>Growth Campaigns</strong><small>Acquire customers & grow demand</small></span></button>
-<button class="side-btn" data-p="zenwhatsapp" onclick="go('zenwhatsapp')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-2 2V11.5a9.5 9.5 0 0 1 19 0Z"/><path d="M7 10h9M7 14h5"/></svg></span><span class="ux-nav-copy"><strong>Customers</strong><small>Inbox, replies and follow-up</small></span><span class="cnt" id="navWaBadge" style="display:none;"></span><span class="cnt" id="navCampBadge" style="display:none;"></span></button>
-<button class="side-btn" data-p="campaigns" onclick="go('campaigns')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.7"/><path d="M4 4v5h5"/><path d="M12 8v4l3 2"/></svg></span><span class="ux-nav-copy"><strong>Customer Campaigns</strong><small>Retention, win-back & lifecycle</small></span><span class="cnt" id="navCustCampBadge" style="display:none;"></span></button>
-<button class="side-btn" data-p="insights" onclick="go('insights')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3v18h17M8 16v-4M13 16V7M18 16v-7"/></svg></span><span class="ux-nav-copy"><strong>Results</strong><small>Performance + Zen's next move</small></span></button></div>
-<div class="ux-nav-group ux-nav-create"><div class="ux-nav-heading">CREATE &amp; PUBLISH</div>
-<button class="side-btn side-create-cta" type="button" onclick="openCreateNow()"><span class="ic">＋</span><span class="ux-nav-copy"><strong>Create</strong><small>Make a post, ad, image or video</small></span></button>
-<button class="side-btn" data-p="creativestudio" onclick="go('creativestudio')"><span class="ic">▧</span><span class="ux-nav-copy"><strong>Content Studio</strong><small>Create + browse everything Zen made</small></span></button>
-<button class="side-btn" data-p="promotions" onclick="go('promotions')"><span class="ic">↗</span><span class="ux-nav-copy"><strong>Publish</strong><small>Schedule posts and manage paid ads</small></span></button></div>
-    </div>
-    <div class="side-foot"><div class="ux-side-utilities"><button type="button" onclick="go('settings')">Business settings</button></div><div class="ux-account-label">YOUR ACCOUNT <span>Click below to log out</span></div>
+  <nav class="side" aria-label="Main navigation"><div class="side-brand"><span class="onb-orb">Z</span><div><b>Zen</b><small id="sideBrandTenant">AI</small></div></div><div class="ux-nav-group"><div class="ux-nav-heading">RUN YOUR BUSINESS</div><button class="side-btn active" data-p="home" onclick="go('home')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z"/></svg></span><span class="ux-nav-copy"><strong>Home</strong><small>What needs you</small></span></button><button class="side-btn" data-p="zenwhatsapp" onclick="go('zenwhatsapp')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-2 2V11.5a9.5 9.5 0 0 1 19 0Z"/><path d="M7 10h9M7 14h5"/></svg></span><span class="ux-nav-copy"><strong>Inbox</strong><small>Customer conversations</small></span><span class="cnt" id="navWaBadge" style="display:none;"></span><span class="cnt" id="navCampBadge" style="display:none;"></span></button><button class="side-btn" data-p="marketing" onclick="go('marketing')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h10M4 17h7"/><circle cx="18" cy="16" r="3"/></svg></span><span class="ux-nav-copy"><strong>Campaigns</strong><small>One goal, run by Zen</small></span></button><button class="side-btn" data-p="insights" onclick="go('insights')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3v18h17M8 16v-4M13 16V7M18 16v-7"/></svg></span><span class="ux-nav-copy"><strong>Results</strong><small>What your marketing produced</small></span></button></div><div class="ux-nav-group"><div class="ux-nav-heading">MAKE THINGS</div><button class="side-btn" data-p="creativestudio" onclick="go('creativestudio')"><span class="ic">▧</span><span class="ux-nav-copy"><strong>Create</strong><small>Images, video and posts</small></span></button><button class="side-btn" data-p="library" onclick="go('library')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3v18h17M8 16v-4M13 16V7M18 16v-7"/></svg></span><span class="ux-nav-copy"><strong>Library</strong><small>Everything Zen has made</small></span></button><button class="side-btn" data-p="brand" onclick="go('brand')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3v18h17M8 16v-4M13 16V7M18 16v-7"/></svg></span><span class="ux-nav-copy"><strong>Brand</strong><small>Your look, tone and products</small></span></button><button class="side-btn" data-p="promotions" onclick="go('promotions')"><span class="ic">↗</span><span class="ux-nav-copy"><strong>Publish</strong><small>Schedule and paid ads</small></span></button></div><div class="ux-nav-group"><div class="ux-nav-heading">MORE</div><button class="side-btn" data-p="campaigns" onclick="go('campaigns')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.7"/><path d="M4 4v5h5"/><path d="M12 8v4l3 2"/></svg></span><span class="ux-nav-copy"><strong>Win customers back</strong><small>WhatsApp outreach</small></span><span class="cnt" id="navCustCampBadge" style="display:none;"></span></button></div><div class="side-foot"><div class="ux-side-utilities"><button type="button" onclick="go('settings')">Business settings</button></div><div class="ux-account-label">YOUR ACCOUNT <span>Click below to log out</span></div>
       <div class="side-user" id="sideUser" style="cursor:pointer;" role="button" aria-label="Your account: log out" onclick="doLogout()" title="Log out">
         <span class="av" id="sideUserAv">?</span>
         <div><b style="display:block;" id="sideUserName">…</b><span style="color:var(--muted);" id="sideUserRole">…</span></div>
@@ -4537,6 +4716,8 @@ label.lbl{color:#44464E!important;font-weight:600!important}
     <section class="page" id="p-promotions"></section>
     <section class="page" id="p-creativestudio"></section>
     <section class="page" id="p-insights"></section>
+    <section class="page" id="p-library"></section>
+    <section class="page" id="p-brand"></section>
     <section class="page" id="p-settings"></section>
     <section class="page" id="p-flow"></section>
 
@@ -4678,7 +4859,16 @@ async function call(action, args, timeoutMs){
     const text = await r.text();
     let j; try { j = JSON.parse(text); }
     catch { return { ok:false, error:'The server sent something unreadable.' }; }
-    if (j && typeof j === 'object'){ if (!('ok' in j)) j.ok = r.ok; return j; }
+    if (j && typeof j === 'object'){
+      if (!('ok' in j)) j.ok = r.ok;
+      // "Unknown action" only ever means the deployed function is older
+      // than this page. Saying so saves an hour of looking in the wrong
+      // place.
+      if (j.ok === false && /unknown action/i.test(String(j.error || ''))) {
+        j.error = 'Zen\u2019s server does not know "' + action + '" yet \u2014 the mw-admin function needs redeploying with the latest index.ts.';
+      }
+      return j;
+    }
     return { ok:false, error:'Unexpected response.' };
   } catch(e){
     if (e && e.name === 'AbortError') return { ok:false, error:'This took too long to respond and was stopped after '+Math.round((timeoutMs||20000)/1000)+' seconds.' };
@@ -5453,7 +5643,11 @@ function go(name){
   document.querySelectorAll('.side-btn').forEach(b=>b.classList.toggle('active', b.dataset.p===primaryName));
   document.body.classList.remove('menu-open');
   window.scrollTo({top:0,behavior:'smooth'});
-  ({home,campaigns,zenwhatsapp,marketing,promotions,creativestudio,insights,settings})[name] && ({home,campaigns,zenwhatsapp,marketing,promotions,creativestudio,insights,settings})[name]();
+  // One map, used for both the guard and the call - they must not be
+  // able to drift apart.
+  const PAGES = { home, campaigns, zenwhatsapp, marketing, promotions,
+    creativestudio, insights, settings, library, brand };
+  if (PAGES[name]) PAGES[name]();
 }
 function openAdvancedTools(){
   openModal(
@@ -5493,8 +5687,8 @@ async function home(){
     '<section class="zen-command-hero">' +
       '<div class="zen-command-orb" aria-hidden="true"><span>✦</span></div>' +
       '<div class="zen-command-copy"><div class="kicker">ZEN IS READY</div><h1>What should we grow today?</h1>' +
-      '<p>Tell Zen the outcome. It will work out the audience, creative, channels and budget — then show you exactly what it plans to do.</p></div>' +
-      '<div class="zen-command-box"><textarea id="zenHomeInput" placeholder="Try: Get 20 more weekday bookings next month without discounting weekends" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();zenHomeRun();}"></textarea><button onclick="zenHomeRun()">Ask Zen <span>✦</span></button></div>' +
+      '<p>Tell Zen the outcome and it works out the audience, creative, channels and budget \u2014 or just ask a question about the business, like \u201cwhy are weekday bookings down?\u201d</p></div>' +
+      '<div class="zen-command-box" style="padding:6px!important;"><textarea id="zenHomeInput" style="height:44px!important;min-height:44px!important;padding:10px 12px!important;font-size:14px!important;" placeholder="Get 20 more weekday bookings next month \u2014 or ask: why are Tuesdays quiet?" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();zenHomeRun();}"></textarea><button onclick="zenHomeRun()">Ask Zen <span>✦</span></button></div>' +
       '<div class="zen-command-chips"><button onclick="zenHomePreset(\'Get me more qualified leads within AED 1,500 this month\')">Get customers</button><button onclick="zenHomePreset(\'Tell me where I am wasting advertising money\')">Improve my ads</button><button onclick="zenHomePreset(\'Bring back customers who have not visited recently\')">Bring people back</button><button onclick="zenHomePreset(\'Launch and promote a new service\')">Launch something new</button></div>' +
       '<div id="homeAnswer" class="zen-command-answer"></div>' +
     '</section>' +
@@ -7515,7 +7709,10 @@ async function swRender() {
   swPrefill();
   const r = swRecipe(), wf = swWorkflow(), cat = SW_CATALOG;
   box.innerHTML =
-    '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:12px;">\u2190 Back to Creative Studio</button>' +
+    (CW.makingFor
+      ? '<button class="btn btn-ghost btn-sm" onclick="swBackToCampaign()" style="margin-bottom:12px;">\u2190 Back to the campaign</button>'
+      : '<button class="btn btn-ghost btn-sm" onclick="flowBack()" style="margin-bottom:12px;">\u2190 Back to Creative Studio</button>') +
+    swCampaignBanner() +
     '<h1 style="font-size:22px;margin:0 0 4px;">' + (wf ? esc(wf.title) : 'Creative Studio') + (r && SW.step > 1 ? ' \u00b7 ' + esc(r.title) : '') + '</h1>' +
     swBrandSwitchHtml() +
     wizSteps(SW_STEPS, SW.step) +
@@ -7547,6 +7744,10 @@ function swStepWorkflow() {
 function swPickWorkflow(id) { const w = swWorkflow(id); if (!w || !w.enabled) return; SW.workflowId = id; SW.recipeId = null; swGo(1); }
 
 // ── Step 2: concept (filters and categories from config) ─────────────
+// When the studio is making a piece for a campaign, say so, and put the
+// concepts that do this job at the top - the owner picks from what Zen
+// recommends rather than searching 140 for the right one.
+function swCampaignBanner(){ return swConceptSwitcher(); }
 function swStepConcept() {
   const cat = SW_CATALOG;
   const chips = [['all', 'All concepts'], ['recommended', 'Suggested for you'], ['recent', 'Recently used'], ['favourites', 'Favourites']]
@@ -7596,8 +7797,19 @@ function swConceptCard(r, selected, pickFn) {
       'onclick="' + pick + '" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();' + pick + '}">' +
     '<button class="sw-star" aria-pressed="' + fav + '" aria-label="' + (fav ? 'Remove from' : 'Add to') + ' favourites" title="Favourite" onclick="event.stopPropagation();swToggleFav(\'' + r.id + '\',this)">' + (fav ? '\u2605' : '\u2606') + '</button>' +
     '<div class="sw-thumb" id="swThumb_' + esc(r.id) + '">' + swConceptThumbMarkup(r) + '</div>' +
-    '<div class="sw-copy"><div class="sw-meta-row"><div class="sw-ic">' + swIcon(icon, 20) + '</div><span class="sw-alias">' + esc(r.alias) + '</span></div><b>' + esc(r.title) + (suggested ? ' <span class="sw-sugg">Suggested</span>' : '') + '</b><p>' + esc(r.description) + '</p>' +
+    '<div class="sw-copy"><b class="sw-short">' + esc(swShortLabel(r.title)) + '</b><span class="sw-full">' + esc(r.alias) + '</span><b style="display:none;">' + esc(r.title) + (suggested ? ' <span class="sw-sugg">Suggested</span>' : '') + '</b><p>' + esc(r.description) + '</p>' +
     '<div class="sw-caption"><span style="color:var(--ink);font-weight:600;">Expected look:</span> ' + esc(swConceptThumbCaption(r)) + '</div><span class="sw-start-note">Open this concept to build your own version →</span></div></div>';
+}
+// A card should read in half a second: a picture and one or two words.
+// The full title still exists for search and for the brief; it is just
+// not what an owner has to scan past.
+function swShortLabel(title){
+  const t = String(title || '').trim();
+  const w = t.split(/\s+/);
+  if (w.length <= 2) return t;
+  if (/\b(the|with|and|it|of|in|on|for|to|your|a|an)\b/i.test(w.slice(1, -1).join(' '))) return t;
+  const s = w.slice(-2).join(' ');
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 }
 function swConceptThumbCaption(recipe){
   const key = ((recipe.alias||recipe.id||'').replace(/^\//,'')).toLowerCase();
@@ -7940,7 +8152,16 @@ async function swToggleFav(id, btn) {
 function swStepAssets() {
   const r = swRecipe(), slots = [...r.assets.required, ...r.assets.optional];
   const missing = r.assets.required.filter(s => !(SW.assets[s] || []).length);
-  return '<p class="note" style="margin-top:0;">Your originals are kept exactly as uploaded \u2014 Zen only ever works from copies.</p>' +
+  // Coming from a campaign, this is the only thing Zen still needs.
+  const campaignNote = CW.makingFor && missing.length
+    ? '<div class="sw-panel" style="max-width:820px;margin:0 0 14px;">' +
+      '<b style="font-weight:500;font-size:13.5px;">A photo makes this look like your own ' +
+        esc((SW_CATALOG.assetSlots[missing[0]] || {}).label || 'product').toLowerCase() + '</b>' +
+      '<p class="note" style="margin:4px 0 10px;">Add one and Zen keeps it exactly as it is. Without a photo Zen still makes the picture from the brief, ' +
+      'but it invents the subject rather than showing yours \u2014 fine for a moment or a scene, not for a specific product.</p>' +
+      '<button class="btn btn-s btn-sm" onclick="swSkipPhoto()">Make it from the brief instead</button></div>'
+    : '';
+  return campaignNote + '<p class="note" style="margin-top:0;">Your originals are kept exactly as uploaded \u2014 Zen only ever works from copies.</p>' +
     slots.map(id => {
       const s = SW_CATALOG.assetSlots[id], req = r.assets.required.includes(id), have = SW.assets[id] || [];
       return '<div class="sw-asset"><label class="lbl" for="swa_' + id + '">' + esc(s.label) + '<span class="sw-req ' + (req ? 'r">Required' : 'o">Optional' + (s.max > 1 ? ' \u00b7 up to ' + s.max : '')) + '</span></label>' +
@@ -7951,7 +8172,7 @@ function swStepAssets() {
         '<div class="sw-thumbs">' + have.map((u, i) => '<img src="' + esc(u) + '" alt=""><button class="btn btn-ghost btn-sm" onclick="SW.assets[\'' + id + '\'].splice(' + i + ',1);swGo(2)">Remove</button>').join('') + '</div></div>';
     }).join('') +
     '<div id="swUploadMsg"></div>' +
-    swNav(1, 'Continue', 'swFillDetails()', missing.length > 0, missing.length ? 'Add ' + SW_CATALOG.assetSlots[missing[0]].label.toLowerCase() + ' to continue' : '');
+    swNav(1, CW.makingFor ? 'Choose the look' : 'Continue', CW.makingFor ? 'swGo(4)' : 'swFillDetails()', missing.length > 0, missing.length ? 'Add ' + SW_CATALOG.assetSlots[missing[0]].label.toLowerCase() + ' to continue' : '');
 }
 async function swImportUrl(slotId){
   const input = el('swurl_' + slotId); const url = (input && input.value || '').trim();
@@ -8087,7 +8308,8 @@ function swImageModelHtml() {
   const warn = !SW.output.imageModel && def && !ok(def)
     ? '<p class="note" style="margin:0 0 6px;color:#9a5412;">Your default (' + esc(def.label) + ')' + esc(why(def)) + ', so Zen will use ' + esc((list.find(m => m.model === effective) || {}).label || 'another model') + ' unless you pick one.</p>' : '';
   return '<label class="lbl" for="swImageModel">Image model</label>' +
-    '<select class="field" id="swImageModel" style="max-width:420px;margin-bottom:4px;" onchange="SW.output.imageModel=this.value">' +
+    '<select class="field" id="swImageModel" style="max-width:420px;margin-bottom:4px;" ' +
+      'onfocus="swRoomToOpen(this)" onmousedown="swRoomToOpen(this)" onchange="SW.output.imageModel=this.value">' +
       list.map(m => '<option value="' + esc(m.model) + '"' + (m.model === effective ? ' selected' : '') + (ok(m) ? '' : ' disabled') + '>' +
         esc(m.label) + (m.model === configured ? ' (your default)' : '') + (m.approxPrice ? ' \u00b7 ~' + esc(m.approxPrice) + '/image' : '') + why(m) + '</option>').join('') +
     '</select>' + warn + '<p class="note" style="margin:0 0 14px;">Prices are approximate, per image \u2014 your Replicate bill is what counts. Just for this creation. Videos you make from these images use <b>' + esc((SW_CATALOG.video_model || {}).label || '') + '</b> unless you pick another in the video panel. Defaults are set in <a href="#" onclick="event.preventDefault();flow(()=>aiModelSettings())">Settings \u2192 AI models</a>.</p>';
@@ -8095,7 +8317,8 @@ function swImageModelHtml() {
 
 // ── Step 6: review ───────────────────────────────────────────────────
 const swPayload = (extra) => Object.assign({ workflow_id: SW.workflowId, recipe_id: SW.recipeId, values: SW.values, assets: SW.assets, output: SW.output,
-  use_brand_preferences: SW.useBrandPreferences === true, prompt_override: SW.promptOverride || undefined }, extra || {});
+  use_brand_preferences: SW.useBrandPreferences === true, prompt_override: SW.promptOverride || undefined,
+  allow_missing_assets: SW.allowMissingAssets === true }, extra || {});
 const swStepReview = () => '<div id="swReview"><div class="loading-block"><span class="spin"></span>Putting your brief together\u2026</div></div>';
 async function swLoadReview() {
   const j = await call('compose_studio_prompt', swPayload(SW.regeneratePrompt ? { regenerate_prompt: true } : null), 90000);
@@ -8112,6 +8335,16 @@ async function swLoadReview() {
     (j.requires_clarification && j.clarifying_question ? '<div class="onb-dev-note" style="max-width:820px;"><b>Zen has a question</b>' + esc(j.clarifying_question) + '</div>' : '') +
     (j.fallback_used ? '<div class="onb-dev-note" style="max-width:820px;"><b>Simplified prompt used</b>Zen could not compose a full prompt this time, so it used a simplified one built from your request, the product reference and the concept. You can edit it below or try Regenerate prompt.</div>' : '') +
     (j.adapter && j.adapter.note ? '<p class="note" style="max-width:820px;">\u2139\ufe0f ' + esc(j.adapter.note) + '</p>' : '') +
+    // Brand preferences are a promise: if they are on, the brief has to
+    // show what was actually used, and if nothing was used, say that.
+    (SW.useBrandPreferences
+      ? '<div class="sw-panel" style="max-width:820px;margin-bottom:14px;">' +
+        '<b style="font-weight:500;font-size:13.5px;">Your brand is applied</b>' +
+        ((j.brand_context_used || []).length
+          ? '<p class="note" style="margin:4px 0 0;">Used: ' + (j.brand_context_used || []).map(esc).join(', ') + '</p>'
+          : '<p class="note" style="margin:4px 0 0;">Zen found nothing in your brand profile that changes this picture \u2014 add colours, tone or rules in Settings and they will appear here.</p>') +
+        '</div>'
+      : '') +
     '<div class="sw-brief">' + Object.entries(j.brief).map(([k, v]) =>
       '<div class="sw-brief-row"><span>' + esc(k) + '</span><span>' + esc(v) + '</span>' +
       (editStep[k] !== undefined ? '<button class="btn btn-ghost btn-sm" onclick="swGo(' + editStep[k] + ')">Edit</button>' : '<span></span>') + '</div>').join('') + '</div>' +
@@ -8197,6 +8430,8 @@ async function swRunVariation(r) {
     // Zen checks its own work and may correct once - say so rather than
     // quietly handing over a second attempt.
     r.corrected = j.generation.auto_correction ? 'Zen checked this image, adjusted the lighting once and kept the better version.' : null;
+    // If this was made for a campaign piece, it belongs to that piece.
+    if (CW.makingFor && CW.makingFor.itemId && j.generation.id) swAttachToCampaign(j.generation.id);
   }
   else { r.status = j.request_status === 'cancelled' ? 'cancelled' : 'failed'; r.error = j.error || 'Something went wrong.'; }
   swRenderResults();
@@ -8595,7 +8830,58 @@ async function swOpenRequest(requestId) {
   if (SW.results.some(r => r.kind !== 'video' && r.status === 'generating')) toast('Some images were still generating \u2014 reopen this in a minute to see them.', 'ok');
 }
 
+// ═══ Library ════════════════════════════════════════════════════════
+// Everything Zen has made, in one place. The work was always there -
+// scattered between Creative Studio history and campaign items - so this
+// gathers it rather than storing anything new.
+async function library(){
+  STATE.lastPage = 'library';
+  const box = el('p-library');
+  box.innerHTML =
+    '<div class="pagetitle"><h1>Library</h1><p class="note">Every image, video and post Zen has made for you.</p></div>' +
+    '<div class="sw-actions" style="margin-bottom:14px;">' +
+      '<button class="btn btn-p" onclick="go(\'creativestudio\')">Create new</button>' +
+    '</div>' +
+    '<div id="libGrid"><div class="loading-block"><span class="spin"></span>Loading your work\u2026</div></div>';
+  swLoadHistory('libGrid');
+}
+
+// ═══ Brand ══════════════════════════════════════════════════════════
+// Your logo, colours, tone and products. This lived inside Settings,
+// where an owner never thinks to look for it.
+async function brand(){
+  STATE.lastPage = 'brand';
+  const box = el('p-brand');
+  box.innerHTML =
+    '<div class="pagetitle"><h1>Brand</h1><p class="note">What Zen uses to keep everything looking like you.</p></div>' +
+    '<div id="brandCards"><div class="loading-block"><span class="spin"></span>Loading\u2026</div></div>';
+  const [bs, prods] = await Promise.all([
+    call('get_brand_settings', {}),
+    call('list_product_library', {}),
+  ]);
+  const s = (bs.ok && bs.settings) ? bs.settings : {};
+  const items = (prods.ok && (prods.products || prods.items)) || [];
+  const swatch = (c2) => c2 ? '<span style="display:inline-block;width:18px;height:18px;border-radius:5px;background:' + esc(c2) + ';border:1px solid var(--line);margin-right:6px;"></span>' : '';
+  el('brandCards').innerHTML =
+    '<div class="sechead"><h2>Your brand</h2><button class="btn btn-ghost btn-sm" onclick="go(\'settings\')">Edit in settings</button></div>' +
+    '<div class="card" style="padding:14px 16px;margin-bottom:16px;">' +
+      '<div style="display:flex;gap:14px;align-items:center;">' +
+      (s.logo_url ? '<img src="' + esc(s.logo_url) + '" alt="" style="width:56px;height:56px;border-radius:12px;object-fit:contain;background:#fff;border:1px solid var(--line);">' : '') +
+      '<div><b style="font-weight:500;">' + esc(s.business_name || 'Your business') + '</b>' +
+      '<div class="note">' + (swatch(s.primary_colour) + swatch(s.secondary_colour)) +
+        esc(s.tone || 'No tone of voice set yet') + '</div></div></div></div>' +
+    '<div class="sechead"><h2>Products &amp; services</h2>' +
+      '<button class="btn btn-s btn-sm" onclick="go(\'creativestudio\')">Add a product</button></div>' +
+    (items.length
+      ? '<div class="gal-grid">' + items.slice(0, 24).map(pr =>
+          '<div class="gal-card">' +
+          (pr.image_url ? '<img src="' + esc(pr.image_url) + '" class="gal-media" loading="lazy" alt="">' : '<div class="gal-media"></div>') +
+          '<div class="gal-body"><b style="font-weight:500;">' + esc(pr.name || 'Product') + '</b></div></div>').join('') + '</div>'
+      : '<p class="note">No products saved yet. Add one and Zen can use it in every campaign.</p>');
+}
+
 async function creativestudio(){
+  CW.makingFor = null;      // opening the studio on its own is not campaign work
   STATE.lastPage='creativestudio';
   const p = el('p-creativestudio');
   // Real, new - asked for directly: every card here now uses the
@@ -9354,11 +9640,20 @@ function goalText(g){
   return String(g.summary || g.text || g.goal_text || g.what || g.objective || g.type || 'Campaign');
 }
 async function campaignWorkspace(campaignId){
+  if (campaignId && CW.id !== campaignId) CWG.ideas = null;   // ideas belong to one campaign
   CW.id = campaignId;
   el('p-flow').innerHTML = '<div class="loading-block"><span class="spin"></span>Opening your campaign\u2026</div>';
   const j = await call('get_campaign_workspace', { campaign_id: campaignId });
   if (!j.ok){ el('p-flow').innerHTML = '<button class="btn btn-ghost btn-sm" onclick="go(\'marketing\')">\u2190 Marketing</button>' + errBlock(j.error, ''); return; }
-  CW.data = j; cwRender();
+  CW.data = j;
+  // Opening a campaign that is already past the plan should show the
+  // work, not walk the owner back through six steps they finished.
+  if (CWG.openedFresh) {
+    CWG.openedFresh = false;
+    const st = (j.campaign && j.campaign.campaign_status) || '';
+    if (['approved', 'generating', 'review', 'scheduled', 'live', 'completed'].includes(st)) CWG.step = 99;
+  }
+  if (!CWG.ideas && (j.items || []).length) cwgLoadIdeas(); cwRender();
 }
 function cwRender(){
   const j = CW.data, plan = j.plan || {}, cmp = j.campaign || {};
@@ -9368,8 +9663,21 @@ function cwRender(){
     '<div class="campaign-workspace-head"><div><span class="kicker">ZEN CAMPAIGN</span><h1>' + esc(goalText(cmp.goal)) + '</h1><p>Zen has turned the business goal into one complete, measurable campaign.</p></div><div class="campaign-state"><span>'+esc(cwStateLabel(state))+'</span><small>Next: '+esc(j.next_action||'Zen is monitoring')+'</small></div></div>' +
     '<div class="campaign-progress"><span class="done">Goal</span><span class="'+(state!=='draft'?'done':'')+'">Plan</span><span class="'+(['generating','review','scheduled','live','completed'].includes(state)?'done':'')+'">Create</span><span class="'+(['scheduled','live','completed'].includes(state)?'done':'')+'">Launch</span><span class="'+(['live','completed'].includes(state)?'done':'')+'">Learn</span></div>' +
     (cmp.last_error ? '<div class="onb-dev-note" style="max-width:820px;"><b>Something needs attention</b>' + esc(cmp.last_error) + '</div>' : '') +
-    cwPlanPanel(plan, state) +
-    cwItemsPanel(j.items || [], state) +
+    // While the plan is still being decided, walk it one step at a time.
+    // Once it is approved the whole plan on one page is the right view,
+    // and "see the whole plan" (CWG.step 99) opens it early.
+    // Anything that has not launched yet is still being decided, so the
+    // guided steps own it. A draft used to fall through to the old plan
+    // page, which is why opening one felt like a different product.
+    ((!['scheduled', 'live', 'completed', 'cancelled'].includes(state) && CWG.step < CW_STEPS.length) ? cwGuidedPanel(plan)
+      : cwMakingPictures(j.items || [], state) ? cwPlanSummaryLine(plan)
+      : cwPlanPanel(plan, state)) +
+    // One screen, one job: while the owner is walking the plan steps the
+    // making list would only compete with them.
+    (CWG.step < CW_STEPS.length ? ''
+      : cwMakingPictures(j.items || [], state)
+        ? cwCreativePanel(j.items || [])
+        : cwItemsPanel(j.items || [], state)) +
     cwResultsPanel(cmp);
 }
 function cwStateLabel(s){
@@ -9377,6 +9685,267 @@ function cwStateLabel(s){
     review: 'Content ready to approve', scheduled: 'Scheduled', live: 'Running', completed: 'Finished', failed: 'Needs attention' }[s] || s;
 }
 // The plan in plain language - no persona JSON, no recipe ids, no prompt.
+// ═══ Guided plan: one decision per screen ═══════════════════════════
+// The single recommendation card showed six decisions at once and gave
+// the owner nothing to do but accept or reject. This walks the same plan
+// one step at a time, each step adjustable, with Zen's reasoning behind
+// a disclosure rather than filling the page.
+const CWG = { step: 0, busy: false };
+const CW_STEPS = [
+  { id: 'goal',     title: 'Your goal',        q: 'Is this what you want?' },
+  { id: 'audience', title: 'Who should see it', q: 'Who is this for?' },
+  { id: 'offer',    title: 'What you are offering', q: 'What is the offer?' },
+  { id: 'channels', title: 'Where it runs',     q: 'Where should it appear?' },
+  { id: 'budget',   title: 'What you will spend', q: 'How much do you want to spend?' },
+  { id: 'content',  title: 'What Zen will make', q: 'Happy with this content?' },
+];
+function cwgOpen(step){
+  CWG.step = Math.max(0, Math.min(CW_STEPS.length - 1, step || 0));
+  cwRender();
+  cwgAsk();          // Zen says what it would do, before the owner decides
+}
+// Zen's own recommendation for this step, argued from what this business
+// has actually seen. It never writes to the plan: the owner does that.
+CWG.advice = {};
+// The ideas are planned server-side, from the same concept contracts
+// the studio uses - not invented in the browser.
+async function cwgLoadIdeas(force){
+  if ((CWG.ideas && !force) || CWG.ideasLoading) return;
+  CWG.ideasLoading = true;
+  const forId = CW.id;
+  const j = await call('campaign_creative_plan', { campaign_id: forId }, 45000);
+  CWG.ideasLoading = false;
+  if (!j.ok || CW.id !== forId) return;      // the owner moved on
+  CWG.ideas = j.pieces || [];
+  // What this campaign is actually selling, in the owner's own words.
+  // Without a photo this is the only thing that says what the subject is.
+  CWG.subject = j.subject || CWG.subject || null;
+  CWG.photoAsks = j.photo_asks || [];
+  CWG.photoRequests = j.photo_requests || [];
+  CWG.offer = j.offer || CWG.offer || null;
+  // Repaint wherever the owner actually is. Only repainting on the ideas
+  // step meant that reopening a campaign showed "Instagram feed" twice
+  // with no idea and no concept, because the answer arrived after the
+  // screen had already drawn.
+  if (CW.id) cwRender();
+}
+async function cwgAsk(force){
+  const step = CW_STEPS[CWG.step]; if (!step) return;
+  if (CWG.advice[step.id] && !force) return;
+  const box = el('cwgAdvice');
+  if (box) box.innerHTML = '<div class="zen-load"><span class="spin"></span>Zen is working out what it would do\u2026</div>';
+  const j = await call('recommend_campaign_step', { campaign_id: CW.id, step: step.id }, 45000);
+  if (!j.ok){ if (el('cwgAdvice')) el('cwgAdvice').innerHTML = ''; return; }
+  CWG.advice[step.id] = j;
+  if (CW_STEPS[CWG.step] && CW_STEPS[CWG.step].id === step.id) cwRender();
+}
+function cwgAdviceHtml(stepId){
+  const a = CWG.advice[stepId];
+  if (!a) return '<div id="cwgAdvice"></div>';
+  const conf = a.confidence === 'high' ? 'Zen has seen this work'
+    : a.confidence === 'medium' ? 'based on what Zen can see so far'
+    : 'an opening suggestion, not evidence';
+  return '<div id="cwgAdvice"><div class="zen-strip" style="margin-bottom:12px;">' +
+      '<span class="zen-dot"></span>' +
+      '<span class="zen-strip-body"><b>' + esc(a.recommendation) + '</b>' +
+      '<small>' + esc(conf) + ' \u00b7 ' + esc(a.evidence || '') + '</small></span>' +
+    '</div>' +
+    // A fill-in button only where there is a field to fill.
+    (a.value && ['audience', 'offer', 'budget'].includes(stepId) ? '<div class="sw-actions" style="margin:0 0 10px;">' +
+      '<button class="btn btn-s btn-sm" onclick="cwgTake(\'' + esc(stepId) + '\')">Use Zen\u2019s suggestion</button>' +
+      (a.alternative ? '<button class="btn btn-ghost btn-sm" onclick="cwgShowAlternative(\'' + esc(stepId) + '\')">Another way to do it</button>' : '') +
+      '</div>' : '') +
+    (a.why ? '<details style="margin:0 0 12px;"><summary class="note" style="cursor:pointer;">Why Zen says this</summary>' +
+      '<p class="note" style="margin:6px 0 0;">' + esc(a.why) + '</p></details>' : '') +
+    '</div>';
+}
+// The alternative stays on screen with a way to take it, rather than a
+// toast that disappears before it can be read.
+function cwgShowAlternative(stepId){
+  const a = CWG.advice[stepId]; if (!a || !a.alternative) return;
+  const box = el('cwgAdvice'); if (!box) return;
+  if (el('cwgAlt')) { el('cwgAlt').remove(); return; }
+  box.insertAdjacentHTML('beforeend',
+    '<div class="zc-card" id="cwgAlt" style="margin:0 0 12px;"><b>Another way to do it</b>' +
+    '<p style="margin:4px 0 8px;font-size:13.5px;">' + esc(a.alternative) + '</p>' +
+    '<p class="note" style="margin:0;">Type what you want in the field below \u2014 Zen will work with whatever you choose.</p></div>');
+}
+// Take the suggestion into the field the owner can still edit.
+function cwgTake(stepId){
+  const a = CWG.advice[stepId]; if (!a) return;
+  const field = { audience: 'cwgAudience', offer: 'cwgOffer', budget: 'cwgBudget' }[stepId];
+  if (field && el(field)) {
+    el(field).value = stepId === 'budget' ? String(a.value).replace(/[^0-9.]/g, '') : a.value;
+    el(field).focus();
+    toast('Filled in \u2014 change it if you would rather do something else.', 'ok');
+    return;
+  }
+  if (stepId === 'channels') { toast('Zen suggests: ' + a.value, 'ok'); return; }
+  cwgNext();
+}
+function cwgNext(){ if (CWG.step < CW_STEPS.length - 1) cwgOpen(CWG.step + 1); }
+function cwgBack(){ if (CWG.step > 0) cwgOpen(CWG.step - 1); }
+// "Why this?" is available, not unavoidable.
+function cwgWhy(text){
+  if (!text) return '';
+  return '<details style="margin:8px 0 0;"><summary class="note" style="cursor:pointer;">Why Zen suggests this</summary>' +
+    '<p class="note" style="margin:6px 0 0;">' + esc(text) + '</p></details>';
+}
+function cwgProgress(){
+  return '<div class="sw-pills" style="margin-bottom:14px;">' + CW_STEPS.map((s, i) =>
+    '<button class="sw-pill" aria-pressed="' + (i === CWG.step) + '" onclick="cwgOpen(' + i + ')">' +
+      (i < CWG.step ? '\u2713 ' : '') + esc(s.title) + '</button>').join('') + '</div>';
+}
+// The owner has just said "create the content". Approving and then
+// asking for a second press is a step that exists for the machine.
+async function cwgFinish(){
+  if (CWG.busy || CW.busy) return;
+  CWG.busy = true;
+  // A campaign approved earlier is already approved; asking again only
+  // produces an error that reads like the owner's fault.
+  const already = ((CW.data && CW.data.campaign && CW.data.campaign.campaign_status) || '');
+  const j = ['approved','generating','review','scheduled','live','completed'].includes(already)
+    ? { ok: true }
+    : await call('approve_campaign_plan', { campaign_id: CW.id, autonomy_mode: 'review_all' });
+  CWG.busy = false;
+  if (!j.ok){ toast(j.error, 'err'); return; }
+  CWG.step = 99;
+  await campaignWorkspace(CW.id);
+}
+async function cwgSave(patch, thenNext){
+  if (CWG.busy) return; CWG.busy = true;
+  const j = await call('update_campaign_plan', Object.assign({ campaign_id: CW.id }, patch), 30000);
+  CWG.busy = false;
+  if (!j.ok){ toast(j.error, 'err'); return; }
+  CW.data = Object.assign({}, CW.data, { plan: j.plan });
+  if (thenNext) cwgNext(); else cwRender();
+}
+function cwGuidedPanel(plan){
+  if (!plan || !plan.goal) return '';
+  const step = CW_STEPS[CWG.step], m = plan.media_plan || {};
+  const audience = plan.audience || {}, paid = plan.paid_plan || {}, offer = plan.offer || {};
+  const money = (n) => (paid.currency || 'AED') + ' ' + n;
+  let body = '';
+  if (step.id === 'goal') {
+    body = '<b style="font-size:15px;">' + esc(plan.goal.summary || 'Your goal') + '</b>' +
+      (plan.diagnosis && plan.diagnosis.findings && plan.diagnosis.findings.length
+        ? '<div class="zen-strip" style="margin:10px 0;"><span class="zen-dot"></span><span class="zen-strip-body">' +
+          '<b>' + esc(plan.diagnosis.findings[0].finding) + '</b>' +
+          '<small>' + esc(plan.diagnosis.findings[0].evidence) + ' \u00b7 ' + esc(plan.diagnosis.note) + '</small></span></div>'
+        : '') +
+      '<p class="note" style="margin:6px 0 0;">Zen read this as: <b>' + esc(String(plan.goal.objective || '').replace(/_/g, ' ')) + '</b>' +
+      (m.objective ? ' \u2014 ' + esc(m.objective.value) : '') + '</p>' + cwgWhy(m.objective && m.objective.why);
+  }
+  if (step.id === 'audience') {
+    const radius = audience.radius_km || 5;
+    const grounded = /where your customers already come from/.test((m.audience && m.audience.value) || '');
+    body = '<label class="lbl">Who should see it</label>' +
+      '<input class="field" id="cwgAudience" value="' + esc(audience.label || (m.audience && m.audience.value) || '') + '">' +
+      '<p class="note" style="margin:6px 0 0;">' + esc(cwAudienceSource(audience)) + '</p>' +
+      ((m.interests && m.interests.value) ? '<p class="note" style="margin:6px 0 0;">Interests Zen will start from: ' + esc(m.interests.value) + '</p>' : '') +
+      // A distance is only shown when it is actually a guess - once the
+      // areas come from real customers there is no circle to draw.
+      (grounded ? '' :
+        '<label class="lbl" style="margin-top:10px;">How far people will travel to you</label>' +
+        '<div class="sw-pills">' + [3, 5, 10, 20].map(km =>
+          '<button class="sw-pill" aria-pressed="' + (radius === km) + '" onclick="cwgSave({audience_radius_km:' + km + '})">' + km + ' km</button>').join('') + '</div>' +
+        '<p class="note" style="margin:6px 0 0;">Zen has no record of where your customers come from, so this is a starting assumption \u2014 not something it measured.</p>') +
+      cwgWhy(m.audience && m.audience.why);
+  }
+  if (step.id === 'offer') {
+    body = '<label class="lbl">The offer, in your words (leave empty if there isn\u2019t one)</label>' +
+      '<input class="field" id="cwgOffer" placeholder="e.g. 20% off the Princess Package on weekdays" value="' + esc(offer.value || '') + '">' +
+      '<p class="note" style="margin:6px 0 0;">Zen never invents a discount. If you leave this empty, the campaign runs on the service itself.</p>';
+  }
+  if (step.id === 'channels') {
+    const chans = (plan.channels || []).map(ch => cwChannelName(ch.channel) + (ch.items ? ' \u00b7 ' + ch.items : '')).join(', ');
+    body = '<p style="margin:0 0 10px;">' + esc(chans || 'Zen will choose once the plan is set') + '</p>' +
+      '<label class="side-user" style="gap:8px;cursor:pointer;"><input type="checkbox" id="cwgPaid" ' + (paid.include ? 'checked' : '') + '> Include paid promotion on Meta</label>' +
+      '<label class="side-user" style="gap:8px;cursor:pointer;"><input type="checkbox" id="cwgWa" ' + ((plan.whatsapp_plan || {}).include ? 'checked' : '') + '> Message your own customers on WhatsApp</label>' +
+      ((m.placements && m.placements.value) ? '<p class="note" style="margin:8px 0 0;">Zen suggests: ' + esc(m.placements.value) + '</p>' : '') +
+      cwgWhy(m.placements && m.placements.why);
+  }
+  if (step.id === 'budget') {
+    const suggested = (m.budget && m.budget.total) || null;
+    const tooThin = m.budget && /below what Meta needs/.test(m.budget.value || '');
+    body = !paid.include
+      ? '<p class="note" style="margin:0;">No paid promotion in this campaign, so there is nothing to spend. You can turn it on in the previous step.</p>'
+      : '<label class="lbl">Total budget for this campaign</label>' +
+        '<input class="field" id="cwgBudget" type="number" min="0" step="10" value="' + esc(String(paid.budget_total || suggested || '')) + '">' +
+        (suggested ? '<p class="note" style="margin:6px 0 0;">Zen suggests ' + esc(money(suggested)) + ' \u2014 about ' + esc(money(m.budget.daily)) + ' a day for ' + m.budget.days + ' days.</p>' : '') +
+        (tooThin ? '<p class="note" style="margin:6px 0 0;color:var(--warn);">' + esc(m.budget.why) + '</p>' : cwgWhy(m.budget && m.budget.why)) +
+        '<p class="note" style="margin:8px 0 0;">Nothing is charged now. Paid campaigns are created paused and never start without you.</p>';
+  }
+  if (step.id === 'content') {
+    const ideas = CWG.ideas || null;
+    if (ideas) {
+      body = '<p class="note" style="margin:0 0 10px;">' + ideas.length + ' piece' + (ideas.length === 1 ? '' : 's') +
+        '. Zen has written what each one is for and picked the concept that does that job \u2014 you make the pictures next.</p>' +
+        ideas.map(p =>
+          '<div class="zc-card" style="margin-bottom:8px;"><b>' + esc(p.job_label) + '</b>' +
+          '<div style="font-size:13.5px;margin:2px 0 6px;">' + esc(p.idea) + '</div>' +
+          '<div class="note">' + esc(p.placement) + ' \u00b7 ' + esc(p.format) +
+          (p.concept_title ? ' \u00b7 concept: <b>' + esc(p.concept_title) + '</b>' : '') + '</div>' +
+          (p.concept_why ? '<details style="margin-top:6px;"><summary class="note" style="cursor:pointer;">Why this concept</summary>' +
+            '<p class="note" style="margin:6px 0 0;">' + esc(p.concept_why) + '</p></details>' : '') +
+          '</div>').join('');
+      return '<section style="max-width:720px;">' + cwgProgress() + cwgAdviceHtml(step.id) +
+        '<div class="sw-panel"><div class="kicker">STEP ' + (CWG.step + 1) + ' OF ' + CW_STEPS.length + '</div>' +
+        '<h2 style="font-size:17px;margin:2px 0 10px;">' + esc(step.q) + '</h2>' + body + '</div>' +
+        '<div class="sw-actions" style="margin-top:12px;">' +
+          '<button class="btn btn-ghost" onclick="cwgBack()">Back</button>' +
+          '<button class="btn btn-p" onclick="cwgFinish()">These are the ideas \u2014 make the pictures</button>' +
+        '</div></section>';
+    }
+    cwgLoadIdeas();
+    const pack = plan.creative_pack || [];
+    body = '<p class="note" style="margin:0 0 8px;">' + pack.length + ' piece' + (pack.length === 1 ? '' : 's') + ', written by Zen. You generate the images yourself in the next step.</p>' +
+      '<div class="list">' + pack.map(x =>
+        '<div class="list-row"><div><b>' + esc(cwChannelName(x.channel)) + '</b><div class="sub">' + esc(x.role || x.placement || '') + '</div></div>' +
+        '<span class="badge">' + esc(x.recipe_id ? 'concept chosen' : 'Zen will choose') + '</span></div>').join('') + '</div>' +
+      cwgWhy(m.creative && m.creative.why);
+  }
+  const saveFor = {
+    audience: "cwgSave({audience_label: (el('cwgAudience')||{}).value}, true)",
+    offer:    "cwgSave({offer: (el('cwgOffer')||{}).value}, true)",
+    channels: "cwgSave({include_paid: !!(el('cwgPaid')||{}).checked, include_whatsapp: !!(el('cwgWa')||{}).checked}, true)",
+    budget:   "cwgSave({budget_total: Number((el('cwgBudget')||{}).value || 0)}, true)",
+  }[step.id] || 'cwgNext()';
+  const last = CWG.step === CW_STEPS.length - 1;
+  return '<section style="max-width:720px;">' + cwgProgress() +
+    cwgAdviceHtml(step.id) +
+    '<div class="sw-panel"><div class="kicker">STEP ' + (CWG.step + 1) + ' OF ' + CW_STEPS.length + '</div>' +
+    '<h2 style="font-size:17px;margin:2px 0 10px;">' + esc(step.q) + '</h2>' + body + '</div>' +
+    '<div class="sw-actions" style="margin-top:12px;">' +
+      (CWG.step ? '<button class="btn btn-ghost" onclick="cwgBack()">Back</button>' : '') +
+      (last
+        ? '<button class="btn btn-p" onclick="cwApprove(\'review_all\')">This is the plan \u2014 create the content</button>'
+        : '<button class="btn btn-p" onclick="' + saveFor + '">Continue</button>') +
+    '</div>' +
+    '<p class="note" style="margin-top:10px;"><a href="#" onclick="event.preventDefault();CWG.step=99;cwRender()" style="color:var(--accent);">See the whole plan on one page</a></p>' +
+    '</section>';
+}
+// True while there are still pictures to make: the screen then has one
+// job, and the whole plan would only compete with it.
+// Still making, whatever the campaign's state is called. One piece being
+// ready flips the state to "review", which used to drop the owner back
+// onto the old plan card with six pieces still unmade.
+function cwMakingPictures(items, state){
+  if (['scheduled', 'live', 'completed', 'cancelled'].includes(state)) return false;
+  return (items || []).some(i => ['waiting', 'creating', 'failed'].includes(i.status));
+}
+// The plan, one line, with a way back to the detail.
+function cwPlanSummaryLine(plan){
+  if (!plan || !plan.goal) return '';
+  const paid = plan.paid_plan || {};
+  const bits = [
+    (plan.audience && plan.audience.label) || '',
+    paid.include && paid.budget_total ? (paid.currency || 'AED') + ' ' + paid.budget_total : 'no paid spend',
+    ((plan.channels || []).length + ' channel' + ((plan.channels || []).length === 1 ? '' : 's')),
+  ].filter(Boolean).join(' \u00b7 ');
+  return '<p class="note" style="margin:0 0 14px;">' + esc(bits) +
+    ' \u2014 <a href="#" onclick="event.preventDefault();CWG.step=98;cwRender()" style="color:var(--accent);">see the full plan</a></p>';
+}
 function cwPlanPanel(plan, state){
   if (!plan || !plan.goal) return '';
   const audience=plan.audience||{}, paid=plan.paid_plan||{}, offer=plan.offer||{}, subject=plan.subject||{};
@@ -9405,7 +9974,7 @@ function cwPlanPanel(plan, state){
           '<button class="is-primary" onclick="cwApprove(\'approve_plan\')">Approve and let Zen run it →</button>' +
           '<button class="is-link" onclick="go(\'marketing\')">Change goal</button>'
         : '') +
-      (state === 'approved' ? '<div><b>Plan approved</b><small>Zen is ready to build every asset.</small></div><button class="is-primary" onclick="cwStartPack()">Create the complete campaign →</button>' : '') +
+      (state === 'approved' && !cwMakingPictures(CW.data && CW.data.items, state) ? '<div><b>Plan approved</b><small>Zen is ready to build every asset.</small></div><button class="is-primary" onclick="cwStartPack()">Create the complete campaign →</button>' : '') +
     '</div></section>';
 }
 function cwAudienceSource(a){
@@ -9414,6 +9983,286 @@ function cwAudienceSource(a){
 }
 function cwChannelName(ch){
   return { instagram_feed: 'Instagram feed', instagram_story: 'Stories', reel: 'Reel', whatsapp: 'WhatsApp', meta_ads: 'Meta ads' }[ch] || ch;
+}
+// Making the pictures: every piece shows the job it does and the concept
+// making it, and can be generated on its own or all at once.
+function cwCreativePanel(items){
+  // Without the ideas this screen reads as "Instagram feed / Instagram
+  // feed" - the job and the concept are the whole point of it.
+  if (!CWG.ideas) cwgLoadIdeas();
+  const ideas = CWG.ideas || [];
+  const byId = {}; ideas.forEach(p => { if (p.item_id) byId[p.item_id] = p; });
+  const pending = items.filter(i => i.status === 'waiting' || i.status === 'failed').length;
+  const busy = items.some(i => i.status === 'creating');
+  return cwPhotoAsk() +
+    '<div class="sw-actions" style="margin:0 0 12px;">' +
+      '<button class="btn btn-ghost btn-sm" onclick="cwBackToIdeas()">\u2190 Back to the ideas</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="CWG.step=98;cwRender()">See the full plan</button>' +
+    '</div>' +
+    '<div class="sechead"><h2>Make the pictures</h2>' +
+      (pending && !busy ? '<button class="btn btn-p btn-sm" onclick="cwStartPack()">Make all ' + pending + '</button>' : '') +
+    '</div>' +
+    (busy ? '<p class="note" style="margin:0 0 10px;"><span class="spin"></span> Zen is working \u2014 you can leave this page.</p>'
+          : '<p class="note" style="margin:0 0 10px;">Make them one at a time, or all together \u2014 each takes about a minute and uses the concept Zen picked for its job. You can leave this page while they run.</p>') +
+    '<div class="list">' + items.map((it, idx) => {
+      // Match on id, and fall back to position: if the two lists ever
+      // drift apart the owner should still see the job and the concept
+      // rather than a row that says "Instagram feed" twice.
+      const p = byId[it.id] || ideas[idx] || {};
+      const done = ['ready', 'approved', 'scheduled', 'published'].includes(it.status);
+      return '<div class="list-row"><div style="min-width:0;">' +
+        '<b>' + esc(p.job_label || cwChannelName(it.channel)) + '</b>' +
+        '<div class="sub">' + esc(p.idea || it.role || '') + '</div>' +
+        '<div class="note" style="margin-top:2px;">' + esc(p.placement || cwChannelName(it.channel)) +
+          (p.format ? ' \u00b7 ' + esc(p.format) : '') +
+          (p.concept_title ? ' \u00b7 ' + esc(p.concept_title) : '') + '</div>' +
+        '</div>' +
+        (done ? '<span style="display:flex;gap:6px;align-items:center;">' +
+              (it.generation_id ? '<button class="btn btn-ghost btn-sm" onclick="cwAnimate(\'' + esc(it.generation_id) + '\')">Make a video</button>' : '') +
+              '<button class="btn btn-ghost btn-sm" onclick="cwMakeOne(\'' + esc(it.id) + '\')">Redo</button>' +
+              '<span class="badge">Ready</span></span>'
+          : it.status === 'creating' ? '<span class="badge"><span class="spin"></span> Making</span>'
+          : '<button class="btn btn-s btn-sm" onclick="cwMakeOne(\'' + esc(it.id) + '\')">' +
+             (it.status === 'failed' ? 'Try again' : 'Make this one') + '</button>') +
+        '</div>';
+    }).join('') + '</div>';
+}
+// Zen reads what the owner said their offer includes, and asks for a
+// photo of each real thing in it. Anything given is used in the
+// pictures; anything not is invented, and Zen says so rather than
+// pretending otherwise.
+CW.photos = CW.photos || {};
+function cwPhotoAsk(){
+  const reqs = (CWG.photoRequests || []).filter(r => r && r.item);
+  if (!reqs.length) return '';
+  if (CW.photoAskHidden) {
+    const n = Object.keys(CW.photos || {}).length;
+    return '<p class="note" style="margin:0 0 12px;">' +
+      (n ? n + ' of your own photo' + (n === 1 ? '' : 's') + ' will be used. ' : '') +
+      '<a href="#" onclick="event.preventDefault();CW.photoAskHidden=false;cwRender()" style="color:var(--accent);">Add photos of what is included</a></p>';
+  }
+  return '<div class="sw-panel" style="margin-bottom:14px;">' +
+    '<b style="font-weight:500;font-size:13.5px;">Have photos of any of these?</b>' +
+    '<p class="note" style="margin:4px 0 10px;">Zen will use your real ones. Anything you skip, it invents \u2014 which looks fine, but it will not be yours.</p>' +
+    '<div class="list">' + reqs.map((r, i) => {
+      const have = CW.photos[r.item];
+      return '<div class="list-row appr-row"><div class="appr-main">' +
+        (have ? '<img src="' + esc(have) + '" style="width:38px;height:38px;object-fit:cover;border-radius:8px;">' : '') +
+        '<span class="appr-text"><b>' + esc(r.item) + '</b><span class="sub">' + esc(r.why) + '</span></span></div>' +
+        '<span class="appr-actions">' +
+          (have
+            ? '<button class="icon-btn danger" title="Remove this photo" onclick="cwClearPhoto(' + JSON.stringify(r.item).replace(/"/g, '&quot;') + ')">' +
+              '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>'
+            : '<label class="btn btn-s btn-sm" style="cursor:pointer;margin:0;">Add photo' +
+              '<input type="file" accept="image/*" style="display:none" ' +
+              'onchange="cwAddPhoto(this,' + JSON.stringify(r.item).replace(/"/g, '&quot;') + ')"></label>') +
+        '</span></div>';
+    }).join('') + '</div>' +
+    '<div class="sw-actions" style="margin-top:10px;">' +
+      '<button class="btn btn-ghost btn-sm" onclick="CW.photoAskHidden=true;cwRender()">Skip for now</button>' +
+    '</div></div>';
+}
+async function cwAddPhoto(input, item){
+  const f = input && input.files && input.files[0]; if (!f) return;
+  const j = await swUploadFile(f);
+  if (!j || !j.url){ toast('That photo could not be uploaded.', 'err'); return; }
+  CW.photos[item] = j.url;
+  toast('Zen will use your ' + item + '.', 'ok');
+  cwRender();
+}
+function cwClearPhoto(item){ delete CW.photos[item]; cwRender(); }
+// Back to the ideas, with everything already made left untouched. The
+// plan can still be changed until the campaign is scheduled.
+function cwBackToIdeas(){
+  CWG.step = 5;
+  CWG.ideas = null;
+  cwRender();
+  cwgLoadIdeas();
+}
+// Animate a finished piece. The studio's own video flow is used, so the
+// motion comes from the concept rather than a second engine.
+function cwAnimate(generationId){
+  if (!generationId) return;
+  CW.animateFrom = generationId;
+  flow(() => videoFromImageFlow());
+}
+// One piece, made in the studio - the same place every other image in
+// Zen is made. The concept Zen recommended is preselected, alternatives
+// for the same job are offered, and the result comes back to the
+// campaign rather than sitting in the library.
+function cwMakeOne(itemId){
+  const idea = (CWG.ideas || []).find(p => p.item_id === itemId)
+    || (CWG.ideas || [])[((CW.data && CW.data.items) || []).findIndex(i => i.id === itemId)] || {};
+  const recipeId = idea.concept_id || null;
+  const workflow = swWorkflowForRecipe(recipeId) || 'product';
+  // What the studio needs to know about the campaign it is serving.
+  CW.makingFor = { itemId, campaignId: CW.id, job: idea.job_label || '', idea: idea.idea || '',
+    format: idea.format || null, recipeId, alternatives: idea.alternatives || [] };
+  flow(() => {
+    studioWizard(workflow, recipeId);
+    setTimeout(() => {
+      // Everything the campaign already knows, filled in: the subject,
+      // what this piece is for, its shape, and the brand, because this is
+      // the business's own campaign rather than free creative work.
+      if (idea.format && SW.output) SW.output.aspectRatio = idea.format;
+      // The subject, from the campaign's own reading of the goal, then
+      // the plan, then the goal text itself. One of these always says
+      // what this is - which is what the studio needs when there is no
+      // photo to look at.
+      const planNow = (CW.data && CW.data.plan) || {};
+      const subject = CWG.subject
+        || (planNow.subject && planNow.subject.name)
+        || cwSubjectFromGoal(goalText(planNow.goal))
+        || '';
+      SW.values = Object.assign({}, SW.values, {
+        userIntent: idea.idea || '',
+        productName: subject || SW.values.productName || '',
+        offer: CWG.offer || SW.values.offer || '',
+      });
+      SW.useBrandPreferences = true;
+      // Straight to the brief unless the concept genuinely needs a photo
+      // Zen does not have.
+      // Always the same screen, whatever the concept needs. Zen can make
+      // the picture without a photo, and the ask above offers to add one
+      // - so a missing photo changes what is on the screen, never where
+      // the owner lands.
+      SW.allowMissingAssets = true;
+      swGo(4);
+    }, 800);
+  });
+}
+// Change the concept without losing the brief. What the picture is FOR
+// stays exactly as the campaign wrote it; only the way it is made
+// changes, and the prompt is recomposed from the same intent.
+function swConceptSwitcher(){
+  const ctx = CW.makingFor; if (!ctx) return '';
+  const alts = (ctx.alternatives || []).filter(a => a && a.id);
+  const current = swRecipe();
+  return '<div class="sw-panel" style="max-width:820px;margin-bottom:14px;">' +
+    '<div class="kicker">MAKING: ' + esc(ctx.job || 'campaign piece') + '</div>' +
+    '<p style="margin:4px 0 8px;font-size:13.5px;">' + esc(ctx.idea || '') + '</p>' +
+    '<p class="note" style="margin:0 0 10px;">' + esc(ctx.format || '') +
+      (current ? ' \u00b7 concept: ' + esc(current.title) : '') +
+      ' \u00b7 your brand is on for campaign work</p>' +
+    // One dropdown: Zen's picks for this job first, then everything else,
+    // grouped by workflow. Choosing any of them keeps the same brief.
+    swPhotoAsk() +
+    '<label class="lbl" style="margin-top:4px;">Concept</label>' +
+    '<select class="field" onfocus="swRoomToOpen(this)" onmousedown="swRoomToOpen(this)" ' +
+      'onchange="swSwitchConcept(this.value)">' + swConceptOptions(alts) + '</select>' +
+    '<p class="note" style="margin:8px 0 0;">Change it if you like \u2014 what this piece is for, and the words behind it, stay the same.</p></div>';
+}
+// Zen's recommendations first, then every other concept grouped by the
+// workflow it belongs to - so the list reads as a library rather than a
+// wall of 140 names.
+// A native dropdown opens upward when there is no room beneath it.
+// Centring the field first gives it that room.
+function swRoomToOpen(elm){
+  try {
+    const r = elm.getBoundingClientRect();
+    // A list of nine models needs roughly 340px; the concept list wants
+    // more. Below that the browser flips the menu upward, which reads as
+    // a bug even though it is the browser being sensible.
+    const need = elm.options && elm.options.length > 20 ? 420 : 340;
+    if (window.innerHeight - r.bottom < need) elm.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  } catch (e) { /* older browser: the dropdown still works, it just flips */ }
+}
+// Ask once, for the things the owner actually described, and only while
+// Zen has nothing better. Skipping is a normal answer, not a failure.
+function swPhotoAsk(){
+  if (!CW.makingFor || SW.photoAskDismissed) return '';
+  const asks = (CWG.photoAsks || []).filter(a => a && a.what);
+  if (!asks.length) return '';
+  // A brand logo is prefilled automatically; it says nothing about the
+  // product. Only a photo of the subject itself answers this question.
+  const slots = (SW_CATALOG && SW_CATALOG.assetSlots) || {};
+  const haveSubjectPhoto = Object.entries(SW.assets || {}).some(([slot, list]) =>
+    (list || []).length && (slots[slot] || {}).role === 'identity');
+  if (haveSubjectPhoto) return '';
+  const names = asks.map(a => a.what);
+  const list = names.length > 1 ? names.slice(0, -1).join(', ') + ' or ' + names[names.length - 1] : names[0];
+  return '<div class="sw-panel" style="margin-bottom:14px;">' +
+    '<b style="font-weight:500;font-size:13.5px;">Do you have a photo of the ' + esc(list) + '?</b>' +
+    '<p class="note" style="margin:4px 0 10px;">' + esc(asks[0].why) + '</p>' +
+    '<div class="sw-actions">' +
+      '<button class="btn btn-s btn-sm" onclick="swGo(2)">Add a photo</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="SW.photoAskDismissed=true;swRender()">Zen can imagine it</button>' +
+    '</div></div>';
+}
+function swConceptOptions(alts){
+  const all = (SW_CATALOG && SW_CATALOG.recipes) || [];
+  const picked = new Set((alts || []).map(a => a.id));
+  const opt = r => '<option value="' + esc(r.id) + '"' + (SW.recipeId === r.id ? ' selected' : '') + '>' + esc(r.title) + '</option>';
+  let html = '';
+  if (picked.size) {
+    html += '<optgroup label="Zen recommends for this job">' +
+      all.filter(r => picked.has(r.id)).map(opt).join('') + '</optgroup>';
+  }
+  const groups = {};
+  all.filter(r => !picked.has(r.id)).forEach(r => { (groups[r.workflow] || (groups[r.workflow] = [])).push(r); });
+  const wfTitle = {};
+  ((SW_CATALOG && SW_CATALOG.workflows) || []).forEach(w => { wfTitle[w.id] = w.title; });
+  Object.keys(groups).forEach(wf => {
+    html += '<optgroup label="' + esc(wfTitle[wf] || wf) + '">' + groups[wf].map(opt).join('') + '</optgroup>';
+  });
+  return html;
+}
+function swSwitchConcept(id){
+  const r = swRecipe(id) || (SW_CATALOG && SW_CATALOG.recipes || []).find(x => x.id === id);
+  if (!r) return;
+  SW.recipeId = id;
+  // A concept belongs to a workflow. Leaving the old one set is what
+  // produced "The Result isn't part of Product Studio".
+  if (r.workflow && r.workflow !== SW.workflowId) SW.workflowId = r.workflow;
+  // Keep the shape the campaign asked for where the concept allows it.
+  const want = (CW.makingFor && CW.makingFor.format) || SW.output.aspectRatio;
+  SW.output.aspectRatio = r.formats.supported.includes(want) ? want : r.formats.default;
+  SW.review = null;
+  swGo(CW.makingFor ? 4 : 5);   // same intent, recomposed for the new concept
+}
+// Make this piece without a reference photo. The engine is told there is
+// none, so it builds the scene from words and never fakes a brand.
+function swSkipPhoto(){
+  SW.allowMissingAssets = true;
+  SW.photoAskDismissed = true;
+  toast('Zen will make this from the brief. Add a photo any time to use your own.', 'ok');
+  swGo(4);
+}
+// Send the finished picture back to the campaign piece it was made for.
+async function swAttachToCampaign(generationId){
+  const ctx = CW.makingFor; if (!ctx) return;
+  const j = await call('attach_generation_to_campaign_item', {
+    item_id: ctx.itemId, generation_id: generationId, recipe_id: SW.recipeId || ctx.recipeId || null,
+  }, 30000);
+  if (!j.ok){ toast(j.error, 'err'); return; }
+  toast('Added to your campaign.', 'ok');
+}
+// Back to the campaign, once the owner is happy.
+function swBackToCampaign(){
+  const ctx = CW.makingFor; if (!ctx) { go('marketing'); return; }
+  CW.makingFor = null;
+  CWG.ideas = null;
+  // Back to where the owner left: the making screen, not the start of
+  // the guided steps and not the old plan page.
+  CWG.step = 99;
+  flow(() => campaignWorkspace(ctx.campaignId));
+}
+// The thing being sold, pulled from the owner's own sentence. Passing
+// the whole goal as a product name reads badly in a brief; a quoted
+// phrase or a named package is what they actually meant.
+function cwSubjectFromGoal(text){
+  const t = String(text || '');
+  const quoted = t.match(/["\u201c]([^"\u201d]{3,60})["\u201d]/);
+  if (quoted) return quoted[1].trim();
+  const named = t.match(/\b((?:[A-Z][\w-]+\s+){1,4}(?:Package|Experience|Offer|Service|Deal|Bundle|Session|Class))\b/);
+  if (named) return named[1].trim();
+  return t.replace(/^\s*(get|need|want)\b.*?\bfor\s+/i, '').split(/[.,]/)[0].trim().slice(0, 60);
+}
+// Which workflow a concept belongs to, so the studio opens on the right one.
+function swWorkflowForRecipe(recipeId){
+  if (!recipeId || !SW_CATALOG || !SW_CATALOG.recipes) return null;
+  const r = SW_CATALOG.recipes.find(x => x.id === recipeId);
+  return r ? r.workflow : null;
 }
 function cwItemsPanel(items, state){
   if (!items.length) return '';
@@ -9441,9 +10290,34 @@ function cwItemsPanel(items, state){
         (it.status === 'ready' ? '<button class="btn btn-s btn-sm" onclick="cwApproveItem(\'' + esc(it.id) + '\')">Approve</button>' : '') +
       '</div></div>').join('') + '</div>' +
     (['approved', 'generating'].includes(state) ? cwResumeBar(items) : '') +
+    (state === 'review' ? cwPlacementPanel(items) : '') +
     (state === 'review' && !ready ? cwExecuteBar(items) : '');
 }
 // An owner should never discover after the fact that pieces were left out.
+// Before anything is scheduled: which picture goes where, and why that
+// placement. Built from the same plan the pictures were made from.
+function cwPlacementPanel(items){
+  const ideas = CWG.ideas || [];
+  const byId = {}; ideas.forEach(p => { if (p.item_id) byId[p.item_id] = p; });
+  const ready = items.filter(i => ['ready', 'approved'].includes(i.status));
+  if (!ready.length) return '';
+  const rows = ready.map((it, idx) => {
+    const p = byId[it.id] || ideas[idx] || {};
+    const where = p.placement || cwChannelName(it.channel);
+    const why = /story|9:16/.test(String(p.format) + where)
+      ? 'vertical, so it fills the screen where people watch full-height'
+      : /whatsapp/i.test(where) ? 'sent to people who already know you, where a reply is easy'
+      : /meta|ads/i.test(where) ? 'paid reach to people who have not heard of you yet'
+      : 'the feed, where the detail can be read';
+    return '<div class="list-row"><div style="min-width:0;"><b>' + esc(p.job_label || cwChannelName(it.channel)) + '</b>' +
+      '<div class="sub">' + esc(p.concept_title || it.role || '') + '</div></div>' +
+      '<div style="text-align:right;min-width:0;"><b>' + esc(where) + '</b>' +
+      '<div class="note">' + esc(why) + '</div></div></div>';
+  }).join('');
+  return '<div class="sechead"><h2>Where each piece goes</h2></div>' +
+    '<p class="note" style="margin:0 0 10px;">Zen matched each picture to the placement its job suits. Change anything before you schedule.</p>' +
+    '<div class="list">' + rows + '</div>';
+}
 function cwExecuteBar(items){
   const failed = items.filter(i => i.status === 'failed').length;
   const going = items.filter(i => i.status === 'approved').length;
@@ -9517,11 +10391,13 @@ async function cwRetryAllFailed(){
   }
   campaignWorkspace(CW.id);
 }
+// Retrying a piece is the same job as making it: open the studio with
+// everything filled in, rather than silently regenerating behind the
+// owner's back.
 async function cwRetry(itemId){
   const j = await call('retry_campaign_asset', { item_id: itemId });
   if (!j.ok){ toast(j.error, 'err'); return; }
-  await call('generate_campaign_item', { item_id: itemId }, 180000);
-  campaignWorkspace(CW.id);
+  cwMakeOne(itemId);
 }
 async function cwApproveItem(itemId){
   const j = await call('approve_campaign_assets', { campaign_id: CW.id, item_ids: [itemId] });
@@ -9649,6 +10525,7 @@ async function mktLoadCampaigns(){
   const box = el('mktCampaigns'); if (!box) return;
   const j = await call('list_wizard_campaigns', {});
   if (!j.ok){ box.innerHTML = '<p class="note">' + esc(j.error) + '</p>'; return; }
+  MKT_LAST_CAMPAIGNS = j.campaigns || [];
   // Re-running the wizard for the same goal used to create a new
   // campaign each time, so one campaign appeared three times with three
   // partial counts. Creation is fixed; this folds together what is
@@ -9657,28 +10534,127 @@ async function mktLoadCampaigns(){
   (j.campaigns || []).filter(x => x.status !== 'completed').forEach(x => {
     const key = goalText(x.goal).trim().toLowerCase();
     const seen = byGoal[key];
-    if (!seen){ byGoal[key] = { ...x, earlier_attempts: 0 }; return; }
+    if (!seen){ byGoal[key] = { ...x, earlier_attempts: 0, member_ids: [x.id] }; return; }
     const keepNewer = new Date(x.updated_at || x.created_at || 0) > new Date(seen.updated_at || seen.created_at || 0);
     const base = keepNewer ? x : seen;
     byGoal[key] = { ...base, earlier_attempts: (seen.earlier_attempts || 0) + 1,
+      // The row stands for every campaign with this goal, so deleting it
+      // has to delete all of them - otherwise the row comes straight back.
+      member_ids: [...new Set([...(seen.member_ids || [seen.id]), x.id])],
       concept_count: Math.max(seen.concept_count || 0, x.concept_count || 0),
       approved_count: Math.max(seen.approved_count || 0, x.approved_count || 0) };
   });
   const live = Object.values(byGoal);
-  box.innerHTML = live.length
+  MKT_LAST_GROUPED = live;
+  box.innerHTML = mktSelectionBar() + (live.length
     ? '<div class="list">' + live.map(cmp => {
         const done = cmp.approved_count || 0, total = cmp.concept_count || 0;
         const next = cmp.status === 'draft' ? 'Review Zen\u2019s plan'
           : total && done < total ? 'Approve ' + (total - done) + ' creative' + (total - done > 1 ? 's' : '')
           : 'Confirm the schedule';
-        return '<div class="list-row" style="cursor:pointer;" onclick="magentResumeCampaign(\'' + esc(cmp.id) + '\')">' +
-          '<div><b>' + esc(goalText(cmp.goal)) + '</b><div class="sub">' + esc(cmp.status || 'draft') +
-          (total ? ' \u00b7 ' + done + ' of ' + total + ' approved' : '') +
-          (cmp.earlier_attempts ? ' \u00b7 ' + cmp.earlier_attempts + ' earlier attempt' + (cmp.earlier_attempts > 1 ? 's' : '') + ' at this goal' : '') +
-          '</div></div>' +
-          '<span class="badge">' + esc(next) + '</span></div>';
+        // One row, three columns: what it is, what it needs, and the
+        // controls. The goal is the only bold thing on the line.
+        return '<div class="list-row cmp-row' + (MKT_SEL.has(cmp.id) ? ' is-sel' : '') + '">' +
+          '<label class="cmp-check"><input type="checkbox" ' + (MKT_SEL.has(cmp.id) ? 'checked' : '') +
+            ' aria-label="Select this campaign" onchange="mktToggleSelect(\'' + esc(cmp.id) + '\')"></label>' +
+          '<button class="cmp-open" onclick="magentResumeCampaign(\'' + esc(cmp.id) + '\')">' +
+            '<b>' + esc(goalText(cmp.goal)) + '</b>' +
+            '<span class="sub">' + esc(cmp.status || 'draft') +
+            (total ? ' \u00b7 ' + done + ' of ' + total + ' approved' : '') +
+            (cmp.earlier_attempts ? ' \u00b7 ' + cmp.earlier_attempts + ' earlier attempt' + (cmp.earlier_attempts > 1 ? 's' : '') : '') +
+            '</span>' +
+          '</button>' +
+          '<span class="badge cmp-next">' + esc(next) + '</span>' +
+          '<span class="cmp-actions">' +
+            '<button class="icon-btn" title="Run this again as a new campaign" aria-label="Duplicate this campaign" ' +
+              'onclick="mktDuplicateCampaign(\'' + esc(cmp.id) + '\')">' +
+              '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>' +
+            '<button class="icon-btn danger" title="Delete this campaign" aria-label="Delete this campaign" ' +
+              'onclick="mktCancelCampaign(' + JSON.stringify(cmp.member_ids || [cmp.id]).replace(/"/g, '&quot;') + ',' +
+              JSON.stringify(goalText(cmp.goal)).replace(/"/g, '&quot;') + ')">' +
+              '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>' +
+          '</span></div>';
       }).join('') + '</div>'
-    : '<p class="note">No campaigns running yet \u2014 tell Zen a goal above and it will plan one.</p>';
+    : '<p class="note">No campaigns running yet \u2014 tell Zen a goal above and it will plan one.</p>');
+}
+// Copy a campaign to run again - the copy starts fresh, nothing
+// generated or scheduled.
+// Re-render from what was last fetched: ticking a checkbox should not
+// cost a round trip.
+function mktRenderCampaignList(){
+  if (MKT_LAST_CAMPAIGNS && MKT_LAST_CAMPAIGNS.length !== undefined) mktLoadCampaigns();
+}
+
+async function mktDuplicateCampaign(id){
+  const j = await call('duplicate_wizard_campaign', { campaign_id: id }, 30000);
+  if (!j.ok){ toast(j.error, 'err'); return; }
+  toast('Copied \u2014 opening the new campaign.', 'ok');
+  CWG.step = 0; CWG.ideas = null; CWG.advice = {};
+  flow(() => campaignWorkspace(j.campaign_id));
+}
+// Stop a campaign. Scheduled posts are pulled; published ones are left
+// where they are, because they already exist out in the world.
+async function mktCancelCampaign(ids, label){
+  const list = Array.isArray(ids) ? ids.filter(Boolean) : [ids].filter(Boolean);
+  if (!list.length) return;
+  const many = list.length > 1;
+  if (!confirm('Delete "' + (label || 'this campaign') + '"?' +
+    (many ? '\n\nThis goal has ' + list.length + ' campaigns behind it \u2014 all of them are deleted.' : '') +
+    '\n\nAnything already published stays where it is.')) return;
+  let failed = null, pulled = 0;
+  for (const id of list){
+    const j = await call('cancel_wizard_campaign', { campaign_id: id, remove: true }, 30000);
+    if (!j.ok){ failed = j.error; break; }
+    pulled += Number(j.unscheduled) || 0;
+    MKT_SEL.delete(id);
+  }
+  await mktLoadCampaigns();
+  if (failed){ toast(failed, 'err'); return; }
+  // It is only deleted if it is actually gone.
+  const still = (MKT_LAST_CAMPAIGNS || []).filter(x => list.includes(x.id));
+  if (still.length){
+    toast(still.length + ' of these could not be deleted \u2014 tell me and I will trace it.', 'err');
+    return;
+  }
+  toast(pulled ? 'Deleted, and ' + pulled + ' scheduled post' + (pulled === 1 ? '' : 's') + ' pulled.' : 'Deleted.', 'ok');
+}
+// Selection, so several campaigns can be dealt with at once.
+const MKT_SEL = new Set();
+let MKT_LAST_CAMPAIGNS = [], MKT_LAST_GROUPED = [];
+function mktToggleSelect(id){
+  if (MKT_SEL.has(id)) MKT_SEL.delete(id); else MKT_SEL.add(id);
+  mktRenderCampaignList();
+}
+function mktClearSelection(){ MKT_SEL.clear(); mktRenderCampaignList(); }
+function mktSelectionBar(){
+  if (!MKT_SEL.size) return '';
+  return '<div class="mkt-selbar"><span>' + MKT_SEL.size + ' selected</span>' +
+    '<button class="btn btn-s btn-sm" onclick="mktBulkDuplicate()">Duplicate</button>' +
+    '<button class="btn btn-s btn-sm" onclick="mktBulkStop()">Stop</button>' +
+    '<button class="btn btn-ghost btn-sm" onclick="mktClearSelection()">Clear</button></div>';
+}
+async function mktBulkDuplicate(){
+  const ids = [...MKT_SEL];
+  let done = 0;
+  for (const id of ids){
+    const j = await call('duplicate_wizard_campaign', { campaign_id: id }, 30000);
+    if (j.ok) done++;
+  }
+  MKT_SEL.clear();
+  await mktLoadCampaigns();
+  toast(done ? 'Copied ' + done + ' campaign' + (done === 1 ? '' : 's') + '.' : 'Nothing could be copied.', done ? 'ok' : 'err');
+}
+async function mktBulkStop(){
+  const rows = (MKT_LAST_GROUPED || []).filter(r => MKT_SEL.has(r.id));
+  // Each selected row may stand for more than one campaign.
+  const ids = [...new Set(rows.flatMap(r => r.member_ids || [r.id]).concat([...MKT_SEL]))];
+  if (!ids.length) return;
+  if (!confirm('Delete ' + ids.length + ' campaign' + (ids.length === 1 ? '' : 's') + '?\n\nAnything already published stays where it is.')) return;
+  for (const id of ids) await call('cancel_wizard_campaign', { campaign_id: id, remove: true }, 30000);
+  MKT_SEL.clear();
+  await mktLoadCampaigns();
+  const left = (MKT_LAST_CAMPAIGNS || []).filter(x => ids.includes(x.id)).length;
+  toast(left ? left + ' could not be deleted.' : 'Deleted.', left ? 'err' : 'ok');
 }
 async function mktLoadApprovals(){
   const box = el('mktApprovals'); if (!box) return;
@@ -9696,15 +10672,34 @@ async function mktLoadApprovals(){
           ? (isVideo ? '<video src="' + esc(url) + '" style="width:54px;height:54px;object-fit:cover;border-radius:8px;" muted></video>'
                      : '<img src="' + esc(url) + '" style="width:54px;height:54px;object-fit:cover;border-radius:8px;">')
           : '';
-        return '<div class="list-row"><div style="display:flex;gap:10px;align-items:center;">' + preview +
-          '<div><b>' + esc(a.title || a.type) + '</b>' +
-          (a.detail ? '<div class="sub">' + esc(shortPreview(String(a.detail), 90)) + '</div>' : '') + '</div></div>' +
-          '<div class="sw-actions">' +
-          (url ? '<a class="btn btn-ghost btn-sm" href="' + esc(url) + '" target="_blank" rel="noopener">Open</a>' : '') +
-          '<button class="btn btn-s btn-sm" onclick="go(\'promotions\')">Review</button></div></div>';
+        // Same three-column shape as the campaign rows: what it is,
+        // then the controls. Only the title is bold.
+        return '<div class="list-row appr-row">' +
+          '<div class="appr-main">' + preview +
+            '<span class="appr-text"><b>' + esc(a.title || a.type) + '</b>' +
+            (a.detail ? '<span class="sub">' + esc(shortPreview(String(a.detail), 90)) + '</span>' : '') + '</span>' +
+          '</div>' +
+          '<span class="appr-actions">' +
+            (url ? '<a class="btn btn-ghost btn-sm" href="' + esc(url) + '" target="_blank" rel="noopener">Open</a>' : '') +
+            '<button class="btn btn-s btn-sm" onclick="go(\'promotions\')">Review</button>' +
+            // The same quiet icon as the campaign rows, so "remove" never
+            // competes with "review" for attention.
+            '<button class="icon-btn danger" title="Remove this from the list" aria-label="Remove this from the list" ' +
+              'onclick="mktDismissApproval(\'' + esc(a.type) + '\',\'' + esc(a.id) + '\')">' +
+              '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>' +
+          '</span></div>';
       }).join('') + '</div>'
     : '<p class="note">Nothing waiting on you right now.</p>') +
     (waiting ? '<p class="note">' + waiting + ' customer message' + (waiting > 1 ? 's' : '') + ' also need a reply \u2014 <a href="#" onclick="event.preventDefault();go(\'zenwhatsapp\')" style="color:var(--accent);">open the inbox</a>.</p>' : '');
+}
+// Clear something that should not be here - a post that was already
+// dealt with elsewhere, or one the owner simply does not want.
+async function mktDismissApproval(type, id){
+  if (!confirm('Remove this from the list?\n\nIt will not be published, and nothing else is affected.')) return;
+  const j = await call('delete_approval_item', { type, id }, 20000);
+  if (!j.ok){ toast(j.error, 'err'); return; }
+  toast('Removed.', 'ok');
+  mktLoadApprovals();
 }
 async function mktLoadResults(){
   const box = el('mktResults'); if (!box) return;
@@ -10019,33 +11014,16 @@ const magentState = { step:0, goal:{}, personas:[], selectedPersonas:[] };
 // wizard run would have built up to Step 3, then jumps straight to
 // whichever concept still needs work rather than making the person
 // redo Goal/Persona/Creative Mix for work that's already done.
+// There is one campaign flow. Resuming a campaign opens the same
+// workspace a new goal does - the old step-by-step wizard is no longer
+// reachable, so the experience cannot differ depending on how you
+// arrived.
 async function magentResumeCampaign(campaignId){
-  el('p-marketing').innerHTML = '<div class="loading-block"><span class="spin"></span>Loading your campaign\u2026</div>';
-  const j = await call('get_wizard_campaign', { campaign_id: campaignId });
-  if (!j.ok){ toast(j.error, 'err'); flow(marketing); return; }
-  magentState.campaignId = campaignId;
-  magentState.goal = j.campaign.goal || {};
-  magentState.personas = j.campaign.personas || [];
-  magentState.selectedPersonas = (j.campaign.personas || []).map((_,i)=>i);
-  magentState.conceptQueue = j.concepts.map(c => c.concept);
-  magentState.selectedConcepts = j.concepts.map((_,i)=>i);
-
-  // Prefer resuming an ungenerated concept; if everything's generated
-  // but something still needs publishing, resume there instead.
-  const nextPending = j.concepts.findIndex(c => c.status === 'pending');
-  const nextUnpublished = j.concepts.findIndex(c => c.status === 'generated');
-  if (nextPending > -1){
-    magentState.conceptIndex = nextPending;
-    flow(()=>magentStepVisualSource());
-  } else if (nextUnpublished > -1){
-    magentState.conceptIndex = nextUnpublished;
-    const c = j.concepts[nextUnpublished];
-    magentState.pendingBriefId = c.creative_brief_id;
-    flow(()=>magentStepPublish(c.generation_id, (magentState.conceptQueue[nextUnpublished].message||'Post')));
-  } else {
-    toast('Everything in this campaign is already published.', 'ok');
-    flow(marketing);
-  }
+  // Where this opens depends on the campaign's state, decided once it
+  // is loaded: the steps while it is still being planned, the work
+  // once it has been approved.
+  CWG.step = 0; CWG.ideas = null; CWG.advice = {}; CWG.openedFresh = true;
+  flow(() => campaignWorkspace(campaignId));
 }
 
 function magentShell(bodyHtml, actionsHtml){
@@ -11356,7 +12334,9 @@ async function trendRecreationGenerateImage(){
   if (!vidJ.ok){ el('p-flow').innerHTML = llShell(errBlock(vidJ.error, ''), '<button class="btn btn-ghost" onclick="trendRecreationFlow()">Back</button><span></span>', 'Recreate a Trend'); return; }
   talkingVideoPoll(vidJ.prediction_id, vidJ.generation_id, b.concept_summary || '', 'trendRecreationFlow', 'Recreate a Trend', 0);
 }
-function marketingAgentWizard(){ magentState.step = 0; magentStepGoal(); }
+// The old guided agent is retired: this opens the campaign flow every
+// other entry uses, so there is only one route to a campaign.
+function marketingAgentWizard(){ go('marketing'); setTimeout(() => { const f = el('mktGoal'); if (f) f.focus(); }, 300); }
 
 // Step 1: Goal - also the single real entry point for existing
 // campaigns now. Previously this lived as a separate "Campaigns" tile
@@ -11364,6 +12344,14 @@ function marketingAgentWizard(){ magentState.step = 0; magentStepGoal(); }
 // itself is where a person actually decides "continue something" vs
 // "start fresh" - one real choice, not two places to look.
 async function magentStepGoal(){
+  // The old step-by-step wizard is retired. Anything that still reaches
+  // it is a bug, so it hands over to the one campaign flow rather than
+  // showing a second product.
+  if (!window.__ZEN_ALLOW_LEGACY_WIZARD) {
+    const id = (typeof magentState === 'object' && magentState) ? magentState.campaignId : null;
+    if (id) { magentResumeCampaign(id); } else { go('marketing'); }
+    return;
+  }
   magentState.step = 0;
   el('p-flow').innerHTML = magentShell('<div class="loading-block"><span class="spin"></span></div>', '');
   const cj = await call('list_wizard_campaigns', {});
@@ -11411,6 +12399,14 @@ function magentGoalNext(){
 
 // Step 2: Audience/Persona - library-first, "see more", custom creation
 async function magentStepPersona(forceRegenerate){
+  // The old step-by-step wizard is retired. Anything that still reaches
+  // it is a bug, so it hands over to the one campaign flow rather than
+  // showing a second product.
+  if (!window.__ZEN_ALLOW_LEGACY_WIZARD) {
+    const id = (typeof magentState === 'object' && magentState) ? magentState.campaignId : null;
+    if (id) { magentResumeCampaign(id); } else { go('marketing'); }
+    return;
+  }
   magentState.step = 1;
   el('p-flow').innerHTML = magentShell('<div class="loading-block"><span class="spin"></span>Checking what already fits, before generating anything new\u2026</div>', '');
   const j = await call('get_persona_recommendations', forceRegenerate ? { force_regenerate: true } : {}, 45000);
@@ -11480,6 +12476,14 @@ function magentPersonaNext(){
 // Step 3: Creative Mix - real, calls recommend_creative_mix with the
 // selected personas. Format Mix Recommender per the architecture.
 async function magentStepCreativeMix(forceRegenerate){
+  // The old step-by-step wizard is retired. Anything that still reaches
+  // it is a bug, so it hands over to the one campaign flow rather than
+  // showing a second product.
+  if (!window.__ZEN_ALLOW_LEGACY_WIZARD) {
+    const id = (typeof magentState === 'object' && magentState) ? magentState.campaignId : null;
+    if (id) { magentResumeCampaign(id); } else { go('marketing'); }
+    return;
+  }
   magentState.step = 2;
   el('p-flow').innerHTML = magentShell('<div class="loading-block"><span class="spin"></span>Building a content mix around your selected persona(s)\u2026</div>', '');
   const selected = magentState.selectedPersonas.map(i => magentState.personas[i]);
@@ -11580,6 +12584,14 @@ async function magentCreativeMixNext(){
 // infrastructure. "Create new avatar" is NOT built - said plainly, not
 // silently offered as if it works.
 async function magentStepVisualSource(){
+  // The old step-by-step wizard is retired. Anything that still reaches
+  // it is a bug, so it hands over to the one campaign flow rather than
+  // showing a second product.
+  if (!window.__ZEN_ALLOW_LEGACY_WIZARD) {
+    const id = (typeof magentState === 'object' && magentState) ? magentState.campaignId : null;
+    if (id) { magentResumeCampaign(id); } else { go('marketing'); }
+    return;
+  }
   magentState.step = 3;
   magentState.selectedAvatarIds = [];
   magentState.includeSalonPhoto = false;
@@ -11742,6 +12754,14 @@ async function magentUploadAvatar(){
 // Genuinely visible for now, per direct instruction - a real
 // transparency step, not a placeholder pretending to be one.
 function magentStepGenerate(){
+  // The old step-by-step wizard is retired. Anything that still reaches
+  // it is a bug, so it hands over to the one campaign flow rather than
+  // showing a second product.
+  if (!window.__ZEN_ALLOW_LEGACY_WIZARD) {
+    const id = (typeof magentState === 'object' && magentState) ? magentState.campaignId : null;
+    if (id) { magentResumeCampaign(id); } else { go('marketing'); }
+    return;
+  }
   magentState.step = 4;
   const concept = magentState.conceptQueue[magentState.conceptIndex];
   el('p-flow').innerHTML = magentShell(
@@ -12181,6 +13201,14 @@ async function magentRunCarouselGeneration(concept, persona){
 // content_item -> publish_content_plan_item_now / schedule_content_
 // plan_item), not a new publish mechanism built for this wizard.
 async function magentStepPublish(generationId, title){
+  // The old step-by-step wizard is retired. Anything that still reaches
+  // it is a bug, so it hands over to the one campaign flow rather than
+  // showing a second product.
+  if (!window.__ZEN_ALLOW_LEGACY_WIZARD) {
+    const id = (typeof magentState === 'object' && magentState) ? magentState.campaignId : null;
+    if (id) { magentResumeCampaign(id); } else { go('marketing'); }
+    return;
+  }
   magentState.step = 5;
   const concept = magentState.conceptQueue[magentState.conceptIndex];
   // Real fix: the single-image path above already saves this - only
@@ -12253,6 +13281,14 @@ function magentPublishSuccess(mode){
 // faked as working. magentStepGoal()/magentStepPersona() stay reachable
 // via Back so nothing here is a dead end.
 function magentStepPlaceholder(stepIndex, stepName, phase, description){
+  // The old step-by-step wizard is retired. Anything that still reaches
+  // it is a bug, so it hands over to the one campaign flow rather than
+  // showing a second product.
+  if (!window.__ZEN_ALLOW_LEGACY_WIZARD) {
+    const id = (typeof magentState === 'object' && magentState) ? magentState.campaignId : null;
+    if (id) { magentResumeCampaign(id); } else { go('marketing'); }
+    return;
+  }
   magentState.step = stepIndex;
   el('p-flow').innerHTML = magentShell(
     zen(stepName+' is built in '+phase+', not this one \u2014 said plainly rather than shown as if it already works. '+description) +
@@ -15168,4 +16204,43 @@ window.ZEN_MEDIA = {
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();
 </script>
+
+<style id="zenCompact">
+/* Concept cards, Zeely-style: the example is the card, the words are a
+   caption. Long descriptions only appear once a concept is chosen. */
+.sw-concept .sw-thumb{aspect-ratio:4/5;border-radius:12px;overflow:hidden;}
+.sw-concept .sw-copy{padding:8px 2px 2px!important;}
+.sw-concept .sw-short{font-size:13.5px!important;font-weight:500!important;display:block;line-height:1.25;}
+.sw-concept .sw-full{font-size:11.5px!important;color:var(--muted);display:block;margin-top:1px;}
+.sw-concept .sw-caption{display:none!important;}
+.sw-concept .sw-start-note,.sw-concept .sw-meta-row{display:none!important;}
+.sw-concept p{display:none!important;}
+/* One primary voice, in the brand green. */
+.main .btn-p,.main .is-primary{background:#175e52!important;color:#fff!important;border:0!important;}
+.main .btn-p:hover,.main .is-primary:hover{background:#12594d!important;}
+
+/* Last word on density. Earlier passes left three competing sets of
+   padding on the same elements; this one runs last so the workspace
+   has a single answer. */
+.zen-command-hero{padding:16px 20px 14px!important;}
+.zen-command-hero h1,.zen-command-copy h1{font-size:22px!important;margin:2px 0 6px!important;line-height:1.25!important;}
+.zen-command-hero p{margin:0 0 10px!important;font-size:13px!important;}
+.zen-command-orb{width:44px!important;height:44px!important;}
+.zen-command-box textarea{min-height:56px!important;}
+.main{padding:18px 26px 220px!important;}
+.main .sechead{margin:16px 0 8px!important;}
+.main .card,.main .task,.main .sw-panel,.main .zc-card,.main .mini{padding:14px 16px!important;}
+.main .grid3,.main .zen-signal-grid,.main .campaign-board,.main .zen-home-grid{gap:12px!important;}
+.main .campaign-board>section{padding:16px 16px 14px!important;}
+.main .list-row{padding:11px 14px!important;}
+.main section{margin-bottom:14px!important;}
+.main .zen-strip{padding:10px 14px!important;margin-bottom:12px!important;}
+/* Ask Zen is the assistant, not another action: brand green wherever it
+   appears, so it reads as the same thing every time. */
+#zenChatOpen,.ux-workspace-tag,button.ux-workspace-tag{background:#175e52!important;color:#fff!important;border:0!important;
+  font-weight:500!important;font-size:12.5px!important;padding:7px 13px!important;border-radius:999px!important;}
+#zenChatOpen:hover,.ux-workspace-tag:hover{background:#12594d!important;}
+.zen-command-box button{background:#175e52!important;color:#fff!important;border:0!important;}
+.zen-command-box button:hover{background:#12594d!important;}
+</style>
 </body></html>
