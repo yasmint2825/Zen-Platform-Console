@@ -365,6 +365,11 @@ dialog.viewer::backdrop{background:rgba(22,33,29,.55)}
 .vinfo .capt{white-space:pre-line;background:#F6F7F4;border-radius:12px;padding:12px 14px;font-size:15px}
 .vclose{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.9);border:0;width:40px;height:40px;border-radius:50%;font-size:20px}
 .vwhen{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.st.made{background:var(--accent);color:#fff}
+.st.uploaded{background:#ECEEEA;color:var(--ink)}
+.st.reference{background:#EEE6F4;color:#5B3A78}
+#galWhen{margin-bottom:6px}
+.flabel{font-size:13px;font-weight:600;color:var(--muted);min-width:44px;align-self:center}
 .vdel{border-top:1px solid var(--line);padding-top:12px;margin-top:4px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .btn-del{background:transparent;color:var(--waste);border:1px solid #E6C2B8}
 .btn-del.armed{background:var(--waste);color:#fff;border-color:var(--waste)}
@@ -726,7 +731,7 @@ details.prompt pre{white-space:pre-wrap;background:#F7F8F5;border-radius:10px;pa
     <div class="mark">Zen</div>
     <button class="nav" data-go="home" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4v-5H9v5H5a1 1 0 0 1-1-1z"/></svg>Home</button>
     <button class="nav" data-go="whatsapp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-11.8 7L4 20l1-4.1A8 8 0 1 1 20 12Z"/></svg>WhatsApp</button>
-    <button class="nav" data-go="gallery"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="m4 16 4.5-4.5 4 4 3-3L20 16"/><circle cx="15.5" cy="9" r="1.5"/></svg>Gallery</button>
+    <button class="nav" data-go="gallery"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="m4 16 4.5-4.5 4 4 3-3L20 16"/><circle cx="15.5" cy="9" r="1.5"/></svg>Library</button>
     <button class="nav" data-go="marketing"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14V10l12-5v14L4 14Z"/><path d="M8 15v3.5a1.5 1.5 0 0 0 3 0V16"/><path d="M19 9.5v5"/></svg>Marketing</button>
     <button class="nav" data-go="brand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="9" cy="10" r="1.2"/><circle cx="14.5" cy="9" r="1.2"/><circle cx="15.5" cy="14" r="1.2"/><path d="M11 16.5a2 2 0 0 1-2-2"/></svg>Brand</button>
     <button class="acct" type="button" id="acctBtn" data-go="settings"><b id="railTenant"></b><span>Settings</span></button>
@@ -791,11 +796,12 @@ details.prompt pre{white-space:pre-wrap;background:#F7F8F5;border-radius:10px;pa
     <!-- Gallery -->
     <section id="gallery" class="page" hidden>
       <div class="page-top">
-        <h1>Gallery</h1>
-        <label class="sr" for="galSearch">Search your gallery</label>
-        <input id="galSearch" class="search" type="search" placeholder="Search by title or caption">
+        <h1>Library</h1>
+        <label class="sr" for="galSearch">Search your library</label>
+        <input id="galSearch" class="search" type="search" placeholder="Search titles, captions and prompts">
       </div>
-      <div class="filters" id="galFilters"></div>
+      <div class="filters" id="galWhen" aria-label="When"></div>
+      <div class="filters" id="galFilters" aria-label="What"></div>
       <div id="galBody"></div>
       <dialog class="viewer" id="viewer" aria-label="Gallery item"></dialog>
     </section>
@@ -1387,44 +1393,103 @@ async function loadWaDetail(){
 // =====================================================================
 // Gallery
 // =====================================================================
-const GAL = { items: null, filter: 'all', q: '' };
-const GAL_STATUS = { approved:'Ready to post', scheduled:'Scheduled', published:'Posted', creative_ready:'Waiting for review', planned:'Planned', draft:'Draft' };
+const GAL = { items: null, filter: 'all', when: 'all', q: '' };
+const GAL_STATUS = { approved:'Ready to post', scheduled:'Scheduled', published:'Posted', creative_ready:'Waiting for review', planned:'Planned', draft:'Draft',
+  made:'Made in Create', uploaded:'Uploaded', reference:'Reference' };
+// What: everything in one place, old ZenPro content and images from Create.
 const GAL_FILTERS = [
   ['all', 'All', () => true],
-  ['image', 'Images', it => it.kind === 'image'],
-  ['video', 'Videos', it => it.kind === 'video'],
+  ['made', 'Made in Create', it => it.status === 'made'],
+  ['uploaded', 'Uploaded', it => it.status === 'uploaded'],
+  ['reference', 'References', it => it.status === 'reference'],
   ['ready', 'Ready to post', it => it.status === 'approved'],
   ['scheduled', 'Scheduled', it => it.status === 'scheduled'],
   ['posted', 'Posted', it => it.status === 'published'],
   ['draft', 'Drafts', it => it.status === 'draft' || it.status === 'creative_ready' || it.status === 'planned'],
+  ['video', 'Videos', it => it.kind === 'video'],
+];
+// When: by the day it was made, in your own time zone.
+const startOfDay = d => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
+const GAL_WHEN = [
+  ['all', 'All time', () => true],
+  ['today', 'Today', it => it.created_at && new Date(it.created_at) >= startOfDay(new Date())],
+  ['week', 'Last 7 days', it => it.created_at && new Date(it.created_at) >= startOfDay(Date.now() - 6 * 864e5)],
+  ['month', 'This month', it => { if (!it.created_at) return false; const d = new Date(it.created_at), n = new Date(); return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth(); }],
 ];
 el('galSearch').addEventListener('input', e => { GAL.q = e.target.value.trim().toLowerCase(); renderGallery(); });
 
 async function loadGallery(){
-  el('galBody').innerHTML = '<div class="empty">Loading everything Zen has made…</div>';
-  const j = await zen('gallery_list', {}, 30000);
-  if (!j.ok){ el('galBody').innerHTML = '<div class="empty">' + esc(j.error) + '</div>'; return; }
-  GAL.items = j.items;
+  el('galBody').innerHTML = '<div class="empty">Loading your library\u2026</div>';
+  const [old, made] = await Promise.all([zen('gallery_list', {}, 30000), studio('list_assets', { tenant_id: tenant, limit: 200 }, 30000)]);
+  if (!old.ok && !made.ok){ el('galBody').innerHTML = '<div class="empty">' + esc(old.error) + '</div>'; return; }
+  const fromCreate = (made.ok ? made.assets : []).map(a => ({
+    source: 'studio', id: a.id, kind: 'image', url: a.url, created_at: a.created_at,
+    status: a.label === 'reference' ? 'reference' : a.kind === 'generated' ? 'made' : 'uploaded',
+    title: a.brief || (a.kind === 'generated' ? 'Made in Create' : 'Uploaded image'), caption: null,
+    prompt: a.prompt || null, prompt_by: a.prompt_by || null, model_label: a.model_label || null, size_key: a.size_key || null, credits: a.credits,
+    width: a.width, height: a.height, asset: a,
+  }));
+  GAL.items = [...fromCreate, ...(old.ok ? old.items : [])].sort((x, y) => String(y.created_at || '').localeCompare(String(x.created_at || '')));
+  GAL.note = !made.ok ? 'Images from Create couldn\u2019t be loaded just now.' : !old.ok ? 'Older ZenPro content couldn\u2019t be loaded just now.' : '';
   renderGallery();
 }
 function renderGallery(){
   if (!GAL.items) return;
-  const counts = Object.fromEntries(GAL_FILTERS.map(([k,,fn]) => [k, GAL.items.filter(fn).length]));
-  el('galFilters').innerHTML = GAL_FILTERS.filter(([k]) => k === 'all' || counts[k]).map(([k, label]) =>
+  const whenFn = (GAL_WHEN.find(w => w[0] === GAL.when) || GAL_WHEN[0])[2];
+  const inWhen = GAL.items.filter(whenFn);
+  el('galWhen').innerHTML = '<span class="flabel">When</span>' + GAL_WHEN.map(([k, label, fn]) =>
+    '<button class="filter" type="button" data-gw="' + k + '" aria-pressed="' + (GAL.when === k) + '">' + label + ' ' + GAL.items.filter(fn).length + '</button>').join('');
+  el('galWhen').querySelectorAll('[data-gw]').forEach(b => b.onclick = () => { GAL.when = b.dataset.gw; renderGallery(); });
+  const counts = Object.fromEntries(GAL_FILTERS.map(([k,,fn]) => [k, inWhen.filter(fn).length]));
+  el('galFilters').innerHTML = '<span class="flabel">Show</span>' + GAL_FILTERS.filter(([k]) => k === 'all' || counts[k] || GAL.filter === k).map(([k, label]) =>
     '<button class="filter" type="button" data-gf="' + k + '" aria-pressed="' + (GAL.filter === k) + '">' + label + ' ' + counts[k] + '</button>').join('');
   el('galFilters').querySelectorAll('[data-gf]').forEach(b => b.onclick = () => { GAL.filter = b.dataset.gf; renderGallery(); });
   const fn = (GAL_FILTERS.find(f => f[0] === GAL.filter) || GAL_FILTERS[0])[2];
-  const list = GAL.items.filter(fn).filter(it => !GAL.q || (it.title + ' ' + (it.caption || '')).toLowerCase().includes(GAL.q));
-  if (!GAL.items.length){ el('galBody').innerHTML = '<div class="empty">Nothing here yet. Images and videos Zen makes will appear here automatically.</div>'; return; }
-  if (!list.length){ el('galBody').innerHTML = '<div class="empty">Nothing matches that. Try another filter or search.</div>'; return; }
-  el('galBody').innerHTML = '<div class="grid">' + list.map(it =>
+  const list = inWhen.filter(fn).filter(it => !GAL.q || (it.title + ' ' + (it.caption || '') + ' ' + (it.prompt || '')).toLowerCase().includes(GAL.q));
+  const note = GAL.note ? '<p class="note">' + esc(GAL.note) + '</p>' : '';
+  if (!GAL.items.length){ el('galBody').innerHTML = note + '<div class="empty">Nothing here yet. Images you make in Create, and content from ZenPro, appear here automatically.</div>'; return; }
+  if (!list.length){ el('galBody').innerHTML = note + '<div class="empty">Nothing matches that. Try another filter or search.</div>'; return; }
+  el('galBody').innerHTML = note + '<div class="grid">' + list.map(it =>
     '<button class="tile" type="button" data-gi="' + esc(it.source + ':' + it.id) + '"><div class="media">' +
       (it.kind === 'video' ? '<video src="' + esc(it.url) + '#t=0.5" muted preload="metadata" playsinline></video><span class="play" aria-hidden="true">\u25B6</span>'
                            : '<img src="' + esc(it.url) + '" alt="" loading="lazy">') +
       '<span class="st ' + esc(it.status) + '">' + esc(GAL_STATUS[it.status] || it.status) + '</span></div>' +
     '<div class="cap"><b>' + esc(it.title) + '</b><span>' + esc(it.created_at ? new Date(it.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short' }) : '') +
-      (it.slides ? ', ' + it.slides + ' slides' : '') + '</span></div></button>').join('') + '</div>';
-  el('galBody').querySelectorAll('[data-gi]').forEach(b => b.onclick = () => openViewer(b.dataset.gi));
+      (it.model_label ? ', ' + esc(it.model_label) : '') + (it.slides ? ', ' + it.slides + ' slides' : '') + '</span></div></button>').join('') + '</div>';
+  el('galBody').querySelectorAll('[data-gi]').forEach(b => b.onclick = () => b.dataset.gi.startsWith('studio:') ? openStudioViewer(b.dataset.gi.slice(7)) : openViewer(b.dataset.gi));
+}
+
+// An image from Create: what made it, and what you can do with it next.
+function openStudioViewer(id){
+  const it = GAL.items.find(x => x.source === 'studio' && x.id === id); if (!it) return;
+  const v = el('viewer');
+  const used = [it.model_label, it.size_key ? it.size_key.charAt(0).toUpperCase() + it.size_key.slice(1) : '', it.credits != null ? it.credits + ' credits' : ''].filter(Boolean).join(' \u00B7 ');
+  const isRef = it.status === 'reference';
+  v.innerHTML = '<button class="vclose" type="button" aria-label="Close" id="vClose">\u00D7</button><div class="vgrid"><div class="vmedia"><img src="' + esc(it.url) + '" alt="' + esc(it.title) + '"></div>' +
+    '<div class="vinfo"><span class="badge" style="align-self:flex-start;margin:0">' + esc(GAL_STATUS[it.status]) + '</span><h2>' + esc(it.title) + '</h2>' +
+    '<div class="note">' + esc(it.created_at ? new Date(it.created_at).toLocaleString('en-GB', { day:'numeric', month:'long', year:'numeric', hour:'numeric', minute:'2-digit' }) : '') +
+      (used ? '<br>' + esc(used) : '') + (it.width ? '<br>' + it.width + ' \u00D7 ' + it.height + ' px' : '') + '</div>' +
+    (it.prompt ? '<details class="prompt" style="padding:0"><summary>Prompt' + (it.prompt_by ? ' <i>written by ' + esc(it.prompt_by) + '</i>' : '') + '</summary><pre>' + esc(it.prompt) + '</pre></details>' : '') +
+    (isRef ? '<p class="note">A reference is inspiration only. It shapes new images and is never posted as it is.</p>' : '') +
+    '<div class="actions">' + (isRef ? '' : '<button class="btn btn-p" type="button" id="svUse">Use in Create</button>') +
+      '<button class="btn btn-s" type="button" id="svInsp">Use as inspiration</button>' +
+      '<a class="btn btn-q" href="' + esc(it.url) + '" target="_blank" rel="noopener">Full size</a></div>' +
+    '<button class="btn btn-q" type="button" id="svLabel" style="align-self:flex-start">' + (isRef ? 'Make it a creative (mine to post)' : 'Make it a reference (inspiration only)') + '</button>' +
+    '<p class="note" id="svNote" role="status"></p>' +
+    '<p class="note vdel">Posting images made in Create to Instagram comes next.</p></div></div>';
+  v.showModal();
+  el('vClose').onclick = () => v.close(); v.onclick = e => { if (e.target === v) v.close(); };
+  if (el('svUse')) el('svUse').onclick = () => { v.close(); CR.image = it.asset; MKT.pending = 'studio'; go('marketing'); };
+  el('svInsp').onclick = () => { v.close(); CR.insp = { type:'asset', asset_id: it.id, name: it.title.slice(0, 40), url: it.url }; MKT.pending = 'studio'; go('marketing'); };
+  el('svLabel').onclick = async () => {
+    const label = isRef ? 'creative' : 'reference';
+    el('svLabel').disabled = true;
+    const j = await studio('set_label', { tenant_id: tenant, asset_id: it.id, label }, 20000);
+    el('svLabel').disabled = false;
+    if (!j.ok){ el('svNote').textContent = j.error; return; }
+    it.status = label === 'reference' ? 'reference' : it.asset.kind === 'generated' ? 'made' : 'uploaded'; it.asset.label = label;
+    v.close(); renderGallery();
+  };
 }
 
 function openViewer(key){
@@ -1945,7 +2010,7 @@ const QUICK = [
 ];
 const GENERAL = 'General / Cross Industry';
 const emptyFilters = () => ({ goals: [], industries: [], businessTypes: [], subjectTypes: [], serviceTypes: [], styles: [], formats: [] });
-const INS = { concepts: null, vocab: null, f: emptyFilters(), bundle: null, trending: false, keywords: [], query: '', summary: '', pick: false };
+const INS = { concepts: null, vocab: null, f: emptyFilters(), bundle: null, trending: false, keywords: [], query: '', summary: '', pick: false, quick: null };
 
 async function inspView(opts){
   INS.pick = !!(opts && opts.pick);
@@ -2005,14 +2070,20 @@ function insScore(c){
 function insRender(){
   // quick chips
   el('insQuick').innerHTML = QUICK.map(([label, q], i) => {
-    const on = q.trending ? INS.trending : q.bundle ? INS.bundle === q.bundle : INS.f[Object.keys(q)[0]].includes(Object.values(q)[0]);
+    const k0 = Object.keys(q)[0];
+    const on = INS.quick === i && (q.trending ? INS.trending : q.bundle ? INS.bundle === q.bundle : INS.f[k0].includes(q[k0]));
     return '<button class="filter" type="button" data-q="' + i + '" aria-pressed="' + on + '">' + esc(label) + '</button>';
   }).join('');
+  // Quick chips are one at a time: tapping another switches to it; tapping the same one turns it off.
   el('insQuick').querySelectorAll('[data-q]').forEach(b => b.onclick = () => {
-    const q = QUICK[+b.dataset.q][1];
-    if (q.trending) INS.trending = !INS.trending;
-    else if (q.bundle) INS.bundle = INS.bundle === q.bundle ? null : q.bundle;
-    else { const k = Object.keys(q)[0], v = q[k]; INS.f[k] = INS.f[k].includes(v) ? INS.f[k].filter(x => x !== v) : [...INS.f[k], v]; }
+    const i = +b.dataset.q, undo = q => { if (!q) return; if (q.trending) INS.trending = false; else if (q.bundle) INS.bundle = null; else { const k = Object.keys(q)[0]; INS.f[k] = INS.f[k].filter(x => x !== q[k]); } };
+    const prev = INS.quick != null ? QUICK[INS.quick][1] : null;
+    undo(prev);
+    if (INS.quick === i){ INS.quick = null; }
+    else {
+      const q = QUICK[i][1]; INS.quick = i;
+      if (q.trending) INS.trending = true; else if (q.bundle) INS.bundle = q.bundle; else { const k = Object.keys(q)[0]; INS.f[k] = [q[k]]; }
+    }
     INS.summary = ''; insRender();
   });
   // filter bar: the type group follows the business type
@@ -2041,7 +2112,7 @@ function insRender(){
   insResults();
 }
 
-function insClearAll(){ INS.f = emptyFilters(); INS.bundle = null; INS.trending = false; INS.keywords = []; INS.summary = ''; INS.query = ''; if (el('insQ')) el('insQ').value = ''; insRender(); }
+function insClearAll(){ INS.quick = null; INS.f = emptyFilters(); INS.bundle = null; INS.trending = false; INS.keywords = []; INS.summary = ''; INS.query = ''; if (el('insQ')) el('insQ').value = ''; insRender(); }
 
 function insTags(c){
   const ind = (c.industries || []).find(x => x !== GENERAL) || (c.subjectTypes || [])[0];
@@ -2078,7 +2149,7 @@ async function insAsk(){
   INS.query = text;
   el('insBody').innerHTML = '<div class="thinking"><span class="pulse"></span><span>Understanding what you need</span></div>';
   const j = await studio('inspiration_interpret', { text }, 45000);
-  INS.f = emptyFilters(); INS.bundle = null; INS.trending = false;
+  INS.f = emptyFilters(); INS.bundle = null; INS.trending = false; INS.quick = null;
   if (j.ok){
     for (const [k] of GROUPS) INS.f[k] = (j.filters && j.filters[k]) || [];
     INS.keywords = j.keywords || []; INS.summary = j.summary || '';
@@ -2092,15 +2163,19 @@ function insFilterDialog(k){
   const d = el('insFilter'), opts = (INS.vocab && INS.vocab[k]) || [];
   const count = v => INS.concepts.filter(c => insMatches(c, k) && (((c[k] || []).includes(v)) || (k === 'industries' && (c.industries || []).includes(GENERAL)))).length;
   d.innerHTML = '<button class="vclose" type="button" aria-label="Close" id="fx">\u00D7</button><div class="pk"><h2>' + GROUP_LABEL[k] + '</h2>' +
-    '<p class="note" style="margin:4px 0 12px">Pick one or more. Ideas matching <b>any</b> of them are shown.' + (k === 'industries' ? ' Ideas that suit every industry always count.' : '') + '</p>' +
-    '<div class="flist">' + opts.map(v => { const n = count(v); return '<label class="fopt' + (n ? '' : ' none') + '"><input type="checkbox" value="' + esc(v) + '"' + (INS.f[k].includes(v) ? ' checked' : '') + '> <span>' + esc(v) + '</span><em>' + n + '</em></label>'; }).join('') + '</div>' +
-    '<div class="actions"><button class="btn btn-p" type="button" id="fDone">Show ideas</button><button class="btn btn-q" type="button" id="fNone">Clear ' + GROUP_LABEL[k].toLowerCase() + '</button></div></div>';
+    '<p class="note" style="margin:4px 0 12px">Pick one. Choosing another replaces it.' + (k === 'industries' ? ' Ideas that suit every industry are included.' : '') + '</p>' +
+    '<div class="flist"><label class="fopt"><input type="radio" name="fopt" value=""' + (INS.f[k].length ? '' : ' checked') + '> <span>Any ' + GROUP_LABEL[k].toLowerCase() + '</span><em></em></label>' +
+      opts.map(v => { const n = count(v); return '<label class="fopt' + (n ? '' : ' none') + '"><input type="radio" name="fopt" value="' + esc(v) + '"' + (INS.f[k][0] === v ? ' checked' : '') + '> <span>' + esc(v) + '</span><em>' + n + '</em></label>'; }).join('') + '</div>' +
+    '<div class="actions"><button class="btn btn-p" type="button" id="fDone">Show ideas</button></div></div>';
   d.showModal();
   const close = () => d.close();
   el('fx').onclick = close; d.onclick = e => { if (e.target === d) close(); };
-  el('fNone').onclick = () => { d.querySelectorAll('input').forEach(x => x.checked = false); };
+  // Choosing applies straight away, like a menu; "Show ideas" also closes it.
+  d.querySelectorAll('input[type=radio]').forEach(x => x.addEventListener('change', () => el('fDone').click()));
   el('fDone').onclick = () => {
-    INS.f[k] = [...d.querySelectorAll('input:checked')].map(x => x.value);
+    const picked = (d.querySelector('input:checked') || {}).value || '';
+    INS.f[k] = picked ? [picked] : [];
+    if (INS.quick != null && Object.keys(QUICK[INS.quick][1])[0] === k) INS.quick = null;   // a quick chip on this group is replaced too
     if (k === 'businessTypes'){ if (!INS.f[k].includes('Service')) INS.f.serviceTypes = []; if (!INS.f[k].includes('Product')) INS.f.subjectTypes = []; }
     INS.summary = ''; close(); insRender();
   };
