@@ -269,6 +269,8 @@ details.why ul{margin:8px 0 0;padding-left:20px;color:var(--muted)}
 .card .crlabel{display:block;margin-top:12px}
 .card [data-aloc],.card [data-atext]{display:block;width:100%;max-width:420px;margin-top:6px}
 .chip-new{border-color:var(--accent);color:var(--accent);font-weight:600}
+.bq .pl-opts{margin-top:10px}
+@media (max-width:600px){.bf{flex-direction:column;align-items:stretch}.bf .acts{align-self:flex-start}}.bq .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.bq .row input{flex:1;min-width:200px}
 .plines{margin:16px 0 0;display:flex;flex-direction:column;gap:10px}
 .pline{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--card, #fff)}
 .pline.off{opacity:.55}
@@ -1142,7 +1144,6 @@ const ADS_QS = [
   ['Details for each ad set and its ads', 'Show detailed stats for each ad set and the ads under it'],
   ['Is my creative tired?', 'Is my ad creative tired? Check frequency and creative fatigue.'],
   ['What do these numbers mean?', 'What do impressions, reach, frequency, CTR and CPM mean for my ads?'],
-  ['Your customer picture', 'open:picture'],
 ];
 const CHIP_MENUS = { 'menu:sales': () => SALES_QS, 'menu:ads': () => ADS_QS };
 // The Sales chip opens ready questions. Each one simply asks Zen (exact sums, period and source stated).
@@ -1168,9 +1169,9 @@ function showLanding(){
   });
   loadNudges(); loadThreads();
   zen('customer_picture', { light: true }, 15000).then(j => {
-    if (!j.ok || j.done || el('picChip') || el('landing').style.display === 'none') return;
-    el('chips').insertAdjacentHTML('afterbegin', '<button class="chip chip-new" type="button" id="picChip">Teach Zen your customers \u00b7 2 min</button>');
-    el('picChip').onclick = () => openZenView('picture');
+    if (!j.ok || j.seen || el('picChip') || el('landing').style.display === 'none') return;
+    el('chips').insertAdjacentHTML('afterbegin', '<button class="chip chip-new" type="button" id="picChip">See what Zen knows about your customers</button>');
+    el('picChip').onclick = () => openZenView('brand');
   });
   setTimeout(() => el('bigInput').focus(), 50);
 }
@@ -1890,6 +1891,7 @@ function renderBrand(){
     '</div></div>' +
     (b.gaps.length ? '<div class="gaps"><b>Fill these in and Zen gets better</b><ul>' + b.gaps.map(g => '<li>' + esc(g) + '</li>').join('') + '</ul></div>' : '') +
 
+    '<div id="briefSec"></div>' +
     '<div class="sec"><div class="sec-head"><div><h2>What Zen tells customers</h2><p>WhatsApp drafts and automatic replies quote only from these answers. Keep prices and hours current.</p></div>' +
       '<button class="btn btn-s" type="button" id="factAddBtn">Add an answer</button></div><div id="factForm"></div>' +
       '<div class="rows" id="factRows">' + (b.facts.length ? b.facts.map(factRow).join('') : '<div class="fr"><div class="txt quiet">No answers yet. Until you add some, Zen can only greet customers.</div></div>') + '</div></div>' +
@@ -1905,6 +1907,7 @@ function renderBrand(){
     (b.products.length ? '<div class="sec"><div class="sec-head"><div><h2>Products</h2></div></div><div class="prods">' + b.products.map(x =>
       '<div class="prod">' + (x.image_url ? '<img src="' + esc(x.image_url) + '" alt="" loading="lazy">' : '<img alt="">') + '<div><b>' + esc(x.name) + '</b>' + (x.price ? esc(x.price) : '') + '</div></div>').join('') + '</div></div>' : '');
 
+  loadBrief();
   el('factAddBtn').onclick = () => factForm(null);
   el('brand').querySelectorAll('[data-fedit]').forEach(x => x.onclick = () => factForm(BRAND.facts.find(f => f.id === x.dataset.fedit)));
   el('brand').querySelectorAll('[data-fdel]').forEach(x => {
@@ -1961,7 +1964,6 @@ function mktView(v){
   if (v === 'studio') return createView();
   if (v === 'inspo') return inspView({ pick: false });
   if (v === 'ig') return igPicker();
-  if (v === 'picture') return pictureView();
 }
 
 function mktHome(){
@@ -1975,7 +1977,6 @@ function mktHome(){
     tile('ig', 'ig', 'Instagram post', 'Pick something you\u2019ve made. Zen writes the caption, you approve.') +
     tile('ads', 'ads', 'Meta ads', 'What\u2019s working, what\u2019s wasting money, and what to change.', 'Checking your ads\u2026') +
     tile('guided', 'plan', 'Guided campaign', 'Tell Zen the goal. It drafts the campaign for you.') +
-    tile('picture', 'res', 'Your customers', 'What Zen knows about who your customers are. Two minutes to check it.') +
     tile('video', 'video', 'Create videos', 'Turning images into videos comes in the next step.', '', true) +
     tile('results', 'res', 'Results', 'How your WhatsApp messages and ads are doing.') +
     '</div>';
@@ -2885,120 +2886,88 @@ async function runHealthCheck(){
 }
 
 
-// =====================================================================
-// Customer picture: what Zen already knows, three quick questions, then
-// the picture and a first suggestion. Each question says why it's asked.
-// =====================================================================
-const PIC = { data: null, stage: 'facts', qi: 0, answers: {}, checks: {}, then: null, thenCtx: null, startAt: null };
-function openZenView(view, params){
-  params = params || {};
+// Links to the brief (from plan cards, Home, old "picture" links) open Brand.
+function openZenView(view){
   if (view === 'gallery'){ go('gallery'); return; }
-  if (view === 'picture'){
-    PIC.then = params.then || null;
-    try { PIC.thenCtx = params.then_context ? JSON.parse(params.then_context) : null; } catch (_) { PIC.thenCtx = null; }
-    PIC.startAt = params.start || null;
-    MKT.pending = 'picture'; go('marketing');
+  if (view === 'picture' || view === 'brand'){ go('brand'); setTimeout(() => { const b = el('brief'); if (b) b.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 600); }
+}
+
+// ---------- Brand: who you serve, and what Zen goes by ----------
+// Learned from your data first; everything here is optional and editable.
+let BRIEF = null;
+async function loadBrief(){
+  const box = el('briefSec'); if (!box) return;
+  if (!BRIEF){
+    box.innerHTML = '<div class="sec"><div class="thinking"><span class="pulse"></span><span>Reading your bookings, WhatsApp messages and ads\u2026</span></div></div>';
+    const j = await zen('customer_picture', {}, 90000);
+    if (!j.ok){ box.innerHTML = '<div class="sec"><p class="note">' + esc(j.error) + '</p></div>'; return; }
+    BRIEF = j;
+    if (!(j.answers || {}).seen_brief) zen('save_customer_picture', { answers: { seen_brief: true } }, 15000);
   }
+  renderBrief();
 }
-async function pictureView(){
-  const box = el('mkt');
-  box.innerHTML = backBtn + '<div class="pic"><div class="thinking"><span class="pulse"></span><span>Reading your bookings, WhatsApp messages and ads\u2026</span></div></div>';
-  const j = await zen('customer_picture', {}, 90000);
-  const wrap = box.querySelector('.pic'); if (!wrap) return;
-  if (!j.ok){ wrap.innerHTML = '<div class="empty">' + esc(j.error) + '</div>'; return; }
-  PIC.data = j; PIC.answers = Object.assign({}, j.answers || {}); PIC.checks = Object.assign({}, j.checks || {});
-  PIC.stage = PIC.startAt || (j.done ? 'summary' : 'facts'); PIC.qi = 0; PIC.startAt = null;
-  picRender();
+function briefSave(patch, note){
+  const n = el('briefNote'); if (n) n.textContent = 'Saving\u2026';
+  return zen('save_customer_picture', patch, 20000).then(j => {
+    if (n) n.textContent = j.ok ? (note || 'Saved. Zen uses this from now on.') : j.error;
+    return j;
+  });
 }
-const picQ = () => PIC.data.questions;
-const picVals = k => [].concat(PIC.answers[k] || []);
-function picPhrase(k){
-  const q = picQ().find(x => x.key === k); if (!q) return null;
-  const o = q.options.find(o => o.phrase && picVals(k).includes(o.label)); return o ? o.phrase : null;
-}
-function picPreview(){
-  return (picPhrase('want_more') || 'A haircut your child will actually enjoy') + (picPhrase('different') ? ', ' + picPhrase('different') : '') + '. ' + (picPhrase('tone') || 'Message us on WhatsApp to book.');
-}
-async function picSave(extra){
-  const j = await zen('save_customer_picture', Object.assign({ answers: PIC.answers, checks: PIC.checks }, extra || {}), 20000);
-  if (!j.ok){ const n = document.querySelector('.pic [data-perr]'); if (n) n.textContent = j.error; return false; }
-  return true;
-}
-function picRender(){
-  const wrap = document.querySelector('#mkt .pic'); if (!wrap || !PIC.data) return;
-  const d = PIC.data;
-  if (PIC.stage === 'facts'){
-    const facts = d.facts || [];
-    wrap.innerHTML = '<p class="pstep">Step 1 of 3 \u00b7 about 30 seconds</p><h1>Here\u2019s what Zen already knows</h1>' +
-      '<p class="pwhy"><b>Why this first:</b> so you never have to tell Zen what your own numbers already show.</p>' +
-      (facts.length ? '<div class="pfacts">' + facts.map((f, i) => {
-        const c = PIC.checks[f.key] || {};
-        return '<div class="pfact"><div class="pf-main"><div class="pf-text">' + esc(f.text) + '</div><div class="pf-detail">' + esc(f.detail) + ' <span class="pf-src">' + esc(f.source) + '</span></div>' +
-          '<div class="pl-opts"><button type="button" class="chip" data-fk="' + i + '" data-fv="right" aria-pressed="' + (c.verdict === 'right') + '">Looks right</button>' +
-          '<button type="button" class="chip" data-fk="' + i + '" data-fv="not_quite" aria-pressed="' + (c.verdict === 'not_quite') + '">Not quite</button></div>' +
-          (c.verdict === 'not_quite' ? '<label class="sr" for="pfn' + i + '">What\u2019s different?</label><input id="pfn' + i + '" class="pfnote" data-fn="' + i + '" placeholder="What\u2019s different? e.g. most are older kids" value="' + esc(c.note || '') + '">' : '') +
-          '</div></div>';
-      }).join('') + '</div>' : '<div class="empty">There isn\u2019t enough history yet for Zen to say much. It\u2019ll learn from your answers and your first ads.</div>') +
-      (d.gaps && d.gaps.length ? '<p class="note">Not enough data yet for: ' + esc(d.gaps.join(', ')) + '.</p>' : '') +
-      '<div class="actions"><button class="btn btn-p" type="button" data-pnext>Continue</button></div><p class="note" data-perr role="status"></p>';
-    wrap.querySelectorAll('[data-fk]').forEach(b => b.onclick = () => {
-      const f = facts[+b.dataset.fk]; PIC.checks[f.key] = Object.assign({}, PIC.checks[f.key] || {}, { verdict: b.dataset.fv, text: f.text, at: new Date().toISOString() });
-      picRender(); const n = wrap.querySelector('[data-fn="' + b.dataset.fk + '"]'); if (n) n.focus();
-    });
-    wrap.querySelectorAll('[data-fn]').forEach(n => n.oninput = () => { const f = facts[+n.dataset.fn]; PIC.checks[f.key].note = n.value.slice(0, 200); });
-    wrap.querySelector('[data-pnext]').onclick = async () => { if (await picSave()){ PIC.stage = 'questions'; PIC.qi = 0; picRender(); } };
-    return;
-  }
-  if (PIC.stage === 'questions'){
-    const qs = picQ(), q = qs[PIC.qi], vals = picVals(q.key);
-    const title = q.key === 'different' ? 'What makes ' + (tenantName || 'you') + ' different?' : q.title;
-    wrap.innerHTML = '<p class="pstep">Step 2 of 3</p><div class="pdots" aria-hidden="true">' + qs.map((_, i) => '<span class="' + (i <= PIC.qi ? 'on' : '') + '"></span>').join('') + '</div>' +
-      '<p class="note">Question ' + (PIC.qi + 1) + ' of ' + qs.length + (q.multi ? ' \u00b7 pick up to ' + q.max : '') + '</p><h1>' + esc(title) + '</h1>' +
-      '<div class="pl-opts pq">' + q.options.map((o, i) => '<button type="button" class="chip" data-qo="' + i + '" aria-pressed="' + vals.includes(o.label) + '">' + esc(o.label) + '</button>').join('') + '</div>' +
-      '<p class="pwhy"><b>Why Zen asks:</b> ' + esc(q.why) + '</p>' +
-      '<div class="ppreview"><small>Your ad would open</small><span data-pprev>' + esc(picPreview()) + '</span></div>' +
-      '<div class="actions">' + (PIC.qi ? '<button class="btn btn-q" type="button" data-pback>Back</button>' : '') +
-      '<button class="btn btn-p" type="button" data-pnext>' + (PIC.qi === qs.length - 1 ? 'See my customer picture' : 'Next') + '</button></div><p class="note" data-perr role="status"></p>';
-    wrap.querySelectorAll('[data-qo]').forEach(b => b.onclick = () => {
-      const label = q.options[+b.dataset.qo].label; let v = picVals(q.key);
-      if (label === 'Let Zen find out') v = v.includes(label) ? [] : [label];
-      else if (q.multi){
-        v = v.filter(x => x !== 'Let Zen find out');
-        if (!v.includes(label) && v.length >= q.max){ wrap.querySelector('[data-perr]').textContent = 'Up to ' + q.max + ': untick one first.'; return; }
-        v = v.includes(label) ? v.filter(x => x !== label) : v.concat(label);
-      }
-      else v = [label];
-      PIC.answers[q.key] = q.multi ? v : (v[0] || null); picRender();
-    });
-    const back = wrap.querySelector('[data-pback]'); if (back) back.onclick = () => { PIC.qi--; picRender(); };
-    wrap.querySelector('[data-pnext]').onclick = async () => {
-      if (!picVals(q.key).length){ wrap.querySelector('[data-perr]').textContent = 'Pick one, or choose \u201cLet Zen find out\u201d.'; return; }
-      const last = PIC.qi === qs.length - 1;
-      if (!(await picSave(last ? { done: true } : null))) return;
-      if (last){ PIC.stage = 'summary'; PIC.data.done = true; } else PIC.qi++;
-      picRender();
-    };
-    return;
-  }
-  // summary: the picture, then a first suggestion straight away
-  const facts = d.facts || [], fact = k => { const f = facts.find(f => f.key === k); if (!f) return ''; const c = PIC.checks[k] || {};
-    return f.text + (c.verdict === 'not_quite' ? (c.note ? ' You said: ' + c.note + '.' : ' (you said this isn\u2019t quite right)') : ''); };
-  const list = k => picVals(k).filter(x => x !== 'Let Zen find out');
-  const row = (label, value) => value ? '<div class="pfact"><div class="pf-main"><div class="pf-detail">' + esc(label) + '</div><div class="pf-text">' + esc(value) + '</div></div></div>' : '';
-  const sug = d.suggestion || {};
-  wrap.innerHTML = '<p class="pstep">Step 3 of 3 \u00b7 done</p><h1>Your customer picture</h1><div class="pfacts">' +
-    row('Who', [fact('ages'), fact('areas')].filter(Boolean).join(' ') || 'Zen will learn this from your bookings.') +
-    row('Who you want more of', list('want_more').join(', ') || 'Zen will find out from your first ads.') +
-    row('Why they choose you', list('different').join(', ') || 'Zen will test a few reasons and keep the winner.') +
-    row('How you sound', list('tone').join(', ') || 'Zen will match your past posts.') +
-    row('What they ask', fact('questions')) + '</div>' +
-    '<p class="note">Edit any time. It gets sharper with every campaign.</p>' +
-    '<div class="psug"><small>First suggestion</small><b>' + esc(PIC.then ? 'Back to your ad' : sug.title || '') + '</b><span>' + esc(PIC.then ? 'Zen will build the plan with what you just told it.' : sug.text || '') + '</span>' +
-    '<div class="actions"><button class="btn btn-p" type="button" data-pgo>See the plan</button><button class="btn btn-q" type="button" data-pedit>Change my answers</button></div></div>';
-  wrap.querySelector('[data-pedit]').onclick = () => { PIC.stage = 'questions'; PIC.qi = 0; picRender(); };
-  wrap.querySelector('[data-pgo]').onclick = () => {
-    const prompt = PIC.then || sug.prompt, ctx = PIC.thenCtx; PIC.then = null; PIC.thenCtx = null;
-    go('home'); if (prompt) send(prompt, ctx ? { context: ctx } : undefined);
+function renderBrief(){
+  const box = el('briefSec'); if (!box || !BRIEF) return;
+  const b = BRIEF, A = b.answers || {}, C = b.checks || {};
+  const vals = k => [].concat(A[k] || []);
+  const facts = b.facts || [];
+  const factHtml = facts.length ? facts.map((f, i) => {
+    const c = C[f.key] || {};
+    return '<div class="fr bf"><div class="txt"><div class="q">' + esc(f.text) + '</div><div class="a">' + esc(f.detail) + '</div>' +
+      '<div class="tags"><span class="t">' + esc(f.source) + '</span>' + (c.verdict === 'not_quite' ? '<span class="t t-alert">You said: ' + esc(c.note || 'not quite right') + '</span>' : '') + '</div>' +
+      (c.verdict === 'not_quite' ? '<input class="pfnote" data-bfn="' + i + '" placeholder="What\u2019s different? Zen uses your words instead." value="' + esc(c.note || '') + '">' : '') + '</div>' +
+      '<div class="acts"><button class="btn btn-q" type="button" data-bf="' + i + '" aria-pressed="' + (c.verdict === 'not_quite') + '">' + (c.verdict === 'not_quite' ? 'Undo' : 'Not quite') + '</button></div></div>';
+  }).join('') : '<div class="fr"><div class="txt quiet">Not enough history yet. Zen learns this from your bookings and first ads.</div></div>';
+  const chips = (key, opts, multi, max) => '<div class="pl-opts">' + opts.map(o => '<button type="button" class="chip" data-bk="' + key + '" data-bv="' + esc(o.label) + '" data-bm="' + (multi ? max : 0) + '" aria-pressed="' + vals(key).includes(o.label) + '">' + esc(o.label) + '</button>').join('') + '</div>';
+  const qs = Object.fromEntries((b.questions || []).map(q => [q.key, q]));
+  const strip = q => (q ? q.options.filter(o => o.label !== 'Let Zen find out') : []);
+  const salon = b.salon ? (b.salon.place ? b.salon.place + ' \u00b7 ' : '') + Number(b.salon.lat).toFixed(4) + ', ' + Number(b.salon.lng).toFixed(4) : 'Not set. Zen reads it from your Facebook Page when you run an ad.';
+  box.innerHTML =
+    '<div class="sec" id="brief"><div class="sec-head"><div><h2>Who you serve</h2><p>What Zen learned from your own data. Every ad, post and suggestion starts here. If something\u2019s off, tap Not quite.</p></div></div>' +
+      '<div class="rows">' + factHtml + '</div>' + (b.gaps && b.gaps.length ? '<p class="note">Not enough data yet for: ' + esc(b.gaps.join(', ')) + '.</p>' : '') + '</div>' +
+    '<div class="sec"><div class="sec-head"><div><h2>What Zen goes by</h2><p>All optional. Leave a choice blank and Zen learns it from your results instead.</p></div></div>' +
+      '<div class="rows">' +
+      '<div class="fr bq"><div class="txt"><div class="q">Who do you want more of?</div><div class="a">Ads aim here unless you ask for something else.</div>' + chips('want_more', strip(qs.want_more), true, 2) + '</div></div>' +
+      '<div class="fr bq"><div class="txt"><div class="q">Why do parents choose you?</div><div class="a">Used in the first line of new ads. Up to 3.</div>' + chips('different', strip(qs.different), true, 3) + '</div></div>' +
+      '<div class="fr bq"><div class="txt"><div class="q">Can ads show children\u2019s faces?</div><div class="a">Followed for every picture Zen makes or suggests.</div>' + chips('faces', (b.faces || {}).options || [], false, 0) + '</div></div>' +
+      '<div class="fr bq"><div class="txt"><div class="q">Words your ads should never use</div><div class="a">Separate with commas. Most salons leave this empty.</div>' +
+        '<div class="row"><input id="bAvoid" placeholder="e.g. cheap, discount" value="' + esc(vals('avoid').filter(x => !/^nothing/i.test(x)).join(', ')) + '"><button class="btn btn-s" type="button" id="bAvoidSave">Save</button></div></div></div>' +
+      '<div class="fr bq"><div class="txt"><div class="q">Salon location</div><div class="a">' + esc(salon) + '</div>' +
+        '<div class="row"><input id="bLoc" placeholder="Coordinates, e.g. 25.1197, 55.3826"><button class="btn btn-s" type="button" id="bLocSave">Change</button></div></div></div>' +
+      '</div><p class="note" id="briefNote" role="status"></p></div>';
+  box.querySelectorAll('[data-bf]').forEach(x => x.onclick = () => {
+    const f = facts[+x.dataset.bf], cur = (BRIEF.checks || {})[f.key] || {};
+    BRIEF.checks = Object.assign({}, BRIEF.checks, { [f.key]: cur.verdict === 'not_quite' ? { verdict: 'right', at: new Date().toISOString() } : { verdict: 'not_quite', text: f.text, note: cur.note || '', at: new Date().toISOString() } });
+    briefSave({ checks: BRIEF.checks }); renderBrief();
+    const n = box.querySelector('[data-bfn="' + x.dataset.bf + '"]'); if (n) n.focus();
+  });
+  box.querySelectorAll('[data-bfn]').forEach(n => n.onchange = () => {
+    const f = facts[+n.dataset.bfn]; BRIEF.checks[f.key].note = n.value.slice(0, 200); briefSave({ checks: BRIEF.checks }).then(renderBrief);
+  });
+  box.querySelectorAll('[data-bk]').forEach(x => x.onclick = () => {
+    const k = x.dataset.bk, v = x.dataset.bv, max = +x.dataset.bm; let cur = vals(k);
+    if (!max) cur = cur.includes(v) ? [] : [v];
+    else if (cur.includes(v)) cur = cur.filter(y => y !== v);
+    else if (cur.length >= max){ el('briefNote').textContent = 'Up to ' + max + ': untick one first.'; return; }
+    else cur = cur.concat(v);
+    BRIEF.answers = Object.assign({}, BRIEF.answers, { [k]: max ? cur : (cur[0] || null) });
+    renderBrief(); briefSave({ answers: { [k]: max ? cur : (cur[0] || null) } });
+  });
+  el('bAvoidSave').onclick = () => {
+    const words = el('bAvoid').value.split(',').map(x => x.trim()).filter(Boolean);
+    briefSave({ answers: { avoid: words.length ? words : ['Nothing to avoid'] } });
+  };
+  el('bLocSave').onclick = async () => {
+    const v = el('bLoc').value.trim(); if (!v){ el('briefNote').textContent = 'Paste the coordinates first.'; return; }
+    const j = await briefSave({ salon_text: v }, 'Location saved.');
+    if (j.ok){ BRIEF = null; loadBrief(); }
   };
 }
 
@@ -3025,6 +2994,7 @@ function askCardRender(d, c){
     const btn = d.querySelector('[data-asave]'); btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Saving\u2026';
     const j = await zen('save_customer_picture', payload, 20000);
     if (!j.ok){ btn.disabled = false; btn.textContent = 'Save and continue'; err(j.error); return; }
+    BRIEF = null;
     d.querySelector('.actions').outerHTML = '<div class="status-line">Saved. Zen will remember this.</div>';
     d.querySelectorAll('button,input').forEach(x => x.disabled = true);
     send(c.then.prompt, { context: c.then.context });
@@ -3205,6 +3175,7 @@ function planCard(d, c){
   });
   d.querySelectorAll('[data-lopt]').forEach(b => b.onclick = async () => {
     const [i, k] = b.dataset.lopt.split(':').map(Number), l = lines[i], o = l.options[k];
+    if (o.prompt){ zen('cancel_plan', { plan_id: c.plan_id }); d.querySelectorAll('button,input').forEach(x => x.disabled = true); send(o.prompt, o.context ? { context: o.context } : undefined); return; }
     const was = b.textContent; b.disabled = true; b.innerHTML = '<span class="spin"></span>';
     const j = await zen('revise_plan_step', { plan_id: c.plan_id, step_index: l.step, patch: o.patch });
     b.disabled = false; b.textContent = was;
