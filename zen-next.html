@@ -529,7 +529,7 @@ dialog.viewer::backdrop{background:rgba(22,33,29,.55)}
 /* ---- Create console ---- */
 .crtop{display:flex;align-items:center;gap:12px}
 .crwrap{display:grid;grid-template-columns:minmax(320px,420px) minmax(0,1fr);gap:20px;align-items:start}
-.crleft{background:var(--surface);border-radius:var(--r-lg);padding:18px;display:flex;flex-direction:column;gap:14px;position:sticky;top:16px;max-height:calc(100vh - 32px)}
+.crleft{background:var(--surface);border-radius:var(--r-lg);padding:18px;display:flex;flex-direction:column;gap:14px;position:sticky;top:16px;max-height:calc(100vh - 32px);overflow-y:auto}
 .slots{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .slot{background:#F7F8F5;border-radius:var(--r-md);padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0}
 .slot-h{display:flex;justify-content:space-between;align-items:baseline}
@@ -539,6 +539,44 @@ dialog.viewer::backdrop{background:rgba(22,33,29,.55)}
 .slot-on div{display:flex;flex-direction:column;gap:2px;min-width:0}
 .slot .pills .filter{min-height:32px;padding:5px 10px;font-size:13px}
 .crrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.crpick{display:flex;flex-direction:column;gap:6px}
+.optsum{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;border:1px solid var(--line);background:#F7F8F5;border-radius:12px;padding:10px 12px;text-align:left;font-size:14px;min-height:44px}
+.optsum b{color:var(--accent)}
+.optsum em{font-style:normal;font-weight:600;color:var(--accent);white-space:nowrap}
+.crset{display:flex;flex-direction:column;gap:12px;border:1px solid var(--line);border-radius:12px;padding:12px}
+.crset > .btn{align-self:flex-start}
+.brandsw{display:flex;gap:10px;align-items:flex-start;font-size:14px;cursor:pointer}
+.brandsw input{width:20px;height:20px;margin-top:2px;accent-color:var(--accent)}
+.brandsw b{display:block}
+.brandsw span{color:var(--muted)}
+.brandsw b{color:var(--ink)}
+details.sent{margin-top:8px;font-size:13px}
+details.sent summary{cursor:pointer;color:var(--muted);font-weight:600}
+details.sent pre{white-space:pre-wrap;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px;margin:6px 0 0;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
+.slot-off .btn-q{padding-left:0;padding-right:0;text-align:left}
+.mopts{display:grid;grid-template-columns:1fr;gap:6px}
+.mopt{border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 12px;text-align:left;display:grid;grid-template-columns:1fr auto;gap:2px 10px}
+.mopt b{font-weight:600}
+.mopt span{grid-column:1;font-size:13px;color:var(--muted)}
+.mopt em{grid-column:2;grid-row:1 / span 2;align-self:center;font-style:normal;font-size:13px;font-weight:600;color:var(--accent);white-space:nowrap}
+.mopt[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;background:var(--accent-soft)}
+.mopt[disabled]{opacity:.5;cursor:not-allowed}
+.mopt[disabled] em{color:var(--muted)}
+.szd{flex-basis:100%}
+.used{font-size:12px;font-weight:600;color:var(--accent)}
+.crlabel{font-weight:600;font-size:15px;margin-bottom:-6px}
+#crText{border:1px solid var(--line);border-radius:12px;padding:12px 14px;resize:vertical;min-height:96px;background:#fff;font-size:16px}
+.crgo{width:100%;justify-content:center;min-height:52px;font-size:17px}
+.crstatus{margin:-4px 0 0;font-size:14px;color:var(--muted);min-height:20px}
+.crstatus.bad{color:var(--waste)}
+.crsel{border:1px solid var(--line);border-radius:10px;padding:7px 10px;background:#fff;font-size:14px;margin-top:4px}
+details.prompt{padding:0 12px;font-size:13px}
+details.prompt summary{cursor:pointer;color:var(--muted);font-weight:600;padding:6px 0}
+details.prompt summary i{font-style:normal;font-weight:500}
+details.prompt pre{white-space:pre-wrap;background:#F7F8F5;border-radius:10px;padding:10px;margin:0 0 6px;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;max-height:200px;overflow:auto}
+.pedit{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace}
+.change{padding:8px 12px 0;display:flex;flex-direction:column;gap:6px}
+.change textarea{border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:15px}
 .crthread{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;min-height:80px;max-height:40vh}
 .crthread .you{max-width:90%}
 .zenmsg{background:#F3F6F4;border-radius:14px 14px 14px 4px;padding:10px 14px;font-size:15px;align-self:flex-start;max-width:95%}
@@ -565,6 +603,43 @@ dialog.viewer::backdrop{background:rgba(22,33,29,.55)}
 .pkcard .ph{aspect-ratio:1;display:grid;place-items:center;color:var(--muted)}
 .pkcard span{display:block;padding:8px 10px;font-weight:600;font-size:14px}
 .pkcard:hover{box-shadow:0 0 0 2px var(--accent) inset}
+
+/* ---- AI Inspiration ---- */
+.pickbar{background:var(--accent-soft);border-radius:12px;padding:10px 14px;margin:0 0 10px}
+.ins-hero{max-width:860px}
+.ins-hero h1{font:600 clamp(30px,4vw,42px)/1.1 var(--display);letter-spacing:-.02em;margin:4px 0 16px}
+.ins-ask{display:flex;gap:8px;align-items:center;background:var(--surface);border-radius:var(--r-lg);padding:8px 8px 8px 18px;box-shadow:0 1px 0 var(--line),0 18px 40px -30px rgba(22,33,29,.35)}
+.ins-ask input{flex:1;border:0;outline:0;background:transparent;font-size:18px;min-height:46px;min-width:0}
+.ins-hero .chips{margin-top:12px}
+.ins-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:20px 0 6px}
+.fbtn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 12px;font-weight:500;font-size:14px;min-height:40px}
+.fbtn b{background:var(--ink);color:#fff;border-radius:999px;padding:1px 7px;font-size:12px}
+.ins-bar .hint{flex-basis:100%}
+.achips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0}
+.understood{font-weight:600;margin-right:6px}
+.achip{border:0;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:6px 12px;font-weight:600;font-size:13px;min-height:34px}
+.achip span{margin-left:4px}
+.ins-h{font:600 20px/1.3 var(--display);margin:22px 0 10px}
+.bundles{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+.bcard{border:0;padding:0;background:var(--surface);border-radius:var(--r-md);overflow:hidden;text-align:left;display:flex;flex-direction:column}
+.bcard img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:#E5E9E3}
+.bcard span{padding:10px 12px;font-size:13px;color:var(--muted)}
+.bcard b{display:block;color:var(--ink);font-size:15px}
+.igrid{columns:4 200px;column-gap:14px}
+.icard{break-inside:avoid;margin:0 0 14px;width:100%;border:0;padding:0;background:var(--surface);border-radius:var(--r-md);overflow:hidden;text-align:left;display:block}
+.icard img{width:100%;height:auto;display:block;background:#E5E9E3}
+.iname{display:block;padding:10px 12px 4px;font-weight:600}
+.itags{display:flex;flex-wrap:wrap;gap:4px;padding:0 12px 12px}
+.itags i{font-style:normal;font-size:12px;background:#ECEEEA;color:var(--muted);border-radius:999px;padding:2px 8px}
+.flist{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:4px;max-height:52vh;overflow-y:auto}
+.fopt{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;cursor:pointer;min-height:40px}
+.fopt:hover{background:#F3F5F1}
+.fopt span{flex:1}
+.fopt em{font-style:normal;color:var(--muted);font-size:13px}
+.fopt.none{opacity:.45}
+.likegrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.likegrid .icard{margin:0}
+.likegrid .itags{display:none}
 
 /* ---- other areas (coming next) ---- */
 .soon{max-width:620px;margin:0 auto;padding:96px 32px}
@@ -608,6 +683,10 @@ dialog.viewer::backdrop{background:rgba(22,33,29,.55)}
   .acctbtn{display:grid;place-items:center;position:fixed;top:12px;right:12px;z-index:6;width:42px;height:42px;border-radius:50%;border:0;background:var(--ink);color:#fff;font-weight:600}
   .igwrap{grid-template-columns:1fr}
   .crwrap{grid-template-columns:1fr}
+  .igrid{columns:2 150px;column-gap:10px}
+  .bundles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .likegrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ins-ask input{font-size:16px}
   .crleft{position:static;max-height:none}
   .slots{grid-template-columns:1fr}
   .pkgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -1488,6 +1567,7 @@ function factForm(f){
 // =====================================================================
 const MKT = { view:'home', pending:null, ads:null, days:30, studio:null, st:null, ig:null };
 const ICONS = {
+  ideas:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3Z"/></svg>',
   image:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="m4 16 4.5-4.5 4 4 3-3L20 16"/><circle cx="15.5" cy="9" r="1.5"/></svg>',
   video:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3"/></svg>',
   plan:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5M4 19h16"/><path d="m7 15 4-4 3 3 5-6"/></svg>',
@@ -1502,6 +1582,7 @@ function mktView(v){
   if (v === 'home') return mktHome();
   if (v === 'ads') return adsView();
   if (v === 'studio') return createView();
+  if (v === 'inspo') return inspView({ pick: false });
   if (v === 'ig') return igPicker();
 }
 
@@ -1512,6 +1593,7 @@ function mktHome(){
     '<span class="live" id="mtLive_' + key + '">' + (live || '') + '</span></button>';
   box.innerHTML = '<div class="page-top"><h1>What do you want to make?</h1></div><div class="tiles">' +
     tile('studio', 'image', 'Create images', 'Describe it, add your image or an idea. Zen makes it.') +
+    tile('inspo', 'ideas', 'AI Inspiration', 'Describe your business and what you want. Zen finds the right creative ideas.') +
     tile('ig', 'ig', 'Instagram post', 'Pick something you\u2019ve made. Zen writes the caption, you approve.') +
     tile('ads', 'ads', 'Meta ads', 'What\u2019s working, what\u2019s wasting money, and what to change.', 'Checking your ads\u2026') +
     tile('guided', 'plan', 'Guided campaign', 'Tell Zen the goal. It drafts the campaign for you.') +
@@ -1589,69 +1671,143 @@ async function adAction(b){
 }
 
 // ---------- Create (new image studio on mw-studio) ----------
-const CR = { session: null, versions: [], messages: [], image: null, insp: null, use: 'everything', aspect: '4:5', parent: null, timers: {}, concepts: null, brand: null };
+// Simple by design: your image, an inspiration, a few words, one settings line, Generate.
+const CR = { session: null, versions: [], image: null, insp: null, use: 'everything', aspect: '4:5', timers: {}, brand: null,
+  models: null, modelKey: null, sizeKey: null, useBrand: false, optsOpen: false, modelsOpen: false, busy: false,
+  open: {}, autoSend: null, text: '' };
 const ASPECTS = [['1:1','Square'],['4:5','Portrait'],['9:16','Story'],['16:9','Landscape']];
 const USE_LABEL = { everything:'Everything', style:'Its style', layout:'Its layout', background:'Its background' };
+const crModel = () => (CR.models || []).find(m => m.key === CR.modelKey);
+const crSize = () => { const m = crModel(); return m ? (m.sizes.find(z => z.key === CR.sizeKey) || m.sizes[0]) : null; };
+const crCredits = () => (crSize() || {}).credits;
 
+function crShowUsage(){
+  studio('usage', { tenant_id: tenant }, 15000).then(j => {
+    if (j.ok && el('crUsage')) el('crUsage').textContent = (j.usage.credits || 0) + ' credits used this month (' + j.usage.images + ' image' + (j.usage.images === 1 ? '' : 's') + ')';
+  });
+}
 function stopCreatePolling(){ Object.values(CR.timers).forEach(clearTimeout); CR.timers = {}; }
+function crStatus(text, bad){ const s = el('crStatus'); if (s){ s.textContent = text || ''; s.className = 'crstatus' + (bad ? ' bad' : ''); } }
+
+// Buttons on Home cards that open a screen in the new Zen, carrying the owner's request with them.
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('[data-zenopen]'); if (!b) return;
+  let o; try { o = JSON.parse(b.dataset.zenopen); } catch (_) { return; }
+  const p = o.params || {};
+  if (o.view === 'create'){
+    // A request from Home starts a fresh Create session, so it never mixes with earlier work.
+    stopCreatePolling();
+    Object.assign(CR, { session: null, versions: [], image: null, insp: null, open: {}, text: '' });
+    CR.autoSend = { text: p.text || '', aspect: p.aspect || null };
+    MKT.pending = 'studio'; go('marketing');
+  } else if (o.view === 'inspiration'){
+    INS.autoAsk = p.text || '';
+    MKT.pending = 'inspo'; go('marketing');
+  }
+});
 
 async function createView(){
   const box = el('mkt');
-  box.innerHTML = backBtn + '<div class="page-top"><h1>Create images</h1><div class="crtop"><span class="note" id="crUsage"></span><button class="btn btn-s" type="button" id="crNew">Start again</button></div></div>' +
+  box.innerHTML = backBtn + '<div class="page-top"><h1>Create images</h1><div class="crtop"><span class="note" id="crUsage"></span><button class="btn btn-q" type="button" id="crNew">Clear</button></div></div>' +
     '<div class="crwrap"><section class="crleft" aria-label="What to make">' +
       '<div class="slots"><div class="slot" id="slotImg"></div><div class="slot" id="slotInsp"></div></div>' +
-      '<div class="crrow"><span class="note">Format</span><div class="pills" id="crAspect"></div></div>' +
-      '<div class="crthread" id="crThread" aria-live="polite"></div>' +
-      '<div id="crRefine"></div>' +
-      '<form class="crcompose" onsubmit="event.preventDefault();crSend();"><label for="crText" class="sr">Describe what you want</label>' +
-        '<textarea id="crText" rows="3" placeholder="Describe what you want to make. Words alone are enough."></textarea>' +
-        '<button class="send" type="submit" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></form>' +
+      '<label for="crText" class="crlabel">Describe what you want</label>' +
+      '<textarea id="crText" rows="4" placeholder="e.g. Shatter effect with my jar bursting through glass. Optional if you added images."></textarea>' +
+      '<button class="optsum" type="button" id="crOpts" aria-expanded="false"></button>' +
+      '<div class="crset" id="crSet" hidden>' +
+        '<div class="crrow"><span class="note">Format</span><div class="pills" id="crAspect"></div></div>' +
+        '<div class="crpick"><span class="note">Model</span><div class="mopts" id="crModels"></div></div>' +
+        '<div class="crrow"><span class="note">Size</span><div class="pills" id="crSizes"></div></div>' +
+        '<label class="brandsw"><input type="checkbox" id="crBrand"> <span><b>Use my brand</b> Send ' + esc(tenantName) + '\u2019s colours, tone and brand rules with the request. Off: only your words and images are sent.</span></label>' +
+        '<button class="btn btn-s" type="button" id="crOptsDone">Done</button></div>' +
+      '<button class="btn btn-p crgo" type="button" id="crGo"></button>' +
+      '<p class="crstatus" id="crStatus" role="status"></p>' +
     '</section><section class="crright" aria-label="Results"><div id="crResults"></div></section></div>' +
     '<dialog class="viewer" id="crPick" aria-label="Choose an image"></dialog>';
-  el('crNew').onclick = () => { stopCreatePolling(); Object.assign(CR, { session:null, versions:[], messages:[], image:null, insp:null, parent:null }); renderCreate(); };
-  el('crText').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); crSend(); } });
+  el('crNew').onclick = () => { stopCreatePolling(); Object.assign(CR, { session:null, versions:[], image:null, insp:null, open:{}, text:'' }); el('crText').value = ''; crStatus(''); renderCreate(); };
+  // Your words survive a trip to AI Inspiration and back.
+  el('crText').value = CR.text || '';
+  el('crText').addEventListener('input', e => { CR.text = e.target.value; });
+  el('crGo').onclick = () => crCreate({});
+  el('crText').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)){ e.preventDefault(); crCreate({}); } });
   if (!CR.brand){
     const br = BRAND ? { ok:true, brand: BRAND } : await zen('brand_get', {}, 30000);
     if (br.ok){ BRAND = br.brand; CR.brand = { name: br.brand.name || tenantName, tone: br.brand.tone, look: br.brand.look, colors: br.brand.colors, rules: br.brand.rules }; }
     else CR.brand = { name: tenantName };
   }
-  studio('usage', { tenant_id: tenant }, 15000).then(j => { if (j.ok && el('crUsage')) el('crUsage').textContent = j.usage.images + ' image' + (j.usage.images === 1 ? '' : 's') + ' this month'; });
-  renderCreate();
-  Object.values(CR.versions).forEach(v => { if (v.status === 'running' || v.status === 'starting') crPoll(v.id); });
+  if (!CR.models){
+    const mj = await studio('models', { tenant_id: tenant }, 15000);
+    CR.models = mj.ok && Array.isArray(mj.models) ? mj.models : [];
+    const first = CR.models.find(m => m.key === mj.default_model && m.available) || CR.models.find(m => m.available) || CR.models[0];
+    if (first){ CR.modelKey = first.key; CR.sizeKey = first.default_size; }
+  }
+  crShowUsage();
+  // A request from Home arrives filled in, never auto-generated: you see the settings and credits, then press Generate.
+  if (CR.autoSend){
+    const a = CR.autoSend; CR.autoSend = null;
+    if (a.aspect && ASPECTS.some(x => x[0] === a.aspect)) CR.aspect = a.aspect;
+    el('crText').value = CR.text = a.text || '';
+    renderCreate(); crStatus('From Home. Check the settings, then press Generate.');
+    el('crGo').focus();
+  } else renderCreate();
+  CR.versions.forEach(v => { if (v.status === 'running' || v.status === 'starting') crPoll(v.id); });
 }
 
 function renderCreate(){
   // Your image (optional)
   el('slotImg').innerHTML = '<div class="slot-h"><b>Your image</b><span class="note">Optional</span></div>' + (CR.image
-    ? '<div class="slot-on"><img src="' + esc(CR.image.url) + '" alt="Your image"><div><span class="note">Kept recognisable in the result.</span><button class="btn btn-q" type="button" id="imgClear">Remove</button></div></div>'
+    ? '<div class="slot-on"><img src="' + esc(CR.image.url) + '" alt="Your image"><div><span class="note">Kept recognisable.</span><button class="btn btn-q" type="button" id="imgClear">Remove</button></div></div>'
     : '<div class="slot-off"><label class="btn btn-s" for="crFile" style="cursor:pointer">Upload</label><input type="file" id="crFile" accept="image/png,image/jpeg,image/webp" class="sr">' +
       '<button class="btn btn-q" type="button" id="imgPick">Choose one you\u2019ve used</button></div>');
   // Inspiration (optional)
   el('slotInsp').innerHTML = '<div class="slot-h"><b>Inspiration</b><span class="note">Optional</span></div>' + (CR.insp
-    ? '<div class="slot-on"><img src="' + esc(CR.insp.url) + '" alt="' + esc(CR.insp.name) + '"><div><b>' + esc(CR.insp.name) + '</b><span class="note">Reference only, never copied.</span><button class="btn btn-q" type="button" id="inspClear">Remove</button></div></div>' +
-      '<div class="pills" id="crUse">' + Object.keys(USE_LABEL).map(k => '<button class="filter" type="button" data-use="' + k + '" aria-pressed="' + (CR.use === k) + '">' + USE_LABEL[k] + '</button>').join('') + '</div>'
-    : '<div class="slot-off"><button class="btn btn-s" type="button" id="inspPick">Browse ideas</button><label class="btn btn-q" for="crRefFile" style="cursor:pointer">Upload a reference</label><input type="file" id="crRefFile" accept="image/png,image/jpeg,image/webp" class="sr"></div>');
-  el('crAspect').innerHTML = ASPECTS.map(([k, l]) => '<button class="filter" type="button" data-ar="' + k + '" aria-pressed="' + (CR.aspect === k) + '">' + l + '</button>').join('');
-  el('crAspect').querySelectorAll('[data-ar]').forEach(b => b.onclick = () => { CR.aspect = b.dataset.ar; renderCreate(); });
-  if (el('crUse')) el('crUse').querySelectorAll('[data-use]').forEach(b => b.onclick = () => { CR.use = b.dataset.use; renderCreate(); });
+    ? '<div class="slot-on"><img src="' + esc(CR.insp.url) + '" alt="' + esc(CR.insp.name) + '"><div><b>' + esc(CR.insp.name) + '</b><button class="btn btn-q" type="button" id="inspClear">Remove</button></div></div>' +
+      '<label class="note" for="crUse">Borrow</label><select id="crUse" class="crsel">' + Object.keys(USE_LABEL).map(k => '<option value="' + k + '"' + (CR.use === k ? ' selected' : '') + '>' + USE_LABEL[k] + '</option>').join('') + '</select>'
+    : '<div class="slot-off"><button class="btn btn-s" type="button" id="inspPick">Browse ideas</button><label class="btn btn-q" for="crRefFile" style="cursor:pointer">Upload a reference</label><input type="file" id="crRefFile" accept="image/png,image/jpeg,image/webp" class="sr">' +
+      '<button class="btn btn-q" type="button" id="refPick">Your references</button></div>');
+  if (el('crUse')) el('crUse').onchange = e => { CR.use = e.target.value; };
   if (el('imgClear')) el('imgClear').onclick = () => { CR.image = null; renderCreate(); };
   if (el('inspClear')) el('inspClear').onclick = () => { CR.insp = null; renderCreate(); };
   if (el('crFile')) el('crFile').onchange = e => crUpload(e.target.files[0], 'creative');
   if (el('crRefFile')) el('crRefFile').onchange = e => crUpload(e.target.files[0], 'reference');
   if (el('imgPick')) el('imgPick').onclick = () => crPicker('mine');
-  if (el('inspPick')) el('inspPick').onclick = () => crPicker('ideas');
-  // Thread
-  const t = el('crThread');
-  t.innerHTML = CR.messages.length ? CR.messages.map((m, i) => m.role === 'user'
-      ? '<div class="you">' + esc(m.text) + '</div>'
-      : '<div class="zenmsg' + (m.kind === 'question' ? ' q' : '') + '">' + esc(m.text) +
-        (i === CR.messages.length - 1 && m.kind === 'brief' && CR.pending ? '<div class="actions"><button class="btn btn-p" type="button" id="crGo">Generate</button><button class="btn btn-q" type="button" id="crChange">Change something</button></div>' : '') + '</div>').join('')
-    : '<p class="note">Say what you want. Add your own image to transform it, and an inspiration to borrow its look. Both are optional.</p>';
-  t.scrollTop = t.scrollHeight;
-  if (el('crGo')) el('crGo').onclick = crGenerate;
-  if (el('crChange')) el('crChange').onclick = () => { el('crText').placeholder = 'What should be different?'; el('crText').focus(); };
-  el('crRefine').innerHTML = CR.parent ? '<div class="refining">Changing <b>v' + crNum(CR.parent) + '</b>. Say what to change. <button class="btn btn-q" type="button" id="crNoRefine">Cancel</button></div>' : '';
-  if (el('crNoRefine')) el('crNoRefine').onclick = () => { CR.parent = null; renderCreate(); };
+  if (el('inspPick')) el('inspPick').onclick = () => inspView({ pick: true });
+  if (el('refPick')) el('refPick').onclick = () => crPicker('refs');
+
+  // Settings line
+  const z0 = crSize(), m0 = crModel();
+  el('crOpts').innerHTML = '<span>' + esc((ASPECTS.find(a => a[0] === CR.aspect) || ['', ''])[1]) + ' \u00B7 ' + esc(m0 ? m0.label : 'No model') + ' \u00B7 ' + esc(z0 ? z0.label : '') +
+    (CR.useBrand ? ' \u00B7 My brand' : '') + '</span><em>' + (CR.optsOpen ? 'Hide' : 'Change') + ' \u25BE</em>';
+  el('crOpts').setAttribute('aria-expanded', String(!!CR.optsOpen));
+  el('crSet').hidden = !CR.optsOpen;
+  el('crOpts').onclick = () => { CR.optsOpen = !CR.optsOpen; if (!CR.optsOpen) CR.modelsOpen = false; renderCreate(); };
+  el('crOptsDone').onclick = () => { CR.optsOpen = false; CR.modelsOpen = false; renderCreate(); };
+  el('crAspect').innerHTML = ASPECTS.map(([k, l]) => '<button class="filter" type="button" data-ar="' + k + '" aria-pressed="' + (CR.aspect === k) + '">' + l + '</button>').join('');
+  el('crAspect').querySelectorAll('[data-ar]').forEach(b => b.onclick = () => { CR.aspect = b.dataset.ar; renderCreate(); });
+  const models = CR.models || [];
+  if (!CR.modelsOpen && m0){
+    el('crModels').innerHTML = '<button class="mopt mcur" type="button" id="crModelOpen" aria-expanded="false"><b>' + esc(m0.label) + '</b><span>' + esc(m0.description) + '</span><em>Change \u25BE</em></button>';
+    el('crModelOpen').onclick = () => { CR.modelsOpen = true; renderCreate(); };
+  } else {
+    el('crModels').innerHTML = models.length ? models.map(m => '<button class="mopt" type="button" data-model="' + esc(m.key) + '" aria-pressed="' + (CR.modelKey === m.key) + '"' + (m.available ? '' : ' disabled') + '>' +
+      '<b>' + esc(m.label) + '</b><span>' + esc(m.description) + '</span><em>' + (m.available ? 'From ' + Math.min(...m.sizes.map(z => z.credits)) + ' credits' : 'Not set up yet') + '</em></button>').join('')
+      : '<span class="note">Models couldn\u2019t be loaded.</span>';
+    el('crModels').querySelectorAll('[data-model]').forEach(b => b.onclick = () => {
+      const m = models.find(x => x.key === b.dataset.model); CR.modelKey = m.key; CR.modelsOpen = false;
+      if (!m.sizes.some(z => z.key === CR.sizeKey)) CR.sizeKey = m.default_size;
+      renderCreate();
+    });
+  }
+  el('crSizes').innerHTML = m0 ? m0.sizes.map(z => '<button class="filter" type="button" data-size="' + esc(z.key) + '" aria-pressed="' + (CR.sizeKey === z.key) + '">' +
+    esc(z.label) + ' \u00B7 ' + z.credits + ' credits</button>').join('') + '<span class="note szd">' + esc((z0 || {}).detail || '') + '</span>' : '';
+  el('crSizes').querySelectorAll('[data-size]').forEach(b => b.onclick = () => { CR.sizeKey = b.dataset.size; renderCreate(); });
+  el('crBrand').checked = !!CR.useBrand;
+  el('crBrand').onchange = e => { CR.useBrand = e.target.checked; renderCreate(); };
+
+  // The one button: always says what it will cost
+  const ok = m0 && m0.available;
+  el('crGo').disabled = CR.busy || !ok;
+  el('crGo').innerHTML = CR.busy ? '<span class="spin"></span>Starting\u2026' : ok ? 'Generate \u00B7 ' + crCredits() + ' credits' : 'No image model available';
   renderCreateResults();
 }
 
@@ -1659,78 +1815,78 @@ const crNum = id => { const i = CR.versions.findIndex(v => v.id === id); return 
 
 function renderCreateResults(){
   const r = el('crResults'); if (!r) return;
-  if (!CR.versions.length){ r.innerHTML = '<div class="crempty"><b>Your images appear here.</b><span>Each one is saved to your Gallery, and you can change it by saying what to change.</span></div>'; return; }
+  if (!CR.versions.length){ r.innerHTML = '<div class="crempty"><b>Your images appear here.</b><span>Each result shows the prompt that was used. You can change it, or edit the prompt and generate again.</span></div>'; return; }
   r.innerHTML = '<div class="crgrid">' + CR.versions.map(v => {
     const n = crNum(v.id), parent = v.parent_id ? ' \u00B7 changed from v' + crNum(v.parent_id) : '';
     const ratio = String(v.aspect_ratio || (v.asset && v.asset.width ? v.asset.width + '/' + v.asset.height : '4/5')).replace(':', '/');
     const media = v.status === 'succeeded' && v.asset
-      ? '<img src="' + esc(v.asset.url) + '" alt="Version ' + n + '" loading="lazy">'
+      ? '<img src="' + esc(v.asset.url) + '" alt="Version ' + n + '" loading="lazy"' + (v.asset.width && v.asset.height ? ' style="aspect-ratio:' + v.asset.width + '/' + v.asset.height + '"' : '') + '>'
       : v.status === 'failed' ? '<div class="crstate bad">' + esc(v.error || 'This one didn\u2019t come out.') + '</div>'
       : '<div class="crstate" style="aspect-ratio:' + esc(ratio) + '"><div class="thinking"><span class="pulse"></span><span>Making it\u2026 usually under a minute</span></div></div>';
-    return '<div class="crcard" data-v="' + esc(v.id) + '">' + media + '<div class="crmeta"><b>v' + n + '</b><span class="note">' + esc(v.brief) + parent + '</span></div>' +
-      (v.status === 'succeeded' && v.asset ? '<div class="actions"><button class="btn btn-s" type="button" data-refine="' + esc(v.id) + '">Change it</button>' +
-        '<button class="btn btn-q" type="button" data-asinsp="' + esc(v.id) + '">Use as inspiration</button>' +
-        '<a class="btn btn-q" href="' + esc(v.asset.url) + '" target="_blank" rel="noopener">Full size</a></div>' : '') + '</div>';
+    const used = [v.model_label, v.size_key ? v.size_key.charAt(0).toUpperCase() + v.size_key.slice(1) : '', v.credits != null ? v.credits + ' credits' : ''].filter(Boolean).join(' \u00B7 ');
+    const o = CR.open[v.id] || '';
+    const done = v.status === 'succeeded' && v.asset;
+    return '<div class="crcard" data-v="' + esc(v.id) + '">' + media + '<div class="crmeta"><b>v' + n + parent + '</b>' + (used ? '<span class="used">' + esc(used) + '</span>' : '') + '</div>' +
+      (v.prompt ? '<details class="prompt"' + (o === 'edit' ? ' open' : '') + '><summary>Prompt' + (v.prompt_by ? ' <i>written by ' + esc(v.prompt_by) + '</i>' : '') + '</summary>' +
+        (o === 'edit'
+          ? '<textarea class="pedit" id="pe_' + esc(v.id) + '" rows="6">' + esc(v.prompt) + '</textarea><div class="actions"><button class="btn btn-p" type="button" data-pgo="' + esc(v.id) + '">Generate with this prompt \u00B7 ' + crCredits() + ' credits</button><button class="btn btn-q" type="button" data-close="' + esc(v.id) + '">Cancel</button></div>'
+          : '<pre>' + esc(v.prompt) + '</pre>' + (done ? '<button class="btn btn-q" type="button" data-pedit="' + esc(v.id) + '">Edit prompt and generate again</button>' : '')) + '</details>' : '') +
+      (o === 'change'
+        ? '<div class="change"><label class="note" for="ch_' + esc(v.id) + '">What should change?</label><textarea id="ch_' + esc(v.id) + '" rows="2" placeholder="e.g. warmer light, bigger jar"></textarea>' +
+          '<div class="actions"><button class="btn btn-p" type="button" data-chgo="' + esc(v.id) + '">Generate \u00B7 ' + crCredits() + ' credits</button><button class="btn btn-q" type="button" data-close="' + esc(v.id) + '">Cancel</button></div></div>'
+        : done ? '<div class="actions"><button class="btn btn-s" type="button" data-change="' + esc(v.id) + '">Change it</button>' +
+          '<button class="btn btn-q" type="button" data-asinsp="' + esc(v.id) + '">Use as inspiration</button>' +
+          '<a class="btn btn-q" href="' + esc(v.asset.url) + '" target="_blank" rel="noopener">Full size</a></div>' : '') + '</div>';
   }).join('') + '</div>';
-  r.querySelectorAll('[data-refine]').forEach(b => b.onclick = () => { CR.parent = b.dataset.refine; renderCreate(); el('crText').focus(); });
+  r.querySelectorAll('[data-change]').forEach(b => b.onclick = () => { CR.open = { [b.dataset.change]: 'change' }; renderCreateResults(); el('ch_' + b.dataset.change).focus(); });
+  r.querySelectorAll('[data-pedit]').forEach(b => b.onclick = () => { CR.open = { [b.dataset.pedit]: 'edit' }; renderCreateResults(); el('pe_' + b.dataset.pedit).focus(); });
+  r.querySelectorAll('[data-close]').forEach(b => b.onclick = () => { CR.open = {}; renderCreateResults(); });
+  r.querySelectorAll('[data-chgo]').forEach(b => b.onclick = () => {
+    const t = el('ch_' + b.dataset.chgo).value.trim(); if (!t){ el('ch_' + b.dataset.chgo).focus(); return; }
+    CR.open = {}; crCreate({ parent_version_id: b.dataset.chgo, text: t });
+  });
+  r.querySelectorAll('[data-pgo]').forEach(b => b.onclick = () => {
+    const t = el('pe_' + b.dataset.pgo).value.trim(); if (!t) return;
+    CR.open = {}; crCreate({ prompt: t });
+  });
   r.querySelectorAll('[data-asinsp]').forEach(b => b.onclick = () => {
     const v = CR.versions.find(x => x.id === b.dataset.asinsp);
-    CR.insp = { type:'asset', asset_id: v.asset.id, name: 'v' + crNum(v.id), url: v.asset.url }; CR.parent = null; renderCreate();
+    CR.insp = { type:'asset', asset_id: v.asset.id, name: 'v' + crNum(v.id), url: v.asset.url }; renderCreate();
+    crStatus('v' + crNum(v.id) + ' is now your inspiration.');
   });
 }
 
-async function crEnsureSession(){
-  if (CR.session) return true;
-  const j = await studio('create_session', { tenant_id: tenant }, 20000);
-  if (!j.ok){ crSay(j.error, 'question'); return false; }
-  CR.session = j.session.id; return true;
-}
-function crSay(text, kind){ CR.messages.push({ role:'zen', text, kind: kind || 'note' }); renderCreate(); }
-
-async function crSend(){
-  const box = el('crText'), text = box.value.trim();
-  if (!text && !CR.image && !CR.insp && !CR.parent){ box.focus(); return; }
-  box.value = ''; box.placeholder = 'Describe what you want to make. Words alone are enough.';
-  if (!await crEnsureSession()) return;
-  if (text) CR.messages.push({ role:'user', text });
-  CR.messages.push({ role:'zen', text:'Thinking about it\u2026', kind:'wait' }); CR.pending = false; renderCreate();
-  const refining = CR.parent;
-  const j = await studio('plan', {
-    tenant_id: tenant, session_id: CR.session, text, aspect_ratio: CR.aspect, use: [CR.use], brand: CR.brand,
-    image_asset_id: refining ? null : (CR.image ? CR.image.id : null),
-    inspiration: refining ? null : CR.insp ? (CR.insp.type === 'concept' ? { concept_name: CR.insp.concept_name } : { asset_id: CR.insp.asset_id }) : null,
-    parent_version_id: refining || null,
-  }, 90000);
-  CR.messages.pop();
-  if (!j.ok){ crSay(j.error, 'question'); return; }
-  if (j.question){ crSay(j.question, 'question'); return; }
-  CR.messages.push({ role:'zen', text: j.brief, kind:'brief' }); CR.pending = true;
-  // A change to an existing version goes straight ahead; a new image waits for "Generate".
-  if (refining){ CR.parent = null; renderCreate(); return crGenerate(); }
-  renderCreate();
-}
-
-async function crGenerate(){
-  CR.pending = false; renderCreate();
-  const j = await studio('generate', { tenant_id: tenant, session_id: CR.session }, 45000);
-  if (!j.ok){ crSay(j.error, 'question'); return; }
-  CR.versions.unshift(j.version); renderCreateResults();
+// One press of Generate (or "Change it", or "Generate with this prompt").
+async function crCreate(extra){
+  const m = crModel(); if (!m || !m.available){ crStatus('No image model is available right now. Ask your Zen admin to set one up.', true); return; }
+  const text = extra.text != null ? extra.text : el('crText').value.trim();
+  if (!text && !CR.image && !CR.insp && !extra.prompt){ crStatus('Describe what you want, or add an image.', true); el('crText').focus(); return; }
+  CR.busy = true; crStatus(''); renderCreate();
+  const body = {
+    tenant_id: tenant, session_id: CR.session, text, aspect_ratio: CR.aspect, use: [CR.use], model_key: CR.modelKey, size_key: CR.sizeKey,
+    use_brand: !!CR.useBrand, brand: CR.useBrand ? CR.brand : undefined,
+    image_asset_id: extra.parent_version_id ? null : (CR.image ? CR.image.id : null),
+    inspiration: extra.parent_version_id ? null : CR.insp ? (CR.insp.type === 'concept' ? { concept_name: CR.insp.concept_name } : { asset_id: CR.insp.asset_id }) : null,
+    parent_version_id: extra.parent_version_id || null, prompt: extra.prompt || undefined,
+  };
+  const j = await studio('create', body, 120000);
+  CR.busy = false;
+  if (!j.ok){ renderCreate(); crStatus(j.error, true); return; }
+  CR.session = j.session_id;
+  CR.versions.unshift(j.version); renderCreate();
   if (j.version.status !== 'failed') crPoll(j.version.id);
 }
 
 function crPoll(id, tries){
   tries = tries || 0;
-  if (tries > 120){ return; }                                  // about 6 minutes
+  if (tries > 120) return;                                   // about 6 minutes
   CR.timers[id] = setTimeout(async () => {
     const j = await studio('version_status', { tenant_id: tenant, version_id: id }, 90000);
     if (!el('crResults')) return;                              // left the page
     if (j.ok){
       const i = CR.versions.findIndex(v => v.id === id); if (i >= 0) CR.versions[i] = j.version;
       renderCreateResults();
-      if (j.version.status === 'succeeded'){
-        studio('usage', { tenant_id: tenant }, 15000).then(u => { if (u.ok && el('crUsage')) el('crUsage').textContent = u.usage.images + ' image' + (u.usage.images === 1 ? '' : 's') + ' this month'; });
-        return;
-      }
+      if (j.version.status === 'succeeded'){ crShowUsage(); return; }
       if (j.version.status === 'failed') return;
     }
     crPoll(id, tries + 1);
@@ -1739,55 +1895,253 @@ function crPoll(id, tries){
 
 async function crUpload(file, label){
   if (!file) return;
-  if (file.size > 20 * 1024 * 1024){ crSay('That image is over 20 MB. Use a smaller one.', 'question'); return; }
-  crSay('Uploading\u2026', 'wait');
+  if (file.size > 20 * 1024 * 1024){ crStatus('That image is over 20 MB. Use a smaller one.', true); return; }
+  crStatus('Uploading\u2026');
   const dims = await new Promise(res => { const i = new Image(); i.onload = () => res({ w: i.naturalWidth, h: i.naturalHeight }); i.onerror = () => res({}); i.src = URL.createObjectURL(file); });
   const ext = (file.type.split('/')[1] || 'png').replace('jpeg', 'jpg');
   const path = tenant + '/uploads/' + crypto.randomUUID() + '.' + ext;
   const { error } = await sb.storage.from('studio-assets').upload(path, file, { contentType: file.type, cacheControl: '31536000' });
-  CR.messages.pop();
-  if (error){ crSay('Upload failed: ' + error.message, 'question'); return; }
+  if (error){ crStatus('Upload failed: ' + error.message, true); return; }
   const j = await studio('register_upload', { tenant_id: tenant, path, width: dims.w, height: dims.h, bytes: file.size, mime: file.type, label }, 20000);
-  if (!j.ok){ crSay(j.error, 'question'); return; }
+  if (!j.ok){ crStatus(j.error, true); return; }
   if (label === 'reference') CR.insp = { type:'asset', asset_id: j.asset.id, name: 'Your reference', url: j.asset.url };
   else CR.image = j.asset;
-  renderCreate();
+  crStatus(''); renderCreate();
 }
 
 async function crPicker(kind){
   const d = el('crPick');
-  d.innerHTML = '<button class="vclose" type="button" aria-label="Close" id="pkX">\u00D7</button><div class="pk"><h2>' + (kind === 'ideas' ? 'Choose an inspiration' : 'Choose one of your images') + '</h2>' +
-    (kind === 'ideas' ? '<div class="pills" style="margin:8px 0"><button class="filter" type="button" data-pt="lib" aria-pressed="true">Idea library</button><button class="filter" type="button" data-pt="refs" aria-pressed="false">Your references</button></div>' +
-      '<label class="sr" for="pkQ">Search ideas</label><input id="pkQ" class="search" type="search" placeholder="Search: shoes, offer, premium, customer\u2026">' : '') +
+  d.innerHTML = '<button class="vclose" type="button" aria-label="Close" id="pkX">\u00D7</button><div class="pk"><h2>' + (kind === 'refs' ? 'Your references' : 'Choose one of your images') + '</h2>' +
+    (kind === 'refs' ? '<p class="note" style="margin:4px 0 12px">Images you uploaded as inspiration. They shape a new image and are never posted.</p>' : '') +
     '<div id="pkBody"><div class="thinking"><span class="pulse"></span><span>Loading</span></div></div></div>';
   d.showModal();
   el('pkX').onclick = () => d.close();
   d.onclick = e => { if (e.target === d) d.close(); };
-  const grid = (items, onPick) => {
-    el('pkBody').innerHTML = items.length ? '<div class="pkgrid">' + items.map((x, i) => '<button class="pkcard" type="button" data-i="' + i + '">' +
-      (x.url ? '<img src="' + esc(x.url) + '" alt="" loading="lazy">' : '<div class="ph">No image yet</div>') + '<span>' + esc(x.name) + '</span></button>').join('') + '</div>'
-      : '<p class="note">Nothing here yet.</p>';
-    el('pkBody').querySelectorAll('[data-i]').forEach(b => b.onclick = () => { onPick(items[+b.dataset.i]); d.close(); renderCreate(); });
-  };
-  const mine = async (label) => {
-    const j = await studio('list_assets', { tenant_id: tenant, label, limit: 60 }, 20000);
-    return j.ok ? j.assets.map(a => ({ id: a.id, url: a.url, name: a.kind === 'generated' ? 'Made with Zen' : 'Uploaded', raw: a })) : [];
-  };
-  if (kind === 'mine'){ grid(await mine('creative'), x => { CR.image = x.raw; }); return; }
-  const showLib = async () => {
-    if (!CR.concepts){ const j = await studio('inspiration_list', {}, 30000); CR.concepts = j.ok ? j.concepts : []; }
-    const q = (el('pkQ').value || '').trim().toLowerCase();
-    const items = CR.concepts.filter(c => c.imagePresent).filter(c => !q || [c.displayName, c.primaryBundle, c.shortDescription, ...c.goals, ...c.industries, ...c.styles, ...c.bestFor].join(' ').toLowerCase().includes(q))
-      .map(c => ({ url: c.imageUrl, name: c.displayName, c }));
-    grid(items, x => { CR.insp = { type:'concept', concept_name: x.c.conceptName, name: x.c.displayName, url: x.c.imageUrl }; CR.parent = null; });
-  };
-  const showRefs = async () => grid(await mine('reference'), x => { CR.insp = { type:'asset', asset_id: x.id, name: 'Your reference', url: x.url }; CR.parent = null; });
-  d.querySelectorAll('[data-pt]').forEach(b => b.onclick = () => {
-    d.querySelectorAll('[data-pt]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
-    el('pkQ').hidden = b.dataset.pt !== 'lib'; (b.dataset.pt === 'lib' ? showLib : showRefs)();
+  const j = await studio('list_assets', { tenant_id: tenant, label: kind === 'refs' ? 'reference' : 'creative', limit: 60 }, 20000);
+  const items = j.ok ? j.assets : [];
+  el('pkBody').innerHTML = items.length ? '<div class="pkgrid">' + items.map((a, i) => '<button class="pkcard" type="button" data-i="' + i + '"><img src="' + esc(a.url) + '" alt="" loading="lazy"><span>' +
+      (a.kind === 'generated' ? 'Made with Zen' : 'Uploaded') + '</span></button>').join('') + '</div>'
+    : '<p class="note">' + (kind === 'refs' ? 'No references yet. Use \u201cUpload a reference\u201d to add one.' : 'Nothing here yet. Upload an image first.') + '</p>';
+  el('pkBody').querySelectorAll('[data-i]').forEach(b => b.onclick = () => {
+    const a = items[+b.dataset.i];
+    if (kind === 'refs'){ CR.insp = { type:'asset', asset_id: a.id, name: 'Your reference', url: a.url }; } else CR.image = a;
+    d.close(); renderCreate();
   });
-  el('pkQ').addEventListener('input', showLib);
-  showLib();
+}
+
+// =====================================================================
+// AI Inspiration: find a creative direction (the shared concept library)
+// =====================================================================
+const GROUPS = [
+  ['goals', 'Goal'], ['industries', 'Industry'], ['businessTypes', 'Business type'],
+  ['subjectTypes', 'Product type'], ['serviceTypes', 'Service type'], ['styles', 'Style'], ['formats', 'Format'],
+];
+const GROUP_LABEL = Object.fromEntries(GROUPS);
+// Each quick chip adds exactly one visible filter.
+const QUICK = [
+  ['Trending', { trending: true }], ['UGC', { styles: 'UGC' }], ['Premium', { goals: 'Make it look premium' }],
+  ['3D / CGI', { styles: '3D / CGI' }], ['Offers', { goals: 'Promote an offer' }], ['Launch', { goals: 'Launch something' }],
+  ['Local Business', { bundle: 'Local Business & Services' }],
+];
+const GENERAL = 'General / Cross Industry';
+const emptyFilters = () => ({ goals: [], industries: [], businessTypes: [], subjectTypes: [], serviceTypes: [], styles: [], formats: [] });
+const INS = { concepts: null, vocab: null, f: emptyFilters(), bundle: null, trending: false, keywords: [], query: '', summary: '', pick: false };
+
+async function inspView(opts){
+  INS.pick = !!(opts && opts.pick);
+  const box = el('mkt');
+  box.innerHTML = (INS.pick
+      ? '<button class="back" type="button" onclick="mktView(\'studio\')">\u2190 Create images</button><div class="pickbar">Choose an idea for your image, then press <b>Use this reference</b>.</div>'
+      : backBtn) +
+    '<div class="ins-hero"><h1>Find a creative direction</h1>' +
+    '<form class="ins-ask" onsubmit="event.preventDefault();insAsk();"><label for="insQ" class="sr">Describe your business and what you want</label>' +
+      '<input id="insQ" type="search" placeholder="' + (narrow() ? 'Describe your business and goal' : 'Describe your business and what you want, e.g. \u201cI run a dental clinic and want a trustworthy ad\u201d') + '" value="' + esc(INS.query) + '">' +
+      '<button class="send" type="submit" aria-label="Find ideas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></form>' +
+    '<div class="chips" id="insQuick"></div></div>' +
+    '<div class="ins-bar" id="insBar"></div><div id="insActive"></div><div id="insBody"><div class="thinking"><span class="pulse"></span><span>Loading ideas</span></div></div>' +
+    '<dialog class="viewer" id="insDetail" aria-label="Idea"></dialog><dialog class="viewer" id="insFilter" aria-label="Filter"></dialog>';
+  el('insQ').addEventListener('search', () => { if (!el('insQ').value.trim()) insClearAll(); });
+  if (!INS.concepts){
+    const j = await studio('inspiration_list', {}, 30000);
+    if (!j.ok){ el('insBody').innerHTML = '<div class="empty">' + esc(j.error) + '</div>'; return; }
+    INS.concepts = j.concepts.filter(c => c.imagePresent); INS.vocab = j.vocabulary;
+  }
+  insRender();
+  if (INS.autoAsk){ el('insQ').value = INS.autoAsk; INS.autoAsk = ''; insAsk(); }
+}
+
+function insActiveCount(){ return GROUPS.reduce((n, [k]) => n + INS.f[k].length, 0) + (INS.bundle ? 1 : 0) + (INS.trending ? 1 : 0) + INS.keywords.length; }
+
+// OR within a group, AND across groups. "General / Cross Industry" ideas match any industry.
+function insMatches(c, skipGroup){
+  for (const [k] of GROUPS){
+    if (k === skipGroup || !INS.f[k].length) continue;
+    const have = c[k] || [];
+    const ok = INS.f[k].some(v => have.includes(v)) || (k === 'industries' && have.includes(GENERAL));
+    if (!ok) return false;
+  }
+  if (INS.bundle && skipGroup !== 'bundle' && c.primaryBundle !== INS.bundle) return false;
+  if (INS.trending && !(c.trendTags || []).length) return false;
+  if (INS.keywords.length && !insFiltersOn() && insKeywordHits(c) === 0) return false;   // words alone: at least one must match
+  return true;
+}
+function insFiltersOn(){ return GROUPS.some(([k]) => INS.f[k].length) || INS.bundle || INS.trending; }
+function insHay(c){ return [c.displayName, c.conceptName, c.primaryBundle, c.shortDescription, ...(c.goals||[]), ...(c.industries||[]), ...(c.businessTypes||[]), ...(c.subjectTypes||[]), ...(c.serviceTypes||[]), ...(c.styles||[]), ...(c.formats||[]), ...(c.trendTags||[]), ...(c.bestFor||[])].join(' ').toLowerCase(); }
+function insKeywordHits(c){ const h = insHay(c); return INS.keywords.filter(w => h.includes(w) || (w.endsWith('s') && h.includes(w.slice(0, -1)))).length; }
+// Ranking: ideas most specifically about what you chose come first (the share of each idea's
+// tags that you picked, weighted goal > product/service > style > industry), then word matches,
+// then the library's own order. General-purpose ideas still show, just after the specific ones.
+const FOCUS_W = { goals: 5, subjectTypes: 4, serviceTypes: 4, styles: 3, industries: 2, businessTypes: 1, formats: 1 };
+function insScore(c){
+  let s = insKeywordHits(c) * 3;
+  for (const [k] of GROUPS){
+    if (!INS.f[k].length) continue;
+    const tags = (c[k] || []).filter(t => t !== GENERAL);
+    if (tags.length) s += FOCUS_W[k] * INS.f[k].filter(v => tags.includes(v)).length / tags.length;
+  }
+  return s;
+}
+
+function insRender(){
+  // quick chips
+  el('insQuick').innerHTML = QUICK.map(([label, q], i) => {
+    const on = q.trending ? INS.trending : q.bundle ? INS.bundle === q.bundle : INS.f[Object.keys(q)[0]].includes(Object.values(q)[0]);
+    return '<button class="filter" type="button" data-q="' + i + '" aria-pressed="' + on + '">' + esc(label) + '</button>';
+  }).join('');
+  el('insQuick').querySelectorAll('[data-q]').forEach(b => b.onclick = () => {
+    const q = QUICK[+b.dataset.q][1];
+    if (q.trending) INS.trending = !INS.trending;
+    else if (q.bundle) INS.bundle = INS.bundle === q.bundle ? null : q.bundle;
+    else { const k = Object.keys(q)[0], v = q[k]; INS.f[k] = INS.f[k].includes(v) ? INS.f[k].filter(x => x !== v) : [...INS.f[k], v]; }
+    INS.summary = ''; insRender();
+  });
+  // filter bar: the type group follows the business type
+  const bt = INS.f.businessTypes, showSvc = bt.includes('Service'), showProd = bt.includes('Product') || (!showSvc && bt.length > 0);
+  const bar = [['goals'], ['industries'], ['businessTypes'], ...(showProd ? [['subjectTypes']] : []), ...(showSvc ? [['serviceTypes']] : []), ['styles'], ['formats']];
+  el('insBar').innerHTML = '<span class="note">Filter</span>' + bar.map(([k]) => '<button class="fbtn" type="button" data-fg="' + k + '">' + GROUP_LABEL[k] +
+      (INS.f[k].length ? ' <b>' + INS.f[k].length + '</b>' : '') + ' \u25BE</button>').join('') +
+    (!bt.length ? '<span class="note hint">Choose a business type to filter by product or service type.</span>' : '');
+  el('insBar').querySelectorAll('[data-fg]').forEach(b => b.onclick = () => insFilterDialog(b.dataset.fg));
+  // what's applied, always visible and removable
+  const chips = [];
+  if (INS.summary) chips.push('<span class="understood">' + esc(INS.summary) + '</span>');
+  for (const [k, label] of GROUPS) INS.f[k].forEach(v => chips.push('<button class="achip" type="button" data-rm="' + k + '|' + esc(v) + '">' + label + ': ' + esc(v) + ' <span aria-hidden="true">\u00D7</span></button>'));
+  if (INS.bundle) chips.push('<button class="achip" type="button" data-rm="bundle|">Creative type: ' + esc(INS.bundle) + ' <span aria-hidden="true">\u00D7</span></button>');
+  if (INS.trending) chips.push('<button class="achip" type="button" data-rm="trending|">Trending <span aria-hidden="true">\u00D7</span></button>');
+  INS.keywords.forEach(w => chips.push('<button class="achip" type="button" data-rm="kw|' + esc(w) + '">Words: ' + esc(w) + ' <span aria-hidden="true">\u00D7</span></button>'));
+  el('insActive').innerHTML = insActiveCount() ? '<div class="achips">' + chips.join('') + '<button class="btn btn-q" type="button" id="insClear">Clear filters</button></div>' : '';
+  el('insActive').querySelectorAll('[data-rm]').forEach(b => b.onclick = () => {
+    const [k, v] = b.dataset.rm.split('|');
+    if (k === 'bundle') INS.bundle = null; else if (k === 'trending') INS.trending = false;
+    else if (k === 'kw') INS.keywords = INS.keywords.filter(x => x !== v);
+    else { INS.f[k] = INS.f[k].filter(x => x !== v); if (k === 'businessTypes'){ if (v === 'Service') INS.f.serviceTypes = []; if (v === 'Product') INS.f.subjectTypes = []; } }
+    INS.summary = ''; insRender();
+  });
+  if (el('insClear')) el('insClear').onclick = insClearAll;
+  insResults();
+}
+
+function insClearAll(){ INS.f = emptyFilters(); INS.bundle = null; INS.trending = false; INS.keywords = []; INS.summary = ''; INS.query = ''; if (el('insQ')) el('insQ').value = ''; insRender(); }
+
+function insTags(c){
+  const ind = (c.industries || []).find(x => x !== GENERAL) || (c.subjectTypes || [])[0];
+  return [(c.styles || [])[0], ind, (c.goals || [])[0]].filter(Boolean).slice(0, 3);
+}
+function insCard(c, eager){
+  return '<button class="icard" type="button" data-c="' + esc(c.conceptName) + '"><img src="' + esc(c.imageUrl) + '" alt="" loading="' + (eager ? 'eager' : 'lazy') + '" decoding="async">' +
+    '<span class="iname">' + esc(c.displayName) + '</span><span class="itags">' + insTags(c).map(t => '<i>' + esc(t) + '</i>').join('') + '</span></button>';
+}
+
+function insResults(){
+  const C = INS.concepts, body = el('insBody');
+  const list = C.filter(c => insMatches(c)).map((c, i) => [c, insScore(c), i]).sort((a, b) => b[1] - a[1] || a[2] - b[2]).map(x => x[0]);
+  let h = '';
+  if (!insActiveCount()){
+    const bundles = [...new Set(C.map(c => c.primaryBundle))];
+    h += '<h2 class="ins-h">Browse by creative type</h2><div class="bundles">' + bundles.map(b => {
+      const inB = C.filter(c => c.primaryBundle === b);
+      return '<button class="bcard" type="button" data-b="' + esc(b) + '"><img src="' + esc(inB[0].imageUrl) + '" alt="" loading="lazy"><span><b>' + esc(b) + '</b>' + inB.length + ' ideas</span></button>';
+    }).join('') + '</div><h2 class="ins-h">All ideas</h2>';
+  } else {
+    h += '<h2 class="ins-h">' + (list.length ? list.length + ' idea' + (list.length === 1 ? '' : 's') : 'No ideas match all of these') + '</h2>';
+    if (!list.length) h += '<p class="note">Remove a filter above to see more. Ideas must match every type of filter you choose.</p>';
+  }
+  h += '<div class="igrid">' + list.map(insCard).join('') + '</div>';
+  body.innerHTML = h;
+  body.querySelectorAll('[data-b]').forEach(b => b.onclick = () => { INS.bundle = b.dataset.b; insRender(); });
+  body.querySelectorAll('[data-c]').forEach(b => b.onclick = () => insDetail(b.dataset.c));
+}
+
+async function insAsk(){
+  const text = el('insQ').value.trim();
+  if (!text){ insClearAll(); return; }
+  INS.query = text;
+  el('insBody').innerHTML = '<div class="thinking"><span class="pulse"></span><span>Understanding what you need</span></div>';
+  const j = await studio('inspiration_interpret', { text }, 45000);
+  INS.f = emptyFilters(); INS.bundle = null; INS.trending = false;
+  if (j.ok){
+    for (const [k] of GROUPS) INS.f[k] = (j.filters && j.filters[k]) || [];
+    INS.keywords = j.keywords || []; INS.summary = j.summary || '';
+  } else {
+    INS.keywords = text.toLowerCase().split(/[^a-z0-9&]+/).filter(w => w.length > 2).slice(0, 4); INS.summary = '';
+  }
+  insRender();
+}
+
+function insFilterDialog(k){
+  const d = el('insFilter'), opts = (INS.vocab && INS.vocab[k]) || [];
+  const count = v => INS.concepts.filter(c => insMatches(c, k) && (((c[k] || []).includes(v)) || (k === 'industries' && (c.industries || []).includes(GENERAL)))).length;
+  d.innerHTML = '<button class="vclose" type="button" aria-label="Close" id="fx">\u00D7</button><div class="pk"><h2>' + GROUP_LABEL[k] + '</h2>' +
+    '<p class="note" style="margin:4px 0 12px">Pick one or more. Ideas matching <b>any</b> of them are shown.' + (k === 'industries' ? ' Ideas that suit every industry always count.' : '') + '</p>' +
+    '<div class="flist">' + opts.map(v => { const n = count(v); return '<label class="fopt' + (n ? '' : ' none') + '"><input type="checkbox" value="' + esc(v) + '"' + (INS.f[k].includes(v) ? ' checked' : '') + '> <span>' + esc(v) + '</span><em>' + n + '</em></label>'; }).join('') + '</div>' +
+    '<div class="actions"><button class="btn btn-p" type="button" id="fDone">Show ideas</button><button class="btn btn-q" type="button" id="fNone">Clear ' + GROUP_LABEL[k].toLowerCase() + '</button></div></div>';
+  d.showModal();
+  const close = () => d.close();
+  el('fx').onclick = close; d.onclick = e => { if (e.target === d) close(); };
+  el('fNone').onclick = () => { d.querySelectorAll('input').forEach(x => x.checked = false); };
+  el('fDone').onclick = () => {
+    INS.f[k] = [...d.querySelectorAll('input:checked')].map(x => x.value);
+    if (k === 'businessTypes'){ if (!INS.f[k].includes('Service')) INS.f.serviceTypes = []; if (!INS.f[k].includes('Product')) INS.f.subjectTypes = []; }
+    INS.summary = ''; close(); insRender();
+  };
+}
+
+// "More like this": how much two ideas share in each group (overlap, not raw counts, so ideas
+// with long tag lists don't win by default), weighted goal > product > style > trend > industry,
+// plus the same creative type.
+function insSimilar(c){
+  const W = [['goals', 5], ['subjectTypes', 4], ['styles', 3], ['trendTags', 2], ['industries', 2]];
+  const overlap = (a, b) => { a = new Set((a || []).filter(v => v !== GENERAL)); b = new Set((b || []).filter(v => v !== GENERAL));
+    const inter = [...a].filter(v => b.has(v)).length, uni = new Set([...a, ...b]).size; return uni ? inter / uni : 0; };
+  return INS.concepts.filter(x => x.conceptName !== c.conceptName).map(x => {
+    let s = 0;
+    for (const [k, w] of W) s += w * overlap(x[k], c[k]);
+    if (x.primaryBundle === c.primaryBundle) s += 1;
+    return [x, s];
+  }).filter(([, s]) => s > 0).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([x]) => x);
+}
+
+function insDetail(key){
+  const c = INS.concepts.find(x => x.conceptName === key); if (!c) return;
+  const d = el('insDetail');
+  const row = (label, vals) => vals && vals.length ? '<dt>' + label + '</dt><dd>' + esc(vals.join(', ')) + '</dd>' : '';
+  d.innerHTML = '<button class="vclose" type="button" aria-label="Close" id="dx">\u00D7</button><div class="vgrid"><div class="vmedia"><img src="' + esc(c.imageUrl) + '" alt="' + esc(c.displayName) + '"></div>' +
+    '<div class="vinfo"><h2>' + esc(c.displayName) + '</h2><p style="margin:0">' + esc(c.shortDescription) + '</p>' +
+    '<dl class="kv">' + row('Best for', c.bestFor) + row('Industries', c.industries) + row('Styles', c.styles) + row('Goals', c.goals) + '</dl>' +
+    '<div class="actions"><button class="btn btn-p" type="button" id="useRef">Use this reference</button><button class="btn btn-s" type="button" id="moreLike">More like this</button></div>' +
+    '<p class="note">A reference shapes a new image for your business. It\u2019s never posted or copied as it is.</p><div id="likeBox"></div></div></div>';
+  d.showModal();
+  el('dx').onclick = () => d.close(); d.onclick = e => { if (e.target === d) d.close(); };
+  el('useRef').onclick = () => {
+    CR.insp = { type:'concept', concept_name: c.conceptName, name: c.displayName, url: c.imageUrl };
+    d.close(); mktView('studio');
+  };
+  el('moreLike').onclick = () => {
+    const sims = insSimilar(c);
+    el('likeBox').innerHTML = sims.length ? '<h3 class="ins-h" style="margin-top:6px">More like this</h3><div class="likegrid">' + sims.map(x => insCard(x, true)).join('') + '</div>' : '<p class="note">No close matches.</p>';
+    el('likeBox').querySelectorAll('[data-c]').forEach(b => b.onclick = () => insDetail(b.dataset.c));
+    el('moreLike').hidden = true;
+  };
 }
 
 // ---------- Instagram post ----------
@@ -2132,7 +2486,10 @@ function answerCard(d, c){
         '<div class="v-txt"><div class="v-name">' + esc(it.name) + '</div>' + (it.reason ? '<div class="v-why">' + esc(it.reason) + '</div>' : '') + '</div>' + act + '</div>';
     }).join('') + '</div>';
   }
-  const open = c.open ? '<div class="actions"><a class="btn btn-s" href="' + ZENPRO_URL + '" target="_blank" rel="noopener">' + esc(c.open.label) + '</a></div>' : '';
+  const open = !c.open ? ''
+    : c.open.app === 'zen'
+      ? '<div class="actions"><button class="btn btn-p" type="button" data-zenopen="' + esc(JSON.stringify({ view: c.open.view, params: c.open.params || {} })) + '">' + esc(c.open.label) + '</button></div>'
+      : '<div class="actions"><a class="btn btn-s" href="' + ZENPRO_URL + '" target="_blank" rel="noopener">' + esc(c.open.label) + '</a></div>';
   d.innerHTML = '<h3>' + esc(c.title) + '</h3><div class="body">' + esc(c.body) + '</div>' + items + open + followUps(c.follow_ups);
   wireFollowUps(d);
   d.querySelectorAll('[data-propose]').forEach(b => b.onclick = async () => {
