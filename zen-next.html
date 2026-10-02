@@ -199,7 +199,26 @@ main{flex:1;min-width:0;display:flex;flex-direction:column}
 
 /* ---- conversation ---- */
 .convo{flex:1;display:none;flex-direction:column;min-height:100vh}
-.convo-top{display:flex;justify-content:space-between;align-items:center;padding:18px 32px;position:sticky;top:0;background:var(--ground);z-index:2}
+.convo-top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 32px;position:sticky;top:0;background:var(--ground);z-index:2;border-bottom:1px solid var(--line)}
+.ctop-back{margin:0;flex-shrink:0;border:0;background:none;color:var(--muted);font-weight:600;padding:6px 0;min-height:36px}
+.ctop-back:hover{color:var(--ink)}
+.ctitle{display:flex;align-items:center;gap:6px;min-width:0;flex:1;justify-content:center}
+.ctop-acts{display:flex;gap:6px;flex-shrink:0}
+.iconbtn{border:0;background:transparent;color:var(--muted);border-radius:8px;min-width:36px;min-height:36px;font-size:15px}
+.iconbtn:hover{background:var(--surface);color:var(--ink)}
+.iconbtn.del.armed{background:var(--waste);color:#fff;padding:0 10px;font-size:13px;font-weight:600}
+.ctitle-in{border:1px solid var(--line);border-radius:8px;padding:6px 10px;font:600 16px/1.3 var(--display);min-width:0;width:100%;max-width:520px;background:#fff}
+.block-h{display:flex;justify-content:space-between;align-items:center}
+.block-h h2{margin:0}
+.chatlist{display:flex;flex-direction:column;gap:2px}
+.chatopen{border:0;background:none;text-align:left;padding:10px 12px;border-radius:10px;display:flex;justify-content:space-between;gap:12px;flex:1;min-width:0;align-items:center}
+.chatopen:hover{background:var(--surface)}
+.chatopen b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chatopen span{color:var(--muted);font-size:14px;flex-shrink:0}
+.chatrow{display:flex;align-items:center;gap:2px;border-bottom:1px solid #EEF0EC;flex-wrap:wrap}
+.chatrow:last-child{border-bottom:0}
+.chatrow .ctitle-in{flex:1}
+.histdlg{max-width:640px}
 .convo-top h1{font:600 17px/1.3 var(--display);margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .log{width:100%;max-width:780px;margin:0 auto;padding:8px 32px 180px;display:flex;flex-direction:column;gap:18px}
 .you{align-self:flex-end;max-width:80%;background:var(--ink);color:#fff;padding:12px 18px;border-radius:20px 20px 6px 20px;white-space:pre-line}
@@ -703,6 +722,9 @@ details.prompt pre{white-space:pre-wrap;background:#F7F8F5;border-radius:10px;pa
   .acctbtn{display:grid;place-items:center;position:fixed;top:12px;right:12px;z-index:6;width:42px;height:42px;border-radius:50%;border:0;background:var(--ink);color:#fff;font-weight:600}
   .igwrap{grid-template-columns:1fr}
   .crwrap{grid-template-columns:1fr}
+  .convo-top{padding:10px 64px 10px 14px;flex-wrap:wrap}      /* room for the round settings button */
+  .ctitle{order:3;flex-basis:100%;justify-content:flex-start}
+  .ctop-acts .btn{padding:8px 10px;font-size:14px}
   .selbar{bottom:calc(76px + env(safe-area-inset-bottom, 0px))}
   .igrid{columns:2 150px;column-gap:10px}
   .bundles{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -773,16 +795,17 @@ details.prompt pre{white-space:pre-wrap;background:#F7F8F5;border-radius:10px;pa
         <div id="nudges"><div class="empty">Checking your business…</div></div>
       </div>
       <div class="block" id="recentBlock" hidden>
-        <h2>Pick up where you left off</h2>
-        <div class="threads" id="threads"></div>
+        <div class="block-h"><h2>Pick up where you left off</h2><button class="btn btn-q" type="button" id="seeAllChats">See all</button></div>
+        <div class="chatlist" id="threads"></div>
       </div>
     </section>
 
     <!-- Home: conversation -->
     <section id="convo" class="convo" aria-live="polite">
       <div class="convo-top">
-        <h1 id="convoTitle">Conversation</h1>
-        <button class="btn btn-s" type="button" onclick="newConversation()">New</button>
+        <button class="ctop-back" type="button" id="convoBack">← Home</button>
+        <div class="ctitle"><h1 id="convoTitle">Conversation</h1><button class="iconbtn" type="button" id="convoRename" aria-label="Rename this conversation" title="Rename">✎</button></div>
+        <div class="ctop-acts"><button class="btn btn-q" type="button" id="convoHistory">All chats</button><button class="btn btn-s" type="button" id="convoNew">+ New chat</button></div>
       </div>
       <div class="log" id="log"></div>
       <form class="dock" onsubmit="event.preventDefault();sendFrom('dockInput');">
@@ -793,6 +816,8 @@ details.prompt pre{white-space:pre-wrap;background:#F7F8F5;border-radius:10px;pa
         </div>
       </form>
     </section>
+
+    <dialog class="viewer histdlg" id="histDlg" aria-label="Your conversations"></dialog>
 
     <!-- WhatsApp -->
     <section id="wa" class="wa" hidden>
@@ -1023,7 +1048,7 @@ function go(area){
   }
   if (area === 'home'){
     soon.hidden = true;
-    if (threadId) showConvo(); else showLanding();
+    goHome();                                                  // always the main screen; the conversation is kept in history
     return;
   }
   el('landing').style.display = 'none'; el('convo').style.display = 'none';
@@ -1058,9 +1083,99 @@ function showLanding(){
 function showConvo(){
   el('landing').style.display = 'none';
   el('convo').style.display = 'flex';
+  if (!(history.state && history.state.zen === 'convo')) history.pushState({ zen: 'convo' }, '');
 }
-function newConversation(){
-  threadId = null; el('log').innerHTML = ''; showLanding();
+// Back to the main screen. The conversation is kept and listed under "Pick up where you left off".
+function goHome(){ threadId = null; el('log').innerHTML = ''; showLanding(); }
+function newConversation(){ goHome(); }
+
+// The phone's back gesture and the browser's back button work inside Home:
+// conversation -> main screen, history panel -> where you were.
+window.addEventListener('popstate', () => {
+  const h = el('histDlg');
+  if (h && h.open){ h.dataset.fromPop = '1'; h.close(); return; }
+  if (el('convo').style.display !== 'none' && !el('convo').closest('[hidden]')) goHome();
+});
+function leaveConvo(){ if (history.state && history.state.zen === 'convo') history.back(); else goHome(); }
+el('convoBack').onclick = leaveConvo;
+el('convoNew').onclick = leaveConvo;
+el('convoHistory').onclick = () => openHistory();
+el('seeAllChats').onclick = () => openHistory();
+
+// Rename the open conversation in place.
+el('convoRename').onclick = () => {
+  if (!threadId){ return; }
+  const h = el('convoTitle'), old = h.textContent;
+  const inp = document.createElement('input'); inp.className = 'ctitle-in'; inp.value = old; inp.maxLength = 120; inp.setAttribute('aria-label', 'Conversation name');
+  h.replaceWith(inp); inp.focus(); inp.select();
+  let done = false;
+  const finish = async save => {
+    if (done) return; done = true;
+    const t = inp.value.trim(); const nh = document.createElement('h1'); nh.id = 'convoTitle'; nh.textContent = save && t ? t : old; inp.replaceWith(nh);
+    if (save && t && t !== old){ const j = await zen('rename_thread', { thread_id: threadId, title: t }, 15000); if (!j.ok) el('convoTitle').textContent = old; }
+  };
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); finish(true); } if (e.key === 'Escape') finish(false); });
+  inp.addEventListener('blur', () => finish(true));
+};
+
+// All conversations: search, open, rename, delete (two taps).
+async function openHistory(){
+  const d = el('histDlg');
+  d.innerHTML = '<button class="vclose" type="button" aria-label="Close" id="hX">\u00D7</button><div class="pk"><h2>Your conversations</h2>' +
+    '<label class="sr" for="hQ">Search your conversations</label><input id="hQ" class="search" type="search" placeholder="Search by title">' +
+    '<div id="hList" class="chatlist"><div class="thinking"><span class="pulse"></span><span>Loading</span></div></div></div>';
+  if (!d.open) d.showModal();
+  if (!(history.state && history.state.zen === 'history')) history.pushState({ zen: 'history' }, '');
+  const close = () => { if (history.state && history.state.zen === 'history') history.back(); else d.close(); };
+  el('hX').onclick = close; d.onclick = e => { if (e.target === d) close(); };
+  d.onclose = () => { delete d.dataset.fromPop; };
+  d.oncancel = e => { e.preventDefault(); close(); };           // Escape closes it the same way as ×
+  let timer = null;
+  el('hQ').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => loadHistory(el('hQ').value.trim()), 250); });
+  loadHistory('');
+  setTimeout(() => el('hQ').focus(), 50);
+}
+async function loadHistory(q){
+  const box = el('hList'); if (!box) return;
+  const j = await zen('list_threads', { q, limit: 100 }, 20000);
+  if (!el('hList')) return;
+  const list = (j.ok && j.threads) || [];
+  if (!j.ok){ box.innerHTML = '<p class="note bad">' + esc(j.error) + '</p>'; return; }
+  if (!list.length){ box.innerHTML = '<p class="note">' + (q ? 'No conversations match \u201c' + esc(q) + '\u201d.' : 'No conversations yet. Ask Zen anything on Home.') + '</p>'; return; }
+  box.innerHTML = list.map(t => '<div class="chatrow" data-id="' + esc(t.id) + '">' +
+    '<button class="chatopen" type="button"><b>' + esc(t.title || 'Conversation') + '</b><span>' + esc(ago(t.updated_at)) + '</span></button>' +
+    '<button class="iconbtn" type="button" data-ren aria-label="Rename" title="Rename">\u270E</button>' +
+    '<button class="iconbtn del" type="button" data-del aria-label="Delete" title="Delete">\u2715</button></div>').join('');
+  box.querySelectorAll('.chatrow').forEach(row => {
+    const id = row.dataset.id, t = list.find(x => x.id === id);
+    row.querySelector('.chatopen').onclick = () => {
+      // The history step becomes the conversation step, so Back then returns to the main screen.
+      if (history.state && history.state.zen === 'history') history.replaceState({ zen: 'convo' }, '');
+      el('histDlg').close(); openThread(id, t.title);
+    };
+    row.querySelector('[data-ren]').onclick = () => {
+      const b = row.querySelector('.chatopen b'), inp = document.createElement('input'); inp.className = 'ctitle-in'; inp.value = t.title || ''; inp.maxLength = 120; inp.setAttribute('aria-label', 'Conversation name');
+      b.replaceWith(inp); inp.focus(); inp.select();
+      let done = false;
+      const finish = async save => {
+        if (done) return; done = true;
+        const v = inp.value.trim(), nb = document.createElement('b'); nb.textContent = save && v ? v : (t.title || 'Conversation'); inp.replaceWith(nb);
+        if (save && v && v !== t.title){ const j = await zen('rename_thread', { thread_id: id, title: v }, 15000); if (j.ok){ t.title = v; if (id === threadId) el('convoTitle').textContent = v; } else nb.textContent = t.title; }
+      };
+      inp.addEventListener('click', e => e.stopPropagation());
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); finish(true); } if (e.key === 'Escape') finish(false); });
+      inp.addEventListener('blur', () => finish(true));
+    };
+    const del = row.querySelector('[data-del]'); let armed = false;
+    del.onclick = async () => {
+      if (!armed){ armed = true; del.classList.add('armed'); del.textContent = 'Delete?'; setTimeout(() => { if (armed){ armed = false; del.classList.remove('armed'); del.textContent = '\u2715'; } }, 4000); return; }
+      del.disabled = true;
+      const j = await zen('delete_thread', { thread_id: id }, 15000);
+      if (!j.ok){ del.disabled = false; armed = false; del.classList.remove('armed'); del.textContent = '\u2715'; row.insertAdjacentHTML('beforeend', '<p class="note bad">' + esc(j.error) + '</p>'); return; }
+      row.remove(); if (id === threadId) goHome();
+      if (!el('hList').querySelector('.chatrow')) el('hList').innerHTML = '<p class="note">No conversations yet.</p>';
+    };
+  });
 }
 
 async function loadNudges(){
@@ -1090,8 +1205,9 @@ async function loadThreads(){
   const j = await zen('list_threads', {}, 20000);
   const list = (j.ok && j.threads) || [];
   el('recentBlock').hidden = !list.length;
-  el('threads').innerHTML = list.slice(0, 6).map(t =>
-    '<button class="thread" type="button" data-thread="' + esc(t.id) + '"><b>' + esc(t.title || 'Conversation') + '</b><span>' + esc(ago(t.updated_at)) + '</span></button>').join('');
+  el('seeAllChats').textContent = list.length > 3 ? 'See all (' + list.length + ')' : 'See all';
+  el('threads').innerHTML = list.slice(0, 3).map(t =>
+    '<button class="chatopen" type="button" data-thread="' + esc(t.id) + '"><b>' + esc(t.title || 'Conversation') + '</b><span>' + esc(ago(t.updated_at)) + '</span></button>').join('');
   el('threads').querySelectorAll('[data-thread]').forEach(b => b.onclick = () => openThread(b.dataset.thread, b.querySelector('b').textContent));
 }
 function ago(iso){
@@ -1102,7 +1218,7 @@ function ago(iso){
 }
 
 async function openThread(id, title){
-  threadId = id; el('log').innerHTML = ''; el('convoTitle').textContent = title || 'Conversation';
+  threadId = id; el('log').innerHTML = ''; el('convoTitle').textContent = title || 'Conversation'; el('convoRename').hidden = false;
   showConvo();
   const think = addThinking(['Opening the conversation']);
   const j = await zen('get_thread', { thread_id: id }, 20000);
@@ -1123,7 +1239,7 @@ function sendFrom(id){ const t = el(id).value.trim(); if (t){ el(id).value = '';
 async function send(text, opts){
   if (busy) return;
   busy = true;
-  if (!threadId){ el('log').innerHTML = ''; el('convoTitle').textContent = text.length > 60 ? text.slice(0,57) + '…' : text; }
+  if (!threadId){ el('log').innerHTML = ''; el('convoTitle').textContent = text.length > 60 ? text.slice(0,57) + '…' : text; el('convoRename').hidden = true; }
   showConvo();
   addYou(text);
   const think = addThinking(['Understanding what you need', 'Checking your business', 'Putting it together']);
@@ -1132,6 +1248,7 @@ async function send(text, opts){
   busy = false;
   if (!j.ok){ el('log').appendChild(errorCard(j.error, text)); return; }
   threadId = j.thread_id || threadId;
+  el('convoRename').hidden = !threadId;
   (j.cards || []).forEach(c => el('log').appendChild(renderCard(c)));
   el('dockInput').focus();
 }
