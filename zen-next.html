@@ -1968,7 +1968,7 @@ const crNum = id => { const i = CR.versions.findIndex(v => v.id === id); return 
 
 function renderCreateResults(){
   const r = el('crResults'); if (!r) return;
-  if (!CR.versions.length){ r.innerHTML = '<div class="crempty"><b>Your images appear here.</b><span>Each result shows the prompt that was used. You can change it, or edit the prompt and generate again.</span></div>'; return; }
+  if (!CR.versions.length){ r.innerHTML = '<div class="crempty"><b>Your images appear here.</b><span>Each result can be changed by saying what to change, or used as inspiration for the next one.</span></div>'; return; }
   r.innerHTML = '<div class="crgrid">' + CR.versions.map(v => {
     const n = crNum(v.id), parent = v.parent_id ? ' \u00B7 changed from v' + crNum(v.parent_id) : '';
     const ratio = String(v.aspect_ratio || (v.asset && v.asset.width ? v.asset.width + '/' + v.asset.height : '4/5')).replace(':', '/');
@@ -1980,10 +1980,6 @@ function renderCreateResults(){
     const o = CR.open[v.id] || '';
     const done = v.status === 'succeeded' && v.asset;
     return '<div class="crcard" data-v="' + esc(v.id) + '">' + media + '<div class="crmeta"><b>v' + n + parent + '</b>' + (used ? '<span class="used">' + esc(used) + '</span>' : '') + '</div>' +
-      (v.prompt ? '<details class="prompt"' + (o === 'edit' ? ' open' : '') + '><summary>Prompt' + (v.prompt_by ? ' <i>written by ' + esc(v.prompt_by) + '</i>' : '') + '</summary>' +
-        (o === 'edit'
-          ? '<textarea class="pedit" id="pe_' + esc(v.id) + '" rows="6">' + esc(v.prompt) + '</textarea><div class="actions"><button class="btn btn-p" type="button" data-pgo="' + esc(v.id) + '">Generate with this prompt \u00B7 ' + crCredits() + ' credits</button><button class="btn btn-q" type="button" data-close="' + esc(v.id) + '">Cancel</button></div>'
-          : '<pre>' + esc(v.prompt) + '</pre>' + (done ? '<button class="btn btn-q" type="button" data-pedit="' + esc(v.id) + '">Edit prompt and generate again</button>' : '')) + '</details>' : '') +
       (o === 'change'
         ? '<div class="change"><label class="note" for="ch_' + esc(v.id) + '">What should change?</label><textarea id="ch_' + esc(v.id) + '" rows="2" placeholder="e.g. warmer light, bigger jar"></textarea>' +
           '<div class="actions"><button class="btn btn-p" type="button" data-chgo="' + esc(v.id) + '">Generate \u00B7 ' + crCredits() + ' credits</button><button class="btn btn-q" type="button" data-close="' + esc(v.id) + '">Cancel</button></div></div>'
