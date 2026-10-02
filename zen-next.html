@@ -269,6 +269,7 @@ details.why ul{margin:8px 0 0;padding-left:20px;color:var(--muted)}
 .card .crlabel{display:block;margin-top:12px}
 .card [data-aloc],.card [data-atext]{display:block;width:100%;max-width:420px;margin-top:6px}
 .chip-new{border-color:var(--accent);color:var(--accent);font-weight:600}
+.fsug{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 12px}
 .bq .pl-opts{margin-top:10px}
 @media (max-width:600px){.bf{flex-direction:column;align-items:stretch}.bf .acts{align-self:flex-start}}.bq .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.bq .row input{flex:1;min-width:200px}
 .plines{margin:16px 0 0;display:flex;flex-direction:column;gap:10px}
@@ -2362,7 +2363,7 @@ async function crPicker(kind){
 // =====================================================================
 const GROUPS = [
   ['goals', 'Goal'], ['industries', 'Industry'], ['businessTypes', 'Business type'],
-  ['subjectTypes', 'Product type'], ['serviceTypes', 'Service type'], ['styles', 'Style'], ['formats', 'Format'],
+  ['subjectTypes', 'Product type'], ['serviceTypes', 'Service type'], ['moods', 'Mood'], ['styles', 'Style'], ['formats', 'Format'],
 ];
 const GROUP_LABEL = Object.fromEntries(GROUPS);
 // Each quick chip adds exactly one visible filter.
@@ -2372,7 +2373,7 @@ const QUICK = [
   ['Local Business', { bundle: 'Local Business & Services' }],
 ];
 const GENERAL = 'General / Cross Industry';
-const emptyFilters = () => ({ goals: [], industries: [], businessTypes: [], subjectTypes: [], serviceTypes: [], styles: [], formats: [] });
+const emptyFilters = () => ({ goals: [], industries: [], businessTypes: [], subjectTypes: [], serviceTypes: [], moods: [], styles: [], formats: [] });
 const INS = { concepts: null, vocab: null, f: emptyFilters(), bundle: null, trending: false, keywords: [], query: '', summary: '', pick: false, quick: null };
 
 async function inspView(opts){
@@ -2417,12 +2418,12 @@ function insMatches(c, skipGroup){
   return true;
 }
 function insFiltersOn(){ return GROUPS.some(([k]) => INS.f[k].length) || INS.bundle || INS.trending; }
-function insHay(c){ return [c.displayName, c.conceptName, c.primaryBundle, c.shortDescription, ...(c.goals||[]), ...(c.industries||[]), ...(c.businessTypes||[]), ...(c.subjectTypes||[]), ...(c.serviceTypes||[]), ...(c.styles||[]), ...(c.formats||[]), ...(c.trendTags||[]), ...(c.bestFor||[])].join(' ').toLowerCase(); }
+function insHay(c){ return [c.displayName, c.conceptName, c.primaryBundle, c.shortDescription, ...(c.goals||[]), ...(c.industries||[]), ...(c.businessTypes||[]), ...(c.subjectTypes||[]), ...(c.serviceTypes||[]), ...(c.styles||[]), ...(c.formats||[]), ...(c.moods||[]), ...(c.trendTags||[]), ...(c.bestFor||[])].join(' ').toLowerCase(); }
 function insKeywordHits(c){ const h = insHay(c); return INS.keywords.filter(w => h.includes(w) || (w.endsWith('s') && h.includes(w.slice(0, -1)))).length; }
 // Ranking: ideas most specifically about what you chose come first (the share of each idea's
 // tags that you picked, weighted goal > product/service > style > industry), then word matches,
 // then the library's own order. General-purpose ideas still show, just after the specific ones.
-const FOCUS_W = { goals: 5, subjectTypes: 4, serviceTypes: 4, styles: 3, industries: 2, businessTypes: 1, formats: 1 };
+const FOCUS_W = { goals: 5, subjectTypes: 4, serviceTypes: 4, styles: 3, moods: 3, industries: 2, businessTypes: 1, formats: 1 };
 function insScore(c){
   let s = insKeywordHits(c) * 3;
   for (const [k] of GROUPS){
@@ -2455,7 +2456,7 @@ function insRender(){
   });
   // filter bar: the type group follows the business type
   const bt = INS.f.businessTypes, showSvc = bt.includes('Service'), showProd = bt.includes('Product') || (!showSvc && bt.length > 0);
-  const bar = [['goals'], ['industries'], ['businessTypes'], ...(showProd ? [['subjectTypes']] : []), ...(showSvc ? [['serviceTypes']] : []), ['styles'], ['formats']];
+  const bar = [['goals'], ['industries'], ['businessTypes'], ...(showProd ? [['subjectTypes']] : []), ...(showSvc ? [['serviceTypes']] : []), ['moods'], ['styles'], ['formats']];
   el('insBar').innerHTML = '<span class="note">Filter</span>' + bar.map(([k]) => '<button class="fbtn" type="button" data-fg="' + k + '">' + GROUP_LABEL[k] +
       (INS.f[k].length ? ' <b>' + INS.f[k].length + '</b>' : '') + ' \u25BE</button>').join('') +
     (!bt.length ? '<span class="note hint">Choose a business type to filter by product or service type.</span>' : '');
@@ -2527,11 +2528,34 @@ async function insAsk(){
   insRender();
 }
 
+// Choices for a filter. Moods aren't in the server's fixed list, so they come from the ideas
+// themselves, most common first. Styles used by fewer than 3 ideas stay out of the picker
+// (search still finds them) unless one is already chosen.
+function insOptions(k){
+  const tally = {}; INS.concepts.forEach(c => (c[k] || []).forEach(v => { tally[v] = (tally[v] || 0) + 1; }));
+  let opts = (INS.vocab && INS.vocab[k]) ? [...INS.vocab[k]] : Object.keys(tally).sort((a, b) => tally[b] - tally[a]);
+  if (k === 'styles') opts = opts.filter(v => (tally[v] || 0) >= 3 || INS.f[k].includes(v));
+  return opts;
+}
+// Moods that match the Brand tone, read once from Brand.
+const MOOD_WORDS = [['Warm', /warm|friendly|welcom|homely/], ['Playful', /playful|fun|cheer|joy|happy/], ['Premium', /premium|luxur|elegan|upscale|exclusive/],
+  ['Calm', /calm|gentle|soft|relax|sooth|peace/], ['Trustworthy', /trust|caring|reassur|reliab|safe|professional/], ['Bold', /bold|confident|vibrant|striking/],
+  ['Energetic', /energ|lively|dynamic|active/], ['Precise', /precise|clean|modern|technical|sharp/], ['Inspirational', /inspir/], ['Aspirational', /aspir/],
+  ['Nostalgic', /nostalg|retro|vintage/], ['Futuristic', /futur|innovat|tech-forward/], ['Dramatic', /dramatic|cinematic/]];
+async function insBrandMoods(){
+  if (INS.brandMoods) return INS.brandMoods;
+  const j = await zen('brand_get', {}, 30000);
+  const b = (j.ok && j.brand) || {};
+  const text = [b.tone, b.personality].filter(Boolean).join(' ').toLowerCase();
+  INS.brandMoods = MOOD_WORDS.filter(([, re]) => re.test(text)).map(([m]) => m).slice(0, 3);
+  return INS.brandMoods;
+}
 function insFilterDialog(k){
-  const d = el('insFilter'), opts = (INS.vocab && INS.vocab[k]) || [];
+  const d = el('insFilter'), opts = insOptions(k);
   const count = v => INS.concepts.filter(c => insMatches(c, k) && (((c[k] || []).includes(v)) || (k === 'industries' && (c.industries || []).includes(GENERAL)))).length;
   d.innerHTML = '<button class="vclose" type="button" aria-label="Close" id="fx">\u00D7</button><div class="pk"><h2>' + GROUP_LABEL[k] + '</h2>' +
-    '<p class="note" style="margin:4px 0 12px">Pick one. Choosing another replaces it.' + (k === 'industries' ? ' Ideas that suit every industry are included.' : '') + '</p>' +
+    '<p class="note" style="margin:4px 0 12px">Pick one. Choosing another replaces it.' + (k === 'industries' ? ' Ideas that suit every industry are included.' : '') + (k === 'styles' ? ' Rarer styles are found by typing them in the search.' : '') + '</p>' +
+    (k === 'moods' ? '<div class="fsug" id="fSug" hidden></div>' : '') +
     '<div class="flist"><label class="fopt"><input type="radio" name="fopt" value=""' + (INS.f[k].length ? '' : ' checked') + '> <span>Any ' + GROUP_LABEL[k].toLowerCase() + '</span><em></em></label>' +
       opts.map(v => { const n = count(v); return '<label class="fopt' + (n ? '' : ' none') + '"><input type="radio" name="fopt" value="' + esc(v) + '"' + (INS.f[k][0] === v ? ' checked' : '') + '> <span>' + esc(v) + '</span><em>' + n + '</em></label>'; }).join('') + '</div>' +
     '<div class="actions"><button class="btn btn-p" type="button" id="fDone">Show ideas</button></div></div>';
@@ -2540,6 +2564,14 @@ function insFilterDialog(k){
   el('fx').onclick = close; d.onclick = e => { if (e.target === d) close(); };
   // Choosing applies straight away, like a menu; "Show ideas" also closes it.
   d.querySelectorAll('input[type=radio]').forEach(x => x.addEventListener('change', () => el('fDone').click()));
+  // Moods: suggest the ones that match the Brand tone (a tap, not applied for you).
+  if (k === 'moods') insBrandMoods().then(ms => {
+    const box = el('fSug'), live = ms.filter(m => opts.includes(m));
+    if (!box || !d.open || !live.length) return;
+    box.innerHTML = '<span class="note">Matches your brand:</span>' + live.map(m => '<button type="button" class="chip" data-sug="' + esc(m) + '">' + esc(m) + '</button>').join('');
+    box.hidden = false;
+    box.querySelectorAll('[data-sug]').forEach(b => b.onclick = () => { const r = d.querySelector('input[value="' + b.dataset.sug.replace(/"/g, '\\"') + '"]'); if (r){ r.checked = true; el('fDone').click(); } });
+  });
   el('fDone').onclick = () => {
     const picked = (d.querySelector('input:checked') || {}).value || '';
     INS.f[k] = picked ? [picked] : [];
