@@ -1088,13 +1088,22 @@ function go(area){
 // ---------- home ----------
 const CHIPS = [
   ['How am I doing?', 'How am I doing this week?'],
-  ['Check my ads', 'How are my ads doing?'],
+  ['Ads \u25BE', 'menu:ads'],
   ['Win back customers', "Message customers who haven't visited recently"],
   ['Who needs a reply?', 'Which conversations need a reply?'],
   ['Get more bookings', 'Get me more bookings this weekend'],
   ['Sales \u25BE', 'menu:sales'],
   ['Ask a question', null],
 ];
+// The Ads chip: the same reasoning a media buyer would do, one question each.
+const ADS_QS = [
+  ['How are my ads doing?', 'How are my ads doing?'],
+  ['Why are they not working?', 'Why are my ads not working? Check frequency, creative fatigue and costs.'],
+  ['Details for each ad set and its ads', 'Show detailed stats for each ad set and the ads under it'],
+  ['Is my creative tired?', 'Is my ad creative tired? Check frequency and creative fatigue.'],
+  ['What do these numbers mean?', 'What do impressions, reach, frequency, CTR and CPM mean for my ads?'],
+];
+const CHIP_MENUS = { 'menu:sales': () => SALES_QS, 'menu:ads': () => ADS_QS };
 // The Sales chip opens ready questions. Each one simply asks Zen (exact sums, period and source stated).
 const SALES_QS = [
   ['Sales this month', 'Sales this month'],
@@ -1110,27 +1119,27 @@ function showLanding(){
   el('landing').style.display = 'block';
   const h = new Date().getHours();
   el('greet').textContent = (h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening') + ', ' + tenantName;
-  el('chips').innerHTML = CHIPS.map(([label, p], i) => '<button class="chip" type="button" data-chip="' + i + '"' + (p === 'menu:sales' ? ' aria-haspopup="menu" aria-expanded="false"' : '') + '>' + esc(label) + '</button>').join('');
+  el('chips').innerHTML = CHIPS.map(([label, p], i) => '<button class="chip" type="button" data-chip="' + i + '"' + (CHIP_MENUS[p] ? ' aria-haspopup="menu" aria-expanded="false"' : '') + '>' + esc(label) + '</button>').join('');
   el('chips').querySelectorAll('[data-chip]').forEach(b => b.onclick = () => {
     const p = CHIPS[+b.dataset.chip][1];
-    if (p === 'menu:sales') return toggleSalesMenu(b);
+    if (CHIP_MENUS[p]) return toggleChipMenu(b, CHIP_MENUS[p]());
     if (p) send(p); else { el('bigInput').focus(); el('bigInput').placeholder = 'Ask anything about your business…'; }
   });
   loadNudges(); loadThreads();
   setTimeout(() => el('bigInput').focus(), 50);
 }
-function toggleSalesMenu(btn){
-  const open = el('salesMenu');
-  if (open){ open.remove(); btn.setAttribute('aria-expanded', 'false'); return; }
+function toggleChipMenu(btn, QS){
+  const open = el('chipMenu');
+  if (open){ const same = open.previousElementSibling === btn; open.remove(); document.querySelectorAll('#chips [aria-expanded]').forEach(x => x.setAttribute('aria-expanded', 'false')); if (same) return; }
   btn.setAttribute('aria-expanded', 'true');
-  const m = document.createElement('div'); m.id = 'salesMenu'; m.className = 'chipmenu'; m.setAttribute('role', 'menu');
-  m.innerHTML = SALES_QS.map(([label], i) => '<button type="button" role="menuitem" data-sq="' + i + '">' + esc(label) + '</button>').join('');
+  const m = document.createElement('div'); m.id = 'chipMenu'; m.className = 'chipmenu'; m.setAttribute('role', 'menu');
+  m.innerHTML = QS.map(([label], i) => '<button type="button" role="menuitem" data-sq="' + i + '">' + esc(label) + '</button>').join('');
   btn.after(m);
-  // Open directly under the Sales chip, kept inside the screen.
+  // Open directly under its chip, kept inside the screen.
   const box = el('chips').getBoundingClientRect(), b = btn.getBoundingClientRect();
   m.style.top = (b.bottom - box.top + 6) + 'px';
   m.style.left = Math.max(0, Math.min(b.left - box.left, box.width - m.offsetWidth)) + 'px';
-  m.querySelectorAll('[data-sq]').forEach(b => b.onclick = () => { m.remove(); send(SALES_QS[+b.dataset.sq][1]); });
+  m.querySelectorAll('[data-sq]').forEach(b => b.onclick = () => { m.remove(); btn.setAttribute('aria-expanded', 'false'); send(QS[+b.dataset.sq][1]); });
   const close = e => { if (!m.contains(e.target) && e.target !== btn){ m.remove(); btn.setAttribute('aria-expanded', 'false'); document.removeEventListener('click', close, true); } };
   setTimeout(() => document.addEventListener('click', close, true), 0);
   m.querySelector('button').focus();
