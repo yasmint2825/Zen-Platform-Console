@@ -1486,14 +1486,14 @@ async function loadGallery(){
   const rec = await studio('recover', { tenant_id: tenant }, 120000);
   const [old, made] = await Promise.all([zen('gallery_list', {}, 30000), studio('list_assets', { tenant_id: tenant, limit: 200 }, 30000)]);
   if (!old.ok && !made.ok){ el('galBody').innerHTML = '<div class="empty">' + esc(old.error) + '</div>'; return; }
-  const fromCreate = (made.ok ? made.assets : []).map(a => ({
+  const fromCreate = (made.ok && Array.isArray(made.assets) ? made.assets : []).map(a => ({
     source: 'studio', id: a.id, kind: 'image', url: a.url, created_at: a.created_at,
     status: a.label === 'reference' ? 'reference' : a.kind === 'generated' ? 'made' : 'uploaded',
     title: a.brief || (a.kind === 'generated' ? 'Made in Create' : 'Uploaded image'), caption: null,
     prompt: a.prompt || null, prompt_by: a.prompt_by || null, model_label: a.model_label || null, size_key: a.size_key || null, credits: a.credits,
     width: a.width, height: a.height, asset: a,
   }));
-  GAL.items = [...fromCreate, ...(old.ok ? old.items : [])].sort((x, y) => String(y.created_at || '').localeCompare(String(x.created_at || '')));
+  GAL.items = [...fromCreate, ...(old.ok && Array.isArray(old.items) ? old.items : [])].sort((x, y) => String(y.created_at || '').localeCompare(String(x.created_at || '')));
   GAL.note = !made.ok ? 'Images from Create couldn\u2019t be loaded just now.' : !old.ok ? 'Older ZenPro content couldn\u2019t be loaded just now.'
     : rec.ok && rec.recovered ? rec.recovered + ' image' + (rec.recovered === 1 ? '' : 's') + ' that finished after you left Create ' + (rec.recovered === 1 ? 'was' : 'were') + ' saved and added here.'
     : rec.ok && rec.still_running ? rec.still_running + ' image' + (rec.still_running === 1 ? ' is' : 's are') + ' still being made. They\u2019ll appear here when ready.' : '';
@@ -1555,8 +1555,8 @@ function openStudioViewer(id){
     '<div class="vdel"><button class="btn btn-del" type="button" id="svDel">Delete</button></div></div></div>';
   v.showModal();
   el('vClose').onclick = () => v.close(); v.onclick = e => { if (e.target === v) v.close(); };
-  if (el('svUse')) el('svUse').onclick = () => { v.close(); CR.image = it.asset; MKT.pending = 'studio'; go('marketing'); };
-  el('svInsp').onclick = () => { v.close(); CR.insp = { type:'asset', asset_id: it.id, name: it.title.slice(0, 40), url: it.url }; MKT.pending = 'studio'; go('marketing'); };
+  if (el('svUse')) el('svUse').onclick = () => { v.close(); crReset(); CR.image = it.asset; CR.keep = true; MKT.pending = 'studio'; go('marketing'); };
+  el('svInsp').onclick = () => { v.close(); crReset(); CR.insp = { type:'asset', asset_id: it.id, name: it.title.slice(0, 40), url: it.url }; CR.keep = true; MKT.pending = 'studio'; go('marketing'); };
   let delArmed = false;
   el('svDel').onclick = async () => {
     const b = el('svDel');
@@ -1772,6 +1772,7 @@ async function adsView(){
   el('adDays').innerHTML = [7, 30, 90].map(d => '<button class="filter" type="button" data-days="' + d + '" aria-pressed="' + (MKT.days === d) + '">' + d + ' days</button>').join('');
   el('adDays').querySelectorAll('[data-days]').forEach(b => b.onclick = () => { MKT.days = +b.dataset.days; adsView(); });
   const j = await zen('ads_overview', { days: MKT.days }, 45000);
+  if (!el('adBody')) return;                                 // you moved on while ads were loading
   if (!j.ok){ el('adBody').innerHTML = '<div class="empty">' + esc(j.error) + '</div>'; return; }
   const a = MKT.ads = j.ads || { connected:false, summary:'Couldn\u2019t read your ads just now.' };
   if (!a.connected){ el('adBody').innerHTML = '<div class="empty">' + esc(a.summary) + '</div>'; return; }
@@ -1837,6 +1838,9 @@ function crShowUsage(){
   });
 }
 function stopCreatePolling(){ Object.values(CR.timers).forEach(clearTimeout); CR.timers = {}; }
+// A fresh console: no images, words, inspiration or results. Model, size, format and brand stay as you chose.
+// Images still being made aren't lost: the Library collects them.
+function crReset(){ stopCreatePolling(); Object.assign(CR, { session: null, versions: [], image: null, insp: null, use: 'everything', open: {}, text: '', busy: false, visit: (CR.visit || 0) + 1 }); }
 function crStatus(text, bad){ const s = el('crStatus'); if (s){ s.textContent = text || ''; s.className = 'crstatus' + (bad ? ' bad' : ''); } }
 
 // Buttons on Home cards that open a screen in the new Zen, carrying the owner's request with them.
@@ -1847,7 +1851,7 @@ document.addEventListener('click', e => {
   if (o.view === 'create'){
     // A request from Home starts a fresh Create session, so it never mixes with earlier work.
     stopCreatePolling();
-    Object.assign(CR, { session: null, versions: [], image: null, insp: null, open: {}, text: '' });
+    crReset(); CR.keep = true;
     CR.autoSend = { text: p.text || '', aspect: p.aspect || null };
     MKT.pending = 'studio'; go('marketing');
   } else if (o.view === 'inspiration'){
@@ -1857,6 +1861,8 @@ document.addEventListener('click', e => {
 });
 
 async function createView(){
+  if (!CR.keep) crReset();                                   // a new visit starts fresh; same-task trips keep your work
+  CR.keep = false;
   const box = el('mkt');
   box.innerHTML = backBtn + '<div class="page-top"><h1>Create images</h1><div class="crtop"><span class="note" id="crUsage"></span><button class="btn btn-q" type="button" id="crNew">Clear</button></div></div>' +
     '<div class="crwrap"><section class="crleft" aria-label="What to make">' +
@@ -1891,6 +1897,7 @@ async function createView(){
     const first = CR.models.find(m => m.key === mj.default_model && m.available) || CR.models.find(m => m.available) || CR.models[0];
     if (first){ CR.modelKey = first.key; CR.sizeKey = first.default_size; }
   }
+  if (!el('crText')) return;                                 // you moved on while Create was loading
   crShowUsage();
   studio('recover', { tenant_id: tenant }, 120000).then(r => {
     if (r.ok && r.recovered && el('crStatus') && !el('crStatus').textContent) crStatus(r.recovered + ' earlier image' + (r.recovered === 1 ? '' : 's') + ' finished while you were away and ' + (r.recovered === 1 ? 'is' : 'are') + ' in your Library.');
@@ -1907,6 +1914,7 @@ async function createView(){
 }
 
 function renderCreate(){
+  if (!el('slotImg')) return;                                // Create isn't on screen any more
   // Your image (optional)
   el('slotImg').innerHTML = '<div class="slot-h"><b>Your image</b><span class="note">Optional</span></div>' + (CR.image
     ? '<div class="slot-on"><img src="' + esc(CR.image.url) + '" alt="Your image"><div><span class="note">Kept recognisable.</span><button class="btn btn-q" type="button" id="imgClear">Remove</button></div></div>'
@@ -2018,7 +2026,9 @@ async function crCreate(extra){
     inspiration: extra.parent_version_id ? null : CR.insp ? (CR.insp.type === 'concept' ? { concept_name: CR.insp.concept_name } : { asset_id: CR.insp.asset_id }) : null,
     parent_version_id: extra.parent_version_id || null, prompt: extra.prompt || undefined,
   };
+  const visit = CR.visit;
   const j = await studio('create', body, 120000);
+  if (CR.visit !== visit) return;                            // you've started afresh since; the image will be in your Library
   CR.busy = false;
   if (!j.ok){ renderCreate(); crStatus(j.error, true); return; }
   CR.session = j.session_id;
@@ -2049,12 +2059,14 @@ async function crUpload(file, label){
   crStatus('Uploading\u2026');
   const dims = await new Promise(res => { const i = new Image(); i.onload = () => res({ w: i.naturalWidth, h: i.naturalHeight }); i.onerror = () => res({}); i.src = URL.createObjectURL(file); });
   // mw-studio checks you belong to this business, then gives a one-time link for this one file.
+  const visit = CR.visit;
   const st = await studio('upload_start', { tenant_id: tenant, label, content_type: file.type, width: dims.w, height: dims.h, bytes: file.size }, 20000);
   if (!st.ok){ crStatus(st.error, true); return; }
   const { error } = await sb.storage.from('studio-assets').uploadToSignedUrl(st.path, st.token, file, { contentType: file.type });
   if (error){ crStatus('Upload failed: ' + error.message, true); return; }
   const j = await studio('upload_done', { tenant_id: tenant, asset_id: st.asset_id, bytes: file.size }, 20000);
   if (!j.ok){ crStatus(j.error, true); return; }
+  if (CR.visit !== visit) return;                            // you've started afresh since; the upload is in your Library
   if (label === 'reference') CR.insp = { type:'asset', asset_id: j.asset.id, name: 'Your reference', url: j.asset.url };
   else CR.image = j.asset;
   crStatus(''); renderCreate();
@@ -2100,9 +2112,11 @@ const INS = { concepts: null, vocab: null, f: emptyFilters(), bundle: null, tren
 
 async function inspView(opts){
   INS.pick = !!(opts && opts.pick);
+  // Every visit is a fresh search. Home's "show me ideas" fills its words in after this.
+  INS.f = emptyFilters(); INS.bundle = null; INS.trending = false; INS.keywords = []; INS.summary = ''; INS.query = ''; INS.quick = null;
   const box = el('mkt');
   box.innerHTML = (INS.pick
-      ? '<button class="back" type="button" onclick="mktView(\'studio\')">\u2190 Create images</button><div class="pickbar">Choose an idea for your image, then press <b>Use this reference</b>.</div>'
+      ? '<button class="back" type="button" onclick="CR.keep=true;mktView(\'studio\')">\u2190 Create images</button><div class="pickbar">Choose an idea for your image, then press <b>Use this reference</b>.</div>'
       : backBtn) +
     '<div class="ins-hero"><h1>Find a creative direction</h1>' +
     '<form class="ins-ask" onsubmit="event.preventDefault();insAsk();"><label for="insQ" class="sr">Describe your business and what you want</label>' +
@@ -2117,6 +2131,7 @@ async function inspView(opts){
     if (!j.ok){ el('insBody').innerHTML = '<div class="empty">' + esc(j.error) + '</div>'; return; }
     INS.concepts = j.concepts.filter(c => c.imagePresent); INS.vocab = j.vocabulary;
   }
+  if (!el('insQ')) return;
   insRender();
   if (INS.autoAsk){ el('insQ').value = INS.autoAsk; INS.autoAsk = ''; insAsk(); }
 }
@@ -2154,6 +2169,7 @@ function insScore(c){
 }
 
 function insRender(){
+  if (!el('insQuick')) return;                               // AI Inspiration isn't on screen any more
   // quick chips
   el('insQuick').innerHTML = QUICK.map(([label, q], i) => {
     const k0 = Object.keys(q)[0];
@@ -2210,6 +2226,7 @@ function insCard(c, eager){
 }
 
 function insResults(){
+  if (!el('insBody')) return;
   const C = INS.concepts, body = el('insBody');
   const list = C.filter(c => insMatches(c)).map((c, i) => [c, insScore(c), i]).sort((a, b) => b[1] - a[1] || a[2] - b[2]).map(x => x[0]);
   let h = '';
@@ -2294,7 +2311,8 @@ function insDetail(key){
   d.showModal();
   el('dx').onclick = () => d.close(); d.onclick = e => { if (e.target === d) d.close(); };
   el('useRef').onclick = () => {
-    CR.insp = { type:'concept', concept_name: c.conceptName, name: c.displayName, url: c.imageUrl };
+    if (!INS.pick) crReset();                                // from Marketing: a fresh Create with this idea; from Browse ideas: keep your work
+    CR.insp = { type:'concept', concept_name: c.conceptName, name: c.displayName, url: c.imageUrl }; CR.keep = true;
     d.close(); mktView('studio');
   };
   el('moreLike').onclick = () => {
@@ -2310,6 +2328,7 @@ async function igPicker(){
   const box = el('mkt');
   box.innerHTML = backBtn + '<div class="page-top"><h1>Instagram post</h1><button class="btn btn-s" type="button" onclick="mktView(\'studio\')">Create something new</button></div><div id="igBody"><div class="empty">Loading what you\u2019ve made\u2026</div></div>';
   const j = await zen('gallery_list', {}, 30000);
+  if (!el('igBody')) return;
   if (!j.ok){ el('igBody').innerHTML = '<div class="empty">' + esc(j.error) + '</div>'; return; }
   GAL.items = j.items;
   const list = j.items.filter(it => ['draft','creative_ready','planned','approved'].includes(it.status));
@@ -2346,6 +2365,7 @@ async function igWrite(){
   const args = { title: t, about: el('igAbout').value.trim(), aspect_ratio: ratio, kind: it.kind };
   if (it.source === 'post') args.item_id = it.id; else args.generation_id = it.id;
   const j = await zen('ig_prepare', args, 90000);
+  if (!el('igc')) return;                                    // the post was saved; the composer just isn't on screen
   b.disabled = false; b.textContent = 'Write the caption';
   if (!j.ok){ el('igMsg').textContent = j.error; return; }
   MKT.ig.draft = j.ig; MKT.ig.title = t;
@@ -2367,6 +2387,7 @@ async function igPlan(whenIso){
     hashtags: el('igTags').value.split(/[\s,]+/).filter(Boolean), when: whenIso || undefined };
   el('igPlan').innerHTML = '<div class="thinking"><span class="pulse"></span><span>Saving and preparing the plan</span></div>';
   const j = await zen('ig_plan_post', args, 45000);
+  if (!el('igPlan')) return;
   el('igPlan').innerHTML = '';
   if (!j.ok){ el('igMsg').textContent = j.error; return; }
   el('igMsg').textContent = 'Caption saved.';
