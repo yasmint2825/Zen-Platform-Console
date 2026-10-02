@@ -246,6 +246,23 @@ details.why{margin-top:14px}
 details.why summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:15px;min-height:32px}
 details.why ul{margin:8px 0 0;padding-left:20px;color:var(--muted)}
 .test{font-size:14px;color:var(--muted);margin-top:12px}
+/* Plan lines: one decision each, with its reason and source */
+.btn-sm{min-height:36px;padding:6px 12px;font-size:14px}
+.plines{margin:16px 0 0;display:flex;flex-direction:column;gap:10px}
+.pline{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--card, #fff)}
+.pline.off{opacity:.55}
+.pline input[type=checkbox]{width:20px;height:20px;margin-top:2px;flex:none;accent-color:var(--accent)}
+.pl-main{flex:1;min-width:0}
+.pl-label{font-size:13px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.03em}
+.pl-value{font-weight:600;margin-top:2px;overflow-wrap:anywhere}
+.pl-why{font-size:14px;color:var(--muted);margin-top:4px;line-height:1.45}
+.pl-src{display:block;font-size:12px;margin-top:4px}
+.pl-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.pl-opts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.pl-opts button[aria-pressed=true]{background:var(--accent);color:#fff;border-color:var(--accent)}
+.padvice-h{font-size:14px;font-weight:700;margin:18px 0 0;color:var(--muted)}
+.pspend{margin-top:14px;padding:10px 14px;border-radius:10px;background:var(--accent-soft);font-weight:600}
+.pchecks{margin:10px 0 0;padding-left:20px;font-size:14px;color:var(--muted)}
 .test b{color:var(--ink)}
 .verdicts{margin-top:14px;display:flex;flex-direction:column}
 .verdict{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-start;padding:14px 0;border-top:1px solid var(--line)}
@@ -1097,6 +1114,7 @@ const CHIPS = [
 ];
 // The Ads chip: the same reasoning a media buyer would do, one question each.
 const ADS_QS = [
+  ['Improve my ads', 'Improve my ads'],
   ['How are my ads doing?', 'How are my ads doing?'],
   ['Why are they not working?', 'Why are my ads not working? Check frequency, creative fatigue and costs.'],
   ['Details for each ad set and its ads', 'Show detailed stats for each ad set and the ads under it'],
@@ -2933,25 +2951,83 @@ function planCard(d, c){
   const preview = c.preview ? '<div class="bubble"' + (c.preview.channel === 'instagram' ? ' style="background:#F3F0F7"' : '') + '><small>' + (c.preview.channel === 'instagram' ? 'Your caption' : 'How customers will see it') + '</small>' + esc(c.preview.text).replace(/\{\{\s*\d+\s*\}\}/g, '[personalised]') + '</div>' : '';
   const why = c.why && c.why.length ? '<details class="why"><summary>Why this plan</summary><ul>' + c.why.map(w => '<li>' + esc(w) + '</li>').join('') + '</ul></details>' : '';
   const test = c.dry_run ? '<div class="test"><b>Test mode.</b> Approving records what Zen would do. Nothing is sent or spent.</div>' : '';
+  // The shared plan card: decisions as lines, each with reason, source and choices.
+  const lines = c.lines || [];
+  const lineHtml = (l, i) => {
+    const tick = l.step != null && l.optional ? '<input type="checkbox" checked data-ltick="' + i + '" aria-label="Include: ' + esc(l.label + ' ' + l.value) + '">' : '';
+    const opts = (l.options || []).length ? '<div class="pl-opts" hidden data-lopts="' + i + '">' + l.options.map((o, k) =>
+      '<button type="button" class="chip" data-lopt="' + i + ':' + k + '" aria-pressed="' + (o.value === l.value) + '">' + esc(o.label) + '</button>').join('') + '</div>' : '';
+    const acts = ((l.options || []).length ? '<button type="button" class="btn btn-q btn-sm" data-lchange="' + i + '">Change</button>' : '') +
+      (l.open ? '<button type="button" class="btn btn-s btn-sm" data-zenopen="' + esc(JSON.stringify({ view: l.open.view, params: l.open.params || {} })) + '">' + esc(l.open.label) + '</button>' : '');
+    return '<div class="pline" data-line="' + i + '">' + tick + '<div class="pl-main"><div class="pl-label">' + esc(l.label) + '</div>' +
+      '<div class="pl-value" data-lvalue="' + i + '">' + esc(l.value) + '</div>' +
+      (l.why || l.source ? '<div class="pl-why">' + esc(l.why || '') + (l.source ? '<span class="pl-src">Source: ' + esc(l.source) + '</span>' : '') + '</div>' : '') +
+      (acts ? '<div class="pl-acts">' + acts + '</div>' : '') + opts + '</div></div>';
+  };
+  const doLines = lines.map((l, i) => [l, i]).filter(([l]) => l.step != null);
+  const adviceLines = lines.map((l, i) => [l, i]).filter(([l]) => l.step == null);
+  const linesHtml = !lines.length ? '' :
+    '<div class="plines">' + doLines.map(([l, i]) => lineHtml(l, i)).join('') + '</div>' +
+    (adviceLines.length ? '<div class="padvice-h">Also worth doing (not part of this approval)</div><div class="plines">' + adviceLines.map(([l, i]) => lineHtml(l, i)).join('') + '</div>' : '') +
+    (c.spend ? '<div class="pspend" data-pspend></div>' : '') +
+    (c.checks && c.checks.length ? '<ul class="pchecks">' + c.checks.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' : '');
   d.innerHTML = '<span class="badge">' + esc(c.badge) + '</span><h3>' + esc(c.title) + '</h3><div class="body">' + esc(c.summary) + '</div>' +
-    '<dl class="kv">' + rows + '</dl>' + preview + why +
+    (rows ? '<dl class="kv">' + rows + '</dl>' : '') + linesHtml + preview + why +
     '<div class="actions" data-planbtns><button class="btn btn-p" type="button" data-approve>' + esc(c.approve_label || 'Approve') + '</button>' +
     '<button class="btn btn-q" type="button" data-cancel>Not now</button></div>' + test;
 
   const approve = d.querySelector('[data-approve]'), cancel = d.querySelector('[data-cancel]');
   let armed = false, armTimer = null;
+  // Ticked lines, the label on the approve button, and what daily spend becomes.
+  const ticked = new Set(doLines.map(([, i]) => i));
+  const money = v => (c.spend ? c.spend.currency : 'AED') + ' ' + (Math.round(v * 100) / 100).toLocaleString('en-US');
+  const approveText = () => {
+    if (!lines.length) return c.approve_label || 'Approve';
+    const n = ticked.size;
+    return n ? 'Approve ' + n + ' change' + (n === 1 ? '' : 's') : 'Nothing ticked';
+  };
+  const refresh = () => {
+    if (!armed){ approve.textContent = approveText(); approve.disabled = !!lines.length && !ticked.size; }
+    const box = d.querySelector('[data-pspend]');
+    if (box && c.spend){
+      const delta = [...ticked].reduce((t, i) => t + (Number(lines[i].delta) || 0), 0);
+      const after = Math.max(0, c.spend.current_daily + delta);
+      box.textContent = 'Daily ad spend: ' + money(c.spend.current_daily) + ' now \u2192 ' + money(after) + ' if approved (' + (delta >= 0 ? '+' : '\u2212') + money(Math.abs(delta)) + ' a day)';
+    }
+  };
+  d.querySelectorAll('[data-ltick]').forEach(cb => cb.onchange = () => {
+    const i = +cb.dataset.ltick; if (cb.checked) ticked.add(i); else ticked.delete(i);
+    cb.closest('.pline').classList.toggle('off', !cb.checked); refresh();
+  });
+  d.querySelectorAll('[data-lchange]').forEach(b => b.onclick = () => {
+    const box = d.querySelector('[data-lopts="' + b.dataset.lchange + '"]'); box.hidden = !box.hidden;
+    b.textContent = box.hidden ? 'Change' : 'Close';
+  });
+  d.querySelectorAll('[data-lopt]').forEach(b => b.onclick = async () => {
+    const [i, k] = b.dataset.lopt.split(':').map(Number), l = lines[i], o = l.options[k];
+    const was = b.textContent; b.disabled = true; b.innerHTML = '<span class="spin"></span>';
+    const j = await zen('revise_plan_step', { plan_id: c.plan_id, step_index: l.step, patch: o.patch });
+    b.disabled = false; b.textContent = was;
+    if (!j.ok){ d.after(errorCard(j.error)); return; }
+    l.value = o.value; l.delta = o.delta;
+    d.querySelector('[data-lvalue="' + i + '"]').textContent = o.value;
+    d.querySelectorAll('[data-lopts="' + i + '"] button').forEach((x, n) => x.setAttribute('aria-pressed', String(n === k)));
+    refresh();
+  });
   approve.onclick = async () => {
     // Two taps for anything that sends, spends or publishes.
     if (!armed){
       armed = true; approve.classList.add('btn-armed'); approve.textContent = c.dry_run ? 'Tap again to approve (test mode)' : 'Tap again to confirm';
-      armTimer = setTimeout(() => { armed = false; approve.classList.remove('btn-armed'); approve.textContent = c.approve_label || 'Approve'; }, 5000);
+      armTimer = setTimeout(() => { armed = false; approve.classList.remove('btn-armed'); refresh(); }, 5000);
       return;
     }
     clearTimeout(armTimer);
     approve.disabled = true; cancel.disabled = true; approve.innerHTML = '<span class="spin"></span>Working…';
-    const j = await zen('approve_plan', { plan_id: c.plan_id });
+    const skip = doLines.filter(([, i]) => !ticked.has(i)).map(([l]) => l.step);
+    d.querySelectorAll('[data-ltick],[data-lchange],[data-lopt]').forEach(x => x.disabled = true);
+    const j = await zen('approve_plan', { plan_id: c.plan_id, skip_steps: skip });
     const btns = d.querySelector('[data-planbtns]');
-    if (!j.ok){ approve.disabled = false; cancel.disabled = false; approve.textContent = c.approve_label || 'Approve'; armed = false; approve.classList.remove('btn-armed'); d.after(errorCard(j.error)); return; }
+    if (!j.ok){ approve.disabled = false; cancel.disabled = false; armed = false; approve.classList.remove('btn-armed'); d.querySelectorAll('[data-ltick],[data-lchange],[data-lopt]').forEach(x => x.disabled = false); refresh(); d.after(errorCard(j.error)); return; }
     btns.outerHTML = '<div class="status-line">Approved</div>';
     const note = d.querySelector('.test'); if (note) note.remove();
     (j.cards || []).forEach(x => { const n = renderCard(x); d.after(n); n.scrollIntoView({ block:'nearest', behavior:'smooth' }); });
@@ -2961,7 +3037,9 @@ function planCard(d, c){
     const j = await zen('cancel_plan', { plan_id: c.plan_id });
     d.querySelector('[data-planbtns]').outerHTML = '<div class="status-line" style="color:var(--muted)">' + (j.ok ? 'Not sent. Ask again any time.' : esc(j.error)) + '</div>';
     const note = d.querySelector('.test'); if (note) note.remove();
+    d.querySelectorAll('[data-ltick],[data-lchange],[data-lopt]').forEach(x => x.disabled = true);
   };
+  refresh();
 }
 
 function resultCard(d, c){
