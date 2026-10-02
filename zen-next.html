@@ -248,6 +248,27 @@ details.why ul{margin:8px 0 0;padding-left:20px;color:var(--muted)}
 .test{font-size:14px;color:var(--muted);margin-top:12px}
 /* Plan lines: one decision each, with its reason and source */
 .btn-sm{min-height:36px;padding:6px 12px;font-size:14px}
+/* Customer picture journey */
+.pic{max-width:720px}
+.pic h1{margin:4px 0 10px}
+.pstep{font-size:13px;color:var(--muted);margin:0}
+.pwhy{font-size:15px;color:var(--muted);line-height:1.5;margin:10px 0}
+.pfacts{display:flex;flex-direction:column;gap:10px;margin:14px 0}
+.pfact{padding:14px 16px;border:1px solid var(--line);border-radius:12px}
+.pf-text{font-weight:600;line-height:1.45}
+.pf-detail{font-size:14px;color:var(--muted);margin-top:4px}
+.pf-src{display:inline-block;font-size:12px;font-weight:600;color:var(--accent);background:var(--accent-soft);border-radius:6px;padding:1px 6px;margin-left:4px}
+.pfnote{margin-top:8px;width:100%}
+.pdots{display:flex;gap:6px;margin:8px 0 4px}.pdots span{width:28px;height:5px;border-radius:3px;background:var(--line)}.pdots span.on{background:var(--accent)}
+.pq .chip{min-height:44px}
+.ppreview{border-left:3px solid var(--accent);padding:8px 12px;margin:12px 0;font-size:15px}
+.ppreview small{display:block;font-size:12px;color:var(--muted);margin-bottom:2px}
+.psug{margin-top:18px;padding:16px;border-radius:12px;background:var(--accent-soft);display:flex;flex-direction:column;gap:4px}
+.psug small{font-size:12px;color:var(--muted)}
+.aloc{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0}
+.card .crlabel{display:block;margin-top:12px}
+.card [data-aloc],.card [data-atext]{display:block;width:100%;max-width:420px;margin-top:6px}
+.chip-new{border-color:var(--accent);color:var(--accent);font-weight:600}
 .plines{margin:16px 0 0;display:flex;flex-direction:column;gap:10px}
 .pline{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--card, #fff)}
 .pline.off{opacity:.55}
@@ -1114,12 +1135,14 @@ const CHIPS = [
 ];
 // The Ads chip: the same reasoning a media buyer would do, one question each.
 const ADS_QS = [
+  ['Run a new WhatsApp ad', 'Run a new WhatsApp ad to bring in new families'],
   ['Improve my ads', 'Improve my ads'],
   ['How are my ads doing?', 'How are my ads doing?'],
   ['Why are they not working?', 'Why are my ads not working? Check frequency, creative fatigue and costs.'],
   ['Details for each ad set and its ads', 'Show detailed stats for each ad set and the ads under it'],
   ['Is my creative tired?', 'Is my ad creative tired? Check frequency and creative fatigue.'],
   ['What do these numbers mean?', 'What do impressions, reach, frequency, CTR and CPM mean for my ads?'],
+  ['Your customer picture', 'open:picture'],
 ];
 const CHIP_MENUS = { 'menu:sales': () => SALES_QS, 'menu:ads': () => ADS_QS };
 // The Sales chip opens ready questions. Each one simply asks Zen (exact sums, period and source stated).
@@ -1144,6 +1167,11 @@ function showLanding(){
     if (p) send(p); else { el('bigInput').focus(); el('bigInput').placeholder = 'Ask anything about your business…'; }
   });
   loadNudges(); loadThreads();
+  zen('customer_picture', { light: true }, 15000).then(j => {
+    if (!j.ok || j.done || el('picChip') || el('landing').style.display === 'none') return;
+    el('chips').insertAdjacentHTML('afterbegin', '<button class="chip chip-new" type="button" id="picChip">Teach Zen your customers \u00b7 2 min</button>');
+    el('picChip').onclick = () => openZenView('picture');
+  });
   setTimeout(() => el('bigInput').focus(), 50);
 }
 function toggleChipMenu(btn, QS){
@@ -1157,7 +1185,7 @@ function toggleChipMenu(btn, QS){
   const box = el('chips').getBoundingClientRect(), b = btn.getBoundingClientRect();
   m.style.top = (b.bottom - box.top + 6) + 'px';
   m.style.left = Math.max(0, Math.min(b.left - box.left, box.width - m.offsetWidth)) + 'px';
-  m.querySelectorAll('[data-sq]').forEach(b => b.onclick = () => { m.remove(); btn.setAttribute('aria-expanded', 'false'); send(QS[+b.dataset.sq][1]); });
+  m.querySelectorAll('[data-sq]').forEach(b => b.onclick = () => { m.remove(); btn.setAttribute('aria-expanded', 'false'); const pr = QS[+b.dataset.sq][1]; pr.startsWith('open:') ? openZenView(pr.slice(5)) : send(pr); });
   const close = e => { if (!m.contains(e.target) && e.target !== btn){ m.remove(); btn.setAttribute('aria-expanded', 'false'); document.removeEventListener('click', close, true); } };
   setTimeout(() => document.addEventListener('click', close, true), 0);
   m.querySelector('button').focus();
@@ -1325,7 +1353,7 @@ async function send(text, opts){
   showConvo();
   addYou(text);
   const think = addThinking(['Understanding what you need', 'Checking your business', 'Putting it together']);
-  const j = await zen('chat', { message: text, thread_id: threadId, acted_nudge_id: opts && opts.nudgeId }, 120000);
+  const j = await zen('chat', { message: text, thread_id: threadId, acted_nudge_id: opts && opts.nudgeId, context: opts && opts.context }, 120000);
   think.remove();
   busy = false;
   if (!j.ok){ el('log').appendChild(errorCard(j.error, text)); return; }
@@ -1744,7 +1772,7 @@ function openStudioViewer(id){
       (used ? '<br>' + esc(used) : '') + (it.width ? '<br>' + it.width + ' \u00D7 ' + it.height + ' px' : '') + '</div>' +
     (it.prompt ? '<details class="prompt" style="padding:0"><summary>Prompt' + (it.prompt_by ? ' <i>written by ' + esc(it.prompt_by) + '</i>' : '') + '</summary><pre>' + esc(it.prompt) + '</pre></details>' : '') +
     (isRef ? '<p class="note">A reference is inspiration only. It shapes new images and is never posted as it is.</p>' : '') +
-    '<div class="actions">' + (isRef ? '' : '<button class="btn btn-p" type="button" id="svUse">Use in Create</button>') +
+    '<div class="actions">' + (isRef ? '' : '<button class="btn btn-p" type="button" id="svAd">Promote as an ad</button><button class="btn btn-s" type="button" id="svUse">Use in Create</button>') +
       '<button class="btn btn-s" type="button" id="svInsp">Use as inspiration</button>' +
       '<a class="btn btn-q" href="' + esc(it.url) + '" target="_blank" rel="noopener">Full size</a></div>' +
     '<button class="btn btn-q" type="button" id="svLabel" style="align-self:flex-start">' + (isRef ? 'Make it a creative (mine to post)' : 'Make it a reference (inspiration only)') + '</button>' +
@@ -1753,6 +1781,7 @@ function openStudioViewer(id){
     '<div class="vdel"><button class="btn btn-del" type="button" id="svDel">Delete</button></div></div></div>';
   v.showModal();
   el('vClose').onclick = () => v.close(); v.onclick = e => { if (e.target === v) v.close(); };
+  if (el('svAd')) el('svAd').onclick = () => { v.close(); go('home'); send('Promote this picture as a WhatsApp ad', { context: { image_url: it.url, image_name: it.title } }); };
   if (el('svUse')) el('svUse').onclick = () => { v.close(); crReset(); CR.image = it.asset; CR.keep = true; MKT.pending = 'studio'; go('marketing'); };
   el('svInsp').onclick = () => { v.close(); crReset(); CR.insp = { type:'asset', asset_id: it.id, name: it.title.slice(0, 40), url: it.url }; CR.keep = true; MKT.pending = 'studio'; go('marketing'); };
   let delArmed = false;
@@ -1932,6 +1961,7 @@ function mktView(v){
   if (v === 'studio') return createView();
   if (v === 'inspo') return inspView({ pick: false });
   if (v === 'ig') return igPicker();
+  if (v === 'picture') return pictureView();
 }
 
 function mktHome(){
@@ -1945,6 +1975,7 @@ function mktHome(){
     tile('ig', 'ig', 'Instagram post', 'Pick something you\u2019ve made. Zen writes the caption, you approve.') +
     tile('ads', 'ads', 'Meta ads', 'What\u2019s working, what\u2019s wasting money, and what to change.', 'Checking your ads\u2026') +
     tile('guided', 'plan', 'Guided campaign', 'Tell Zen the goal. It drafts the campaign for you.') +
+    tile('picture', 'res', 'Your customers', 'What Zen knows about who your customers are. Two minutes to check it.') +
     tile('video', 'video', 'Create videos', 'Turning images into videos comes in the next step.', '', true) +
     tile('results', 'res', 'Results', 'How your WhatsApp messages and ads are doing.') +
     '</div>';
@@ -2055,7 +2086,7 @@ document.addEventListener('click', e => {
   } else if (o.view === 'inspiration'){
     INS.autoAsk = p.text || '';
     MKT.pending = 'inspo'; go('marketing');
-  }
+  } else openZenView(o.view, p);
 });
 
 async function createView(){
@@ -2854,6 +2885,172 @@ async function runHealthCheck(){
 }
 
 
+// =====================================================================
+// Customer picture: what Zen already knows, three quick questions, then
+// the picture and a first suggestion. Each question says why it's asked.
+// =====================================================================
+const PIC = { data: null, stage: 'facts', qi: 0, answers: {}, checks: {}, then: null, thenCtx: null, startAt: null };
+function openZenView(view, params){
+  params = params || {};
+  if (view === 'gallery'){ go('gallery'); return; }
+  if (view === 'picture'){
+    PIC.then = params.then || null;
+    try { PIC.thenCtx = params.then_context ? JSON.parse(params.then_context) : null; } catch (_) { PIC.thenCtx = null; }
+    PIC.startAt = params.start || null;
+    MKT.pending = 'picture'; go('marketing');
+  }
+}
+async function pictureView(){
+  const box = el('mkt');
+  box.innerHTML = backBtn + '<div class="pic"><div class="thinking"><span class="pulse"></span><span>Reading your bookings, WhatsApp messages and ads\u2026</span></div></div>';
+  const j = await zen('customer_picture', {}, 90000);
+  const wrap = box.querySelector('.pic'); if (!wrap) return;
+  if (!j.ok){ wrap.innerHTML = '<div class="empty">' + esc(j.error) + '</div>'; return; }
+  PIC.data = j; PIC.answers = Object.assign({}, j.answers || {}); PIC.checks = Object.assign({}, j.checks || {});
+  PIC.stage = PIC.startAt || (j.done ? 'summary' : 'facts'); PIC.qi = 0; PIC.startAt = null;
+  picRender();
+}
+const picQ = () => PIC.data.questions;
+const picVals = k => [].concat(PIC.answers[k] || []);
+function picPhrase(k){
+  const q = picQ().find(x => x.key === k); if (!q) return null;
+  const o = q.options.find(o => o.phrase && picVals(k).includes(o.label)); return o ? o.phrase : null;
+}
+function picPreview(){
+  return (picPhrase('want_more') || 'A haircut your child will actually enjoy') + (picPhrase('different') ? ', ' + picPhrase('different') : '') + '. ' + (picPhrase('tone') || 'Message us on WhatsApp to book.');
+}
+async function picSave(extra){
+  const j = await zen('save_customer_picture', Object.assign({ answers: PIC.answers, checks: PIC.checks }, extra || {}), 20000);
+  if (!j.ok){ const n = document.querySelector('.pic [data-perr]'); if (n) n.textContent = j.error; return false; }
+  return true;
+}
+function picRender(){
+  const wrap = document.querySelector('#mkt .pic'); if (!wrap || !PIC.data) return;
+  const d = PIC.data;
+  if (PIC.stage === 'facts'){
+    const facts = d.facts || [];
+    wrap.innerHTML = '<p class="pstep">Step 1 of 3 \u00b7 about 30 seconds</p><h1>Here\u2019s what Zen already knows</h1>' +
+      '<p class="pwhy"><b>Why this first:</b> so you never have to tell Zen what your own numbers already show.</p>' +
+      (facts.length ? '<div class="pfacts">' + facts.map((f, i) => {
+        const c = PIC.checks[f.key] || {};
+        return '<div class="pfact"><div class="pf-main"><div class="pf-text">' + esc(f.text) + '</div><div class="pf-detail">' + esc(f.detail) + ' <span class="pf-src">' + esc(f.source) + '</span></div>' +
+          '<div class="pl-opts"><button type="button" class="chip" data-fk="' + i + '" data-fv="right" aria-pressed="' + (c.verdict === 'right') + '">Looks right</button>' +
+          '<button type="button" class="chip" data-fk="' + i + '" data-fv="not_quite" aria-pressed="' + (c.verdict === 'not_quite') + '">Not quite</button></div>' +
+          (c.verdict === 'not_quite' ? '<label class="sr" for="pfn' + i + '">What\u2019s different?</label><input id="pfn' + i + '" class="pfnote" data-fn="' + i + '" placeholder="What\u2019s different? e.g. most are older kids" value="' + esc(c.note || '') + '">' : '') +
+          '</div></div>';
+      }).join('') + '</div>' : '<div class="empty">There isn\u2019t enough history yet for Zen to say much. It\u2019ll learn from your answers and your first ads.</div>') +
+      (d.gaps && d.gaps.length ? '<p class="note">Not enough data yet for: ' + esc(d.gaps.join(', ')) + '.</p>' : '') +
+      '<div class="actions"><button class="btn btn-p" type="button" data-pnext>Continue</button></div><p class="note" data-perr role="status"></p>';
+    wrap.querySelectorAll('[data-fk]').forEach(b => b.onclick = () => {
+      const f = facts[+b.dataset.fk]; PIC.checks[f.key] = Object.assign({}, PIC.checks[f.key] || {}, { verdict: b.dataset.fv, text: f.text, at: new Date().toISOString() });
+      picRender(); const n = wrap.querySelector('[data-fn="' + b.dataset.fk + '"]'); if (n) n.focus();
+    });
+    wrap.querySelectorAll('[data-fn]').forEach(n => n.oninput = () => { const f = facts[+n.dataset.fn]; PIC.checks[f.key].note = n.value.slice(0, 200); });
+    wrap.querySelector('[data-pnext]').onclick = async () => { if (await picSave()){ PIC.stage = 'questions'; PIC.qi = 0; picRender(); } };
+    return;
+  }
+  if (PIC.stage === 'questions'){
+    const qs = picQ(), q = qs[PIC.qi], vals = picVals(q.key);
+    const title = q.key === 'different' ? 'What makes ' + (tenantName || 'you') + ' different?' : q.title;
+    wrap.innerHTML = '<p class="pstep">Step 2 of 3</p><div class="pdots" aria-hidden="true">' + qs.map((_, i) => '<span class="' + (i <= PIC.qi ? 'on' : '') + '"></span>').join('') + '</div>' +
+      '<p class="note">Question ' + (PIC.qi + 1) + ' of ' + qs.length + (q.multi ? ' \u00b7 pick up to ' + q.max : '') + '</p><h1>' + esc(title) + '</h1>' +
+      '<div class="pl-opts pq">' + q.options.map((o, i) => '<button type="button" class="chip" data-qo="' + i + '" aria-pressed="' + vals.includes(o.label) + '">' + esc(o.label) + '</button>').join('') + '</div>' +
+      '<p class="pwhy"><b>Why Zen asks:</b> ' + esc(q.why) + '</p>' +
+      '<div class="ppreview"><small>Your ad would open</small><span data-pprev>' + esc(picPreview()) + '</span></div>' +
+      '<div class="actions">' + (PIC.qi ? '<button class="btn btn-q" type="button" data-pback>Back</button>' : '') +
+      '<button class="btn btn-p" type="button" data-pnext>' + (PIC.qi === qs.length - 1 ? 'See my customer picture' : 'Next') + '</button></div><p class="note" data-perr role="status"></p>';
+    wrap.querySelectorAll('[data-qo]').forEach(b => b.onclick = () => {
+      const label = q.options[+b.dataset.qo].label; let v = picVals(q.key);
+      if (label === 'Let Zen find out') v = v.includes(label) ? [] : [label];
+      else if (q.multi){
+        v = v.filter(x => x !== 'Let Zen find out');
+        if (!v.includes(label) && v.length >= q.max){ wrap.querySelector('[data-perr]').textContent = 'Up to ' + q.max + ': untick one first.'; return; }
+        v = v.includes(label) ? v.filter(x => x !== label) : v.concat(label);
+      }
+      else v = [label];
+      PIC.answers[q.key] = q.multi ? v : (v[0] || null); picRender();
+    });
+    const back = wrap.querySelector('[data-pback]'); if (back) back.onclick = () => { PIC.qi--; picRender(); };
+    wrap.querySelector('[data-pnext]').onclick = async () => {
+      if (!picVals(q.key).length){ wrap.querySelector('[data-perr]').textContent = 'Pick one, or choose \u201cLet Zen find out\u201d.'; return; }
+      const last = PIC.qi === qs.length - 1;
+      if (!(await picSave(last ? { done: true } : null))) return;
+      if (last){ PIC.stage = 'summary'; PIC.data.done = true; } else PIC.qi++;
+      picRender();
+    };
+    return;
+  }
+  // summary: the picture, then a first suggestion straight away
+  const facts = d.facts || [], fact = k => { const f = facts.find(f => f.key === k); if (!f) return ''; const c = PIC.checks[k] || {};
+    return f.text + (c.verdict === 'not_quite' ? (c.note ? ' You said: ' + c.note + '.' : ' (you said this isn\u2019t quite right)') : ''); };
+  const list = k => picVals(k).filter(x => x !== 'Let Zen find out');
+  const row = (label, value) => value ? '<div class="pfact"><div class="pf-main"><div class="pf-detail">' + esc(label) + '</div><div class="pf-text">' + esc(value) + '</div></div></div>' : '';
+  const sug = d.suggestion || {};
+  wrap.innerHTML = '<p class="pstep">Step 3 of 3 \u00b7 done</p><h1>Your customer picture</h1><div class="pfacts">' +
+    row('Who', [fact('ages'), fact('areas')].filter(Boolean).join(' ') || 'Zen will learn this from your bookings.') +
+    row('Who you want more of', list('want_more').join(', ') || 'Zen will find out from your first ads.') +
+    row('Why they choose you', list('different').join(', ') || 'Zen will test a few reasons and keep the winner.') +
+    row('How you sound', list('tone').join(', ') || 'Zen will match your past posts.') +
+    row('What they ask', fact('questions')) + '</div>' +
+    '<p class="note">Edit any time. It gets sharper with every campaign.</p>' +
+    '<div class="psug"><small>First suggestion</small><b>' + esc(PIC.then ? 'Back to your ad' : sug.title || '') + '</b><span>' + esc(PIC.then ? 'Zen will build the plan with what you just told it.' : sug.text || '') + '</span>' +
+    '<div class="actions"><button class="btn btn-p" type="button" data-pgo>See the plan</button><button class="btn btn-q" type="button" data-pedit>Change my answers</button></div></div>';
+  wrap.querySelector('[data-pedit]').onclick = () => { PIC.stage = 'questions'; PIC.qi = 0; picRender(); };
+  wrap.querySelector('[data-pgo]').onclick = () => {
+    const prompt = PIC.then || sug.prompt, ctx = PIC.thenCtx; PIC.then = null; PIC.thenCtx = null;
+    go('home'); if (prompt) send(prompt, ctx ? { context: ctx } : undefined);
+  };
+}
+
+// A question asked in the moment, inside the conversation: answered once, remembered.
+function askCardRender(d, c){
+  const opts = c.options || [];
+  let picked = [];
+  d.innerHTML = '<span class="badge">One quick question</span><h3>' + esc(c.title) + '</h3><p class="pwhy"><b>Why now:</b> ' + esc(c.why) + '</p>' +
+    (opts.length ? '<div class="pl-opts">' + opts.map((o, i) => '<button class="chip" type="button" data-ao="' + i + '" aria-pressed="false">' + esc(o.label) + '</button>').join('') + '</div>' : '') +
+    (c.kind === 'location'
+      ? '<div class="aloc"><button class="btn btn-s" type="button" data-ageo>Use this device\u2019s location</button><span class="note">Best when you\u2019re at the salon.</span></div>' +
+        '<label class="crlabel" for="aLoc' + c.key + '">Or paste the salon\u2019s coordinates</label><input id="aLoc' + c.key + '" data-aloc placeholder="25.1197, 55.3826">' +
+        '<p class="note">In Google Maps, press and hold on the salon: the coordinates appear at the top. Copy them here. A full Google Maps link that shows the pin works too.</p>'
+      : '') +
+    (c.allow_text ? '<label class="crlabel" for="aTxt' + c.key + '">Or type your own, separated by commas</label><input id="aTxt' + c.key + '" data-atext placeholder="e.g. cheap, discount">' : '') +
+    '<div class="actions"><button class="btn btn-p" type="button" data-asave>Save and continue</button></div><p class="note" data-aerr role="status"></p>';
+  const err = t => { d.querySelector('[data-aerr]').textContent = t || ''; };
+  d.querySelectorAll('[data-ao]').forEach(b => b.onclick = () => {
+    const l = opts[+b.dataset.ao].label;
+    picked = c.multi ? (picked.includes(l) ? picked.filter(x => x !== l) : picked.concat(l)) : [l];
+    d.querySelectorAll('[data-ao]').forEach(x => x.setAttribute('aria-pressed', String(picked.includes(opts[+x.dataset.ao].label)))); err();
+  });
+  const finish = async payload => {
+    const btn = d.querySelector('[data-asave]'); btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Saving\u2026';
+    const j = await zen('save_customer_picture', payload, 20000);
+    if (!j.ok){ btn.disabled = false; btn.textContent = 'Save and continue'; err(j.error); return; }
+    d.querySelector('.actions').outerHTML = '<div class="status-line">Saved. Zen will remember this.</div>';
+    d.querySelectorAll('button,input').forEach(x => x.disabled = true);
+    send(c.then.prompt, { context: c.then.context });
+  };
+  const geo = d.querySelector('[data-ageo]');
+  if (geo) geo.onclick = () => {
+    if (!navigator.geolocation){ err('This device can\u2019t share its location. Paste the coordinates instead.'); return; }
+    geo.disabled = true; geo.textContent = 'Finding you\u2026';
+    navigator.geolocation.getCurrentPosition(
+      p => finish({ salon: { lat: Math.round(p.coords.latitude * 1e5) / 1e5, lng: Math.round(p.coords.longitude * 1e5) / 1e5 } }),
+      () => { geo.disabled = false; geo.textContent = 'Use this device\u2019s location'; err('Location wasn\u2019t shared. Paste the coordinates instead.'); },
+      { enableHighAccuracy: true, timeout: 15000 });
+  };
+  d.querySelector('[data-asave]').onclick = () => {
+    if (c.kind === 'location'){
+      const v = (d.querySelector('[data-aloc]').value || '').trim();
+      if (!v){ err('Use this device\u2019s location, or paste the coordinates.'); return; }
+      return finish({ salon_text: v });
+    }
+    const typed = c.allow_text ? (d.querySelector('[data-atext]').value || '').split(',').map(x => x.trim()).filter(Boolean) : [];
+    const value = typed.length ? picked.filter(x => !/^nothing/i.test(x)).concat(typed) : picked;
+    if (!value.length){ err('Pick one' + (c.allow_text ? ', or type your own.' : '.')); return; }
+    finish({ answers: { [c.key]: c.multi || c.allow_text ? value : value[0] } });
+  };
+}
+
 // ---------- cards (shapes: see contract.ts) ----------
 function renderCard(c){
   const d = document.createElement('div'); d.className = 'card';
@@ -2861,6 +3058,7 @@ function renderCard(c){
     case 'answer':   answerCard(d, c); break;
     case 'plan':     planCard(d, c); break;
     case 'result':   resultCard(d, c); break;
+    case 'ask':      askCardRender(d, c); break;
     case 'question':
       d.innerHTML = '<h3>' + esc(c.question) + '</h3><div class="actions">' + (c.choices||[]).map(x => '<button class="chip" type="button">' + esc(x) + '</button>').join('') + '</div>';
       d.querySelectorAll('.chip').forEach(b => b.onclick = () => send(b.textContent));
@@ -2914,7 +3112,7 @@ function followUps(list){
   return '<div class="actions">' + list.map(f => '<button class="chip" type="button" data-follow="' + esc(f.prompt) + '">' + esc(f.label) + '</button>').join('') + '</div>';
 }
 function wireFollowUps(d){
-  d.querySelectorAll('[data-follow]').forEach(b => b.onclick = () => send(b.dataset.follow));
+  d.querySelectorAll('[data-follow]').forEach(b => b.onclick = () => b.dataset.follow.startsWith('__open:') ? openZenView(b.dataset.follow.slice(7)) : send(b.dataset.follow));
 }
 
 function answerCard(d, c){
@@ -2965,9 +3163,10 @@ function planCard(d, c){
       (acts ? '<div class="pl-acts">' + acts + '</div>' : '') + opts + '</div></div>';
   };
   const doLines = lines.map((l, i) => [l, i]).filter(([l]) => l.step != null);
-  const adviceLines = lines.map((l, i) => [l, i]).filter(([l]) => l.step == null);
+  const mainLines = lines.map((l, i) => [l, i]).filter(([l]) => l.step != null || l.group === 'plan');
+  const adviceLines = lines.map((l, i) => [l, i]).filter(([l]) => l.step == null && l.group !== 'plan');
   const linesHtml = !lines.length ? '' :
-    '<div class="plines">' + doLines.map(([l, i]) => lineHtml(l, i)).join('') + '</div>' +
+    '<div class="plines">' + mainLines.map(([l, i]) => lineHtml(l, i)).join('') + '</div>' +
     (adviceLines.length ? '<div class="padvice-h">Also worth doing (not part of this approval)</div><div class="plines">' + adviceLines.map(([l, i]) => lineHtml(l, i)).join('') + '</div>' : '') +
     (c.spend ? '<div class="pspend" data-pspend></div>' : '') +
     (c.checks && c.checks.length ? '<ul class="pchecks">' + c.checks.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' : '');
@@ -2984,7 +3183,8 @@ function planCard(d, c){
   const approveText = () => {
     if (!lines.length) return c.approve_label || 'Approve';
     const n = ticked.size;
-    return n ? 'Approve ' + n + ' change' + (n === 1 ? '' : 's') : 'Nothing ticked';
+    const noun = c.approve_noun || 'change';
+    return n ? 'Approve ' + n + ' ' + noun + (n === 1 ? '' : 's') : 'Nothing ticked';
   };
   const refresh = () => {
     if (!armed){ approve.textContent = approveText(); approve.disabled = !!lines.length && !ticked.size; }
