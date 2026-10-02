@@ -369,6 +369,21 @@ dialog.viewer::backdrop{background:rgba(22,33,29,.55)}
 .st.uploaded{background:#ECEEEA;color:var(--ink)}
 .st.reference{background:#EEE6F4;color:#5B3A78}
 #galWhen{margin-bottom:6px}
+.galtop{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tile.selmode .media::after{content:"";position:absolute;inset:0;background:rgba(22,33,29,.04)}
+.tile .tick{position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:50%;border:2px solid #fff;background:rgba(22,33,29,.25);box-shadow:0 1px 4px rgba(0,0,0,.25)}
+.tile.picked .tick{background:var(--accent);border-color:#fff}
+.tile.picked .tick::after{content:"";position:absolute;left:8px;top:4px;width:6px;height:11px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+.tile.picked{box-shadow:0 0 0 3px var(--accent)}
+.tile.locked{opacity:.45}
+.tile.locked .tick{display:none}
+.selbar{position:sticky;bottom:12px;z-index:5;margin-top:14px;background:var(--ink);color:#fff;border-radius:16px;padding:10px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;box-shadow:0 10px 30px -10px rgba(22,33,29,.5)}
+.selbar .btn-q{color:#fff}
+.selbar .btn-del{background:transparent;color:#FFB3A3;border-color:#7A3A2C}
+.selbar .btn-del.armed{background:var(--waste);color:#fff;border-color:var(--waste)}
+.selbar .btn[disabled]{opacity:.5}
+.seln{font-size:15px;margin-right:auto;padding:0 6px}
+.selmsg{flex-basis:100%;font-size:13px;color:#DDE5E1;padding:0 6px}
 .flabel{font-size:13px;font-weight:600;color:var(--muted);min-width:44px;align-self:center}
 .vdel{border-top:1px solid var(--line);padding-top:12px;margin-top:4px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .btn-del{background:transparent;color:var(--waste);border:1px solid #E6C2B8}
@@ -688,6 +703,7 @@ details.prompt pre{white-space:pre-wrap;background:#F7F8F5;border-radius:10px;pa
   .acctbtn{display:grid;place-items:center;position:fixed;top:12px;right:12px;z-index:6;width:42px;height:42px;border-radius:50%;border:0;background:var(--ink);color:#fff;font-weight:600}
   .igwrap{grid-template-columns:1fr}
   .crwrap{grid-template-columns:1fr}
+  .selbar{bottom:calc(76px + env(safe-area-inset-bottom, 0px))}
   .igrid{columns:2 150px;column-gap:10px}
   .bundles{grid-template-columns:repeat(2,minmax(0,1fr))}
   .likegrid{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -797,12 +813,14 @@ details.prompt pre{white-space:pre-wrap;background:#F7F8F5;border-radius:10px;pa
     <section id="gallery" class="page" hidden>
       <div class="page-top">
         <h1>Library</h1>
-        <label class="sr" for="galSearch">Search your library</label>
+        <div class="galtop"><label class="sr" for="galSearch">Search your library</label>
         <input id="galSearch" class="search" type="search" placeholder="Search titles, captions and prompts">
+        <button class="btn btn-s" type="button" id="galSelect">Select</button></div>
       </div>
       <div class="filters" id="galWhen" aria-label="When"></div>
       <div class="filters" id="galFilters" aria-label="What"></div>
       <div id="galBody"></div>
+      <div class="selbar" id="galBar" hidden role="region" aria-label="Selection"></div>
       <dialog class="viewer" id="viewer" aria-label="Gallery item"></dialog>
     </section>
 
@@ -1393,7 +1411,11 @@ async function loadWaDetail(){
 // =====================================================================
 // Gallery
 // =====================================================================
-const GAL = { items: null, filter: 'all', when: 'all', q: '' };
+const GAL = { items: null, filter: 'all', when: 'all', q: '', select: false, sel: new Set(), armed: false };
+// What can be deleted: anything from Create, and ZenPro items that aren't approved, scheduled or posted yet.
+const galKey = it => it.source + ':' + it.id;
+const galDeletable = it => it.source === 'studio' || ['draft', 'creative_ready', 'planned'].includes(it.status);
+el('galSelect').onclick = () => { GAL.select = !GAL.select; GAL.sel.clear(); GAL.armed = false; renderGallery(); };
 const GAL_STATUS = { approved:'Ready to post', scheduled:'Scheduled', published:'Posted', creative_ready:'Waiting for review', planned:'Planned', draft:'Draft',
   made:'Made in Create', uploaded:'Uploaded', reference:'Reference' };
 // What: everything in one place, old ZenPro content and images from Create.
@@ -1418,8 +1440,50 @@ const GAL_WHEN = [
 ];
 el('galSearch').addEventListener('input', e => { GAL.q = e.target.value.trim().toLowerCase(); renderGallery(); });
 
+// The selection bar: how many are chosen, select all shown, and a two-tap Delete.
+function galBar(msg){
+  const bar = el('galBar');
+  el('galSelect').textContent = GAL.select ? 'Done' : 'Select';
+  if (!GAL.select){ bar.hidden = true; return; }
+  bar.hidden = false;
+  const n = GAL.sel.size, can = (GAL.shown || []).filter(galDeletable);
+  bar.innerHTML = '<span class="seln">' + (n ? '<b>' + n + '</b> selected' : 'Tap images to select them') + '</span>' +
+    (can.length && n < can.length ? '<button class="btn btn-q" type="button" id="galAll">Select all shown (' + can.length + ')</button>' : '') +
+    (n ? '<button class="btn btn-q" type="button" id="galNone">Clear</button>' : '') +
+    '<button class="btn btn-del' + (GAL.armed ? ' armed' : '') + '" type="button" id="galDel"' + (n ? '' : ' disabled') + '>' + (GAL.armed ? 'Delete ' + n + ' for good?' : 'Delete') + '</button>' +
+    '<button class="btn btn-q" type="button" id="galCancel">Cancel</button>' +
+    (msg ? '<span class="selmsg" role="status">' + esc(msg) + '</span>' : '');
+  if (el('galAll')) el('galAll').onclick = () => { can.forEach(it => GAL.sel.add(galKey(it))); GAL.armed = false; renderGallery(); };
+  if (el('galNone')) el('galNone').onclick = () => { GAL.sel.clear(); GAL.armed = false; renderGallery(); };
+  el('galCancel').onclick = () => { GAL.select = false; GAL.sel.clear(); GAL.armed = false; renderGallery(); };
+  el('galDel').onclick = async () => {
+    if (!GAL.armed){ GAL.armed = true; galBar(); setTimeout(() => { if (GAL.armed){ GAL.armed = false; galBar(); } }, 6000); return; }
+    GAL.armed = false;
+    const picked = GAL.items.filter(it => GAL.sel.has(galKey(it)));
+    el('galDel').disabled = true; el('galDel').innerHTML = '<span class="spin"></span>Deleting\u2026';
+    const done = new Set(), problems = [];
+    const fromCreate = picked.filter(it => it.source === 'studio');
+    if (fromCreate.length){
+      const j = await studio('delete_assets', { tenant_id: tenant, ids: fromCreate.map(it => it.id) }, 60000);
+      if (j.ok) (j.deleted || []).forEach(id => done.add('studio:' + id)); else problems.push(j.error);
+    }
+    for (const it of picked.filter(it => it.source !== 'studio')){
+      const j = await zen('gallery_delete', { source: it.source, id: it.id, url: it.url }, 30000);
+      if (j.ok) done.add(galKey(it)); else problems.push(it.title + ': ' + j.error);
+    }
+    GAL.items = GAL.items.filter(it => !done.has(galKey(it)));
+    GAL.sel = new Set([...GAL.sel].filter(k => !done.has(k)));
+    if (!GAL.sel.size) GAL.select = !problems.length ? false : GAL.select;
+    renderGallery();
+    const msg = done.size + ' deleted.' + (problems.length ? ' ' + problems.length + ' couldn\u2019t be: ' + problems.join(' ') : '');
+    if (GAL.select) galBar(msg); else { el('galBody').insertAdjacentHTML('afterbegin', '<p class="note saved" role="status">' + esc(msg) + '</p>'); }
+  };
+}
+
 async function loadGallery(){
   el('galBody').innerHTML = '<div class="empty">Loading your library\u2026</div>';
+  // Collect any images that finished after you left Create, so nothing made is ever missing here.
+  const rec = await studio('recover', { tenant_id: tenant }, 120000);
   const [old, made] = await Promise.all([zen('gallery_list', {}, 30000), studio('list_assets', { tenant_id: tenant, limit: 200 }, 30000)]);
   if (!old.ok && !made.ok){ el('galBody').innerHTML = '<div class="empty">' + esc(old.error) + '</div>'; return; }
   const fromCreate = (made.ok ? made.assets : []).map(a => ({
@@ -1430,7 +1494,9 @@ async function loadGallery(){
     width: a.width, height: a.height, asset: a,
   }));
   GAL.items = [...fromCreate, ...(old.ok ? old.items : [])].sort((x, y) => String(y.created_at || '').localeCompare(String(x.created_at || '')));
-  GAL.note = !made.ok ? 'Images from Create couldn\u2019t be loaded just now.' : !old.ok ? 'Older ZenPro content couldn\u2019t be loaded just now.' : '';
+  GAL.note = !made.ok ? 'Images from Create couldn\u2019t be loaded just now.' : !old.ok ? 'Older ZenPro content couldn\u2019t be loaded just now.'
+    : rec.ok && rec.recovered ? rec.recovered + ' image' + (rec.recovered === 1 ? '' : 's') + ' that finished after you left Create ' + (rec.recovered === 1 ? 'was' : 'were') + ' saved and added here.'
+    : rec.ok && rec.still_running ? rec.still_running + ' image' + (rec.still_running === 1 ? ' is' : 's are') + ' still being made. They\u2019ll appear here when ready.' : '';
   renderGallery();
 }
 function renderGallery(){
@@ -1448,15 +1514,24 @@ function renderGallery(){
   const list = inWhen.filter(fn).filter(it => !GAL.q || (it.title + ' ' + (it.caption || '') + ' ' + (it.prompt || '')).toLowerCase().includes(GAL.q));
   const note = GAL.note ? '<p class="note">' + esc(GAL.note) + '</p>' : '';
   if (!GAL.items.length){ el('galBody').innerHTML = note + '<div class="empty">Nothing here yet. Images you make in Create, and content from ZenPro, appear here automatically.</div>'; return; }
-  if (!list.length){ el('galBody').innerHTML = note + '<div class="empty">Nothing matches that. Try another filter or search.</div>'; return; }
+  GAL.shown = list;
+  if (!list.length){ el('galBody').innerHTML = note + '<div class="empty">Nothing matches that. Try another filter or search.</div>'; galBar(); return; }
   el('galBody').innerHTML = note + '<div class="grid">' + list.map(it =>
-    '<button class="tile" type="button" data-gi="' + esc(it.source + ':' + it.id) + '"><div class="media">' +
+    '<button class="tile' + (GAL.select ? (galDeletable(it) ? ' selmode' + (GAL.sel.has(galKey(it)) ? ' picked' : '') : ' selmode locked') : '') + '" type="button" data-gi="' + esc(it.source + ':' + it.id) + '"' +
+      (GAL.select ? ' aria-pressed="' + GAL.sel.has(galKey(it)) + '"' : '') + ' aria-label="' + esc(it.title + (it.created_at ? ', ' + new Date(it.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short' }) : '')) + '" title="' + esc(it.title) + '"><div class="media">' +
       (it.kind === 'video' ? '<video src="' + esc(it.url) + '#t=0.5" muted preload="metadata" playsinline></video><span class="play" aria-hidden="true">\u25B6</span>'
                            : '<img src="' + esc(it.url) + '" alt="" loading="lazy">') +
-      '<span class="st ' + esc(it.status) + '">' + esc(GAL_STATUS[it.status] || it.status) + '</span></div>' +
-    '<div class="cap"><b>' + esc(it.title) + '</b><span>' + esc(it.created_at ? new Date(it.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short' }) : '') +
-      (it.model_label ? ', ' + esc(it.model_label) : '') + (it.slides ? ', ' + it.slides + ' slides' : '') + '</span></div></button>').join('') + '</div>';
-  el('galBody').querySelectorAll('[data-gi]').forEach(b => b.onclick = () => b.dataset.gi.startsWith('studio:') ? openStudioViewer(b.dataset.gi.slice(7)) : openViewer(b.dataset.gi));
+      '<span class="st ' + esc(it.status) + '">' + esc(GAL_STATUS[it.status] || it.status) + '</span>' + (GAL.select ? '<span class="tick" aria-hidden="true"></span>' : '') + '</div></button>').join('') + '</div>';
+  el('galBody').querySelectorAll('[data-gi]').forEach(b => b.onclick = () => {
+    const key = b.dataset.gi;
+    if (GAL.select){
+      const it = GAL.items.find(x => galKey(x) === key);
+      if (!galDeletable(it)){ galBar('Approved, scheduled and posted items can\u2019t be deleted here, so nothing already planned breaks.'); return; }
+      GAL.sel.has(key) ? GAL.sel.delete(key) : GAL.sel.add(key); GAL.armed = false; renderGallery(); return;
+    }
+    key.startsWith('studio:') ? openStudioViewer(key.slice(7)) : openViewer(key);
+  });
+  galBar();
 }
 
 // An image from Create: what made it, and what you can do with it next.
@@ -1476,11 +1551,21 @@ function openStudioViewer(id){
       '<a class="btn btn-q" href="' + esc(it.url) + '" target="_blank" rel="noopener">Full size</a></div>' +
     '<button class="btn btn-q" type="button" id="svLabel" style="align-self:flex-start">' + (isRef ? 'Make it a creative (mine to post)' : 'Make it a reference (inspiration only)') + '</button>' +
     '<p class="note" id="svNote" role="status"></p>' +
-    '<p class="note vdel">Posting images made in Create to Instagram comes next.</p></div></div>';
+    '<p class="note">Posting images made in Create to Instagram comes next.</p>' +
+    '<div class="vdel"><button class="btn btn-del" type="button" id="svDel">Delete</button></div></div></div>';
   v.showModal();
   el('vClose').onclick = () => v.close(); v.onclick = e => { if (e.target === v) v.close(); };
   if (el('svUse')) el('svUse').onclick = () => { v.close(); CR.image = it.asset; MKT.pending = 'studio'; go('marketing'); };
   el('svInsp').onclick = () => { v.close(); CR.insp = { type:'asset', asset_id: it.id, name: it.title.slice(0, 40), url: it.url }; MKT.pending = 'studio'; go('marketing'); };
+  let delArmed = false;
+  el('svDel').onclick = async () => {
+    const b = el('svDel');
+    if (!delArmed){ delArmed = true; b.classList.add('armed'); b.textContent = 'Tap again to delete for good'; setTimeout(() => { if (delArmed){ delArmed = false; b.classList.remove('armed'); b.textContent = 'Delete'; } }, 5000); return; }
+    b.disabled = true; b.innerHTML = '<span class="spin"></span>Deleting\u2026';
+    const j = await studio('delete_assets', { tenant_id: tenant, ids: [it.id] }, 30000);
+    if (!j.ok || !(j.deleted || []).includes(it.id)){ b.disabled = false; delArmed = false; b.classList.remove('armed'); b.textContent = 'Delete'; el('svNote').textContent = j.error || 'That image was already gone.'; return; }
+    GAL.items = GAL.items.filter(x => !(x.source === 'studio' && x.id === it.id)); v.close(); renderGallery();
+  };
   el('svLabel').onclick = async () => {
     const label = isRef ? 'creative' : 'reference';
     el('svLabel').disabled = true;
@@ -1807,6 +1892,9 @@ async function createView(){
     if (first){ CR.modelKey = first.key; CR.sizeKey = first.default_size; }
   }
   crShowUsage();
+  studio('recover', { tenant_id: tenant }, 120000).then(r => {
+    if (r.ok && r.recovered && el('crStatus') && !el('crStatus').textContent) crStatus(r.recovered + ' earlier image' + (r.recovered === 1 ? '' : 's') + ' finished while you were away and ' + (r.recovered === 1 ? 'is' : 'are') + ' in your Library.');
+  });
   // A request from Home arrives filled in, never auto-generated: you see the settings and credits, then press Generate.
   if (CR.autoSend){
     const a = CR.autoSend; CR.autoSend = null;
@@ -1887,7 +1975,7 @@ function renderCreateResults(){
     const media = v.status === 'succeeded' && v.asset
       ? '<img src="' + esc(v.asset.url) + '" alt="Version ' + n + '" loading="lazy"' + (v.asset.width && v.asset.height ? ' style="aspect-ratio:' + v.asset.width + '/' + v.asset.height + '"' : '') + '>'
       : v.status === 'failed' ? '<div class="crstate bad">' + esc(v.error || 'This one didn\u2019t come out.') + '</div>'
-      : '<div class="crstate" style="aspect-ratio:' + esc(ratio) + '"><div class="thinking"><span class="pulse"></span><span>Making it\u2026 usually under a minute</span></div></div>';
+      : '<div class="crstate" style="aspect-ratio:' + esc(ratio) + '"><div class="thinking"><span class="pulse"></span><span>Making it\u2026 ' + (v.size_key === 'max' ? 'Max can take a few minutes' : 'usually under a minute') + '. You can leave; it\u2019ll be saved to your Library.</span></div></div>';
     const used = [v.model_label, v.size_key ? v.size_key.charAt(0).toUpperCase() + v.size_key.slice(1) : '', v.credits != null ? v.credits + ' credits' : ''].filter(Boolean).join(' \u00B7 ');
     const o = CR.open[v.id] || '';
     const done = v.status === 'succeeded' && v.asset;
