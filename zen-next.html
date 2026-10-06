@@ -248,6 +248,82 @@ details.why ul{margin:8px 0 0;padding-left:20px;color:var(--muted)}
 .test{font-size:14px;color:var(--muted);margin-top:12px}
 /* Plan lines: one decision each, with its reason and source */
 .btn-sm{min-height:36px;padding:6px 12px;font-size:14px}
+/* Create: one composer box, results above it */
+.cfeed{display:flex;flex-direction:column;gap:12px;margin:0 0 14px;max-width:820px}
+.cbox{position:sticky;bottom:12px;z-index:5;max-width:820px;background:#fff;border:1px solid var(--line);border-radius:20px;padding:12px 14px;box-shadow:0 6px 24px rgba(0,0,0,.08);display:flex;flex-direction:column;gap:10px}
+.cbox #crText{border:0;padding:6px 4px;font-size:16px;resize:none;min-height:48px;max-height:220px;background:transparent;box-shadow:none;outline:none;width:100%}
+.catt{display:flex;flex-wrap:wrap;gap:8px}.catt[hidden]{display:none}
+.cchip{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:12px;padding:6px 6px 6px 6px;background:var(--bg,#f6f6f2);max-width:100%}
+.cchip.off{opacity:.6}
+.cchip img{width:44px;height:44px;object-fit:cover;border-radius:8px;flex:none}
+.cchip>div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.cchip b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
+.cchip small{font-size:12px;color:var(--muted)}
+.csel{font-size:12px;border:1px solid var(--line);border-radius:6px;padding:1px 4px;background:#fff}
+.ckeep{font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center}
+.cx{border:0;background:none;font-size:20px;line-height:1;color:var(--muted);cursor:pointer;min-width:32px;min-height:32px}
+.cfoot{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cplus{width:38px;height:38px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:22px;line-height:1;cursor:pointer;flex:none}
+.cseg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:2px;gap:2px}
+.cseg button{border:0;background:none;border-radius:999px;padding:6px 14px;font-size:14px;cursor:pointer;min-height:34px;color:var(--muted)}
+.cseg button[aria-pressed=true]{background:var(--accent);color:#fff;font-weight:600}
+.cpill{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;font-size:14px;cursor:pointer;min-height:38px;white-space:nowrap}
+.cpill em{font-style:normal;font-size:11px;color:var(--muted)}
+.cgo{margin-left:auto;border-radius:999px;min-height:40px;padding:8px 18px}
+.cbox .crset{border-top:1px solid var(--line);padding-top:10px;max-height:46vh;overflow:auto}
+.cbox .crstatus:empty{display:none}
+.smenu .mh{margin:8px 12px 2px;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.smenu .mh small{text-transform:none;font-weight:400;letter-spacing:0}
+.smenu button,.smenu .mi{flex-direction:column;align-items:flex-start;justify-content:center}
+.smenu button small{font-size:12px;color:var(--muted)}
+.csug .mh{font-size:13px;color:var(--muted);margin:0 0 8px}
+.csug-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+.cs{text-align:left;border:1px solid var(--line);background:#fff;border-radius:14px;padding:14px;cursor:pointer;display:flex;flex-direction:column;gap:4px;min-height:84px}
+.cs:hover{border-color:var(--accent)}
+.cs span{font-size:13px;color:var(--muted)}
+.cfeed .crgrid{display:flex;flex-direction:column;gap:12px}
+.cfeed .crcard{display:grid;grid-template-columns:minmax(110px,180px) 1fr;gap:4px 16px;align-items:start}
+.cfeed .crcard>:first-child{grid-row:1 / span 4;width:100%}
+.cfeed .crcard>:not(:first-child){grid-column:2}
+.cfeed,.cbox{margin-left:auto;margin-right:auto;width:100%}
+.cfeed .crcard .actions{gap:6px}
+.cfeed .crstate .thinking span:not(.pulse){display:none}
+.cfeed .crstate{display:flex;align-items:center;justify-content:center;min-height:120px}
+.cwait{display:block;margin-top:4px}
+.cfeed .crcard .actions .btn,.cfeed .crcard .actions a.btn{min-height:34px;padding:5px 12px;font-size:14px}
+@media (max-width:600px){
+  .cbox{position:static;padding:10px}
+  .cpill{font-size:13px;padding:6px 10px}
+  .cgo{margin-left:0;width:100%}
+  .cfeed .crcard{grid-template-columns:100px 1fr}
+  .cchip b{max-width:150px}
+}
+.catt{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
+.ctile{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:12px;padding:8px;background:var(--bg,#f6f6f2);text-align:left;min-height:60px;min-width:0}
+.ctile.add{border-style:dashed;background:#fff;cursor:pointer;font:inherit;color:inherit}
+.ctile.add:hover{border-color:var(--accent)}
+.ctile .ci{width:40px;height:40px;border-radius:9px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:22px;flex:none}
+.ctile img{width:44px;height:44px;object-fit:cover;border-radius:8px;flex:none}
+.ctile>div{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.ctile b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ctile small{font-size:12px;color:var(--muted)}
+.cq b{font-weight:700;color:var(--accent)}
+.cown{display:flex;flex-direction:column;gap:4px;padding:0 4px}
+.cown label{font-size:12px;font-weight:600;color:var(--muted)}
+.cown input{border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-size:15px}
+.cpill[hidden]{display:none}
+.smenu{width:290px}
+.smenu [aria-current=true] span{font-weight:700;color:var(--accent)}
+.smenu button,.smenu .mi{width:100%;text-align:left;align-items:flex-start}
+.smenu .mchk{flex-direction:row;align-items:flex-start;gap:10px}
+.smenu .mchk input{margin-top:3px;width:18px;height:18px;flex:none;accent-color:var(--accent)}
+.smenu .mchk span{display:flex;flex-direction:column}
+.smenu .mchk small{font-size:12px;color:var(--muted)}
+/* Create: one sentence, then a board */
+.smenu{position:fixed;z-index:30;width:260px;min-width:220px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.14);padding:6px;display:flex;flex-direction:column}
+.smenu[hidden]{display:none}
+.smenu button,.smenu .mi{border:0;background:none;text-align:left;padding:10px 12px;border-radius:8px;font-size:15px;cursor:pointer;min-height:42px;display:flex;align-items:center}
+.smenu button:hover,.smenu .mi:hover,.smenu button:focus,.smenu .mi:focus-within{background:var(--accent-soft)}
 /* Customer picture journey */
 .pic{max-width:720px}
 .pic h1{margin:4px 0 10px}
@@ -269,6 +345,15 @@ details.why ul{margin:8px 0 0;padding-left:20px;color:var(--muted)}
 .card .crlabel{display:block;margin-top:12px}
 .card [data-aloc],.card [data-atext]{display:block;width:100%;max-width:420px;margin-top:6px}
 .chip-new{border-color:var(--accent);color:var(--accent);font-weight:600}
+.modesw{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;margin:0 0 14px;gap:2px}
+.modesw button{border:0;background:none;padding:8px 20px;border-radius:999px;font-weight:600;min-height:40px;cursor:pointer;color:var(--muted)}
+.modesw button[aria-pressed=true]{background:var(--accent);color:#fff}
+.vskip{display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--muted);margin-top:10px}
+.vskip input{margin-top:3px;width:18px;height:18px;flex:none;accent-color:var(--accent)}
+.vsnote{margin:10px 0 0}
+#crVid .mopts{margin:6px 0 4px}
+.crcard video{width:100%;display:block;border-radius:10px;background:#000}
+.vmedia video{max-width:100%;max-height:78vh;display:block;margin:auto;border-radius:10px;background:#000}
 .fsug{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 12px}
 .bq .pl-opts{margin-top:10px}
 @media (max-width:600px){.bf{flex-direction:column;align-items:stretch}.bf .acts{align-self:flex-start}}.bq .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.bq .row input{flex:1;min-width:200px}
@@ -449,7 +534,9 @@ dialog.viewer::backdrop{background:rgba(22,33,29,.55)}
 .atable{overflow-x:auto;margin:10px 0 4px;border:1px solid var(--line);border-radius:10px}
 .atable table{border-collapse:collapse;width:100%;font-size:14px;min-width:420px}
 .atable th{text-align:left;font-weight:600;color:var(--muted);font-size:13px;padding:8px 10px;background:#F7F8F5;border-bottom:1px solid var(--line)}
-.atable td{padding:8px 10px;border-bottom:1px solid #EEF0EC;white-space:nowrap}
+.atable td{padding:8px 10px;border-bottom:1px solid #EEF0EC;white-space:normal;vertical-align:top;overflow-wrap:anywhere;font-weight:400}
+.atable td.r{white-space:nowrap}
+.atable td:first-child{color:var(--muted);white-space:nowrap}
 .atable tr:last-child td{border-bottom:0}
 .atable .r{text-align:right;font-variant-numeric:tabular-nums}
 .achart{margin:10px 0 6px}
@@ -672,7 +759,7 @@ details.sent pre{white-space:pre-wrap;background:#fff;border:1px solid var(--lin
 .szd{flex-basis:100%}
 .used{font-size:12px;font-weight:600;color:var(--accent)}
 .crlabel{font-weight:600;font-size:15px;margin-bottom:-6px}
-#crText{border:1px solid var(--line);border-radius:12px;padding:12px 14px;resize:vertical;min-height:96px;background:#fff;font-size:16px}
+#crText,#crVText{display:block;width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:12px;padding:12px 14px;resize:vertical;min-height:96px;background:#fff;font-size:16px}
 .crgo{width:100%;justify-content:center;min-height:52px;font-size:17px}
 .crstatus{margin:-4px 0 0;font-size:14px;color:var(--muted);min-height:20px}
 .crstatus.bad{color:var(--waste)}
@@ -756,7 +843,7 @@ details.prompt pre{white-space:pre-wrap;background:#F7F8F5;border-radius:10px;pa
 /* ---- mobile ---- */
 @media (max-width:760px){
   #app{flex-direction:column}
-  .rail{position:fixed;bottom:0;top:auto;left:0;right:0;width:auto;height:auto;flex-direction:row;justify-content:space-around;padding:6px 4px calc(6px + env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--line);z-index:5}
+  .rail{position:fixed;bottom:0;top:auto;left:0;right:0;width:auto;height:auto;flex-direction:row;justify-content:space-around;padding:6px 4px calc(6px + env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--line);z-index:40}
   .rail .mark,.rail-foot,.rail .acct{display:none}
   .nav{flex-direction:column;gap:2px;font-size:12px;padding:6px 8px}
   .nav[aria-current="page"]{background:var(--accent-soft)}
@@ -813,6 +900,251 @@ details.prompt pre{white-space:pre-wrap;background:#F7F8F5;border-radius:10px;pa
   .thead .back{display:inline-flex}
   .msg{max-width:88%}
 }
+
+/* Create: a bar on top, one picture on a light table, versions in a strip */
+.cbox.ctop{position:static;box-shadow:none;margin:0 auto 18px;max-width:900px}
+.cstage-wrap{max-width:900px;margin:0 auto}
+.cstage .crcard{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:20px;align-items:start;padding:18px;border-radius:22px;
+  background:radial-gradient(circle,rgba(0,0,0,.05) 1px,transparent 1.4px) 0 0/14px 14px,var(--surface)}
+.cstage .crcard>:first-child{width:100%;max-height:68vh;object-fit:contain;border-radius:14px;background:var(--ground);box-shadow:0 10px 30px rgba(0,0,0,.12)}
+.cstage .crmeta{display:flex;flex-direction:column;gap:8px}
+.cstage .crmeta>b{font-size:20px}
+.cstage .change textarea{min-height:76px}
+.cstage .actions.sub{margin-top:4px}
+.cstrip{display:flex;gap:10px;overflow-x:auto;padding:14px 2px 6px;scrollbar-width:thin}
+.cthumb{flex:none;width:86px;border:2px solid transparent;border-radius:12px;background:var(--surface);padding:4px;cursor:pointer;display:flex;flex-direction:column;gap:4px;align-items:stretch}
+.cthumb img,.cthumb-wait{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:8px;background:var(--ground);display:grid;place-items:center;color:var(--muted)}
+.cthumb-l{font-size:12.5px;font-weight:700;text-align:center}
+.cthumb-l small{font-weight:400;color:var(--muted)}
+.cthumb[aria-pressed=true]{border-color:var(--accent)}
+@media (max-width:760px){.cstage .crcard{grid-template-columns:1fr;padding:12px}}
+
+/* Create: compact top section, pinned while pictures fill the space below */
+#mkt .page-top{margin-bottom:8px}
+#mkt .page-top h1{font-size:30px}
+.cbox.ctop{position:sticky;top:8px;z-index:6;padding:10px 12px;gap:8px;box-shadow:0 6px 18px rgba(0,0,0,.07)}
+.ctop .catt{grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:6px}
+.ctop .ctile{min-height:0;padding:5px 8px;gap:8px}
+.ctop .ctile .ci,.ctop .ctile img{width:30px;height:30px;font-size:18px;border-radius:8px}
+.ctop .ctile b{font-size:13.5px}
+.ctop .ctile small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11.5px}
+.ctop .ckeep{font-size:11.5px}
+.ctop #crText{min-height:34px;padding:4px 4px;font-size:15px}
+.ctop .cfoot{gap:6px;flex-wrap:wrap;align-items:center}
+.ctop .cpill,.ctop .cseg button{min-height:34px;padding:5px 10px;font-size:13.5px}
+.ctop .cgo{min-height:36px;padding:6px 16px;margin-left:auto}
+.ctop .crstatus:empty{display:none}
+.cstage .crcard>:first-child{max-height:max(280px,calc(100vh - 410px))}
+@media (max-width:760px){.cbox.ctop{position:static;box-shadow:none}.cstage .crcard>:first-child{max-height:none}}
+.smenu button,.smenu .mi{width:100%;text-align:left;align-items:flex-start}
+
+/* ===== Assistant home, Plan and Studio tabs ===== */
+.kstrip{display:flex;gap:10px;max-width:780px;width:100%;margin:0 auto 22px}
+.kstrip:empty{display:none}
+.ktile{flex:1 1 0;min-width:0;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:9px 13px;cursor:pointer}
+.ktile small{display:block;color:var(--muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ktile b{display:block;font:600 20px/1.2 var(--display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ktile span{display:block;font-size:12.5px;color:var(--accent);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ktile.down span{color:#A3471A}
+.nav .pn{margin-left:auto;background:var(--accent);color:#fff;border-radius:10px;padding:0 7px;font-size:12px;line-height:20px}
+.coming{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px}
+.occ{display:grid;grid-template-columns:52px 1fr;gap:4px 12px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.occ-d{grid-row:1/3;background:var(--accent-soft);color:var(--accent);border-radius:12px;text-align:center;padding:6px 0;line-height:1.1}
+.occ-d b{display:block;font:600 20px/1.1 var(--display)}.occ-d span{font-size:12px;font-weight:600;text-transform:uppercase}
+.occ-t b{display:block;font:600 16px/1.3 var(--display)}
+.occ-t small{display:block;color:var(--muted);font-size:12.5px;margin:1px 0 3px}
+.occ-t span{display:block;font-size:14px;line-height:1.45}
+.occ-src{font-size:12.5px;color:var(--muted)}
+.occ-a{grid-column:2;display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.occ-a .btn{min-height:36px;padding:6px 12px;font-size:14px}
+.studiotabs,.ptabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 4px;padding:24px 32px 0;max-width:1240px}
+.ptabs{padding:0;margin:0 0 18px}
+.studiotabs[hidden]{display:none}
+.studiotabs button,.ptabs button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 15px;font-size:15px;min-height:40px;cursor:pointer}
+.studiotabs button[aria-pressed=true],.ptabs button[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:600}
+.pl-intro{color:var(--muted);max-width:760px;margin:0 0 12px}
+.pl-intro p{margin:0 0 10px}
+.pl-acts{display:flex;gap:8px;flex-wrap:wrap}
+.pl-month{font-size:20px;margin:22px 0 10px}
+.ownform{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.ownform input{border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-height:40px;font:inherit;background:var(--surface)}
+.regionform{max-width:760px}
+.regionform h3{font-size:16px;margin:20px 0 8px}
+.regionform h3 small{font-weight:400;color:var(--muted)}
+.rrow{display:grid;grid-template-columns:160px 1fr;gap:10px;align-items:center;margin:0 0 10px}
+.rrow select,.rrow input{border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-height:42px;font:inherit;background:var(--surface);width:100%}
+.rpair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rchips{display:flex;flex-wrap:wrap;gap:6px}
+body.review-mode #gallery .page-top,body.review-mode #galWhen,body.review-mode #galFilters{display:none}
+body.review-mode #gallery::before{content:"Review: these are waiting for your OK. Open one to approve it, change it or remove it.";display:block;font:600 18px/1.4 var(--display);margin:0 0 16px}
+@media (max-width:760px){
+  .kstrip{overflow-x:auto;scrollbar-width:none}.kstrip::-webkit-scrollbar{display:none}.ktile{flex:0 0 150px}
+  .studiotabs{padding:16px 14px 0}
+  .rrow{grid-template-columns:1fr}.rpair{grid-template-columns:1fr}
+  .coming{grid-template-columns:1fr}
+}
+
+.research{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:0 0 16px;max-width:760px}
+.research label{display:block;margin:0 0 8px}
+.research .rpair{grid-template-columns:1fr auto}
+.research input{border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-height:42px;font:inherit;background:var(--surface);width:100%}
+.research .note{margin:8px 0 0}
+.addown{display:flex;gap:6px;margin:8px 0 0;max-width:420px}
+.addown input{flex:1;border:1px solid var(--line);border-radius:10px;padding:6px 10px;min-height:38px;font:inherit;background:var(--surface)}
+.ohrows{display:flex;flex-direction:column;gap:2px;margin:6px 0 12px}
+.ohr{display:grid;grid-template-columns:110px minmax(240px,280px) 1fr;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.ohr:first-child{border-top:0}
+.ohr select,.ohr input{border:1px solid var(--line);border-radius:10px;padding:7px 10px;font:inherit;background:#fff;min-height:40px}
+.ohtime{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ohtime[hidden]{display:none}
+@media (max-width:600px){.ohr{grid-template-columns:1fr}.ohr b{margin-top:4px}}
+
+.rv{max-width:980px}
+.rv-h{display:flex;justify-content:space-between;align-items:center;margin:0 0 10px}
+.rv-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px}
+.rv-media img,.rv-media video{width:100%;max-height:calc(100vh - 260px);object-fit:contain;border-radius:12px;background:var(--ground)}
+.rv-info h2{margin:0 0 8px}
+.rv-acts{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 6px}
+.rv-done{display:flex;flex-direction:column;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:28px;max-width:640px}
+.rv-done b{font:600 20px/1.3 var(--display)}
+.rv-done span{color:var(--muted)}
+@media (max-width:760px){.rv-card{grid-template-columns:1fr}}
+
+/* Home is just the conversation */
+#recentBlock[data-keep-hidden]{display:none!important}
+.pastrow{display:flex;justify-content:center;margin:18px 0 0}
+/* Attention: this week's numbers in one slim row, then Needs you and Coming up side by side; tabs on phones */
+.attn{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;align-items:start}
+.attn-col{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px 16px;min-width:0}
+.attn-col[data-col="week"]{grid-column:1/-1;order:-1;background:none;border:0;padding:0}
+.attn-col[data-col="week"] h2{display:none}
+.attn-col[data-col="week"] .kstrip{flex-direction:row;margin:0;max-width:none}
+.attn-col h2{font-size:18px;margin:0 0 10px}
+.attn-col .block-h{display:flex;justify-content:space-between;align-items:center;margin:0 0 10px}
+.attn-col .block-h h2{margin:0}
+.attn-col .coming{grid-template-columns:1fr}
+.attn-col .occ{border:0;border-top:1px solid var(--line);border-radius:0;padding:10px 0;background:none}
+.attn-col .occ:first-child{border-top:0;padding-top:0}
+.attn-col .occ-t span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.attn-col .nudge{margin:10px 0 0}
+.attn-tabs{display:none}
+.need{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.need>b{min-width:38px;height:38px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font:600 18px/1 var(--display)}
+.need span{display:block;font-weight:600}.need small{color:var(--muted)}
+@media (max-width:760px){
+  .attn-tabs{display:flex;gap:6px;margin:0 0 12px}
+  .attn-tabs button{flex:1;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 6px;min-height:40px;font:inherit;font-size:14px}
+  .attn-tabs button[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:600}
+  .attn{grid-template-columns:1fr}
+  .attn-col{display:none}
+  .attn[data-show="needs"] [data-col="needs"],.attn[data-show="coming"] [data-col="coming"],.attn[data-show="week"] [data-col="week"]{display:block}
+  .attn-col[data-col="week"]{background:var(--surface);border:1px solid var(--line);padding:14px 16px}
+  .attn-col[data-col="week"] .kstrip{flex-direction:column;overflow:visible}
+  .attn-col[data-col="week"] .ktile{flex:1 1 auto}
+}
+/* Home: the conversation, centred like a chat app */
+#landing{min-height:calc(100vh - 40px);display:flex;flex-direction:column;justify-content:center;padding-top:0;padding-bottom:12vh}
+@media (max-width:760px){#landing{min-height:calc(100vh - 90px);padding-bottom:16vh}}
+
+/* Sales tiles */
+.attn-col[data-col="week"] .ktile{text-align:left}
+.ktile span{display:block}
+.ktile span.down{color:#A3471A}.ktile span.up{color:var(--accent)}.ktile span.na{color:var(--muted);font-weight:400}
+.ktile.wide{flex:1 1 100%;cursor:default}
+#salesAsOf{margin:8px 0 0}
+.attn-col .empty p{margin:0 0 10px}
+/* The bell asks you to look when something new arrives */
+.nav.bell-new{color:var(--ink);font-weight:600}
+.nav.bell-new svg{color:#B4541A;animation:bellring 1.6s ease-in-out 3}
+.nav.bell-new .pn{background:#E8A33D;color:#12343B;box-shadow:0 0 0 0 rgba(232,163,61,.6);animation:bellpulse 2s infinite}
+@keyframes bellring{0%,100%{transform:rotate(0)}10%{transform:rotate(14deg)}20%{transform:rotate(-12deg)}30%{transform:rotate(8deg)}40%{transform:rotate(-6deg)}50%{transform:rotate(0)}}
+@keyframes bellpulse{0%{box-shadow:0 0 0 0 rgba(232,163,61,.6)}70%{box-shadow:0 0 0 8px rgba(232,163,61,0)}100%{box-shadow:0 0 0 0 rgba(232,163,61,0)}}
+@media (prefers-reduced-motion:reduce){.nav.bell-new svg,.nav.bell-new .pn{animation:none}}
+
+/* Ads */
+.ads-grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;align-items:start}
+.ads-sum{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:10px;margin:0 0 12px}
+.ads-sum>div{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.ads-sum small{display:block;color:var(--muted);font-size:12.5px}.ads-sum b{font:600 22px/1.2 var(--display)}
+.ads-list{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:4px 14px;max-height:calc(100vh - 330px);overflow-y:auto}
+.ad-row{display:grid;grid-template-columns:118px minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.ad-row:first-child{border-top:0}
+.ad-t b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ad-t small{color:var(--muted);display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.ad-n{display:flex;gap:14px}.ad-n span{font-weight:600;text-align:right;white-space:nowrap}.ad-n small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.vb{font-size:12.5px;font-weight:600;border-radius:8px;padding:3px 8px;text-align:center}
+.vb.v-good,.v-good{color:#1E6B4E}.vb.v-good{background:#DDF1E7}.vb.v-watch{background:#FFF1CC;color:#7A5A00}.v-watch{color:#7A5A00}.vb.v-bad{background:#FBE3D6;color:#A3471A}.v-bad{color:#A3471A}.vb.v-off{background:var(--ground);color:var(--muted)}
+.ads-acts{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 0}
+.ads-lim{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.ads-lim h2{font-size:18px;margin:0 0 4px}
+.ads-lim label{display:block;margin:12px 0 0;font-weight:600;font-size:14px}
+.ads-lim label .note{display:block;font-weight:400}
+.ads-lim input[type=number]{width:100%;margin-top:4px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-height:40px;font:inherit;background:var(--surface)}
+.lim-pause{display:flex!important;gap:8px;align-items:flex-start;flex-wrap:wrap}
+.ads-empty{display:flex;flex-direction:column;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;align-items:flex-start}
+@media (max-width:1000px){.ads-grid{grid-template-columns:1fr}.ads-list{max-height:none}}
+@media (max-width:760px){.ads-sum{grid-template-columns:1fr 1fr}.ad-row{grid-template-columns:1fr;gap:4px}.ad-n{justify-content:flex-start}.vb{justify-self:start}}
+
+/* Campaign creatives */
+.crv-intro{max-width:760px;margin:-4px 0 14px}
+.crv-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;max-width:1100px}
+.crv{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.crv-h{display:flex;flex-direction:column}
+.crv-brief{margin:0;font-size:15px}
+.crv-seg{display:flex;gap:6px;flex-wrap:wrap}
+.crv-seg button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;min-height:38px;font:inherit;font-size:14px;cursor:pointer}
+.crv-seg button[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:600}
+.crv-photo{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.crv-photo img{width:64px;height:64px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
+.crv-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;max-width:1100px;margin:16px 0 0;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 16px}
+.crv-done{display:flex;flex-direction:column;gap:6px;align-items:flex-start;max-width:760px;margin:16px 0 0;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px}
+.bill-h{font-size:16px;margin:16px 0 4px}.bill-n{margin:0 0 8px}
+
+/* Campaign wizard */
+.wiz-steps{display:flex;gap:6px;flex-wrap:wrap;list-style:none;padding:0;margin:0 0 14px}
+.wiz-steps li{border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:14px;color:var(--muted);background:var(--surface)}
+.wiz-steps li[aria-current=step]{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:600}
+.wiz-steps li.done{color:var(--accent);border-color:var(--accent-soft);background:var(--accent-soft)}
+.wiz-card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px;max-width:640px;display:flex;flex-direction:column;gap:12px}
+.wiz-card label{display:flex;flex-direction:column;gap:4px;font-weight:600;font-size:14px}
+.wiz-card input,.wiz-card select{border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-height:42px;font:inherit;font-weight:400;background:var(--surface)}
+.wiz-card h3{font-size:16px;margin:6px 0 0}
+.wiz-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.wiz-choice{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.wiz-choice button{text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:12px;cursor:pointer;font:inherit}
+.wiz-choice button[aria-pressed=true]{border:2px solid var(--ink)}
+.wiz-choice b{display:block}.wiz-choice span{color:var(--muted);font-size:14px}
+.wiz-tog{flex-direction:row!important;align-items:center;gap:10px!important;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.wiz-tog input{min-height:0;width:20px;height:20px}
+.wiz-tog small{display:block;color:var(--muted);font-weight:400}
+.wiz-picks{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.wiz-picks button{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:8px 14px;min-height:44px;cursor:pointer;font:inherit;font-weight:600}
+.wiz-picks button small{display:block;font-weight:400;color:var(--accent);font-size:12px}
+.wiz-picks button[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.wiz-picks button[aria-pressed=true] small{color:#fff}
+.wiz-own{max-width:140px}
+.wiz-exp{margin:0;font-weight:600;color:var(--accent)}
+.wiz-sum{border-collapse:collapse;width:100%}
+.wiz-sum th{text-align:left;color:var(--muted);font-weight:400;padding:8px 10px 8px 0;vertical-align:top;width:120px}
+.wiz-sum td{padding:8px 0;border-bottom:1px solid var(--line)}
+.wiz-nav{display:flex;justify-content:space-between;max-width:640px;margin:14px 0 0}
+@media (max-width:760px){.wiz-two,.wiz-choice{grid-template-columns:1fr}}
+/* Phones: comparison tables stack (label, then each option), so nothing hides off-screen */
+@media (max-width:760px){
+  .atable table{min-width:0}
+  .atable thead{display:none}
+  .atable tr{display:block;border-bottom:1px solid var(--line);padding:6px 0}
+  .atable td{display:block;border:0;padding:3px 10px;white-space:normal}
+  .atable td:first-child{font-weight:600;color:var(--ink)}
+  .atable td:not(:first-child)[data-h]:not([data-h=""])::before{content:attr(data-h) ": ";color:var(--muted);font-size:13px}
+}
+
+/* Instagram schedule */
+.sch-day{display:flex;flex-direction:column;gap:8px;max-width:900px}
+.sch{display:grid;grid-template-columns:56px minmax(0,1fr) auto auto;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.sch img,.sch-ph{width:56px;height:56px;border-radius:10px;object-fit:cover;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font:600 20px/1 var(--display)}
+.sch-t b{display:block}.sch-t small{display:block;color:var(--muted)}
+.sch-c{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;margin-top:2px}
+@media (max-width:760px){.sch{grid-template-columns:48px minmax(0,1fr)}.sch img,.sch-ph{width:48px;height:48px}.sch .vb,.sch .btn{grid-column:2;justify-self:start}}
 </style>
 </head>
 <body>
@@ -836,9 +1168,11 @@ details.prompt pre{white-space:pre-wrap;background:#F7F8F5;border-radius:10px;pa
   <nav class="rail" aria-label="Main">
     <div class="mark">Zen</div>
     <button class="nav" data-go="home" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4v-5H9v5H5a1 1 0 0 1-1-1z"/></svg>Home</button>
+    <button class="nav" data-go="attention"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>Attention<b class="pn" hidden></b></button>
+    <button class="nav" data-go="plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>Events Planner</button>
+    <button class="nav" data-go="marketing" onclick="MKT.pending = MKT.pending || 'studio'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14V10l12-5v14L4 14Z"/><path d="M8 15v3.5a1.5 1.5 0 0 0 3 0V16"/><path d="M19 9.5v5"/></svg>Marketing</button>
+    <button class="nav" data-go="ads"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5M4 19h16"/><path d="M8 15l3-4 3 2 5-6"/></svg>Ads</button>
     <button class="nav" data-go="whatsapp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-11.8 7L4 20l1-4.1A8 8 0 1 1 20 12Z"/></svg>WhatsApp</button>
-    <button class="nav" data-go="gallery"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="m4 16 4.5-4.5 4 4 3-3L20 16"/><circle cx="15.5" cy="9" r="1.5"/></svg>Library</button>
-    <button class="nav" data-go="marketing"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14V10l12-5v14L4 14Z"/><path d="M8 15v3.5a1.5 1.5 0 0 0 3 0V16"/><path d="M19 9.5v5"/></svg>Marketing</button>
     <button class="nav" data-go="brand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="9" cy="10" r="1.2"/><circle cx="14.5" cy="9" r="1.2"/><circle cx="15.5" cy="14" r="1.2"/><path d="M11 16.5a2 2 0 0 1-2-2"/></svg>Brand</button>
     <button class="acct" type="button" id="acctBtn" data-go="settings"><b id="railTenant"></b><span>Settings</span></button>
     <div class="rail-foot"><span id="railUser"></span><br><button type="button" onclick="doLogout()">Log out</button></div>
@@ -853,16 +1187,13 @@ details.prompt pre{white-space:pre-wrap;background:#F7F8F5;border-radius:10px;pa
         <label for="bigInput" class="sr">Tell Zen what you want</label>
         <textarea id="bigInput" rows="2" placeholder="What would you like Zen to do?"></textarea>
         <div class="prompt-row">
-          <span class="note">Photos and links come in a later step.</span>
+          <span class="note">Ask anything, or tell Zen what to do.</span>
           <button class="send" type="submit" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
         </div>
       </form>
       <div class="chips" id="chips"></div>
-      <div class="block">
-        <h2>Worth your attention</h2>
-        <div id="nudges"><div class="empty">Checking your business…</div></div>
-      </div>
-      <div class="block" id="recentBlock" hidden>
+      <div class="pastrow"><button class="btn btn-q" type="button" id="pastChats">Past conversations</button></div>
+      <div class="block" id="recentBlock" hidden data-keep-hidden>
         <div class="block-h"><h2>Pick up where you left off</h2><button class="btn btn-q" type="button" id="seeAllChats">See all</button></div>
         <div class="chatlist" id="threads"></div>
       </div>
@@ -903,6 +1234,7 @@ details.prompt pre{white-space:pre-wrap;background:#F7F8F5;border-radius:10px;pa
     </section>
 
     <!-- Gallery -->
+    <nav class="studiotabs" id="studioTabs" aria-label="Studio" hidden></nav>
     <section id="gallery" class="page" hidden>
       <div class="page-top">
         <h1>Library</h1>
@@ -919,6 +1251,19 @@ details.prompt pre{white-space:pre-wrap;background:#F7F8F5;border-radius:10px;pa
 
     <!-- Marketing -->
     <section id="mkt" class="page" hidden></section>
+    <section id="planPage" class="page" hidden></section>
+    <section id="adsPage" class="page" hidden></section>
+    <section id="crvPage" class="page" hidden></section>
+    <section id="wizPage" class="page" hidden></section>
+    <section id="attnPage" class="page" hidden>
+      <div class="page-top"><h1>Attention</h1></div>
+      <div class="attn-tabs" role="group" aria-label="Show"><button type="button" data-at="needs" aria-pressed="true">Needs you</button><button type="button" data-at="coming" aria-pressed="false">Coming up</button><button type="button" data-at="week" aria-pressed="false">Sales</button></div>
+      <div class="attn" data-show="needs">
+        <div class="attn-col" data-col="needs"><h2>Needs you</h2><div id="needsList"></div><div id="nudges"><div class="empty">Checking your business\u2026</div></div></div>
+        <div class="attn-col" data-col="coming"><div class="block-h"><h2>Coming up</h2><button class="btn btn-q" type="button" onclick="go('plan')">See the year</button></div><div id="comingBlock"><div class="coming" id="comingUp"><div class="empty">Checking your calendar\u2026</div></div></div></div>
+        <div class="attn-col" data-col="week"><h2>Sales</h2><div class="kstrip" id="kstrip" aria-label="Sales"></div><p class="note" id="salesAsOf"></p></div>
+      </div>
+    </section>
 
     <!-- Settings -->
     <section id="settings" class="page" hidden></section>
@@ -1086,7 +1431,29 @@ document.querySelectorAll('.nav').forEach(b => b.addEventListener('click', () =>
 el('acctBtn').addEventListener('click', () => go('settings'));
 
 function go(area){
-  document.querySelectorAll('.nav').forEach(b => { if (b.dataset.go === area) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
+  // Review is the Library showing only what's waiting for your OK.
+  const review = area === 'review';
+  if (review){ GAL.filter = 'review'; area = 'gallery'; RV.i = 0; RV.done = 0; } else if (area === 'gallery' && GAL.filter === 'review') GAL.filter = 'all';
+  document.body.classList.toggle('review-mode', review);
+  const navKey = review ? 'attention' : (area === 'gallery' || area === 'marketing' || area === 'creatives' || area === 'wizard' || area === 'campaigns') ? 'marketing' : area;
+  if (area !== 'home') window.scrollTo(0, 0);                 // every page opens at the top
+  document.querySelectorAll('.nav').forEach(b => { if (b.dataset.go === navKey) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
+  el('planPage').hidden = area !== 'plan';
+  el('attnPage').hidden = area !== 'attention';
+  el('adsPage').hidden = area !== 'ads';
+  el('crvPage').hidden = area !== 'creatives' && area !== 'campaigns';
+  el('wizPage').hidden = area !== 'wizard';
+  if (area === 'wizard'){ el('soon').hidden = true; el('landing').style.display = 'none'; el('convo').style.display = 'none';
+    ['wa','gallery','brand','mkt','settings'].forEach(id => el(id).hidden = true); studioTabs(null); renderWizard(); return; }
+  if (area === 'creatives' || area === 'campaigns'){ el('soon').hidden = true; el('landing').style.display = 'none'; el('convo').style.display = 'none';
+    ['wa','gallery','brand','mkt','settings'].forEach(id => el(id).hidden = true); studioTabs(area === 'campaigns' ? 'campaigns' : null); if (area === 'creatives') renderCreatives(); return; }
+  if (area === 'ads'){ el('soon').hidden = true; el('landing').style.display = 'none'; el('convo').style.display = 'none';
+    ['wa','gallery','brand','mkt','settings'].forEach(id => el(id).hidden = true); studioTabs(null); loadAds(); return; }
+  if (area === 'attention'){ el('soon').hidden = true; el('landing').style.display = 'none'; el('convo').style.display = 'none';
+    ['wa','gallery','brand','mkt','settings'].forEach(id => el(id).hidden = true); studioTabs(null); loadAttention(); return; }
+  studioTabs(!review && (area === 'gallery' || area === 'marketing') ? area : null);
+  if (area === 'plan'){ el('soon').hidden = true; el('landing').style.display = 'none'; el('convo').style.display = 'none';
+    ['wa','gallery','brand','mkt','settings'].forEach(id => el(id).hidden = true); planView(); return; }
   const soon = el('soon');
   stopWaRefresh();
   if (area !== 'marketing' && typeof stopCreatePolling === 'function') stopCreatePolling();
@@ -1159,7 +1526,7 @@ const SALES_QS = [
 ];
 function showLanding(){
   el('convo').style.display = 'none';
-  el('landing').style.display = 'block';
+  el('landing').style.display = 'flex';
   const h = new Date().getHours();
   el('greet').textContent = (h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening') + ', ' + tenantName;
   el('chips').innerHTML = CHIPS.map(([label, p], i) => '<button class="chip" type="button" data-chip="' + i + '"' + (CHIP_MENUS[p] ? ' aria-haspopup="menu" aria-expanded="false"' : '') + '>' + esc(label) + '</button>').join('');
@@ -1168,7 +1535,7 @@ function showLanding(){
     if (CHIP_MENUS[p]) return toggleChipMenu(b, CHIP_MENUS[p]());
     if (p) send(p); else { el('bigInput').focus(); el('bigInput').placeholder = 'Ask anything about your business…'; }
   });
-  loadNudges(); loadThreads();
+  loadThreads(); refreshBell();
   zen('customer_picture', { light: true }, 15000).then(j => {
     if (!j.ok || j.seen || el('picChip') || el('landing').style.display === 'none') return;
     el('chips').insertAdjacentHTML('afterbegin', '<button class="chip chip-new" type="button" id="picChip">See what Zen knows about your customers</button>');
@@ -1193,12 +1560,429 @@ function toggleChipMenu(btn, QS){
   m.querySelector('button').focus();
 }
 function showConvo(){
+  ['attnPage','adsPage','crvPage','wizPage','planPage','wa','gallery','brand','mkt','settings'].forEach(id => { const x = el(id); if (x) x.hidden = true; });
+  if (typeof studioTabs === 'function') studioTabs(null);
+  document.querySelectorAll('.nav').forEach(b => { if (b.dataset.go === 'home') b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
   el('landing').style.display = 'none';
   el('convo').style.display = 'flex';
   if (!(history.state && history.state.zen === 'convo')) history.pushState({ zen: 'convo' }, '');
 }
 // Back to the main screen. The conversation is kept and listed under "Pick up where you left off".
+// ---------- Home: the week in numbers ----------
+async function loadKpis(){
+  const box = el('kstrip'); if (!box) return;
+  const k = await zen('home_kpis', {}, 30000), P = k.ok && k.periods;
+  const money = v => v == null ? '\u2014' : 'AED ' + Math.round(v).toLocaleString('en-US');
+  const cmp = (label, c) => c && c.pct != null ? '<span class="' + (c.pct < 0 ? 'down' : 'up') + '">' + (c.pct >= 0 ? '+' : '') + c.pct + '% ' + label + '</span>' : (c && c.value == null ? '<span class="na">' + label + ': no data that far back</span>' : '');
+  if (!P || P.has_data === false){
+    box.innerHTML = '<div class="ktile wide"><small>Sales</small><b>No sales data yet</b><span class="na">Zen shows sales once your till or billing data reaches it.</span></div>';
+    el('salesAsOf').textContent = k.ok ? '' : (k.error || ''); return;
+  }
+  const tile = (label, v, lines, act) => '<button class="ktile" type="button" data-k="' + act + '"><small>' + esc(label) + '</small><b>' + money(v) + '</b>' + lines.join('') + '</button>';
+  box.innerHTML =
+    tile('Last 7 days', P.last7.value, [cmp('vs the 7 days before', { value: P.last7.prev, pct: P.last7.pct })], 'Sales in the last 7 days compared with the 7 days before') +
+    tile('Month to date (' + P.mtd.label + ')', P.mtd.value, [cmp('vs same days last year', P.mtd.vs_last_year), cmp('vs same days last month', P.mtd.vs_last_month)], 'Sales this month so far compared with last year and last month') +
+    tile('Quarter to date (' + P.qtd.label + ')', P.qtd.value, [cmp('vs last quarter', P.qtd.vs_last_quarter), cmp('vs same quarter last year', P.qtd.vs_last_year), cmp('vs average of last 2 quarters', P.qtd.vs_last_2_quarters)], 'Sales this quarter so far compared with last quarter and the same quarter last year');
+  el('salesAsOf').textContent = 'Up to ' + new Date(P.as_of + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + (P.days_behind > 1 ? ', the latest day with sales data. Compared like for like: the same number of days in each period.' : '. Compared like for like: the same number of days in each period.');
+  box.querySelectorAll('[data-k]').forEach(b => b.onclick = () => send(b.dataset.k));
+}
+const KPI = { review: 0 };
+
+// ---------- Home: coming up (events that matter to this business) ----------
+const KIND_LABEL = { public: 'Public holiday', festival: 'Festival', school: 'School', sport: 'Sport', local: 'Local', shopping: 'Shopping', season: 'Season', own: 'Your date' };
+// Campaigns already planned, so an event shows "Campaign planned" with Review / Plan again.
+let CAMPS = null;
+async function loadCamps(){ const j = await zen('campaigns_list', {}, 20000); CAMPS = (j.ok && j.campaigns) || []; return CAMPS; }
+function campFor(o){
+  const w = (o.title || '').toLowerCase().split(/[\s(/]/)[0];
+  return (CAMPS || []).find(c => (c.occasion && c.occasion === o.starts_on) || (w.length > 3 && (c.name || '').toLowerCase().includes(w)));
+}
+function occTile(o, i, attr){
+  const camp = campFor(o);
+  if (camp){
+    const d = new Date(o.starts_on + 'T00:00:00');
+    return '<div class="occ"><div class="occ-d"><b>' + d.toLocaleDateString('en-GB', { day:'numeric' }) + '</b><span>' + d.toLocaleDateString('en-GB', { month:'short' }) + '</span></div>' +
+      '<div class="occ-t"><b>' + esc(o.title) + '</b><small>Campaign planned \u00B7 ' + esc(camp.status) + '</small><span>' + esc(o.why || '') + '</span></div>' +
+      '<div class="occ-a"><button class="btn btn-s" type="button" data-review="' + esc(camp.ref) + '" data-rname="' + esc(camp.name) + '">Review</button>' +
+      '<button class="btn btn-q" type="button" data-again="' + esc(o.title) + '" data-adate="' + esc(o.starts_on) + '">Plan again</button></div></div>';
+  }
+  const d = new Date(o.starts_on + 'T00:00:00');
+  return '<div class="occ"><div class="occ-d"><b>' + d.toLocaleDateString('en-GB', { day:'numeric' }) + '</b><span>' + d.toLocaleDateString('en-GB', { month:'short' }) + '</span></div>' +
+    '<div class="occ-t"><b>' + esc(o.title) + '</b><small>' + esc(KIND_LABEL[o.kind] || '') + ' \u00B7 ' + (o.days_until <= 0 ? 'Now' : 'In ' + o.days_until + ' day' + (o.days_until === 1 ? '' : 's')) + (o.approx ? ' \u00B7 date to confirm' : '') + '</small>' +
+    '<span>' + esc(o.why || '') + '</span>' + (o.source_url ? '<a class="occ-src" href="' + esc(o.source_url) + '" target="_blank" rel="noopener">Source</a>' : '') + '</div>' +
+    '<div class="occ-a"><button class="btn btn-s" type="button" ' + attr + '="' + i + '">' + esc(o.move_label || 'Plan a campaign') + '</button>' + (o.own ? '<button class="btn btn-q" type="button" data-rm-ev="' + esc(o.id) + '">Remove</button>' : '') + '</div></div>';
+}
+// ---------- Ads: Meta ads at a glance, one-tap actions, and the owner's limits ----------
+const VERDICT = { working: ['Working', 'v-good'], watch: ['Watch', 'v-watch'], too_early: ['Too early to judge', 'v-watch'], wasting: ['Wasting money', 'v-bad'], no_spend: ['Not spending', 'v-off'] };
+async function loadAds(){
+  const box = el('adsPage');
+  box.innerHTML = '<div class="page-top"><h1>Ads</h1></div><p class="note">Reading your Meta ads\u2026</p>';
+  const j = await zen('ads_overview', {}, 60000);
+  const L = (j.ok && j.limits) || {};
+  const money = v => v == null ? '\u2014' : (j.currency && j.currency !== 'AED' ? j.currency + ' ' : 'AED ') + Math.round(v).toLocaleString('en-US');
+  const acts = [['How are my ads doing?', 'How are my ads doing?'], ['Improve my ads', 'Improve my ads'], ['Why aren\u2019t they working?', 'Why are my ads not working?'], ['Run a new WhatsApp ad', 'Run a new WhatsApp ad to get more bookings']];
+  const top = !j.ok ? '<p class="note">' + esc(j.error || 'Couldn\u2019t read your ads.') + '</p>'
+    : !j.connected ? '<div class="ads-empty"><b>Meta ads aren\u2019t connected yet</b><span>' + esc(j.error || '') + '</span><button class="btn btn-s" type="button" onclick="go(\'settings\')">Open Settings</button></div>'
+    : '<div class="ads-sum"><div><small>Spent, last ' + j.days + ' days</small><b>' + money(j.spend) + '</b></div>' +
+        '<div><small>Working</small><b class="v-good">' + j.counts.working + '</b></div><div><small>Watch</small><b class="v-watch">' + j.counts.watch + '</b></div><div><small>Wasting money</small><b class="v-bad">' + j.counts.wasting + '</b></div></div>' +
+      '<div class="ads-list">' + (j.sets.length ? j.sets.map(x => { const v = VERDICT[x.verdict] || [x.verdict, '']; return '<div class="ad-row"><span class="vb ' + v[1] + '">' + esc(v[0]) + '</span>' +
+        '<div class="ad-t"><b>' + esc(x.name) + '</b><small>' + esc(x.headline || '') + '</small></div>' +
+        '<div class="ad-n"><span>' + money(x.spend) + '<small>spent</small></span><span>' + (x.results || 0) + '<small>' + esc(x.result_label || 'results') + '</small></span><span>' + (x.cost == null ? '\u2014' : money(x.cost)) + '<small>each</small></span></div>' +
+        '<button class="btn btn-q" type="button" data-why="' + esc(x.name) + '">Why?</button></div>'; }).join('') : '<p class="note">No ad sets in the last ' + j.days + ' days.</p>') + '</div>';
+  box.innerHTML = '<div class="page-top"><h1>Ads</h1></div>' +
+    '<div class="ads-grid"><div class="ads-main">' + top + '<div class="ads-acts">' + acts.map(([l, q]) => '<button class="btn btn-s" type="button" data-ask="' + esc(q) + '">' + esc(l) + '</button>').join('') +
+      '<button class="btn btn-s" type="button" onclick="go(\'gallery\')">Promote a picture</button></div></div>' +
+    '<aside class="ads-lim"><h2>Limits</h2><p class="note">Zen checks these before anything spends, even after you approve.</p>' +
+      '<label>Monthly ad budget <span class="note">for planning and alerts</span><input id="limMonth" type="number" min="0" step="10" value="' + (L.monthly_ad_budget ?? '') + '" placeholder="e.g. 1200"></label>' +
+      '<label>Daily cap per ad <span class="note">no ad can be set above this</span><input id="limDay" type="number" min="0" step="5" value="' + (L.daily_ad_cap ?? '') + '" placeholder="e.g. 60"></label>' +
+      '<label>Cost per result limit <span class="note">above it, Zen flags the ad</span><input id="limCpr" type="number" min="0" step="1" value="' + (L.max_cost_per_result ?? '') + '" placeholder="e.g. 30"></label>' +
+      '<label class="lim-pause"><input id="limPause" type="checkbox"' + (L.pause_ads ? ' checked' : '') + '> Pause Zen\u2019s ad changes <span class="note">nothing that spends goes ahead while this is on</span></label>' +
+      '<div class="actions"><button class="btn btn-p" type="button" id="limSave">Save limits</button></div><p class="note" id="limNote" role="status"></p></aside></div>';
+  box.querySelectorAll('[data-ask]').forEach(b => b.onclick = () => send(b.dataset.ask));
+  box.querySelectorAll('[data-why]').forEach(b => b.onclick = () => send('Why is my ad set "' + b.dataset.why + '" doing this?'));
+  el('limSave').onclick = async () => {
+    const r = await zen('limits_save', { monthly_ad_budget: el('limMonth').value, daily_ad_cap: el('limDay').value, max_cost_per_result: el('limCpr').value, pause_ads: el('limPause').checked }, 20000);
+    el('limNote').textContent = r.ok ? 'Saved. Zen checks these before any ad change.' : r.error;
+  };
+}
+
+// ---------- Campaign creatives: for each one, Zen makes it, you supply a photo, or you make it ----------
+const CRV = { ref: null, run: null, choices: [], perPic: null, result: null };
+const CRV_FORMAT = { feed_4x5: ['Feed post', '4:5'], story_9x16: ['Story', '9:16'], reel_9x16: ['Reel cover', '9:16'], carousel: ['Carousel', '1:1'] };
+function openCreatives(ref){ Object.assign(CRV, { ref, run: null, choices: [], result: null }); go('creatives'); }
+function openCreateWith(text, aspect){ stopCreatePolling(); crReset(); CR.keep = true; CR.autoSend = { text, aspect }; MKT.pending = 'studio'; go('marketing'); }
+async function crvUpload(file, i){
+  const note = el('crvNote');
+  if (!file || !/^image\/(png|jpeg|webp)$/.test(file.type)){ note.textContent = 'Use a PNG, JPG or WebP photo.'; return; }
+  note.innerHTML = '<span class="spin"></span>Uploading your photo\u2026';
+  const dims = await new Promise(res => { const im = new Image(); im.onload = () => res({ w: im.naturalWidth, h: im.naturalHeight }); im.onerror = () => res({}); im.src = URL.createObjectURL(file); });
+  const st = await studio('upload_start', { tenant_id: tenant, label: 'photo', content_type: file.type, width: dims.w, height: dims.h, bytes: file.size }, 20000);
+  if (!st.ok){ note.textContent = st.error; return; }
+  const { error } = await sb.storage.from('studio-assets').uploadToSignedUrl(st.path, st.token, file, { contentType: file.type });
+  if (error){ note.textContent = 'Upload failed: ' + error.message; return; }
+  const j = await studio('upload_done', { tenant_id: tenant, asset_id: st.asset_id, bytes: file.size }, 20000);
+  if (!j.ok){ note.textContent = j.error; return; }
+  CRV.choices[i] = { mode: 'photo', asset_id: j.asset.id, url: j.asset.url }; note.textContent = ''; renderCreatives();
+}
+async function renderCreatives(){
+  const box = el('crvPage');
+  if (!CRV.run){
+    box.innerHTML = '<div class="page-top"><h1>Campaign creatives</h1></div><p class="note">Loading\u2026</p>';
+    const j = await zen('skill_run_get', { ref: CRV.ref }, 30000);
+    if (!j.ok){ box.innerHTML = '<div class="page-top"><h1>Campaign creatives</h1></div><p class="note">' + esc(j.error) + '</p>'; return; }
+    CRV.run = j.run; CRV.perPic = j.credits_per_picture; CRV.model = j.model;
+    CRV.choices = ((j.run.output || {}).creatives || []).map(() => ({ mode: 'zen' }));
+  }
+  const list = (CRV.run.output || {}).creatives || [], decided = CRV.run.status !== 'proposed';
+  const pics = c => c.format === 'carousel' ? Math.min(Math.max(c.cards || 3, 2), 5) : 1;
+  const counts = { zen: 0, photo: 0, self: 0 }; let credits = 0, missing = 0;
+  list.forEach((c, i) => { const ch = CRV.choices[i]; counts[ch.mode]++; if (ch.mode === 'photo' && !ch.asset_id) missing++; if (ch.mode !== 'self' && !(ch.mode === 'photo' && !ch.asset_id)) credits += pics(c) * (CRV.perPic || 0); });
+  const seg = (i, m, label) => '<button type="button" data-crm="' + i + ':' + m + '" aria-pressed="' + (CRV.choices[i].mode === m) + '">' + label + '</button>';
+  box.innerHTML = '<div class="page-top"><h1>Campaign creatives</h1></div>' +
+    '<p class="note crv-intro">For each one, let Zen make it, use your own photo (kept as it is, with the design around it), or make it yourself in Create.</p>' +
+    '<div class="crv-list">' + list.map((c, i) => { const ch = CRV.choices[i], f = CRV_FORMAT[c.format] || [c.format, '4:5'];
+      return '<div class="crv"><div class="crv-h"><b>' + (i + 1) + '. ' + esc(f[0]) + (c.format === 'carousel' ? ' \u00B7 ' + pics(c) + ' cards' : '') + '</b><span class="note">' + esc(c.angle || '') + (c.inspiration ? ' \u00B7 look: ' + esc(c.inspiration) : '') + '</span></div>' +
+        '<p class="crv-brief">' + esc(c.brief || '') + (c.must_appear ? ' <span class="note">Shows: ' + esc(c.must_appear) + '</span>' : '') + '</p>' +
+        (decided ? '' : '<div class="crv-seg" role="group" aria-label="Who makes it">' + seg(i, 'zen', 'Zen makes it') + seg(i, 'photo', 'Use my photo') + seg(i, 'self', 'I\u2019ll make it') + '</div>' +
+          (ch.mode === 'photo' ? '<div class="crv-photo">' + (ch.url ? '<img src="' + esc(ch.url) + '" alt="Your photo"><button class="btn btn-q" type="button" data-crx="' + i + '">Change photo</button>' : '') +
+            '<label class="btn btn-s" for="crvf' + i + '"' + (ch.url ? ' hidden' : '') + '>Upload a photo</label><input type="file" id="crvf' + i + '" class="sr" accept="image/png,image/jpeg,image/webp" data-crf="' + i + '"></div>' : '') +
+          (ch.mode === 'self' ? '<div class="crv-photo"><button class="btn btn-s" type="button" data-crs="' + i + '">Open in Create</button></div>' : '')) + '</div>'; }).join('') + '</div>' +
+    (CRV.result ? '<div class="crv-done"><b>' + esc(CRV.result.title) + '</b><span>' + esc(CRV.result.body) + '</span><button class="btn btn-s" type="button" onclick="go(\'gallery\')">See them in the Library</button></div>'
+      : decided ? '<p class="note">These creatives were already decided. Ask Zen in chat for a new set.</p>'
+      : '<div class="crv-foot"><span>' + [counts.zen ? counts.zen + ' made by Zen' : '', counts.photo ? counts.photo + ' from your photo' + (counts.photo > 1 ? 's' : '') : '', counts.self ? counts.self + ' by you' : ''].filter(Boolean).join(' \u00B7 ') + '</span>' +
+        '<button class="btn btn-p" type="button" id="crvGo"' + (missing || counts.zen + counts.photo === 0 ? ' disabled' : '') + '>' + (counts.zen + counts.photo === 0 ? 'Nothing for Zen to make' : 'Make the rest' + (CRV.perPic != null ? ' \u00B7 about ' + credits + ' credits' : '')) + '</button></div>' +
+        (missing ? '<p class="note">Upload a photo for each \u201cUse my photo\u201d, or choose another option.</p>' : '')) +
+    '<p class="note" id="crvNote" role="status"></p>';
+  box.querySelectorAll('[data-crm]').forEach(b => b.onclick = () => { const [i, m] = b.dataset.crm.split(':'); CRV.choices[+i] = m === 'photo' && CRV.choices[+i].mode === 'photo' ? CRV.choices[+i] : { mode: m }; renderCreatives(); });
+  box.querySelectorAll('[data-crf]').forEach(inp => inp.onchange = () => crvUpload(inp.files[0], +inp.dataset.crf));
+  box.querySelectorAll('[data-crx]').forEach(b => b.onclick = () => { CRV.choices[+b.dataset.crx] = { mode: 'photo' }; renderCreatives(); });
+  box.querySelectorAll('[data-crs]').forEach(b => b.onclick = () => { const c = list[+b.dataset.crs]; openCreateWith((c.brief || '') + (c.must_appear ? ' Must show: ' + c.must_appear + '.' : ''), (CRV_FORMAT[c.format] || [0, '4:5'])[1]); });
+  const go2 = el('crvGo'); if (go2) go2.onclick = async () => {
+    go2.disabled = true; go2.innerHTML = '<span class="spin"></span>Starting\u2026';
+    const r = await zen('skill_make', { ref: CRV.ref, choices: CRV.choices.map(c => ({ mode: c.mode, asset_id: c.asset_id || null })) }, 150000);
+    if (!r.ok){ go2.disabled = false; go2.textContent = 'Make the rest'; el('crvNote').textContent = r.error; return; }
+    const card = (r.cards || [])[0] || {}; CRV.result = { title: card.title || 'Done', body: card.body || '' }; CRV.run.status = 'approved'; renderCreatives();
+  };
+}
+
+// ---------- Campaign wizard: four short steps, every one pre-filled by Zen ----------
+const WIZ = { step: 1, ref: null, intake: null, cpr: null, cap: null, month: null, opts: {}, budgetPick: null, goal: 'Bookings', offerOn: false };
+const WIZ_STEPS = ['What & when', 'Offer', 'Look & feel', 'Channels & budget', 'Check & plan'];
+function openWizard(opts){ Object.assign(WIZ, { step: 1, ref: opts.ref || null, intake: null, cpr: null, opts, budgetPick: null, goal: 'Bookings', offerOn: false }); go('wizard'); }
+const wFmt = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+async function renderWizard(){
+  const box = el('wizPage');
+  if (!WIZ.intake){
+    box.innerHTML = '<div class="page-top"><h1>New campaign</h1></div><p class="note"><span class="spin"></span>Zen is preparing suggestions from your calendar, limits and past results\u2026</p>';
+    const j = await zen('campaign_suggest', { ref: WIZ.ref, title: WIZ.opts.title || '', date: WIZ.opts.date || '' }, 60000);
+    if (!j.ok || !j.intake){ box.innerHTML = '<div class="page-top"><h1>New campaign</h1></div><p class="note">' + esc(j.error || 'Zen couldn\u2019t prepare suggestions just now. Try again in a moment.') + '</p>'; return; }
+    Object.assign(WIZ, { ref: j.ref, intake: j.intake, cpr: j.cpr, cap: j.daily_cap, month: j.monthly_budget, offerOn: !!j.intake.offer });
+  }
+  const I = WIZ.intake, step = WIZ.step, days = Math.max(1, Math.round((new Date(I.end) - new Date(I.start)) / 864e5) + 1);
+  const expect = b => WIZ.cpr && b ? Math.floor(b / WIZ.cpr.high) + '\u2013' + Math.floor(b / Math.max(1, WIZ.cpr.low)) + ' ' + esc(WIZ.cpr.label || 'results') + ', from your past ads' : 'An estimate appears once you have ad history.';
+  const chans = [['whatsapp', 'WhatsApp', 'A message to customers who opted in'], ['instagram', 'Instagram posts', 'Posts and reels in the build-up'], ['ads', 'Meta ads', 'Reach new families nearby']];
+  const sug = WIZ.intake.__suggested ?? (WIZ.intake.__suggested = I.ads_budget);
+  const picks = [...new Set([300, sug, 1000].filter(v => v != null && v > 0))].sort((a, b) => a - b);
+  const head = '<div class="page-top"><h1>' + esc(I.name || 'New campaign') + '</h1></div><ol class="wiz-steps">' + WIZ_STEPS.map((t, i) => '<li' + (i + 1 === step ? ' aria-current="step"' : i + 1 < step ? ' class="done"' : '') + '>' + (i + 1) + '. ' + t + '</li>').join('') + '</ol>';
+  let body = '';
+  if (step === 1) body = '<div class="wiz-card"><label>Campaign name<input id="wzName" value="' + esc(I.name || '') + '"></label>' +
+      '<label>Occasion date <span class="note">optional</span><input id="wzOcc" type="date" value="' + esc(I.occasion || '') + '"></label>' +
+      '<div class="wiz-two"><label>Starts<input id="wzStart" type="date" value="' + esc(I.start) + '"></label><label>Ends<input id="wzEnd" type="date" value="' + esc(I.end) + '"></label></div>' +
+      '<label>Goal<select id="wzGoal">' + ['Bookings', 'New customers', 'Bring customers back', 'Awareness'].map(g => '<option' + (g === WIZ.goal ? ' selected' : '') + '>' + g + '</option>').join('') + '</select></label></div>';
+  if (step === 2) body = '<div class="wiz-card"><div class="wiz-choice"><button type="button" data-off="0" aria-pressed="' + !WIZ.offerOn + '"><b>No offer</b><span>Lead with the occasion and your service</span></button>' +
+      '<button type="button" data-off="1" aria-pressed="' + WIZ.offerOn + '"><b>Add an offer</b><span>Something extra makes people act sooner</span></button></div>' +
+      (WIZ.offerOn ? '<label>Your offer<input id="wzOffer" value="' + esc(I.offer || '') + '" placeholder="e.g. Free glitter style with every kids\u2019 cut"></label><p class="note">Zen uses your words exactly and never invents prices or offers.</p>' : '') + '</div>';
+  if (step === 3){
+    const n = (I.name || '').toLowerCase(), occMood = /hallow/.test(n) ? 'Spooky-cute' : /diwali|eid|christmas|national|onam|holi|ramadan/.test(n) ? 'Festive' : /school/.test(n) ? 'Fresh & ready' : 'Seasonal';
+    const L = I.look || (I.look = { mood: occMood, style: 'Let GPT choose', colours: "The occasion's colours", people: 'no_faces', notes: '' });
+    const grp = (key, opts) => '<div class="wiz-picks" role="group">' + opts.map(([v, l]) => '<button type="button" data-lk="' + key + '" data-v="' + esc(v) + '" aria-pressed="' + (L[key] === v) + '">' + esc(l) + '</button>').join('') + '</div>';
+    body = '<div class="wiz-card"><p class="note">GPT designs every picture and reel from this, so the whole campaign looks like one set.</p>' +
+      '<h3>Mood</h3>' + grp('mood', [occMood, 'Fun & playful', 'Warm & cosy', 'Bright & bold', 'Calm & premium'].map(x => [x, x])) +
+      '<h3>Style</h3>' + grp('style', ['Real-photo look', 'Illustrated', '3D cartoon', 'Let GPT choose'].map(x => [x, x])) +
+      '<h3>Colours</h3>' + grp('colours', ['Our brand colours', "The occasion's colours", 'Let GPT choose'].map(x => [x, x])) +
+      '<h3>People</h3>' + grp('people', [['no_faces', 'Hands, backs and costumes, no faces'], ['faces', 'Real children\u2019s faces are fine'], ['none', 'No people']]) +
+      '<label>Anything else <span class="note">optional, in your own words</span><input id="wzNotes" value="' + esc(L.notes || '') + '" placeholder="e.g. include our pink chair, orange and purple, cute not scary"></label></div>';
+  }
+  if (step === 4) body = '<div class="wiz-card">' + chans.map(([k, l, d]) => '<label class="wiz-tog"><input type="checkbox" data-ch="' + k + '"' + (I.channels.includes(k) ? ' checked' : '') + '><span><b>' + l + '</b><small>' + d + '</small></span></label>').join('') +
+      (I.channels.includes('ads') ? '<h3>Ads budget for ' + days + ' days</h3><div class="wiz-picks">' + picks.map(v => '<button type="button" data-bud="' + v + '" aria-pressed="' + (I.ads_budget === v) + '">AED ' + v.toLocaleString('en-US') + (v === sug ? '<small>suggested</small>' : '') + '</button>').join('') +
+        '<label class="wiz-own">Your own<input id="wzBud" type="number" min="50" step="50" value="' + (picks.includes(I.ads_budget) ? '' : I.ads_budget || '') + '" placeholder="AED"></label></div>' +
+        '<p class="wiz-exp" id="wzExp">Expected: ' + expect(I.ads_budget) + '</p>' + (WIZ.cap ? '<p class="note">About AED ' + Math.round((I.ads_budget || 0) / days) + ' a day. ' + (Math.round((I.ads_budget || 0) / days) > WIZ.cap ? 'That\u2019s above your AED ' + WIZ.cap + ' daily cap per ad, so Zen will spread it across more than one ad set (or you can raise the cap in Ads \u2192 Limits).' : 'Within your AED ' + WIZ.cap + ' daily cap per ad.') + '</p>' : '') : '') + '</div>';
+  if (step === 5) body = '<div class="wiz-card"><table class="wiz-sum"><tr><th>Campaign</th><td>' + esc(I.name) + '</td></tr><tr><th>Goal</th><td>' + esc(WIZ.goal) + '</td></tr><tr><th>Dates</th><td>' + wFmt(I.start) + ' \u2013 ' + wFmt(I.end) + ' (' + days + ' days)</td></tr>' +
+      '<tr><th>Channels</th><td>' + I.channels.map(c => ({ whatsapp: 'WhatsApp', instagram: 'Instagram posts', ads: 'Meta ads' })[c]).join(' \u00B7 ') + '</td></tr>' +
+      (I.channels.includes('ads') ? '<tr><th>Ads budget</th><td>AED ' + (I.ads_budget || 0).toLocaleString('en-US') + ' \u00B7 ' + expect(I.ads_budget) + '</td></tr>' : '') +
+      '<tr><th>Offer</th><td>' + (WIZ.offerOn && I.offer ? esc(I.offer) : 'None') + '</td></tr>' +
+      '<tr><th>Look & feel</th><td>' + esc([I.look && I.look.mood, I.look && I.look.style, I.look && I.look.colours, I.look && ({ no_faces: 'no faces', faces: 'real faces', none: 'no people' })[I.look.people]].filter(Boolean).join(' \u00B7 ')) + (I.look && I.look.notes ? '<br><span class="note">' + esc(I.look.notes) + '</span>' : '') + '</td></tr></table>' +
+      '<p class="note">Zen plans every channel at the same time (about 2 minutes) and puts the plan in a conversation, with the bell. Nothing is sent, posted or spent until you approve.</p></div>';
+  box.innerHTML = head + body + '<div class="wiz-nav">' + (step > 1 ? '<button class="btn btn-q" type="button" id="wzBack">Back</button>' : '<span></span>') +
+    (step < 5 ? '<button class="btn btn-p" type="button" id="wzNext">Next</button>' : '<button class="btn btn-p" type="button" id="wzGo">Plan it</button>') + '</div><p class="note" id="wzNote" role="status"></p>';
+  const save = () => {
+    if (step === 1){ I.name = el('wzName').value.trim() || I.name; I.occasion = el('wzOcc').value; I.start = el('wzStart').value || I.start; I.end = el('wzEnd').value || I.end; WIZ.goal = el('wzGoal').value; }
+    if (step === 2 && el('wzOffer')) I.offer = el('wzOffer').value.trim();
+    if (step === 3 && el('wzNotes')) I.look.notes = el('wzNotes').value.trim();
+    if (step === 4 && el('wzBud') && el('wzBud').value) I.ads_budget = Math.max(50, Number(el('wzBud').value));
+  };
+  box.querySelectorAll('[data-off]').forEach(b => b.onclick = () => { WIZ.offerOn = b.dataset.off === '1'; if (!WIZ.offerOn) I.offer = ''; renderWizard(); });
+  box.querySelectorAll('[data-ch]').forEach(c => c.onchange = () => { I.channels = [...box.querySelectorAll('[data-ch]:checked')].map(x => x.dataset.ch); if (I.channels.includes('ads') && !I.ads_budget) I.ads_budget = sug || 300; renderWizard(); });
+  box.querySelectorAll('[data-bud]').forEach(b => b.onclick = () => { I.ads_budget = Number(b.dataset.bud); renderWizard(); });
+  box.querySelectorAll('[data-lk]').forEach(b => b.onclick = () => { save(); I.look[b.dataset.lk] = b.dataset.v; renderWizard(); });
+  const bud = el('wzBud'); if (bud) bud.oninput = () => { const v = Number(bud.value); if (v > 0) el('wzExp').textContent = 'Expected: ' + expect(v).replace(/<[^>]+>/g, ''); };
+  if (el('wzBack')) el('wzBack').onclick = () => { save(); WIZ.step--; renderWizard(); };
+  if (el('wzNext')) el('wzNext').onclick = () => {
+    save();
+    if (step === 1 && (!I.start || !I.end || I.end < I.start)){ el('wzNote').textContent = 'The end date must be on or after the start date.'; return; }
+    if (step === 4 && !I.channels.length){ el('wzNote').textContent = 'Choose at least one channel.'; return; }
+    WIZ.step++; renderWizard(); };
+  if (el('wzGo')) el('wzGo').onclick = async () => {
+    const b = el('wzGo'); b.disabled = true; b.innerHTML = '<span class="spin"></span>Starting\u2026';
+    const r = await zen('campaign_start', { ref: WIZ.ref, changes: { start: I.start, end: I.end, offer: WIZ.offerOn ? I.offer : '', goal: WIZ.goal, look: I.look || {}, channels: I.channels, ads_budget: I.channels.includes('ads') ? I.ads_budget : null } }, 30000);
+    if (!r.ok){ b.disabled = false; b.textContent = 'Plan it'; el('wzNote').textContent = r.error; return; }
+    openThread(r.thread_id, r.name + ' campaign');                     // the plan arrives here, and the bell rings when it's ready
+  };
+}
+
+// ---------- Attention: everything that needs you, behind the bell ----------
+document.addEventListener('click', e => { const b = e.target.closest('[data-at]'); if (!b) return;
+  document.querySelectorAll('[data-at]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); document.querySelector('.attn').dataset.show = b.dataset.at; });
+function loadAttention(){ loadNeeds(); loadNudges(); loadComingUp(); loadKpis(); }
+setInterval(() => { if (typeof session !== 'undefined' && session && tenant) refreshBell(); }, 5 * 60 * 1000);   // keep checking for new alerts
+const BELL = { review: 0, waiting: 0, nudges: 0 };
+const bellKey = () => 'zen_seen_' + (typeof tenant !== 'undefined' ? tenant : '');
+function bellAlerts(){ return [...(BELL.plans || []).map(p => 'p:' + p.ref), ...(BELL.nudgeIds || []).map(id => 'n:' + id), ...(BELL.review ? ['review:' + BELL.review] : []), ...(BELL.waiting ? ['wait:' + BELL.waiting] : [])]; }
+function setBell(){
+  const n = BELL.review + BELL.waiting + BELL.nudges + (BELL.plans || []).length, nav = document.querySelector('.nav[data-go="attention"]'), b = nav && nav.querySelector('.pn');
+  if (b){ b.textContent = n > 99 ? '99+' : n || ''; b.hidden = !n; }
+  let seen = []; try { seen = JSON.parse(localStorage.getItem(bellKey()) || '[]'); } catch (e) {}
+  const fresh = bellAlerts().filter(k => !seen.includes(k));
+  const isNew = fresh.length > 0 && !(el('attnPage') && !el('attnPage').hidden);
+  if (nav){ nav.classList.toggle('bell-new', isNew); nav.title = isNew ? 'New alerts: open Attention to check them' : ''; nav.setAttribute('aria-label', isNew ? 'Attention, new alerts' : 'Attention'); }
+}
+function markBellSeen(){ try { localStorage.setItem(bellKey(), JSON.stringify(bellAlerts())); } catch (e) {} setBell(); }
+async function refreshBell(){
+  const [g, w, nd, pl] = await Promise.all([zen('gallery_list', {}, 30000), zen('wa_inbox', {}, 30000), zen('get_nudges', {}, 60000), zen('pending_plans', {}, 20000)]);
+  BELL.plans = pl.ok ? (pl.plans || []) : [];
+  BELL.review = g.ok ? (g.items || []).filter(it => it.status === 'creative_ready').length : 0;
+  BELL.waiting = w.ok && w.inbox ? w.inbox.waiting || 0 : 0;
+  BELL.nudges = nd.ok ? (nd.nudges || []).length : 0;
+  BELL.nudgeIds = nd.ok ? (nd.nudges || []).map(x => x.id) : [];
+  setBell();
+}
+async function loadNeeds(){
+  const box = el('needsList'); box.innerHTML = '';
+  await refreshBell();
+  const row = (n, text, sub, act, label) => n ? '<div class="need"><b>' + n + '</b><div><span>' + text + '</span><small>' + sub + '</small></div><button class="btn btn-s" type="button" data-need="' + act + '">' + label + '</button></div>' : '';
+  box.innerHTML = (BELL.plans || []).map((p, i) => '<div class="need"><b>\u2713</b><div><span>Your ' + esc(p.name) + ' plan is ready</span><small>Waiting for your OK</small></div><button class="btn btn-s" type="button" data-plan="' + i + '">Open</button></div>').join('') + row(BELL.review, BELL.review === 1 ? 'post waiting for your OK' : 'posts waiting for your OK', 'Approve, change or skip, one at a time', 'review', 'Review') +
+    row(BELL.waiting, BELL.waiting === 1 ? 'customer waiting for a reply' : 'customers waiting for a reply', 'On WhatsApp', 'wa', 'Open WhatsApp');
+  box.querySelectorAll('[data-need]').forEach(b => b.onclick = () => go(b.dataset.need === 'review' ? 'review' : 'whatsapp'));
+  box.querySelectorAll('[data-plan]').forEach(b => b.onclick = () => { const p = BELL.plans[+b.dataset.plan]; openCampaignPlan(p.ref, p.name); });   // always the plan as it stands now
+}
+document.addEventListener('click', e => {
+  const r = e.target.closest('[data-review]'); if (r){ openCampaignPlan(r.dataset.review, r.dataset.rname); return; }
+  const a = e.target.closest('[data-again]'); if (a){ openWizard({ title: a.dataset.again, date: a.dataset.adate }); }
+});
+async function loadComingUp(){
+  if (!CAMPS) await loadCamps();
+  const j = await zen('coming_up', {}, 20000);
+  const list = (j.ok && j.occasions) || [];
+  el('comingUp').innerHTML = list.length ? list.map((o, i) => occTile(o, i, 'data-occ')).join('')
+    : j.ok && j.region_set === false ? '<div class="empty"><p>Tell Zen where your business is, and it researches your area\u2019s holidays, festivals, school terms and events.</p><button class="btn btn-s" type="button" onclick="PLAN.tab=\'region\';go(\'plan\')">Set up your area</button></div>'
+    : '<div class="empty">Nothing big in the next three months.</div>';
+  el('comingUp').querySelectorAll('[data-occ]').forEach(b => b.onclick = () => { const o = list[+b.dataset.occ]; if (o.move_label === 'Plan a campaign') openWizard({ title: o.title, date: o.starts_on }); else send(o.prompt); });
+}
+
+// ---------- Plan: the year's calendar for this business, and where it is ----------
+const PLAN = { tab: 'calendar', filter: 'all', data: null };
+const COMMUNITIES = ['Emirati & Arab', 'Indian', 'Pakistani', 'Filipino', 'Western expat', 'Bangladeshi', 'Sri Lankan', 'Nepali', 'Egyptian', 'Lebanese'];
+const STATES = ['Kerala', 'Tamil Nadu', 'Karnataka', 'Andhra Pradesh', 'Telangana', 'Maharashtra', 'Goa', 'Gujarat', 'Punjab', 'West Bengal', 'Assam', 'North India'];
+const CURRICULA = ['British', 'American', 'IB', 'Indian (CBSE)', 'UAE Ministry'];
+const AE_REGIONS = ['Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman', 'Ras Al Khaimah', 'Fujairah', 'Umm Al Quwain'];
+function planView(){
+  const box = el('planPage');
+  box.innerHTML = '<div class="page-top"><h1>Events Planner</h1></div>' +
+    '<div class="ptabs" role="group" aria-label="Events Planner">' + [['calendar', 'Year calendar'], ['schedule', 'Instagram schedule'], ['region', 'Your region']].map(([k, l]) => '<button type="button" data-ptab="' + k + '" aria-pressed="' + (PLAN.tab === k) + '">' + l + '</button>').join('') + '</div><div id="planBody"></div>';
+  box.querySelectorAll('[data-ptab]').forEach(b => b.onclick = () => { PLAN.tab = b.dataset.ptab; planView(); });
+  if (PLAN.tab === 'region') return regionView();
+  if (PLAN.tab === 'schedule') return scheduleView();
+  calendarView();
+}
+async function calendarView(){
+  const body = el('planBody');
+  await loadCamps();
+  if (!PLAN.data){
+    body.innerHTML = '<p class="note">Loading your calendar\u2026</p>';
+    const j = await zen('calendar', {}, 30000);
+    if (!j.ok){ body.innerHTML = '<p class="note">' + esc(j.error) + '</p>'; return; }
+    PLAN.data = j;
+  }
+  const j = PLAN.data, r = j.region || {};
+  const kinds = [['all', 'All'], ['festival', 'Festivals'], ['public', 'Holidays'], ['school', 'School'], ['sport', 'Sport'], ['local', 'Local'], ['shopping', 'Shopping & season'], ['own', 'Your dates']];
+  const match = e => PLAN.filter === 'all' || e.kind === PLAN.filter || (PLAN.filter === 'shopping' && e.kind === 'season');
+  const list = j.events.filter(match);
+  const months = {}; list.forEach(e => { const m = e.starts_on.slice(0, 7); (months[m] = months[m] || []).push(e); });
+  if (j.place === undefined){ const ps = await zen('place_status', {}, 20000); j.place = ps.ok ? ps.place : null; }
+  const pl = j.place;
+  body.innerHTML = '<div class="pl-intro">' + (pl && pl.researched_at ? '<p class="pl-res">Researched for <b>' + esc(pl.label || '') + '</b> on ' + new Date(pl.researched_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + ': ' + pl.events + ' events, ' + pl.confirmed + ' confirmed and ' + (pl.events - pl.confirmed) + ' to confirm. Next update: ' + (pl.next_due ? new Date(pl.next_due + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'next month') + '.</p>' : '<p class="pl-res"><a href="#" data-goregion>Tell Zen where your business is</a> and it will research your area\u2019s calendar.</p>') + '<p>Events that matter to <b>' + esc(tenantName) + '</b> in ' + esc([r.area, r.city || r.region].filter(Boolean).join(', ') || 'your area') +
+      (r.communities && r.communities.length ? ', for your ' + esc(r.communities.join(', ')) + ' customers' : '') + '. ' +
+      (r.communities && r.communities.length ? '' : '<a href="#" data-goregion>Tell Zen who you serve</a> to make it sharper. ') + 'Dates marked \u201cto confirm\u201d follow the moon or school calendars and are checked nearer the time.</p>' +
+      '<div class="pl-acts"><button class="btn btn-s" type="button" id="refreshBtn">Update holidays and festivals</button><button class="btn btn-s" type="button" id="scoutBtn">Find new events near you</button><button class="btn btn-q" type="button" id="addOwnBtn">+ Add your own date</button></div><p class="note" id="scoutNote" role="status"></p>' +
+      '<form class="ownform" id="ownForm" hidden><label class="sr" for="ownTitle">Name</label><input id="ownTitle" placeholder="e.g. Salon anniversary" maxlength="120"><label class="sr" for="ownDate">Date</label><input id="ownDate" type="date"><button class="btn btn-p" type="submit">Add</button></form></div>' +
+    '<div class="filters" role="group" aria-label="Show">' + kinds.map(([k, l]) => '<button class="filter" type="button" data-pf="' + k + '" aria-pressed="' + (PLAN.filter === k) + '">' + l + '</button>').join('') + '</div>' +
+    (list.length ? Object.keys(months).map(m => '<h2 class="pl-month">' + new Date(m + '-01T00:00:00').toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }) + '</h2><div class="coming">' + months[m].map(e => occTile(e, j.events.indexOf(e), 'data-pev')).join('') + '</div>').join('')
+      : '<p class="note">Nothing here yet.</p>');
+  body.querySelectorAll('[data-pf]').forEach(b => b.onclick = () => { PLAN.filter = b.dataset.pf; calendarView(); });
+  body.querySelectorAll('[data-pev]').forEach(b => b.onclick = () => { const e = j.events[+b.dataset.pev]; if (e.move_label === 'Plan a campaign') return openWizard({ title: e.title, date: e.starts_on }); go('home'); send(e.prompt); });
+  body.querySelectorAll('[data-rm-ev]').forEach(b => b.onclick = async () => { await zen('event_remove', { id: b.dataset.rmEv }); PLAN.data = null; calendarView(); });
+  body.querySelectorAll('[data-goregion]').forEach(gr => gr.onclick = e => { e.preventDefault(); PLAN.tab = 'region'; planView(); });
+  el('addOwnBtn').onclick = () => { el('ownForm').hidden = !el('ownForm').hidden; if (!el('ownForm').hidden) el('ownTitle').focus(); };
+  el('ownForm').onsubmit = async e => { e.preventDefault(); const t = el('ownTitle').value.trim(), d = el('ownDate').value; const res = await zen('event_add', { title: t, starts_on: d });
+    if (!res.ok){ el('scoutNote').textContent = res.error; return; } PLAN.data = null; calendarView(); loadComingUp(); };
+  el('refreshBtn').onclick = async () => {
+    const b = el('refreshBtn'); b.disabled = true; b.innerHTML = '<span class="spin"></span>Updating\u2026';
+    const up = await zen('calendar_refresh', {}, 90000);
+    b.disabled = false; b.textContent = 'Update holidays and festivals';
+    el('scoutNote').textContent = up.ok ? (up.added ? up.added + ' holidays and festivals updated.' : 'Already up to date.') : (up.error || 'The update didn\u2019t work this time.');
+    if (up.added){ PLAN.data = null; setTimeout(calendarView, 1200); loadComingUp(); }
+  };
+  el('scoutBtn').onclick = async () => {
+    const b = el('scoutBtn'); b.disabled = true; b.innerHTML = '<span class="spin"></span>Searching sport, school and local events\u2026';
+    const res = await zen('scout_events', {}, 120000);
+    b.disabled = false; b.textContent = 'Find new events near you';
+    el('scoutNote').textContent = res.ok ? (res.added ? 'Added ' + res.added + ' new event' + (res.added === 1 ? '' : 's') + ', each with its source.' : 'Nothing new found this time.') : res.error;
+    if (res.added){ PLAN.data = null; setTimeout(calendarView, 1200); loadComingUp(); }
+  };
+}
+let REGION_OPTS = null;
+// Instagram schedule: every planned post by day, from campaigns and the Library.
+async function scheduleView(){
+  const body = el('planBody');
+  body.innerHTML = '<p class="note">Loading your schedule\u2026</p>';
+  const j = await zen('ig_schedule', {}, 30000), posts = (j.ok && j.posts) || [];
+  if (!posts.length){ body.innerHTML = '<div class="ads-empty"><b>Nothing scheduled yet</b><span>Posts from your campaigns and anything scheduled in your Library appear here, by day.</span><button class="btn btn-s" type="button" onclick="openWizard({})">New campaign</button></div>'; return; }
+  const days = {}; posts.forEach(p => (days[p.date] = days[p.date] || []).push(p));
+  const typeLabel = { offer: 'Offer', educational: 'Tip', proof: 'Proof', reel: 'Reel', story: 'Story', post: 'Post' };
+  body.innerHTML = '<p class="pl-intro">Every post that\u2019s planned for Instagram, by day. Campaign posts get their picture and time when the campaign is approved.</p>' +
+    Object.keys(days).sort().map(d => '<h2 class="pl-month">' + new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' }) + '</h2><div class="sch-day">' +
+      days[d].map(p => '<div class="sch">' + (p.url ? '<img src="' + esc(p.url) + '" alt="">' : '<span class="sch-ph">' + esc((typeLabel[p.type] || 'Post').slice(0, 1)) + '</span>') +
+        '<div class="sch-t"><b>' + esc(p.title || 'Post') + '</b><small>' + [p.time, typeLabel[p.type] || p.type, p.campaign ? 'Campaign: ' + p.campaign : 'Library'].filter(Boolean).map(esc).join(' \u00B7 ') + '</small>' +
+        (p.caption ? '<span class="sch-c">' + esc(p.caption) + '</span>' : '') + '</div><span class="vb ' + (/Posted|Scheduled|Ready/.test(p.status) ? 'v-good' : /Waiting/.test(p.status) ? 'v-watch' : 'v-off') + '">' + esc(p.status) + '</span>' +
+        (p.campaign_ref ? '<button class="btn btn-q" type="button" data-review="' + esc(p.campaign_ref) + '" data-rname="' + esc(p.campaign) + '">Campaign</button>' : '') + '</div>').join('') + '</div>').join('');
+}
+async function regionView(override){
+  const body = el('planBody');
+  body.innerHTML = '<p class="note">Loading\u2026</p>';
+  if (!REGION_OPTS){ const o = await zen('region_options', {}, 20000); REGION_OPTS = (o.ok && o.options) || {}; }
+  const [j, ps] = await Promise.all([override ? { ok: true, region: override } : zen('region_get', {}, 20000), zen('place_status', {}, 20000)]);
+  const r = (j.ok && j.region) || { country: 'AE', region: 'Dubai', communities: [], states: [], curricula: [] };
+  const place = ps.ok ? ps.place : null, prof = (place && place.profile) || {};
+  const found = (prof.communities || []).map(c => c.name || c), foundCur = prof.curricula || [];
+  const O = REGION_OPTS[r.country] || {}, countries = Object.keys(REGION_OPTS).length ? Object.entries(REGION_OPTS).map(([c, v]) => [c, v.name || c]) : [['AE','United Arab Emirates'],['IN','India']];
+  const uniq = a => [...new Set(a.filter(Boolean))];
+  const regions = O.region || (r.country === 'AE' ? AE_REGIONS : []), origins = O.origin || (r.country === 'IN' ? [] : STATES);
+  const comms = uniq([...found, ...(found.length ? [] : (O.community || COMMUNITIES)), ...(r.communities || [])]);
+  const currs = uniq([...foundCur, ...(foundCur.length ? [] : (O.curriculum || CURRICULA)), ...(r.curricula || [])]);
+  const regionWord = r.country === 'IN' ? 'State' : r.country === 'GB' ? 'Nation' : 'Emirate';
+  const chips = (name, opts, sel) => '<div class="rchips" role="group" aria-label="' + name + '">' + opts.map(o => '<button type="button" class="filter" data-rc="' + name + '" data-v="' + esc(o) + '" aria-pressed="' + sel.includes(o) + '">' + esc(o) + '</button>').join('') + '</div>';
+  body.innerHTML = '<div class="regionform">' +
+    '<div class="research"><label for="rgWhere"><b>Where is your business?</b></label>' +
+      '<div class="rpair"><input id="rgWhere" value="' + esc((ps.ok && ps.location_text) || '') + '" placeholder="e.g. Silicon Oasis, Dubai or Koramangala, Bengaluru"><button class="btn btn-p" type="button" id="rgResearch">Research my area</button></div>' +
+      '<p class="note" id="rgProgress" role="status">' + (place && place.researched_at ? 'Zen researched <b>' + esc(place.label || '') + '</b> on ' + new Date(place.researched_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + ': ' + (place.events || 0) + ' events (' + (place.confirmed || 0) + ' confirmed). It checks again at the start of every month.' : 'Zen looks up your area\u2019s holidays, festivals, school terms, sport and local events, with sources, and updates them at the start of every month.') + '</p></div>' +
+    '<p class="pl-intro">Zen uses this to choose which festivals, school breaks, sport and local events matter to you. It\u2019s about your business as a whole: Zen never targets a customer by guessing their background.</p>' +
+    '<div class="rrow"><label for="rgCountry">Country</label><select id="rgCountry">' + countries.map(([c, n]) => '<option value="' + esc(c) + '"' + (c === r.country ? ' selected' : '') + '>' + esc(n) + '</option>').join('') + '</select></div>' +
+    '<div class="rrow"><label for="rgRegion">' + regionWord + '</label>' + (regions.length ? '<select id="rgRegion"><option value="">Choose\u2026</option>' + regions.map(x => '<option' + (x === r.region ? ' selected' : '') + '>' + esc(x) + '</option>').join('') + '</select>' : '<input id="rgRegion" value="' + esc(r.region || '') + '">') + '</div>' +
+    '<div class="rrow"><label for="rgCity">City and area</label><div class="rpair"><input id="rgCity" value="' + esc(r.city || '') + '" placeholder="City"><input id="rgArea" value="' + esc(r.area || '') + '" placeholder="Area, e.g. Silicon Oasis"></div></div>' +
+    '<h3>Communities you serve' + (found.length ? ' <small>(found around ' + esc(place.label || 'you') + ')</small>' : '') + '</h3>' + chips('communities', comms, r.communities || []) +
+    '<div class="addown"><label class="sr" for="rgAddComm">Add a community</label><input id="rgAddComm" placeholder="Add your own"><button class="btn btn-q" type="button" data-add="communities">Add</button></div>' +
+    (origins.length ? '<h3>Where your customers are from <small>(for regional festivals, e.g. Onam for Kerala)</small></h3>' + chips('states', origins, r.states || []) : '') +
+    '<h3>Schools your customers\u2019 children go to</h3>' + chips('curricula', currs, r.curricula || []) +
+    '<div class="addown"><label class="sr" for="rgAddCur">Add a school system</label><input id="rgAddCur" placeholder="Add your own"><button class="btn btn-q" type="button" data-add="curricula">Add</button></div>' +
+    '<div class="actions"><button class="btn btn-p" type="button" id="rgSave">Save and update calendar</button></div><p class="note" id="rgNote" role="status"></p>' +
+    '<p class="note">Zen researches your area with web search at the start of every month, and checks dates against free official sources (such as the UK government\u2019s bank holidays and public holiday calendars). Dates without two sources are marked \u201cto confirm\u201d. \u201cFind new events near you\u201d adds anything new in between.</p></div>';
+  // keep only choices that exist for this country (switching country never carries hidden selections over)
+  const sel = { communities: (r.communities || []).filter(x => comms.includes(x)), states: (r.states || []).filter(x => origins.includes(x)), curricula: (r.curricula || []).filter(x => currs.includes(x)) };
+  body.querySelectorAll('[data-rc]').forEach(b => b.onclick = () => { const k = b.dataset.rc, v = b.dataset.v, a = sel[k]; const i = a.indexOf(v); if (i >= 0) a.splice(i, 1); else a.push(v); b.setAttribute('aria-pressed', String(i < 0)); });
+  body.querySelectorAll('[data-add]').forEach(b => b.onclick = () => {
+    const k = b.dataset.add, inp = el(k === 'communities' ? 'rgAddComm' : 'rgAddCur'), v = inp.value.trim(); if (!v) return;
+    if (!sel[k].includes(v)) sel[k].push(v);
+    regionView({ ...r, ...sel, country: el('rgCountry').value, region: el('rgRegion').value, city: el('rgCity').value, area: el('rgArea').value });
+  });
+  el('rgResearch').onclick = async () => {
+    const where = el('rgWhere').value.trim(), btn = el('rgResearch'), note = el('rgProgress');
+    if (where.length < 3){ note.textContent = 'Type where your business is first.'; el('rgWhere').focus(); return; }
+    btn.disabled = true; note.innerHTML = '<span class="spin"></span>Understanding your area\u2026';
+    const st = await zen('research_start', { location: where }, 140000);
+    if (!st.ok){ btn.disabled = false; note.textContent = st.error || 'Research didn\u2019t work this time.'; return; }
+    let step = st, n = 1;
+    while (!step.done){
+      n++; note.innerHTML = '<span class="spin"></span>Step ' + n + ' of 4: ' + esc(step.next || 'Researching') + '\u2026 (this takes a minute)';
+      step = await zen('research_step', { place_key: st.place_key }, 150000);
+      if (!step.ok){ note.textContent = (step.error || 'One step didn\u2019t finish.') + ' Zen will try again at the start of next month, or press Research again.'; break; }
+    }
+    btn.disabled = false; PLAN.data = null; loadComingUp();
+    regionView();                                            // reload with what Zen found
+  };
+  el('rgCountry').onchange = () => { const c = el('rgCountry').value; regionView({ ...r, ...sel, country: c, region: c === 'IN' ? '' : 'Dubai', city: el('rgCity').value, area: el('rgArea').value }); };
+  el('rgSave').onclick = async () => {
+    const res = await zen('region_save', { country: el('rgCountry').value, region: el('rgRegion').value, city: el('rgCity').value, area: el('rgArea').value, ...sel });
+    if (!res.ok){ el('rgNote').textContent = res.error; return; }
+    el('rgNote').textContent = 'Saved. Updating your calendar from public holiday sources\u2026';
+    const up = await zen('calendar_refresh', {}, 90000);
+    el('rgNote').textContent = up.ok ? 'Saved. ' + (up.added ? up.added + ' holidays and festivals updated' + (up.sources && up.sources.length ? ' from ' + up.sources.join(', ') : '') + '.' : 'Your calendar is up to date.') + (up.errors && up.errors.length ? ' (' + up.errors.join('; ') + ')' : '') : 'Saved. The calendar update didn\u2019t work this time.';
+    PLAN.data = null; loadComingUp();
+  };
+}
+
 function goHome(){ threadId = null; el('log').innerHTML = ''; showLanding(); }
+// Studio: one place for making and finding pictures.
+function studioTabs(area){
+  const t = el('studioTabs'); t.hidden = !area; if (!area) return;
+  const v = MKT.pending && MKT.pending !== 'keep' ? MKT.pending : MKT.view;
+  const cur = area === 'gallery' ? 'library' : area === 'campaigns' ? 'campaigns' : (v === 'inspo' ? 'inspo' : v === 'studio' ? 'create' : 'more');
+  t.innerHTML = [['campaigns','Campaigns'],['campaign','New campaign'],['create','Create'],['library','Library'],['inspo','Inspiration'],['more','All tools']].map(([k, l]) => '<button type="button" data-st="' + k + '" aria-pressed="' + (cur === k) + '">' + l + '</button>').join('');
+  t.querySelectorAll('[data-st]').forEach(b => b.onclick = () => { const k = b.dataset.st;
+    if (k === 'library') return go('gallery');
+    if (k === 'campaign') return openWizard({});
+    if (k === 'campaigns') return showCampaigns();
+    MKT.pending = k === 'create' ? 'studio' : k === 'inspo' ? 'inspo' : 'home'; if (k === 'create') CR.keep = true; go('marketing'); });
+}
 function newConversation(){ goHome(); }
 
 // The phone's back gesture and the browser's back button work inside Home:
@@ -1213,6 +1997,7 @@ el('convoBack').onclick = leaveConvo;
 el('convoNew').onclick = leaveConvo;
 el('convoHistory').onclick = () => openHistory();
 el('seeAllChats').onclick = () => openHistory();
+el('pastChats').onclick = () => openHistory();
 
 // Rename the open conversation in place.
 el('convoRename').onclick = () => {
@@ -1295,7 +2080,8 @@ async function loadNudges(){
   const j = await zen('get_nudges', {}, 60000);
   if (!j.ok){ box.innerHTML = '<div class="empty">' + esc(j.error) + '</div>'; return; }
   const list = j.nudges || [];
-  if (!list.length){ box.innerHTML = '<div class="empty">Nothing needs you right now. Zen keeps watching.</div>'; return; }
+  BELL.nudges = list.length; BELL.nudgeIds = list.map(x => x.id); markBellSeen();
+  if (!list.length){ box.innerHTML = el('needsList').innerHTML ? '' : '<div class="empty">Nothing needs you right now. Zen keeps watching.</div>'; return; }
   box.innerHTML = list.map(n =>
     '<div class="nudge" data-nudge="' + esc(n.id) + '"><div class="txt"><b>' + esc(n.title) + '</b>' +
     (n.value_aed != null ? '<div class="stake">About AED ' + Math.round(n.value_aed).toLocaleString('en-US') + ' at stake</div>' : '') +
@@ -1308,7 +2094,7 @@ async function loadNudges(){
   });
   box.querySelectorAll('[data-ndis]').forEach(b => b.onclick = async () => {
     b.closest('.nudge').remove();
-    zen('dismiss_nudge', { nudge_id: b.dataset.ndis });
+    zen('dismiss_nudge', { nudge_id: b.dataset.ndis }); BELL.nudges = Math.max(0, BELL.nudges - 1); setBell();
     if (!box.querySelector('.nudge')) box.innerHTML = '<div class="empty">Nothing else needs you right now.</div>';
   });
 }
@@ -1329,6 +2115,30 @@ function ago(iso){
   return new Date(iso).toLocaleDateString('en-GB', { day:'numeric', month:'short' });
 }
 
+// Marketing → Campaigns: every campaign, newest first, each opening its plan as it stands now.
+async function showCampaigns(){
+  go('campaigns'); const box = el('crvPage');
+  box.innerHTML = '<div class="page-top"><h1>Campaigns</h1><button class="btn btn-p" type="button" onclick="openWizard({})">New campaign</button></div><p class="note">Loading\u2026</p>';
+  const j = await zen('campaigns_list', {}, 20000), list = (j.ok && j.campaigns) || [];
+  const fmt = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+  box.innerHTML = '<div class="page-top"><h1>Campaigns</h1><button class="btn btn-p" type="button" onclick="openWizard({})">New campaign</button></div>' +
+    (list.length ? '<div class="crv-list">' + list.map((c, i) => '<div class="crv"><div class="crv-h"><b>' + esc(c.name) + '</b><span class="note">' + fmt(c.start) + ' \u2013 ' + fmt(c.end) + ' \u00B7 ' + esc(c.channels.map(x => ({ whatsapp: 'WhatsApp', instagram: 'Instagram', ads: 'Ads' })[x] || x).join(', ')) + '</span></div>' +
+      '<span class="vb ' + (c.status === 'Approved' ? 'v-good' : c.status === 'Waiting for your OK' ? 'v-watch' : 'v-off') + '" style="align-self:flex-start">' + esc(c.status) + '</span>' +
+      '<div><button class="btn btn-s" type="button" data-camp="' + i + '">Open</button></div></div>').join('') + '</div>'
+      : '<p class="note">No campaigns yet. Start one with New campaign.</p>');
+  box.querySelectorAll('[data-camp]').forEach(b => b.onclick = () => { const c = list[+b.dataset.camp]; openCampaignPlan(c.ref, c.name); });
+}
+// A campaign plan without a conversation: show the plan itself, ready to choose and approve from.
+async function openCampaignPlan(ref, name){
+  threadId = null; el('log').innerHTML = ''; el('convoTitle').textContent = (name || 'Campaign') + ' plan'; el('convoRename').hidden = true;
+  showConvo();
+  const think = addThinking(['Opening the plan']);
+  const j = await zen('campaign_status', { ref }, 20000);
+  think.remove();
+  if (!j.ok){ el('log').appendChild(errorCard(j.error || 'This plan isn\u2019t available any more.')); return; }
+  (j.cards || []).forEach(c => el('log').appendChild(renderCard(c)));
+  if (!(j.cards || []).length) el('log').appendChild(renderCard({ type: 'answer', title: 'Still planning', body: 'This plan isn\u2019t ready yet. I\u2019ll ring the bell when it is.' }));
+}
 async function openThread(id, title){
   threadId = id; el('log').innerHTML = ''; el('convoTitle').textContent = title || 'Conversation'; el('convoRename').hidden = false;
   showConvo();
@@ -1340,6 +2150,9 @@ async function openThread(id, title){
     if (m.role === 'user') addYou(m.text);
     else (m.cards || []).forEach(c => el('log').appendChild(renderCard(c)));
   });
+  const planned = new Set(); (j.messages || []).forEach(m => (m.cards || []).forEach(c => { if (/plan is ready|couldn.t plan/i.test(c.title || '')) planned.add(1); }));
+  const lastPoll = (j.messages || []).flatMap(m => m.cards || []).filter(c => c.poll).pop();
+  if (lastPoll && !planned.size) watchCampaigns([lastPoll]);
 }
 
 // ---------- sending ----------
@@ -1362,7 +2175,25 @@ async function send(text, opts){
   threadId = j.thread_id || threadId;
   el('convoRename').hidden = !threadId;
   (j.cards || []).forEach(c => el('log').appendChild(renderCard(c)));
+  watchCampaigns(j.cards || []);
   el('dockInput').focus();
+}
+// A campaign being planned in the background: check quietly, and add the plan here when it's ready.
+const WATCH = {};
+function watchCampaigns(cards){
+  cards.filter(c => c.poll && c.poll.campaign && !WATCH[c.poll.campaign]).forEach(c => {
+    const ref = c.poll.campaign, tid = threadId, started = Date.now();
+    const think = addThinking(['Planning the campaign', 'Checking your calendar and results', 'Planning each channel', 'Briefing the creatives', 'Putting it together']);
+    WATCH[ref] = setInterval(async () => {
+      const j = await zen('campaign_status', { ref }, 20000);
+      const done = j.ok && (j.stage === 'ready' || j.stage === 'failed');
+      if (!done && Date.now() - started < 8 * 60 * 1000) return;
+      clearInterval(WATCH[ref]); think.remove();
+      if (threadId === tid && el('convo').style.display === 'flex')
+        (done ? j.cards : [{ type: 'answer', title: 'Still planning', body: 'This is taking longer than usual. I\u2019ll ring the bell when it\u2019s ready.' }]).forEach(x => el('log').appendChild(renderCard(x)));
+      refreshBell();
+    }, 6000);
+  });
 }
 
 function addYou(text){
@@ -1656,6 +2487,7 @@ const GAL_FILTERS = [
   ['scheduled', 'Scheduled', it => it.status === 'scheduled'],
   ['posted', 'Posted', it => it.status === 'published'],
   ['draft', 'Drafts', it => it.status === 'draft' || it.status === 'creative_ready' || it.status === 'planned'],
+  ['review', 'Waiting for your OK', it => it.status === 'creative_ready'],
   ['video', 'Videos', it => it.kind === 'video'],
 ];
 // When: by the day it was made, in your own time zone.
@@ -1715,9 +2547,9 @@ async function loadGallery(){
   const [old, made] = await Promise.all([zen('gallery_list', {}, 30000), studio('list_assets', { tenant_id: tenant, limit: 200 }, 30000)]);
   if (!old.ok && !made.ok){ el('galBody').innerHTML = '<div class="empty">' + esc(old.error) + '</div>'; return; }
   const fromCreate = (made.ok && Array.isArray(made.assets) ? made.assets : []).filter(a => a.kind !== 'upload').map(a => ({
-    source: 'studio', id: a.id, kind: 'image', url: a.url, created_at: a.created_at,
+    source: 'studio', id: a.id, kind: a.media === 'video' ? 'video' : 'image', url: a.url, created_at: a.created_at, poster: a.poster_url || null,
     status: a.label === 'reference' ? 'reference' : a.kind === 'generated' ? 'made' : 'uploaded',
-    title: a.brief || (a.kind === 'generated' ? 'Made in Create' : 'Uploaded image'), caption: null,
+    title: a.brief || (a.media === 'video' ? 'Video made in Create' : a.kind === 'generated' ? 'Made in Create' : 'Uploaded image'), caption: null,
     prompt: a.prompt || null, prompt_by: a.prompt_by || null, model_label: a.model_label || null, size_key: a.size_key || null, credits: a.credits,
     width: a.width, height: a.height, asset: a,
   }));
@@ -1727,7 +2559,34 @@ async function loadGallery(){
     : rec.ok && rec.still_running ? rec.still_running + ' image' + (rec.still_running === 1 ? ' is' : 's are') + ' still being made. They\u2019ll appear here when ready.' : '';
   renderGallery();
 }
+// ---------- Review: one item at a time ----------
+const RV = { i: 0, done: 0 };
+function renderReview(){
+  const list = (GAL.items || []).filter(it => it.status === 'creative_ready'), box = el('galBody');
+  if (RV.i >= list.length){
+    box.innerHTML = '<div class="rv-done"><b>' + (RV.done ? 'All done. ' + RV.done + ' decided.' : 'Nothing waiting for your OK.') + '</b><span>Approved posts are in Studio \u2192 Library under \u201cReady to post\u201d. Zen will bring new ones here.</span>' +
+      '<div class="actions"><button class="btn btn-s" type="button" onclick="go(\'home\')">Back to Home</button></div></div>';
+    loadKpis(); return;
+  }
+  const it = list[RV.i];
+  box.innerHTML = '<div class="rv"><div class="rv-h"><b>' + (RV.i + 1) + ' of ' + list.length + '</b><button class="btn btn-q" type="button" id="rvAll">Approve all ' + (list.length - RV.i) + '</button></div>' +
+    '<div class="rv-card"><div class="rv-media">' + (it.kind === 'video' ? '<video src="' + esc(it.url) + '" controls playsinline></video>' : '<img src="' + esc(it.url) + '" alt="' + esc(it.title) + '">') + '</div>' +
+    '<div class="rv-info"><h2>' + esc(it.title) + '</h2>' + (it.caption ? '<div class="capt">' + esc(it.caption) + '</div>' : '<p class="note">No caption yet: Zen writes one when you post it.</p>') +
+    '<div class="rv-acts"><button class="btn btn-p" type="button" id="rvOk">Approve</button><button class="btn btn-s" type="button" id="rvPost">Post to Instagram</button>' +
+    '<button class="btn btn-s" type="button" id="rvNo">Not this one</button><button class="btn btn-q" type="button" id="rvSkip">Skip for now</button></div>' +
+    '<p class="note" id="rvNote" role="status">Approve marks it ready to post. Nothing is posted until you choose a time and approve the post.</p></div></div></div>';
+  const decide = async (d) => { el('rvNote').innerHTML = '<span class="spin"></span>Saving\u2026'; const j = await zen('review_decide', { id: it.id, decision: d }, 20000);
+    if (!j.ok){ el('rvNote').textContent = j.error; return; } it.status = d === 'approve' ? 'approved' : 'draft'; RV.done++; renderReview(); };
+  el('rvOk').onclick = () => decide('approve');
+  el('rvNo').onclick = () => decide('reject');
+  el('rvSkip').onclick = () => { RV.i++; renderReview(); };
+  el('rvPost').onclick = () => openIgComposer(it);
+  el('rvAll').onclick = async () => { const b = el('rvAll'); b.disabled = true; b.innerHTML = '<span class="spin"></span>Approving\u2026';
+    for (const x of list.slice(RV.i)){ const j = await zen('review_decide', { id: x.id, decision: 'approve' }, 20000); if (j.ok){ x.status = 'approved'; RV.done++; } }
+    renderReview(); };
+}
 function renderGallery(){
+  if (document.body.classList.contains('review-mode')) return renderReview();
   if (!GAL.items) return;
   const whenFn = (GAL_WHEN.find(w => w[0] === GAL.when) || GAL_WHEN[0])[2];
   const inWhen = GAL.items.filter(whenFn);
@@ -1747,7 +2606,7 @@ function renderGallery(){
   el('galBody').innerHTML = note + '<div class="grid">' + list.map(it =>
     '<button class="tile' + (GAL.select ? (galDeletable(it) ? ' selmode' + (GAL.sel.has(galKey(it)) ? ' picked' : '') : ' selmode locked') : '') + '" type="button" data-gi="' + esc(it.source + ':' + it.id) + '"' +
       (GAL.select ? ' aria-pressed="' + GAL.sel.has(galKey(it)) + '"' : '') + ' aria-label="' + esc(it.title + (it.created_at ? ', ' + new Date(it.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short' }) : '')) + '" title="' + esc(it.title) + '"><div class="media">' +
-      (it.kind === 'video' ? '<video src="' + esc(it.url) + '#t=0.5" muted preload="metadata" playsinline></video><span class="play" aria-hidden="true">\u25B6</span>'
+      (it.kind === 'video' ? (it.poster ? '<img src="' + esc(it.poster) + '" alt="" loading="lazy">' : '<video src="' + esc(it.url) + '#t=0.5" muted preload="metadata" playsinline></video>') + '<span class="play" aria-hidden="true">\u25B6</span>'
                            : '<img src="' + esc(it.url) + '" alt="" loading="lazy">') +
       '<span class="st ' + esc(it.status) + '">' + esc(GAL_STATUS[it.status] || it.status) + '</span>' + (GAL.select ? '<span class="tick" aria-hidden="true"></span>' : '') + '</div></button>').join('') + '</div>';
   el('galBody').querySelectorAll('[data-gi]').forEach(b => b.onclick = () => {
@@ -1767,17 +2626,19 @@ function openStudioViewer(id){
   const it = GAL.items.find(x => x.source === 'studio' && x.id === id); if (!it) return;
   const v = el('viewer');
   const used = [it.model_label, it.size_key ? it.size_key.charAt(0).toUpperCase() + it.size_key.slice(1) : '', it.credits != null ? it.credits + ' credits' : ''].filter(Boolean).join(' \u00B7 ');
-  const isRef = it.status === 'reference';
-  v.innerHTML = '<button class="vclose" type="button" aria-label="Close" id="vClose">\u00D7</button><div class="vgrid"><div class="vmedia"><img src="' + esc(it.url) + '" alt="' + esc(it.title) + '"></div>' +
+  const isRef = it.status === 'reference', isVid = it.kind === 'video';
+  v.innerHTML = '<button class="vclose" type="button" aria-label="Close" id="vClose">\u00D7</button><div class="vgrid"><div class="vmedia">' +
+    (isVid ? '<video src="' + esc(it.url) + '" controls playsinline' + (it.poster ? ' poster="' + esc(it.poster) + '"' : '') + ' aria-label="' + esc(it.title) + '"></video>' : '<img src="' + esc(it.url) + '" alt="' + esc(it.title) + '">') + '</div>' +
     '<div class="vinfo"><span class="badge" style="align-self:flex-start;margin:0">' + esc(GAL_STATUS[it.status]) + '</span><h2>' + esc(it.title) + '</h2>' +
     '<div class="note">' + esc(it.created_at ? new Date(it.created_at).toLocaleString('en-GB', { day:'numeric', month:'long', year:'numeric', hour:'numeric', minute:'2-digit' }) : '') +
       (used ? '<br>' + esc(used) : '') + (it.width ? '<br>' + it.width + ' \u00D7 ' + it.height + ' px' : '') + '</div>' +
     (it.prompt ? '<details class="prompt" style="padding:0"><summary>Prompt' + (it.prompt_by ? ' <i>written by ' + esc(it.prompt_by) + '</i>' : '') + '</summary><pre>' + esc(it.prompt) + '</pre></details>' : '') +
     (isRef ? '<p class="note">A reference is inspiration only. It shapes new images and is never posted as it is.</p>' : '') +
-    '<div class="actions">' + (isRef ? '' : '<button class="btn btn-p" type="button" id="svAd">Promote as an ad</button><button class="btn btn-s" type="button" id="svUse">Use in Create</button>') +
+    (isVid ? '<div class="actions"><a class="btn btn-p" href="' + esc(it.url) + '" download target="_blank" rel="noopener">Download</a></div><p class="note">Posting videos to Instagram and using them in ads comes next.</p>'
+    : '<div class="actions">' + (isRef ? '' : '<button class="btn btn-p" type="button" id="svAd">Promote as an ad</button><button class="btn btn-s" type="button" id="svVid">Make it a video</button><button class="btn btn-s" type="button" id="svUse">Use in Create</button>') +
       '<button class="btn btn-s" type="button" id="svInsp">Use as inspiration</button>' +
       '<a class="btn btn-q" href="' + esc(it.url) + '" target="_blank" rel="noopener">Full size</a></div>' +
-    '<button class="btn btn-q" type="button" id="svLabel" style="align-self:flex-start">' + (isRef ? 'Make it a creative (mine to post)' : 'Make it a reference (inspiration only)') + '</button>' +
+    '<button class="btn btn-q" type="button" id="svLabel" style="align-self:flex-start">' + (isRef ? 'Make it a creative (mine to post)' : 'Make it a reference (inspiration only)') + '</button>') +
     '<p class="note" id="svNote" role="status"></p>' +
     '<p class="note">Posting images made in Create to Instagram comes next.</p>' +
     '<div class="vdel"><button class="btn btn-del" type="button" id="svDel">Delete</button></div></div></div>';
@@ -1785,7 +2646,8 @@ function openStudioViewer(id){
   el('vClose').onclick = () => v.close(); v.onclick = e => { if (e.target === v) v.close(); };
   if (el('svAd')) el('svAd').onclick = () => { v.close(); go('home'); send('Promote this picture as a WhatsApp ad', { context: { image_url: it.url, image_name: it.title } }); };
   if (el('svUse')) el('svUse').onclick = () => { v.close(); crReset(); CR.image = it.asset; CR.keep = true; MKT.pending = 'studio'; go('marketing'); };
-  el('svInsp').onclick = () => { v.close(); crReset(); CR.insp = { type:'asset', asset_id: it.id, name: it.title.slice(0, 40), url: it.url }; CR.keep = true; MKT.pending = 'studio'; go('marketing'); };
+  if (el('svVid')) el('svVid').onclick = () => { v.close(); crReset(); CR.mode = 'video'; CR.vSrc = { asset_id: it.id, url: it.url, name: it.title.slice(0, 40) }; CR.keep = true; MKT.pending = 'studio'; go('marketing'); };
+  if (el('svInsp')) el('svInsp').onclick = () => { v.close(); crReset(); CR.insp = { type:'asset', asset_id: it.id, name: it.title.slice(0, 40), url: it.url }; CR.keep = true; MKT.pending = 'studio'; go('marketing'); };
   let delArmed = false;
   el('svDel').onclick = async () => {
     const b = el('svDel');
@@ -1795,7 +2657,7 @@ function openStudioViewer(id){
     if (!j.ok || !(j.deleted || []).includes(it.id)){ b.disabled = false; delArmed = false; b.classList.remove('armed'); b.textContent = 'Delete'; el('svNote').textContent = j.error || 'That image was already gone.'; return; }
     GAL.items = GAL.items.filter(x => !(x.source === 'studio' && x.id === it.id)); v.close(); renderGallery();
   };
-  el('svLabel').onclick = async () => {
+  if (el('svLabel')) el('svLabel').onclick = async () => {
     const label = isRef ? 'creative' : 'reference';
     el('svLabel').disabled = true;
     const j = await studio('set_label', { tenant_id: tenant, asset_id: it.id, label }, 20000);
@@ -1892,12 +2754,12 @@ function renderBrand(){
     '</div></div>' +
     (b.gaps.length ? '<div class="gaps"><b>Fill these in and Zen gets better</b><ul>' + b.gaps.map(g => '<li>' + esc(g) + '</li>').join('') + '</ul></div>' : '') +
 
-    '<div id="briefSec"></div>' +
+    '<div id="hoursSec"></div><div id="briefSec"></div>' +
     '<div class="sec"><div class="sec-head"><div><h2>What Zen tells customers</h2><p>WhatsApp drafts and automatic replies quote only from these answers. Keep prices and hours current.</p></div>' +
       '<button class="btn btn-s" type="button" id="factAddBtn">Add an answer</button></div><div id="factForm"></div>' +
       '<div class="rows" id="factRows">' + (b.facts.length ? b.facts.map(factRow).join('') : '<div class="fr"><div class="txt quiet">No answers yet. Until you add some, Zen can only greet customers.</div></div>') + '</div></div>' +
 
-    '<div class="sec"><div class="sec-head"><div><h2>Brand rules</h2><p>' + (b.dna_approved ? 'Checked every time Zen makes an image or video.' : 'Not set up yet. Brand DNA is created and approved in ZenPro.') + '</p></div></div>' +
+    '<div class="sec"><div class="sec-head"><div><h2>Brand rules</h2><p>' + (b.dna_approved ? 'Checked every time Zen makes an image or video.' : 'Not set up yet. Your brand profile is created and approved in ZenPro.') + '</p></div></div>' +
       (b.rules.length ? '<div class="rows">' + b.rules.map(r => '<div class="fr"><div class="txt"><div class="q">' + esc(r.label.charAt(0).toUpperCase() + r.label.slice(1)) + '</div><div class="a">' + esc(r.value) + '</div></div>' +
         '<span class="t ' + (r.never ? 't-alert' : 't-book') + '">' + (r.never ? 'Never' : 'Always') + '</span></div>').join('') + '</div>' : '') + '</div>' +
 
@@ -1908,7 +2770,7 @@ function renderBrand(){
     (b.products.length ? '<div class="sec"><div class="sec-head"><div><h2>Products</h2></div></div><div class="prods">' + b.products.map(x =>
       '<div class="prod">' + (x.image_url ? '<img src="' + esc(x.image_url) + '" alt="" loading="lazy">' : '<img alt="">') + '<div><b>' + esc(x.name) + '</b>' + (x.price ? esc(x.price) : '') + '</div></div>').join('') + '</div></div>' : '');
 
-  loadBrief();
+  loadHours(); loadBrief();
   el('factAddBtn').onclick = () => factForm(null);
   el('brand').querySelectorAll('[data-fedit]').forEach(x => x.onclick = () => factForm(BRAND.facts.find(f => f.id === x.dataset.fedit)));
   el('brand').querySelectorAll('[data-fdel]').forEach(x => {
@@ -1973,7 +2835,7 @@ function mktHome(){
     '<button class="mtile" type="button" data-mt="' + key + '"' + (disabled ? ' aria-disabled="true"' : '') + '><span class="ic">' + ICONS[icon] + '</span><b>' + title + '</b><span>' + text + '</span>' +
     '<span class="live" id="mtLive_' + key + '">' + (live || '') + '</span></button>';
   box.innerHTML = '<div class="page-top"><h1>What do you want to make?</h1></div><div class="tiles">' +
-    tile('studio', 'image', 'Create images', 'Describe it, add your image or an idea. Zen makes it.') +
+    tile('studio', 'image', 'Create images & videos', 'Describe it, add your photo or an inspiration. Zen makes it, or turns it into a short video.') +
     tile('inspo', 'ideas', 'AI Inspiration', 'Describe your business and what you want. Zen finds the right creative ideas.') +
     tile('ig', 'ig', 'Instagram post', 'Pick something you\u2019ve made. Zen writes the caption, you approve.') +
     tile('ads', 'ads', 'Meta ads', 'What\u2019s working, what\u2019s wasting money, and what to change.', 'Checking your ads\u2026') +
@@ -2056,7 +2918,8 @@ async function adAction(b){
 // Simple by design: your image, an inspiration, a few words, one settings line, Generate.
 const CR = { session: null, versions: [], image: null, insp: null, use: 'everything', aspect: '4:5', timers: {}, brand: null,
   models: null, modelKey: null, sizeKey: null, useBrand: false, optsOpen: false, modelsOpen: false, busy: false,
-  open: {}, autoSend: null, text: '' };
+  open: {}, autoSend: null, text: '',
+  mode: 'image', vModels: null, vKey: null, vSecs: null, vRes: '720p', vAspect: '9:16', vSound: true, vSrc: null, vSkip: false, vText: '' };
 const ASPECTS = [['1:1','Square'],['4:5','Portrait'],['9:16','Story'],['16:9','Landscape']];
 const USE_LABEL = { everything:'Everything', style:'Its style', layout:'Its layout', background:'Its background' };
 const crModel = () => (CR.models || []).find(m => m.key === CR.modelKey);
@@ -2065,13 +2928,16 @@ const crCredits = () => (crSize() || {}).credits;
 
 function crShowUsage(){
   studio('usage', { tenant_id: tenant }, 15000).then(j => {
-    if (j.ok && el('crUsage')) el('crUsage').textContent = (j.usage.credits || 0) + ' credits used this month (' + j.usage.images + ' image' + (j.usage.images === 1 ? '' : 's') + ')';
+    if (!j.ok || !el('crUsage')) return;
+    const u = j.usage, parts = [u.images + ' image' + (u.images === 1 ? '' : 's')];
+    if (u.videos) parts.push(u.videos + ' video' + (u.videos === 1 ? '' : 's'));
+    el('crUsage').textContent = (u.credits || 0) + ' credits used this month (' + parts.join(', ') + ')';
   });
 }
 function stopCreatePolling(){ Object.values(CR.timers).forEach(clearTimeout); CR.timers = {}; }
 // A fresh console: no images, words, inspiration or results. Model, size, format and brand stay as you chose.
 // Images still being made aren't lost: the Library collects them.
-function crReset(){ stopCreatePolling(); Object.assign(CR, { session: null, versions: [], image: null, insp: null, use: 'everything', open: {}, text: '', busy: false, visit: (CR.visit || 0) + 1 }); }
+function crReset(){ stopCreatePolling(); Object.assign(CR, { session: null, versions: [], image: null, insp: null, use: 'everything', open: {}, text: '', busy: false, vSrc: null, vText: '', vSkip: false, visit: (CR.visit || 0) + 1 }); }
 function crStatus(text, bad){ const s = el('crStatus'); if (s){ s.textContent = text || ''; s.className = 'crstatus' + (bad ? ' bad' : ''); } }
 
 // Buttons on Home cards that open a screen in the new Zen, carrying the owner's request with them.
@@ -2079,11 +2945,13 @@ document.addEventListener('click', e => {
   const b = e.target.closest && e.target.closest('[data-zenopen]'); if (!b) return;
   let o; try { o = JSON.parse(b.dataset.zenopen); } catch (_) { return; }
   const p = o.params || {};
+  if (o.view === 'creatives'){ openCreatives(p.ref); return; }
+  if (o.view === 'wizard'){ openWizard({ ref: p.ref }); return; }
   if (o.view === 'create'){
     // A request from Home starts a fresh Create session, so it never mixes with earlier work.
     stopCreatePolling();
     crReset(); CR.keep = true;
-    CR.autoSend = { text: p.text || '', aspect: p.aspect || null };
+    CR.autoSend = { text: p.text || '', aspect: p.aspect || null, mode: p.mode === 'video' ? 'video' : null };
     MKT.pending = 'studio'; go('marketing');
   } else if (o.view === 'inspiration'){
     INS.autoAsk = p.text || '';
@@ -2091,32 +2959,44 @@ document.addEventListener('click', e => {
   } else openZenView(o.view, p);
 });
 
+// ---------- Create: one composer box; results above it ----------
+// Type what you want and press Make. Photos and ideas are attached with "+" and shown inside the box,
+// each labelled with what it does. Picture or Video, the format and the model are labelled buttons.
+const PURPOSES = [['post', 'Instagram post', '4:5'], ['story', 'Story or Reel', '9:16'], ['ad', 'Ad', '4:5'], ['status', 'WhatsApp status', '9:16'], ['wide', 'Wide banner', '16:9'], ['square', 'Square', '1:1']];
+const purposeOf = () => PURPOSES.find(p => p[0] === CR.purpose) || PURPOSES[0];
 async function createView(){
   if (!CR.keep) crReset();                                   // a new visit starts fresh; same-task trips keep your work
   CR.keep = false;
+  if (!CR.purpose) CR.purpose = 'post';
   const box = el('mkt');
-  box.innerHTML = backBtn + '<div class="page-top"><h1>Create images</h1><div class="crtop"><span class="note" id="crUsage"></span><button class="btn btn-q" type="button" id="crNew">Clear</button></div></div>' +
-    '<div class="crwrap"><section class="crleft" aria-label="What to make">' +
-      '<div class="slots"><div class="slot" id="slotImg"></div><div class="slot" id="slotInsp"></div></div>' +
-      '<label for="crText" class="crlabel">Describe what you want</label>' +
-      '<textarea id="crText" rows="4" placeholder="e.g. Shatter effect with my jar bursting through glass. Optional if you added images."></textarea>' +
-      '<button class="optsum" type="button" id="crOpts" aria-expanded="false"></button>' +
-      '<div class="crset" id="crSet" hidden>' +
-        '<div class="crrow"><span class="note">Format</span><div class="pills" id="crAspect"></div></div>' +
-        '<div class="crpick"><span class="note">Model</span><div class="mopts" id="crModels"></div></div>' +
-        '<div class="crrow"><span class="note">Size</span><div class="pills" id="crSizes"></div></div>' +
-        '<label class="brandsw"><input type="checkbox" id="crBrand"> <span><b>Use my brand</b> Send ' + esc(tenantName) + '\u2019s colours, tone and brand rules with the request. Off: only your words and images are sent.</span></label>' +
-        '<button class="btn btn-s" type="button" id="crOptsDone">Done</button></div>' +
-      '<button class="btn btn-p crgo" type="button" id="crGo"></button>' +
+  box.innerHTML = backBtn + '<div class="page-top"><h1>Create</h1><div class="crtop"><span class="note" id="crUsage"></span><button class="btn btn-q" type="button" id="crNew">Clear</button></div></div>' +
+    '<section class="cbox ctop" aria-label="What to make">' +
+      '<div class="catt" id="crAtt"></div>' +
+      '<label class="sr" for="crText">Describe what you want to make</label>' +
+      '<textarea id="crText" rows="1" placeholder="Describe what you want to make\u2026"></textarea>' +
+      '<div class="cown" id="crOwnRow" hidden><label for="crOwn">Must appear on it <span class="note">optional \u00B7 prices, offers or numbers appear only if you type them</span></label><input id="crOwn" maxlength="90" placeholder="e.g. First Haircut AED 120 \u00B7 Book on WhatsApp 050 123 4567"></div>' +
+      '<div class="cfoot">' +
+        '<div class="cseg" role="group" aria-label="Picture or video"><button type="button" data-mode="image">Picture</button><button type="button" data-mode="video">Video</button></div>' +
+        '<button class="cpill" type="button" id="crFmt" aria-haspopup="menu"></button>' +
+        '<button class="cpill" type="button" id="crTxt" aria-haspopup="menu"></button>' +
+        '<button class="cpill" type="button" id="crMod" aria-haspopup="menu"></button>' +
+        '<button class="cpill cq" type="button" id="crQual" aria-haspopup="menu"></button>' +
+        '<button class="btn btn-p cgo" type="button" id="crGo"></button>' +
+      '</div>' +
       '<p class="crstatus" id="crStatus" role="status"></p>' +
-    '</section><section class="crright" aria-label="Results"><div id="crResults"></div></section></div>' +
-    '<dialog class="viewer" id="crPick" aria-label="Choose an image"></dialog>';
-  el('crNew').onclick = () => { stopCreatePolling(); Object.assign(CR, { session:null, versions:[], image:null, insp:null, open:{}, text:'' }); el('crText').value = ''; crStatus(''); renderCreate(); };
-  // Your words survive a trip to AI Inspiration and back.
-  el('crText').value = CR.text || '';
-  el('crText').addEventListener('input', e => { CR.text = e.target.value; });
-  el('crGo').onclick = () => crCreate({});
-  el('crText').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)){ e.preventDefault(); crCreate({}); } });
+    '</section>' +
+    '<div class="cfeed cstage-wrap" id="crResults" aria-live="polite"></div>' +
+    '<dialog class="viewer" id="crPick" aria-label="Choose an image"></dialog><div class="smenu" id="crMenu" role="menu" hidden></div>';
+  el('crNew').onclick = () => { stopCreatePolling(); Object.assign(CR, { session:null, versions:[], image:null, insp:null, open:{}, text:'', vSrc:null, vSkip:false }); crStatus(''); renderCreate(); };
+  el('crText').addEventListener('input', e => { CR.text = e.target.value; crGrow(); });
+  el('crText').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)){ e.preventDefault(); el('crGo').click(); } });
+  el('crFmt').onclick = () => crOpenMenu(el('crFmt'), 'format');
+  el('crTxt').onclick = () => crOpenMenu(el('crTxt'), 'text');
+  el('crOwn').addEventListener('input', e => { CR.hookWords = e.target.value; });
+  if (!CR.textMode || CR.textMode === 'zen' || CR.textMode === 'own') CR.textMode = 'ad';
+  el('crMod').onclick = () => crOpenMenu(el('crMod'), 'model');
+  el('crQual').onclick = () => crOpenMenu(el('crQual'), 'quality');
+  box.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { CR.mode = b.dataset.mode; if (CR.mode === 'image') CR.vSrc = null; crStatus(''); renderCreate(); });
   if (!CR.brand){
     const br = BRAND ? { ok:true, brand: BRAND } : await zen('brand_get', {}, 30000);
     if (br.ok){ BRAND = br.brand; CR.brand = { name: br.brand.name || tenantName, tone: br.brand.tone, look: br.brand.look, colors: br.brand.colors, rules: br.brand.rules }; }
@@ -2127,106 +3007,222 @@ async function createView(){
     CR.models = mj.ok && Array.isArray(mj.models) ? mj.models : [];
     const first = CR.models.find(m => m.key === mj.default_model && m.available) || CR.models.find(m => m.available) || CR.models[0];
     if (first){ CR.modelKey = first.key; CR.sizeKey = first.default_size; }
+    CR.vModels = mj.ok && Array.isArray(mj.video_models) ? mj.video_models : [];
+    const vf = CR.vModels.find(m => m.available) || CR.vModels[0];
+    if (vf && !CR.vKey){ CR.vKey = vf.key; CR.vSecs = vf.default_duration; }
   }
   if (!el('crText')) return;                                 // you moved on while Create was loading
   crShowUsage();
   studio('recover', { tenant_id: tenant }, 120000).then(r => {
-    if (r.ok && r.recovered && el('crStatus') && !el('crStatus').textContent) crStatus(r.recovered + ' earlier image' + (r.recovered === 1 ? '' : 's') + ' finished while you were away and ' + (r.recovered === 1 ? 'is' : 'are') + ' in your Library.');
+    if (r.ok && r.recovered && el('crStatus') && !el('crStatus').textContent) crStatus(r.recovered + ' earlier result' + (r.recovered === 1 ? '' : 's') + ' finished while you were away and ' + (r.recovered === 1 ? 'is' : 'are') + ' in your Library.');
   });
-  // A request from Home arrives filled in, never auto-generated: you see the settings and credits, then press Generate.
+  if (!CR.latest) studio('list_assets', { tenant_id: tenant, kind: 'generated', limit: 6 }, 15000).then(j => {
+    CR.latest = (j.ok && Array.isArray(j.assets) ? j.assets : []).find(a => (a.media || 'image') === 'image') || false;
+    if (!CR.versions.length) renderCreateResults();
+  });
   if (CR.autoSend){
     const a = CR.autoSend; CR.autoSend = null;
-    if (a.aspect && ASPECTS.some(x => x[0] === a.aspect)) CR.aspect = a.aspect;
-    el('crText').value = CR.text = a.text || '';
-    renderCreate(); crStatus('From Home. Check the settings, then press Generate.');
+    if (a.mode === 'video') CR.mode = 'video';
+    const p = PURPOSES.find(x => x[2] === a.aspect); if (p) CR.purpose = p[0];
+    CR.text = a.text || '';
+    renderCreate(); crStatus('From Home. Check it, then press Make.');
     el('crGo').focus();
   } else renderCreate();
   CR.versions.forEach(v => { if (v.status === 'running' || v.status === 'starting') crPoll(v.id); });
+  document.addEventListener('click', crMenuOutside, true);
 }
+function crMenuOutside(e){ const m = el('crMenu'); if (m && !m.hidden && !m.contains(e.target) && !e.target.closest('#crFmt,#crTxt,#crMod,#crQual,#crAddPhoto,#crAddIdea')) m.hidden = true; }
+function crGrow(){ const t = el('crText'); if (!t) return; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 220) + 'px'; }
 
+// Attachments: two labelled tiles, always visible. Empty = what you can add; filled = the picture and what it does.
+function crTiles(vid){
+  const start = vid && CR.vSrc ? CR.vSrc : null;
+  const photo = start ? { name: start.name, url: start.url } : CR.image ? { name: CR.image.kind === 'upload' ? 'Your photo' : 'Your picture', url: CR.image.url } : null;
+  const ideaUsed = !(vid && photo);
+  const t = [];
+  t.push(photo
+    ? '<div class="ctile on"><img src="' + esc(photo.url) + '" alt=""><div><b>' + esc(photo.name) + '</b><small>' + (vid ? 'Starting picture \u00B7 the video begins here' : 'Your photo \u00B7 kept as it is') + '</small>' +
+      (!start && CR.image && CR.image.kind === 'upload' ? '<label class="ckeep"><input type="checkbox" id="keep_img"' + (CR.image.keep ? ' checked' : '') + '> Keep for next time</label>' : '') +
+      '</div><button type="button" class="cx" data-rm="photo" aria-label="Remove ' + esc(photo.name) + '">\u00D7</button></div>'
+    : '<button type="button" class="ctile add" id="crAddPhoto" aria-haspopup="menu"><span class="ci" aria-hidden="true">+</span><div><b>' + (vid ? 'Add a starting picture' : 'Add your photo') + '</b><small>' + (vid ? 'Optional \u00B7 the video begins from it' : 'Optional \u00B7 kept as it is, e.g. your salon or a product') + '</small></div></button>');
+  if (ideaUsed) t.push(CR.insp
+    ? '<div class="ctile on"><img src="' + esc(CR.insp.url) + '" alt=""><div><b>' + esc(CR.insp.name) + '</b><small>Inspiration \u00B7 <label class="sr" for="crUse">Borrow</label>borrow <select id="crUse" class="csel">' +
+      Object.keys(USE_LABEL).map(k => '<option value="' + k + '"' + (CR.use === k ? ' selected' : '') + '>' + (k === 'everything' ? 'everything' : USE_LABEL[k].replace('Its ', 'its ')) + '</option>').join('') + '</select></small>' +
+      (CR.insp.asset && CR.insp.asset.kind === 'upload' ? '<label class="ckeep"><input type="checkbox" id="keep_insp"' + (CR.insp.asset.keep ? ' checked' : '') + '> Keep for next time</label>' : '') +
+      '</div><button type="button" class="cx" data-rm="idea" aria-label="Remove the inspiration">\u00D7</button></div>'
+    : '<button type="button" class="ctile add" id="crAddIdea" aria-haspopup="menu"><span class="ci" aria-hidden="true">+</span><div><b>Select an inspiration</b><small>Optional \u00B7 borrow the look of an example</small></div></button>');
+  return t.join('');
+}
 function renderCreate(){
-  if (!el('slotImg')) return;                                // Create isn't on screen any more
-  // Your image (optional)
-  el('slotImg').innerHTML = '<div class="slot-h"><b>Your image</b><span class="note">Optional</span></div>' + (CR.image
-    ? '<div class="slot-on"><img src="' + esc(CR.image.url) + '" alt="Your image"><div><span class="note">Kept recognisable.</span><button class="btn btn-q" type="button" id="imgClear">Remove</button></div></div>' + crKeepBox(CR.image, 'img')
-    : '<div class="slot-off"><label class="btn btn-s" for="crFile" style="cursor:pointer">Upload</label><input type="file" id="crFile" accept="image/png,image/jpeg,image/webp" class="sr">' +
-      '<button class="btn btn-q" type="button" id="imgPick">Your photos</button></div>');
-  // Inspiration (optional)
-  el('slotInsp').innerHTML = '<div class="slot-h"><b>Inspiration</b><span class="note">Optional</span></div>' + (CR.insp
-    ? '<div class="slot-on"><img src="' + esc(CR.insp.url) + '" alt="' + esc(CR.insp.name) + '"><div><b>' + esc(CR.insp.name) + '</b><button class="btn btn-q" type="button" id="inspClear">Remove</button></div></div>' + crKeepBox(CR.insp.asset, 'insp') +
-      '<label class="note" for="crUse">Borrow</label><select id="crUse" class="crsel">' + Object.keys(USE_LABEL).map(k => '<option value="' + k + '"' + (CR.use === k ? ' selected' : '') + '>' + USE_LABEL[k] + '</option>').join('') + '</select>'
-    : '<div class="slot-off"><button class="btn btn-s" type="button" id="inspPick">Browse ideas</button><label class="btn btn-q" for="crRefFile" style="cursor:pointer">Upload a reference</label><input type="file" id="crRefFile" accept="image/png,image/jpeg,image/webp" class="sr">' +
-      '<button class="btn btn-q" type="button" id="refPick">Your references</button></div>');
+  if (!el('crText')) return;
+  const vid = CR.mode === 'video', pu = purposeOf();
+  CR.aspect = pu[2];
+  if (el('crText').value !== (CR.text || '')) el('crText').value = CR.text || '';
+  el('crText').placeholder = vid ? 'Describe what should happen in the video\u2026' : 'Describe what you want to make\u2026';
+  crGrow();
+  document.querySelectorAll('#mkt [data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === (vid ? 'video' : 'image'))));
+  el('crAtt').innerHTML = crTiles(vid);
+  el('crAtt').querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { if (b.dataset.rm === 'idea') CR.insp = null; else { CR.image = null; CR.vSrc = null; } renderCreate(); });
+  if (el('crAddPhoto')) el('crAddPhoto').onclick = () => crOpenMenu(el('crAddPhoto'), 'photo');
+  if (el('crAddIdea')) el('crAddIdea').onclick = () => crOpenMenu(el('crAddIdea'), 'idea');
   if (el('crUse')) el('crUse').onchange = e => { CR.use = e.target.value; };
   ['img', 'insp'].forEach(k => { const cb = el('keep_' + k); if (cb) cb.onchange = () => crSetKeep(k === 'img' ? CR.image : CR.insp.asset, cb); });
-  if (el('imgClear')) el('imgClear').onclick = () => { CR.image = null; renderCreate(); };
-  if (el('inspClear')) el('inspClear').onclick = () => { CR.insp = null; renderCreate(); };
-  if (el('crFile')) el('crFile').onchange = e => crUpload(e.target.files[0], 'creative');
-  if (el('crRefFile')) el('crRefFile').onchange = e => crUpload(e.target.files[0], 'reference');
-  if (el('imgPick')) el('imgPick').onclick = () => crPicker('mine');
-  if (el('inspPick')) el('inspPick').onclick = () => inspView({ pick: true });
-  if (el('refPick')) el('refPick').onclick = () => crPicker('refs');
-
-  // Settings line
-  const z0 = crSize(), m0 = crModel();
-  el('crOpts').innerHTML = '<span>' + esc((ASPECTS.find(a => a[0] === CR.aspect) || ['', ''])[1]) + ' \u00B7 ' + esc(m0 ? m0.label : 'No model') + ' \u00B7 ' + esc(z0 ? z0.label : '') +
-    (CR.useBrand ? ' \u00B7 My brand' : '') + '</span><em>' + (CR.optsOpen ? 'Hide' : 'Change') + ' \u25BE</em>';
-  el('crOpts').setAttribute('aria-expanded', String(!!CR.optsOpen));
-  el('crSet').hidden = !CR.optsOpen;
-  el('crOpts').onclick = () => { CR.optsOpen = !CR.optsOpen; if (!CR.optsOpen) CR.modelsOpen = false; renderCreate(); };
-  el('crOptsDone').onclick = () => { CR.optsOpen = false; CR.modelsOpen = false; renderCreate(); };
-  el('crAspect').innerHTML = ASPECTS.map(([k, l]) => '<button class="filter" type="button" data-ar="' + k + '" aria-pressed="' + (CR.aspect === k) + '">' + l + '</button>').join('');
-  el('crAspect').querySelectorAll('[data-ar]').forEach(b => b.onclick = () => { CR.aspect = b.dataset.ar; renderCreate(); });
-  const models = CR.models || [];
-  if (!CR.modelsOpen && m0){
-    el('crModels').innerHTML = '<button class="mopt mcur" type="button" id="crModelOpen" aria-expanded="false"><b>' + esc(m0.label) + '</b><span>' + esc(m0.description) + '</span><em>Change \u25BE</em></button>';
-    el('crModelOpen').onclick = () => { CR.modelsOpen = true; renderCreate(); };
-  } else {
-    el('crModels').innerHTML = models.length ? models.map(m => '<button class="mopt" type="button" data-model="' + esc(m.key) + '" aria-pressed="' + (CR.modelKey === m.key) + '"' + (m.available ? '' : ' disabled') + '>' +
-      '<b>' + esc(m.label) + '</b><span>' + esc(m.description) + '</span><em>' + (m.available ? 'From ' + Math.min(...m.sizes.map(z => z.credits)) + ' credits' : 'Not set up yet') + '</em></button>').join('')
-      : '<span class="note">Models couldn\u2019t be loaded.</span>';
-    el('crModels').querySelectorAll('[data-model]').forEach(b => b.onclick = () => {
-      const m = models.find(x => x.key === b.dataset.model); CR.modelKey = m.key; CR.modelsOpen = false;
-      if (!m.sizes.some(z => z.key === CR.sizeKey)) CR.sizeKey = m.default_size;
-      renderCreate();
-    });
-  }
-  el('crSizes').innerHTML = m0 ? m0.sizes.map(z => '<button class="filter" type="button" data-size="' + esc(z.key) + '" aria-pressed="' + (CR.sizeKey === z.key) + '">' +
-    esc(z.label) + ' \u00B7 ' + z.credits + ' credits</button>').join('') + '<span class="note szd">' + esc((z0 || {}).detail || '') + '</span>' : '';
-  el('crSizes').querySelectorAll('[data-size]').forEach(b => b.onclick = () => { CR.sizeKey = b.dataset.size; renderCreate(); });
-  el('crBrand').checked = !!CR.useBrand;
-  el('crBrand').onchange = e => { CR.useBrand = e.target.checked; renderCreate(); };
-
-  // The one button: always says what it will cost
-  const ok = m0 && m0.available;
-  el('crGo').disabled = CR.busy || !ok;
-  el('crGo').innerHTML = CR.busy ? '<span class="spin"></span>Starting\u2026' : ok ? 'Generate \u00B7 ' + crCredits() + ' credits' : 'No image model available';
+  // Labelled buttons: format, model, and quality with its credits
+  const m0 = crModel(), z0 = crSize(), p = crVPlan();
+  const shape = vid && p ? p.aspect : CR.aspect;
+  el('crFmt').innerHTML = esc(vid && p && shape !== CR.aspect ? (PURPOSES.find(x => x[2] === shape) || ['', shape])[1] : pu[1]) + ' \u00B7 ' + esc(shape) + ' <em aria-hidden="true">\u25BE</em>';
+  el('crTxt').hidden = vid;
+  el('crTxt').innerHTML = 'Text: ' + (CR.textMode === 'none' ? 'none' : 'Zen designs it') + ' <em aria-hidden="true">\u25BE</em>';
+  el('crOwnRow').hidden = vid || CR.textMode === 'none';
+  if (el('crOwn').value !== (CR.hookWords || '')) el('crOwn').value = CR.hookWords || '';
+  el('crMod').innerHTML = esc(vid ? (p ? p.m.label : 'No video model') : (m0 ? m0.label : 'No model')) + (CR.useBrand && !vid ? ' \u00B7 my brand' : '') + ' <em aria-hidden="true">\u25BE</em>';
+  el('crQual').innerHTML = (vid ? (p ? esc(p.secs + ' s \u00B7 ' + (V_QUALITY[p.res] || p.res) + (p.sound ? ' \u00B7 sound' : '')) + ' \u00B7 <b>' + p.credits + ' credits</b>' : '')
+    : (z0 ? esc(z0.label) + ' \u00B7 <b>' + z0.credits + ' credits</b>' : '')) + ' <em aria-hidden="true">\u25BE</em>';
+  el('crQual').setAttribute('aria-label', 'Quality and credits: ' + el('crQual').textContent.replace('\u25BE', '').trim() + '. Change');
+  // The one button
+  const photoOn = vid ? !!(CR.vSrc || CR.image) : !!CR.image;
+  const firstFrame = vid && !photoOn && !CR.vSkip;
+  const imgOk = m0 && m0.available, vidOk = p && p.m.available;
+  el('crGo').disabled = CR.busy || (vid ? !(firstFrame ? imgOk : vidOk) : !imgOk);
+  el('crGo').innerHTML = CR.busy ? '<span class="spin"></span>Starting\u2026'
+    : vid ? (firstFrame ? 'Make first frame \u00B7 ' + crCredits() + ' credits' : vidOk ? 'Make video \u00B7 ' + p.credits + ' credits' : 'No video model')
+    : imgOk ? 'Make \u00B7 ' + crCredits() + ' credits' : 'No image model';
+  el('crGo').title = vid && firstFrame ? 'No starting picture yet: Zen makes the first frame for you to check, then you animate it.' : '';
+  el('crGo').onclick = () => vid ? (firstFrame ? crFirstFrame() : crMakeVideo()) : crCreate({});
   renderCreateResults();
 }
+// Menus: photo, idea, format, model, quality (with credits).
+function crOpenMenu(btn, kind){
+  const m = el('crMenu');
+  if (!m.hidden && m.dataset.kind === kind){ m.hidden = true; return; }
+  const vid = CR.mode === 'video', p = crVPlan();
+  const item = (id, label, sub, on) => '<button type="button" role="menuitem" data-mi="' + id + '"' + (on ? ' aria-current="true"' : '') + '><span>' + label + (on ? ' \u2713' : '') + '</span>' + (sub ? '<small>' + sub + '</small>' : '') + '</button>';
+  const upl = (id, label) => '<label class="mi" role="menuitem" for="' + id + '"><span>' + label + '</span><input type="file" id="' + id + '" accept="image/png,image/jpeg,image/webp" class="sr"></label>';
+  let html = '';
+  if (kind === 'photo') html = '<p class="mh">' + (vid ? 'Starting picture' : 'Your photo') + ' <small>' + (vid ? 'the video begins from it' : 'kept as it is in the result') + '</small></p>' +
+    upl('crFile', 'Upload from this device') + item('mine', 'Your saved photos') + item('lib', 'From your Library', 'Pictures you made before');
+  if (kind === 'idea') html = '<p class="mh">Inspiration <small>Zen borrows its look; it\u2019s never posted</small></p>' +
+    item('browse', 'Browse inspirations', 'Hundreds of examples, by goal and mood') + item('refs', 'Your saved references') + upl('crRefFile', 'Upload a reference');
+  if (kind === 'text') html = '<p class="mh">Text on the image <small>so people see what it\u2019s for</small></p>' +
+    item('text_ad', 'Zen designs the text', 'Words, layout and style that suit your request, with your business name. Add anything that must appear.', CR.textMode !== 'none') +
+    item('text_none', 'No text', 'Just the picture', CR.textMode === 'none');
+  if (kind === 'format') html = '<p class="mh">What is it for?</p>' + PURPOSES.filter(x => !vid || !p || p.m.aspects.includes(x[2])).map(([k, l, a]) => item('fmt_' + k, l, a, CR.purpose === k)).join('') +
+    (vid ? '<p class="mh"><small>Videos come in 9:16 or 16:9.</small></p>' : '');
+  if (kind === 'model'){
+    if (!vid) html = '<p class="mh">Model</p>' + (CR.models || []).map(x => x.available ? item('model_' + x.key, esc(x.label), esc(x.description) + ' \u00B7 from ' + Math.min(...x.sizes.map(z => z.credits)) + ' credits', CR.modelKey === x.key) : '').join('') +
+      '<label class="mi mchk"><input type="checkbox" id="crBrand"' + (CR.useBrand ? ' checked' : '') + '><span>Use my brand<small>Send your colours, tone and brand rules with the request</small></span></label>';
+    else html = '<p class="mh">Video model</p>' + (CR.vModels || []).map(x => x.available ? item('vm_' + x.key, esc(x.label), esc(x.description) + ' \u00B7 from ' + Math.min(...Object.values(x.credits)) + ' credits', CR.vKey === x.key) : '').join('');
+  }
+  if (kind === 'quality'){
+    if (!vid){ const m0 = crModel();
+      html = '<p class="mh">Quality <small>higher costs more credits</small></p>' + (m0 ? m0.sizes.map(z => item('size_' + z.key, esc(z.label) + ' \u00B7 ' + z.credits + ' credits', esc(z.detail || ''), CR.sizeKey === z.key)).join('') : '');
+    } else if (p){
+      const cr = (r, d, s) => p.m.credits[r + '|' + (p.m.hd_needs_longest && r !== p.m.resolutions[0] ? Math.max(...p.m.durations) : d) + '|' + (s ? 1 : 0)];
+      html = '<p class="mh">Length <small>longer costs more credits</small></p>' + p.m.durations.map(d => {
+          const locked = p.m.hd_needs_longest && p.res !== p.m.resolutions[0] && d !== Math.max(...p.m.durations);
+          return locked ? '' : item('len_' + d, d + ' seconds \u00B7 ' + cr(p.res, d, p.sound) + ' credits', '', p.secs === d); }).join('') +
+        '<p class="mh">Quality</p>' + p.m.resolutions.map(r => item('res_' + r, esc(V_QUALITY[r] || r) + ' \u00B7 ' + r, (p.m.hd_needs_longest && r !== p.m.resolutions[0] ? 'Only at ' + Math.max(...p.m.durations) + ' seconds \u00B7 ' : '') + cr(r, p.secs, p.sound) + ' credits', p.res === r)).join('') +
+        (p.m.sound === 'optional' ? '<label class="mi mchk"><input type="checkbox" id="vSound"' + (p.sound ? ' checked' : '') + '><span>Sound<small>Music and natural sounds \u00B7 ' + cr(p.res, p.secs, true) + ' credits with, ' + cr(p.res, p.secs, false) + ' without</small></span></label>' : '<p class="mh"><small>Sound is always included with this model.</small></p>') +
+        '<label class="mi mchk"><input type="checkbox" id="vsSkip"' + (CR.vSkip ? ' checked' : '') + '><span>No starting picture<small>Make the video straight from words; less control over the look</small></span></label>';
+    }
+  }
+  m.innerHTML = html; m.dataset.kind = kind; m.hidden = false;
+  // Opens where there's room: below the button when the space above is short, otherwise above. Never off-screen.
+  const r = btn.getBoundingClientRect(), need = Math.min(m.scrollHeight || 320, 420);
+  const above = r.top - 16, below = innerHeight - r.bottom - 16;
+  m.style.position = 'fixed'; m.style.overflowY = 'auto';
+  m.style.left = Math.max(8, Math.min(r.left, innerWidth - 300)) + 'px';
+  if (above >= need || above > below){ m.style.top = ''; m.style.bottom = (innerHeight - r.top + 6) + 'px'; m.style.maxHeight = Math.max(160, above) + 'px'; }
+  else { m.style.bottom = ''; m.style.top = (r.bottom + 6) + 'px'; m.style.maxHeight = Math.max(160, below) + 'px'; }
+  const done = () => { m.hidden = true; };
+  m.querySelectorAll('[data-mi]').forEach(b => b.onclick = () => {
+    const a = b.dataset.mi; done();
+    if (a.startsWith('text_')){ CR.textMode = a.slice(5); renderCreate(); if (CR.textMode === 'ad') el('crOwn').focus(); return; }
+    if (a.startsWith('fmt_')) CR.purpose = a.slice(4);
+    else if (a.startsWith('model_')){ const x = CR.models.find(y => y.key === a.slice(6)); CR.modelKey = x.key; if (!x.sizes.some(z => z.key === CR.sizeKey)) CR.sizeKey = x.default_size; }
+    else if (a.startsWith('vm_')) CR.vKey = a.slice(3);
+    else if (a.startsWith('size_')) CR.sizeKey = a.slice(5);
+    else if (a.startsWith('len_')) CR.vSecs = +a.slice(4);
+    else if (a.startsWith('res_')) CR.vRes = a.slice(4);
+    else if (a === 'browse'){ CR.keep = true; inspView({ pick: true }); return; }
+    else if (a === 'refs'){ crPicker('refs'); return; }
+    else if (a === 'mine'){ crPicker('mine'); return; }
+    else if (a === 'lib'){ CR.keep = true; go('gallery'); return; }
+    renderCreate();
+  });
+  if (el('crFile')) el('crFile').onchange = e => { done(); crUpload(e.target.files[0], 'creative'); };
+  if (el('crRefFile')) el('crRefFile').onchange = e => { done(); crUpload(e.target.files[0], 'reference'); };
+  if (el('crBrand')) el('crBrand').onchange = e => { CR.useBrand = e.target.checked; renderCreate(); };
+  if (el('vSound')) el('vSound').onchange = e => { CR.vSound = e.target.checked; renderCreate(); crOpenMenu(el('crQual'), 'quality'); crOpenMenu(el('crQual'), 'quality'); };
+  if (el('vsSkip')) el('vsSkip').onchange = e => { CR.vSkip = e.target.checked; renderCreate(); };
+  const f = m.querySelector('[data-mi],label'); if (f) f.focus();
+}
 
+// Where to start, from the business's own data: its services, and its latest picture.
+function crSuggestions(){
+  const svcs = (BRAND && Array.isArray(BRAND.services) ? BRAND.services : []).filter(s => s && s.name);
+  const pick = svcs.find(s => /package|first|birthday|princess|prince/i.test(s.name)) || svcs[0];
+  const out = [];
+  if (pick) out.push({ t: pick.name + ' post', d: 'From your price list' + (pick.price ? ' \u00B7 ' + pick.price : ''), purpose: 'post', mode: 'image',
+    text: 'An Instagram post for our ' + pick.name + (pick.price ? ' (' + pick.price + ')' : '') + ': a happy child and a proud parent, bright and warm.' });
+  out.push({ t: 'A story for this week', d: 'Story or Reel \u00B7 9:16', purpose: 'story', mode: 'image',
+    text: 'A story inviting parents to book this week on WhatsApp: a smiling child in the salon chair, space at the top for one short line.' });
+  if (CR.latest) out.push({ t: 'Animate your latest picture', d: 'A short Reel from your Library', purpose: 'story', mode: 'video', start: CR.latest,
+    text: 'Gentle, natural movement and a slow push-in.' });
+  return out;
+}
+
+// The box sits at the bottom, so the newest result is just above it: scroll to the end of the page.
+function crScrollEnd(){ requestAnimationFrame(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' })); }
+function crShowNewest(){ CR.follow = false; requestAnimationFrame(() => { const r = el('crResults'); if (r) r.scrollIntoView({ behavior: 'smooth', block: 'start' }); }); }
+const crNearBottom = () => window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 160;
 const crNum = id => { const i = CR.versions.findIndex(v => v.id === id); return i < 0 ? '?' : CR.versions.length - i; };
 
 function renderCreateResults(){
   const r = el('crResults'); if (!r) return;
-  if (!CR.versions.length){ r.innerHTML = '<div class="crempty"><b>Your images appear here.</b><span>Each result can be changed by saying what to change, or used as inspiration for the next one.</span></div>'; return; }
-  r.innerHTML = '<div class="crgrid">' + CR.versions.map(v => {
-    const n = crNum(v.id), parent = v.parent_id ? ' \u00B7 changed from v' + crNum(v.parent_id) : '';
+  if (!CR.versions.length){
+    const sg = crSuggestions();
+    r.innerHTML = '<div class="csug"><p class="mh">Or start from a suggestion</p><div class="csug-g">' + sg.map((x, k) => '<button type="button" class="cs" data-sg="' + k + '"><b>' + esc(x.t) + '</b><span>' + esc(x.d) + '</span></button>').join('') + '</div></div>';
+    r.querySelectorAll('[data-sg]').forEach(b => b.onclick = () => {
+      const x = sg[+b.dataset.sg]; CR.purpose = x.purpose; CR.mode = x.mode; CR.text = x.text;
+      if (x.start) CR.vSrc = { asset_id: x.start.id, url: x.start.url, name: (x.start.brief || 'Your latest picture').slice(0, 40) };
+      renderCreate(); el('crText').focus(); crStatus('Filled in for you. Change anything, then press Make.');
+    });
+    return;
+  }
+  // The newest result goes on the stage automatically; tapping a version in the strip puts it there.
+  if (CR.versions.length !== CR._seen){ CR._seen = CR.versions.length; CR.sel = CR.versions[0].id; }
+  const sel = CR.versions.find(x => x.id === CR.sel) || CR.versions[0];
+  if (sel.status === 'succeeded' && sel.asset && sel.media !== 'video' && !CR.open[sel.id]) CR.open = { [sel.id]: 'change' };
+  const thumb = v => '<button type="button" class="cthumb" data-sel="' + esc(v.id) + '" aria-pressed="' + (v.id === sel.id) + '" aria-label="Show result ' + crNum(v.id) + '">' +
+    (v.status === 'succeeded' && v.asset ? '<img src="' + esc(v.media === 'video' ? (v.asset.poster_url || v.asset.url) : v.asset.url) + '" alt="">' : '<span class="cthumb-wait">' + (v.status === 'failed' ? '!' : '\u2026') + '</span>') +
+    '<span class="cthumb-l">' + (v.media === 'video' ? '\u25B6 ' : '') + crNum(v.id) + (v.parent_id ? ' <small>from ' + crNum(v.parent_id) + '</small>' : '') + '</span></button>';
+  r.innerHTML = '<div class="crgrid cstage">' + [sel].map(v => {
+    const n = crNum(v.id), parent = v.parent_id ? ' \u00B7 changed from result ' + crNum(v.parent_id) : '';
     const ratio = String(v.aspect_ratio || (v.asset && v.asset.width ? v.asset.width + '/' + v.asset.height : '4/5')).replace(':', '/');
-    const media = v.status === 'succeeded' && v.asset
+    const isVid = v.media === 'video';
+    const media = isVid && v.status === 'succeeded' && v.asset
+      ? '<video src="' + esc(v.asset.url) + '" controls playsinline preload="metadata"' + (v.asset.poster_url ? ' poster="' + esc(v.asset.poster_url) + '"' : '') + ' style="aspect-ratio:' + esc(ratio) + '" aria-label="Video ' + n + '"></video>'
+      : v.status === 'succeeded' && v.asset
       ? '<img src="' + esc(v.asset.url) + '" alt="Version ' + n + '" loading="lazy"' + (v.asset.width && v.asset.height ? ' style="aspect-ratio:' + v.asset.width + '/' + v.asset.height + '"' : '') + '>'
       : v.status === 'failed' ? '<div class="crstate bad">' + esc(v.error || 'This one didn\u2019t come out.') + '</div>'
-      : '<div class="crstate" style="aspect-ratio:' + esc(ratio) + '"><div class="thinking"><span class="pulse"></span><span>Making it\u2026 ' + (v.size_key === 'max' ? 'Max can take a few minutes' : 'usually under a minute') + '. You can leave; it\u2019ll be saved to your Library.</span></div></div>';
-    const used = [v.model_label, v.size_key ? v.size_key.charAt(0).toUpperCase() + v.size_key.slice(1) : '', v.credits != null ? v.credits + ' credits' : ''].filter(Boolean).join(' \u00B7 ');
+      : '<div class="crstate" style="aspect-ratio:' + esc(ratio) + '"><div class="thinking"><span class="pulse"></span><span>' + (isVid ? 'Making the video\u2026 usually 1\u20133 minutes' : 'Making it\u2026 ' + (v.size_key === 'max' ? 'Max can take a few minutes' : 'usually under a minute')) + '. You can leave; it\u2019ll be saved to your Library.</span></div></div>';
+    const used = (isVid ? [v.model_label, v.duration_s ? v.duration_s + ' s' : '', v.resolution, v.sound ? 'with sound' : 'no sound', v.credits != null ? v.credits + ' credits' : '']
+      : [v.model_label, v.size_key ? v.size_key.charAt(0).toUpperCase() + v.size_key.slice(1) : '', v.credits != null ? v.credits + ' credits' : '']).filter(Boolean).join(' \u00B7 ');
     const o = CR.open[v.id] || '';
     const done = v.status === 'succeeded' && v.asset;
-    return '<div class="crcard" data-v="' + esc(v.id) + '">' + media + '<div class="crmeta"><b>v' + n + parent + '</b>' + (used ? '<span class="used">' + esc(used) + '</span>' : '') + '</div>' +
+    return '<div class="crcard" data-v="' + esc(v.id) + '">' + media + '<div class="crmeta"><b>Result ' + n + parent + '</b>' + (used ? '<span class="used">' + esc(used) + '</span>' : '') +
+      (v.status === 'running' || v.status === 'starting' ? '<span class="note cwait">' + (isVid ? 'Making the video, usually 1\u20133 minutes.' : 'Making it, usually under a minute.') + ' You can leave; it\u2019ll be saved to your Library.</span>' : '') + '</div>' +
       (o === 'change'
-        ? '<div class="change"><label class="note" for="ch_' + esc(v.id) + '">What should change?</label><textarea id="ch_' + esc(v.id) + '" rows="2" placeholder="e.g. warmer light, bigger jar"></textarea>' +
-          '<div class="actions"><button class="btn btn-p" type="button" data-chgo="' + esc(v.id) + '">Generate \u00B7 ' + crCredits() + ' credits</button><button class="btn btn-q" type="button" data-close="' + esc(v.id) + '">Cancel</button></div></div>'
-        : done ? '<div class="actions"><button class="btn btn-s" type="button" data-change="' + esc(v.id) + '">Change it</button>' +
+        ? '<div class="change"><label class="note" for="ch_' + esc(v.id) + '">Tell Zen what to change</label><textarea id="ch_' + esc(v.id) + '" rows="2" placeholder="e.g. warmer light, bigger bottle, add a balloon"></textarea>' +
+          '<div class="actions"><button class="btn btn-p" type="button" data-chgo="' + esc(v.id) + '">Make \u00B7 ' + crCredits() + ' credits</button></div></div>' + (done ? '<div class="actions sub"><button class="btn btn-s" type="button" data-tovid="' + esc(v.id) + '">Make a video</button><button class="btn btn-s" type="button" data-promo="' + esc(v.id) + '">Promote as an ad</button><button class="btn btn-q" type="button" data-asinsp="' + esc(v.id) + '">Use as inspiration</button><a class="btn btn-q" href="' + esc(v.asset.url) + '" target="_blank" rel="noopener">Full size</a></div>' : '')
+        : done && isVid ? '<div class="actions"><a class="btn btn-s" href="' + esc(v.asset.url) + '" download target="_blank" rel="noopener">Download</a></div>'
+        : done ? '<div class="actions"><button class="btn btn-s" type="button" data-change="' + esc(v.id) + '">Change something</button><button class="btn btn-s" type="button" data-tovid="' + esc(v.id) + '">Make a video</button><button class="btn btn-s" type="button" data-promo="' + esc(v.id) + '">Promote as an ad</button>' +
           '<button class="btn btn-q" type="button" data-asinsp="' + esc(v.id) + '">Use as inspiration</button>' +
           '<a class="btn btn-q" href="' + esc(v.asset.url) + '" target="_blank" rel="noopener">Full size</a></div>' : '') + '</div>';
-  }).join('') + '</div>';
+  }).join('') + '</div>' +
+  (CR.versions.length > 1 ? '<div class="cstrip" role="group" aria-label="All versions">' + CR.versions.map(thumb).join('') + '</div>' : '');
+  r.querySelectorAll('[data-sel]').forEach(b => b.onclick = () => { CR.sel = b.dataset.sel; CR.open = {}; renderCreateResults(); });
   r.querySelectorAll('[data-change]').forEach(b => b.onclick = () => { CR.open = { [b.dataset.change]: 'change' }; renderCreateResults(); el('ch_' + b.dataset.change).focus(); });
   r.querySelectorAll('[data-pedit]').forEach(b => b.onclick = () => { CR.open = { [b.dataset.pedit]: 'edit' }; renderCreateResults(); el('pe_' + b.dataset.pedit).focus(); });
   r.querySelectorAll('[data-close]').forEach(b => b.onclick = () => { CR.open = {}; renderCreateResults(); });
@@ -2238,11 +3234,63 @@ function renderCreateResults(){
     const t = el('pe_' + b.dataset.pgo).value.trim(); if (!t) return;
     CR.open = {}; crCreate({ prompt: t });
   });
+  r.querySelectorAll('[data-tovid]').forEach(b => b.onclick = () => {
+    const v = CR.versions.find(x => x.id === b.dataset.tovid);
+    CR.mode = 'video'; CR.vSrc = { version_id: v.id, url: v.asset.url, name: 'Result ' + crNum(v.id) }; CR.text = '';
+    renderCreate(); el('crText').scrollIntoView({ block: 'center', behavior: 'smooth' });
+    crStatus('Result ' + crNum(v.id) + ' is the first frame. Say what should happen, or leave it to Zen, then press Make video.');
+    el('crText').focus();
+  });
+  r.querySelectorAll('[data-promo]').forEach(b => b.onclick = () => {
+    const v = CR.versions.find(x => x.id === b.dataset.promo);
+    go('home'); send('Promote this picture as a WhatsApp ad', { context: { image_url: v.asset.url, image_name: (v.brief || 'Result ' + crNum(v.id)).slice(0, 60) } });
+  });
   r.querySelectorAll('[data-asinsp]').forEach(b => b.onclick = () => {
     const v = CR.versions.find(x => x.id === b.dataset.asinsp);
-    CR.insp = { type:'asset', asset_id: v.asset.id, name: 'v' + crNum(v.id), url: v.asset.url }; renderCreate();
-    crStatus('v' + crNum(v.id) + ' is now your inspiration.');
+    CR.insp = { type:'asset', asset_id: v.asset.id, name: 'Result ' + crNum(v.id), url: v.asset.url }; renderCreate();
+    el('crText').scrollIntoView({ block: 'center', behavior: 'smooth' }); crStatus('Result ' + crNum(v.id) + ' is now the inspiration for your next one.');
   });
+}
+
+// ---------- Video in Create ----------
+// Best route: start from a picture (your photo, the Library, or a result just made), so the look is fixed
+// before paying for motion. Without one, Zen makes the first frame first; or skip it for a loose clip.
+const V_QUALITY = { '720p': 'Standard', '1080p': 'High' };
+const crVModel = () => (CR.vModels || []).find(m => m.key === CR.vKey);
+function crVPlan(){
+  const m = crVModel(); if (!m) return null;
+  const res = m.resolutions.includes(CR.vRes) ? CR.vRes : m.resolutions[0];
+  let secs = m.durations.includes(CR.vSecs) ? CR.vSecs : m.default_duration;
+  if (m.hd_needs_longest && res !== m.resolutions[0]) secs = Math.max(...m.durations);
+  const sound = m.sound === 'always' ? true : CR.vSound !== false;
+  const aspect = m.aspects.includes(CR.aspect) ? CR.aspect : m.aspects[0];
+  return { m, res, secs, sound, aspect, credits: m.credits[res + '|' + secs + '|' + (sound ? 1 : 0)] };
+}
+// Step 1 without a picture: an image in the video's shape, which the owner checks, then animates.
+function crFirstFrame(){
+  const t = (CR.text || '').trim();
+  if (!t && !CR.insp){ crStatus('Say what the video should show, or choose an inspiration or a photo.', true); el('crText').focus(); return; }
+  const p = crVPlan(); const shape = p ? p.aspect : '9:16';
+  crStatus('Step 1 of 2: the first frame. When it looks right, press \u201cMake a video\u201d on it.');
+  crCreate({ text: t, aspect: shape, noText: true });
+}
+async function crMakeVideo(){
+  const p = crVPlan(); if (!p) return;
+  const text = (CR.text || '').trim();
+  const fromVersion = CR.vSrc && CR.vSrc.version_id || null, fromAsset = CR.vSrc && CR.vSrc.asset_id || (CR.image ? CR.image.id : null);
+  if (!fromVersion && !fromAsset && !text){ crStatus('Say what the video should show, or choose a photo to start from.', true); el('crText').focus(); return; }
+  CR.busy = true; crStatus(''); renderCreate();
+  const body = { tenant_id: tenant, session_id: CR.session, text, model_key: p.m.key, seconds: p.secs, resolution: p.res, aspect_ratio: p.aspect, sound: p.sound,
+    from_asset_id: fromVersion ? null : fromAsset, from_version_id: fromVersion };
+  const visit = CR.visit;
+  const j = await studio('make_video', body, 120000);
+  if (CR.visit !== visit) return;
+  CR.busy = false;
+  if (!j.ok){ renderCreate(); crStatus(j.error, true); return; }
+  CR.session = j.session_id; CR.text = '';
+  CR.versions.unshift(j.version); renderCreate(); crShowNewest();
+  crStatus('Making your video. Usually 1\u20133 minutes; you can leave and it\u2019ll be saved to your Library.');
+  if (j.version.status !== 'failed') crPoll(j.version.id);
 }
 
 // Uploads are kept only if you tick "Keep for next time"; otherwise they're removed after 30 days.
@@ -2265,35 +3313,44 @@ async function crSetKeep(asset, cb){
 // One press of Generate (or "Change it", or "Generate with this prompt").
 async function crCreate(extra){
   const m = crModel(); if (!m || !m.available){ crStatus('No image model is available right now. Ask your Zen admin to set one up.', true); return; }
-  const text = extra.text != null ? extra.text : el('crText').value.trim();
+  const text = extra.text != null ? extra.text : (CR.text || '').trim();
   if (!text && !CR.image && !CR.insp && !extra.prompt){ crStatus('Describe what you want, or add an image.', true); el('crText').focus(); return; }
+  // 'Zen designs the text' never needs words; anything typed must appear exactly.
   CR.busy = true; crStatus(''); renderCreate();
   const body = {
-    tenant_id: tenant, session_id: CR.session, text, aspect_ratio: CR.aspect, use: [CR.use], model_key: CR.modelKey, size_key: CR.sizeKey,
+    tenant_id: tenant, session_id: CR.session, text, aspect_ratio: extra.aspect || CR.aspect, use: [CR.use], model_key: CR.modelKey, size_key: CR.sizeKey,
     use_brand: !!CR.useBrand, brand: CR.useBrand ? CR.brand : undefined,
     image_asset_id: extra.parent_version_id ? null : (CR.image ? CR.image.id : null),
     inspiration: extra.parent_version_id ? null : CR.insp ? (CR.insp.type === 'concept' ? { concept_name: CR.insp.concept_name } : { asset_id: CR.insp.asset_id }) : null,
     parent_version_id: extra.parent_version_id || null, prompt: extra.prompt || undefined,
+    text_on_image: extra.parent_version_id ? undefined : { mode: extra.noText || CR.textMode === 'none' ? 'none' : 'ad', words: (CR.hookWords || '').trim(), purpose: purposeOf()[1], business: tenantName },
   };
   const visit = CR.visit;
   const j = await studio('create', body, 120000);
   if (CR.visit !== visit) return;                            // you've started afresh since; the image will be in your Library
   CR.busy = false;
   if (!j.ok){ renderCreate(); crStatus(j.error, true); return; }
-  CR.session = j.session_id;
-  CR.versions.unshift(j.version); renderCreate();
+  CR.session = j.session_id; if (!extra.parent_version_id) CR.text = '';
+  CR.versions.unshift(j.version); renderCreate(); crShowNewest();
   if (j.version.status !== 'failed') crPoll(j.version.id);
 }
 
 function crPoll(id, tries){
   tries = tries || 0;
-  if (tries > 120) return;                                   // about 6 minutes
+  const pv = CR.versions.find(x => x.id === id);
+  if (tries > (pv && pv.media === 'video' ? 220 : 120)) return;   // about 6 minutes for images, 11 for videos
   CR.timers[id] = setTimeout(async () => {
     const j = await studio('version_status', { tenant_id: tenant, version_id: id }, 90000);
     if (!el('crResults')) return;                              // left the page
     if (j.ok){
       const i = CR.versions.findIndex(v => v.id === id); if (i >= 0) CR.versions[i] = j.version;
+      const stay = CR.follow || crNearBottom();
       renderCreateResults();
+      if (stay && (j.version.status === 'succeeded' || j.version.status === 'failed')){
+        const img = document.querySelector('#crResults .crcard:last-child img');
+        // the stage is already in view
+        CR.follow = false;                                     // shown; if you scroll up later, Zen won't pull you back down
+      }
       if (j.version.status === 'succeeded'){ crShowUsage(); return; }
       if (j.version.status === 'failed') return;
     }
@@ -2317,7 +3374,7 @@ async function crUpload(file, label){
   if (!j.ok){ crStatus(j.error, true); return; }
   if (CR.visit !== visit) return;                            // you've started afresh since; the upload is in your Library
   if (label === 'reference') CR.insp = { type:'asset', asset_id: j.asset.id, name: 'Your reference', url: j.asset.url, asset: j.asset };
-  else CR.image = j.asset;
+  else { CR.image = j.asset; CR.vSrc = null; }
   crStatus(j.asset.keep ? '' : 'Tick \u201cKeep for next time\u201d to save it. Otherwise it\u2019s removed in 30 days.'); renderCreate();
 }
 
@@ -2338,7 +3395,8 @@ async function crPicker(kind){
       : '<p class="note">' + (j.ok ? 'Nothing kept yet. Tick \u201cKeep for next time\u201d when you upload ' + (refs ? 'a reference' : 'a photo') + '.' : esc(j.error)) + '</p>';
     el('pkBody').querySelectorAll('[data-i]').forEach(b => b.onclick = () => {
       const a = items[+b.dataset.i];
-      if (refs) CR.insp = { type:'asset', asset_id: a.id, name: 'Your reference', url: a.url, asset: a }; else CR.image = a;
+      if (refs) CR.insp = { type:'asset', asset_id: a.id, name: 'Your reference', url: a.url, asset: a };
+      else { CR.image = a; CR.vSrc = null; }
       d.close(); renderCreate();
     });
     el('pkBody').querySelectorAll('[data-rm]').forEach(b => {
@@ -2382,7 +3440,7 @@ async function inspView(opts){
   INS.f = emptyFilters(); INS.bundle = null; INS.trending = false; INS.keywords = []; INS.summary = ''; INS.query = ''; INS.quick = null;
   const box = el('mkt');
   box.innerHTML = (INS.pick
-      ? '<button class="back" type="button" onclick="CR.keep=true;mktView(\'studio\')">\u2190 Create images</button><div class="pickbar">Choose an idea for your image, then press <b>Use this reference</b>.</div>'
+      ? '<button class="back" type="button" onclick="CR.keep=true;mktView(\'studio\')">\u2190 Create</button><div class="pickbar">Choose an inspiration, then press <b>Use this inspiration</b>.</div>'
       : backBtn) +
     '<div class="ins-hero"><h1>Find a creative direction</h1>' +
     '<form class="ins-ask" onsubmit="event.preventDefault();insAsk();"><label for="insQ" class="sr">Describe your business and what you want</label>' +
@@ -2603,7 +3661,7 @@ function insDetail(key){
   d.innerHTML = '<button class="vclose" type="button" aria-label="Close" id="dx">\u00D7</button><div class="vgrid"><div class="vmedia"><img src="' + esc(c.imageUrl) + '" alt="' + esc(c.displayName) + '"></div>' +
     '<div class="vinfo"><h2>' + esc(c.displayName) + '</h2><p style="margin:0">' + esc(c.shortDescription) + '</p>' +
     '<dl class="kv">' + row('Best for', c.bestFor) + row('Industries', c.industries) + row('Styles', c.styles) + row('Goals', c.goals) + '</dl>' +
-    '<div class="actions"><button class="btn btn-p" type="button" id="useRef">Use this reference</button><button class="btn btn-s" type="button" id="moreLike">More like this</button></div>' +
+    '<div class="actions"><button class="btn btn-p" type="button" id="useRef">Use this inspiration</button><button class="btn btn-s" type="button" id="moreLike">More like this</button></div>' +
     '<p class="note">A reference shapes a new image for your business. It\u2019s never posted or copied as it is.</p><div id="likeBox"></div></div></div>';
   d.showModal();
   el('dx').onclick = () => d.close(); d.onclick = e => { if (e.target === d) d.close(); };
@@ -2632,7 +3690,7 @@ async function igPicker(){
   if (!list.length){ el('igBody').innerHTML = '<div class="empty">Nothing ready to post. Create an image first.</div>'; return; }
   el('igBody').innerHTML = '<p class="note" style="margin:0 0 12px">Pick what to post. Zen writes the caption next.</p><div class="grid">' + list.map(it =>
     '<button class="tile" type="button" data-igp="' + esc(it.source + ':' + it.id) + '"><div class="media">' +
-      (it.kind === 'video' ? '<video src="' + esc(it.url) + '#t=0.5" muted preload="metadata" playsinline></video><span class="play" aria-hidden="true">\u25B6</span>' : '<img src="' + esc(it.url) + '" alt="" loading="lazy">') +
+      (it.kind === 'video' ? (it.poster ? '<img src="' + esc(it.poster) + '" alt="" loading="lazy">' : '<video src="' + esc(it.url) + '#t=0.5" muted preload="metadata" playsinline></video>') + '<span class="play" aria-hidden="true">\u25B6</span>' : '<img src="' + esc(it.url) + '" alt="" loading="lazy">') +
       '<span class="st ' + esc(it.status) + '">' + esc(GAL_STATUS[it.status] || it.status) + '</span></div><div class="cap"><b>' + esc(it.title) + '</b></div></button>').join('') + '</div>';
   el('igBody').querySelectorAll('[data-igp]').forEach(b => b.onclick = () => openIgComposer(j.items.find(x => x.source + ':' + x.id === b.dataset.igp)));
 }
@@ -2729,13 +3787,17 @@ function wireSwitch(btn, confirmOn, onChange){
   };
 }
 
-const SET_SECTIONS = [['general','General'],['connections','Connections'],['whatsapp','WhatsApp'],['ads','Ads'],['brand','Brand details'],['ai','AI and costs'],['check','Setup check']];
+const SET_SECTIONS = [['general','General'],['connections','Connections'],['whatsapp','WhatsApp'],['ads','Ads'],['brand','Brand details'],['ai','Billing'],['check','Setup check']];
 let SET_TAB = 'general';
 const narrow = () => window.matchMedia('(max-width: 760px)').matches;
 function subRow(id, label, detail){
   return '<button class="srow subrow" type="button" data-goset="' + id + '"><div class="txt"><b>' + label + '</b><span>' + detail + '</span></div><span aria-hidden="true">\u203A</span></button>';
 }
+// Billing also shows Studio credits used this month.
+async function loadBillCredits(){ const box = el('billCredits'); if (!box) return; const u = await studio('usage', { tenant_id: tenant }, 15000);
+  if (u.ok && u.usage) box.textContent = 'Studio: ' + (u.usage.credits || 0) + ' credits used this month (' + (u.usage.images || 0) + ' images, ' + (u.usage.videos || 0) + ' videos).'; }
 function showSet(id){
+  if (id === 'ai') setTimeout(loadBillCredits, 0);
   const wrap = el('setwrap'); if (!wrap) return;
   // On a phone the section list is its own screen; an empty id goes back to it.
   if (!id){ wrap.classList.add('m-list'); return; }
@@ -2754,7 +3816,7 @@ function wireSettingsNav(){
   // Platform admins get a link to the separate admin console; tenants never see it.
   studio('admin_check', {}, 15000).then(j => {
     const row = el('adminRow'); if (!row || !j.ok || !j.admin) return;
-    row.innerHTML = '<div class="srow"><div class="txt"><b>Zen Admin</b><span>You manage the shared concept library. Opens the admin console.</span></div>' +
+    row.innerHTML = '<div class="srow"><div class="txt"><b>Zen Admin</b><span>You manage the shared inspiration library. Opens the admin console.</span></div>' +
       '<a class="btn btn-s" href="zen-admin.html" target="_blank" rel="noopener">Open</a></div>';
   });
 }
@@ -2825,7 +3887,8 @@ function renderSettings(){
 
   const ai = S.ai;
   if (ai){
-    P.ai = '<div class="sec"><div class="sec-head"><div><h2>AI and costs</h2><p>About $' + ai.monthly.toFixed(2) + ' a month at these settings. $' + ai.actual_30d.toFixed(2) + ' actually spent in the last 30 days.</p></div></div><div class="rows">' +
+    P.ai = '<div class="sec"><div class="sec-head"><div><h2>Billing</h2><p>AI: about $' + ai.monthly.toFixed(2) + ' a month at these settings, $' + ai.actual_30d.toFixed(2) + ' actually spent in the last 30 days.</p><p id="billCredits" class="note"></p></div></div>' +
+      '<h3 class="bill-h">AI models for each job</h3><p class="note bill-n">Choose the model each job uses. Zen\u2019s assistant and planning use Claude models; the estimate updates as you choose.</p><div class="rows">' +
       ai.jobs.map(j => '<div class="srow" data-job="' + esc(j.purpose) + '"><div class="txt"><b>' + esc(j.label) + '</b><span>' + esc(j.what) + ' About $' + j.monthly.toFixed(2) + ' a month.</span></div>' +
         '<label class="sr" for="job_' + esc(j.purpose) + '">Model</label><select id="job_' + esc(j.purpose) + '">' + ai.models.map(m => '<option value="' + esc(m.id) + '"' + (m.id === j.current ? ' selected' : '') + '>' + esc(m.name) + (m.id === j.recommended ? ' (recommended)' : '') + '</option>').join('') + '</select>' +
         '<span class="note" role="status"></span></div>').join('') + '</div></div>';
@@ -2926,6 +3989,36 @@ function openZenView(view){
 
 // ---------- Brand: who you serve, and what Zen goes by ----------
 // Learned from your data first; everything here is optional and editable.
+const OH_DAYS = [['mon','Monday'],['tue','Tuesday'],['wed','Wednesday'],['thu','Thursday'],['fri','Friday'],['sat','Saturday'],['sun','Sunday']];
+const OH_MODES = [['both','Walk-ins and appointments'],['walkin','Walk-in only'],['appointments','Appointments only'],['closed','Closed']];
+let HOURS = null;
+async function loadHours(){
+  const box = el('hoursSec'); if (!box) return;
+  if (!HOURS){
+    const j = await zen('opening_hours_get', {}, 20000);
+    if (!j.ok){ box.innerHTML = '<div class="sec"><p class="note">' + esc(j.error) + '</p></div>'; return; }
+    HOURS = j.schedule || {};
+  }
+  const row = ([k, name]) => { const r = HOURS[k] || {}, closed = r.mode === 'closed';
+    return '<div class="ohr"><b>' + name + '</b>' +
+      '<label class="sr" for="oh_' + k + '_m">' + name + ': how it works</label><select id="oh_' + k + '_m" data-ohm="' + k + '">' + OH_MODES.map(([m, l]) => '<option value="' + m + '"' + ((r.mode || '') === m ? ' selected' : '') + '>' + l + '</option>').join('') + (r.mode ? '' : '<option value="" selected>Not set</option>') + '</select>' +
+      '<span class="ohtime"' + (closed ? ' hidden' : '') + '><label class="sr" for="oh_' + k + '_o">' + name + ' opens</label><input type="time" id="oh_' + k + '_o" data-oho="' + k + '" value="' + esc(r.open || '') + '"><span>to</span><label class="sr" for="oh_' + k + '_c">' + name + ' closes</label><input type="time" id="oh_' + k + '_c" data-ohc="' + k + '" value="' + esc(r.close || '') + '"></span></div>'; };
+  box.innerHTML = '<div class="sec" id="hours"><div class="sec-head"><div><h2>Opening hours &amp; booking</h2><p>WhatsApp replies follow this exactly: on walk-in-only days Zen tells parents to walk in, and never offers a time.</p></div></div>' +
+    '<div class="ohrows">' + OH_DAYS.map(row).join('') + '</div>' +
+    '<div class="actions"><button class="btn btn-p" type="button" id="ohSave">Save opening hours</button></div><p class="note" id="ohNote" role="status"></p></div>';
+  box.querySelectorAll('[data-ohm]').forEach(s => s.onchange = () => { const k = s.dataset.ohm; HOURS[k] = Object.assign({}, HOURS[k], { mode: s.value }); loadHours(); });
+  box.querySelectorAll('[data-oho]').forEach(i => i.onchange = () => { const k = i.dataset.oho; HOURS[k] = Object.assign({}, HOURS[k], { open: i.value }); });
+  box.querySelectorAll('[data-ohc]').forEach(i => i.onchange = () => { const k = i.dataset.ohc; HOURS[k] = Object.assign({}, HOURS[k], { close: i.value }); });
+  el('ohSave').onclick = async () => {
+    const b = el('ohSave'); b.disabled = true; b.innerHTML = '<span class="spin"></span>Saving\u2026';
+    const sched = {}; OH_DAYS.forEach(([k]) => { sched[k] = Object.assign({ mode: 'both' }, HOURS[k]); });
+    const j = await zen('opening_hours_save', { schedule: sched, timezone: 'Asia/Dubai' }, 20000);
+    b.disabled = false; b.textContent = 'Save opening hours';
+    el('ohNote').textContent = j.ok ? 'Saved. WhatsApp replies use these hours from now on.' : j.error;
+    if (j.ok) HOURS = j.schedule;
+  };
+}
+
 let BRIEF = null;
 async function loadBrief(){
   const box = el('briefSec'); if (!box) return;
@@ -3086,7 +4179,7 @@ function renderCard(c){
 function answerTable(t){
   const al = i => (t.align && t.align[i] === 'right') ? ' class="r"' : '';
   return '<div class="atable"><table><thead><tr>' + t.columns.map((h, i) => '<th' + al(i) + '>' + esc(h) + '</th>').join('') + '</tr></thead><tbody>' +
-    t.rows.map(r => '<tr>' + r.map((v, i) => '<td' + al(i) + '>' + esc(v) + '</td>').join('') + '</tr>').join('') + '</tbody></table></div>';
+    t.rows.map(r => '<tr>' + r.map((v, i) => '<td' + al(i) + ' data-h="' + esc(t.columns[i] || '') + '">' + esc(v) + '</td>').join('') + '</tr>').join('') + '</tbody></table></div>';
 }
 // A simple chart, only when the answer includes one (a trend that was asked for).
 function answerChart(ch){
