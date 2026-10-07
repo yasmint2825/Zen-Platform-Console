@@ -1145,6 +1145,22 @@ body.review-mode #gallery::before{content:"Review: these are waiting for your OK
 .sch-t b{display:block}.sch-t small{display:block;color:var(--muted)}
 .sch-c{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;margin-top:2px}
 @media (max-width:760px){.sch{grid-template-columns:48px minmax(0,1fr)}.sch img,.sch-ph{width:48px;height:48px}.sch .vb,.sch .btn{grid-column:2;justify-self:start}}
+/* Campaign page */
+.cp-ready{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 4px}
+.cp-h{font-size:18px;margin:20px 0 10px}
+.cp-ads{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px;max-width:1100px}
+.cp-ad{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;max-width:1100px}
+.cp-ad-h{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin:0 0 8px;flex-wrap:wrap}
+.cp-kv{display:grid;grid-template-columns:110px 1fr;gap:4px 10px;margin:0;font-size:14px}
+.cp-kv dt{color:var(--muted)}.cp-kv dd{margin:0}
+.cp-pics{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}.cp-pics img{width:56px;height:56px;object-fit:cover;border-radius:8px}
+@media (max-width:760px){.cp-ads{grid-template-columns:1fr}.cp-kv{grid-template-columns:1fr}}
+.cp-stack{position:relative;width:56px;height:56px;display:block}
+.cp-stack img{position:absolute;width:44px;height:44px;object-fit:cover;border-radius:8px;border:2px solid var(--surface)}
+.cp-stack img:nth-child(1){left:0;top:0}.cp-stack img:nth-child(2){left:6px;top:6px}.cp-stack img:nth-child(3){left:12px;top:12px}
+.cp-stack b{position:absolute;right:-4px;bottom:-4px;background:var(--ink);color:#fff;border-radius:9px;font-size:11px;padding:0 5px;line-height:18px}
+[data-zsave]{cursor:pointer;object-fit:cover}
+video[data-zsave]{background:#E2EDE8 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='40'%3E%3Ctext x='60' y='26' font-family='sans-serif' font-size='14' font-weight='600' fill='%231F5C4E' text-anchor='middle'%3ETap to play%3C/text%3E%3C/svg%3E") center no-repeat;min-height:120px}
 </style>
 </head>
 <body>
@@ -1255,6 +1271,7 @@ body.review-mode #gallery::before{content:"Review: these are waiting for your OK
     <section id="adsPage" class="page" hidden></section>
     <section id="crvPage" class="page" hidden></section>
     <section id="wizPage" class="page" hidden></section>
+    <section id="campPage" class="page" hidden></section>
     <section id="attnPage" class="page" hidden>
       <div class="page-top"><h1>Attention</h1></div>
       <div class="attn-tabs" role="group" aria-label="Show"><button type="button" data-at="needs" aria-pressed="true">Needs you</button><button type="button" data-at="coming" aria-pressed="false">Coming up</button><button type="button" data-at="week" aria-pressed="false">Sales</button></div>
@@ -1286,6 +1303,42 @@ body.review-mode #gallery::before{content:"Review: these are waiting for your OK
      a logout that can't hang.
    ===================================================================== */
 const SB_URL = 'https://wtapyfgtwkjyjrjdnhkb.supabase.co';
+// ---------- Pictures: load all, or only when tapped (saves Supabase storage egress) ----------
+// Central: every picture/video from our storage passes through innerHTML / insertAdjacentHTML, so the
+// setting is applied here before the browser starts downloading, on every screen.
+const PIC_KEY = 'zen_pictures';
+function picMode(){ try { return localStorage.getItem(PIC_KEY) || 'tap'; } catch (e) { return 'tap'; } }   // default: load when I tap
+const PIC_PH = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"><rect width="400" height="400" fill="#E2EDE8"/><g fill="none" stroke="#1F5C4E" stroke-width="10" stroke-linejoin="round"><rect x="130" y="120" width="140" height="110" rx="14"/><path d="M140 215l40-40 30 28 22-20 38 32"/></g><circle cx="235" cy="150" r="12" fill="#1F5C4E"/><text x="200" y="290" font-family="sans-serif" font-size="28" font-weight="600" fill="#1F5C4E" text-anchor="middle">Tap to see picture</text></svg>');
+const isStorageUrl = u => typeof u === 'string' && (u.indexOf(SB_URL + '/storage/') === 0 || /\.supabase\.co\/storage\/v1\//.test(u));
+function picRewrite(html){
+  if (typeof html !== 'string' || (html.indexOf('<img') < 0 && html.indexOf('<video') < 0)) return html;
+  const tap = picMode() === 'tap';
+  html = html.replace(/<img\b([^>]*?)\ssrc="([^"]*)"([^>]*)>/g, (m, a, url, b) => {
+    const lazy = /\bloading=/.test(a + b) ? '' : ' loading="lazy"';
+    if (!tap || !isStorageUrl(url.replace(/&amp;/g, '&'))) return '<img' + a + ' src="' + url + '"' + b + lazy + '>';
+    return '<img' + a + ' src="' + PIC_PH + '" data-zsrc="' + url + '" data-zsave="1" title="Tap to see picture"' + b + lazy + '>';
+  });
+  html = html.replace(/<video\b([^>]*?)\ssrc="([^"]*)"([^>]*)>/g, (m, a, url, b) => {
+    const pre = /\bpreload=/.test(a + b) ? '' : ' preload="none"';
+    if (!tap || !isStorageUrl(url.replace(/&amp;/g, '&'))) return '<video' + a + ' src="' + url + '"' + b + pre + '>';
+    return '<video' + a + ' data-zsrc="' + url + '" data-zsave="1" title="Tap to play"' + b + pre + '>';
+  });
+  return html;
+}
+(() => {
+  const d = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
+  Object.defineProperty(Element.prototype, 'innerHTML', { configurable: true, get(){ return d.get.call(this); }, set(v){ d.set.call(this, picRewrite(v)); } });
+  const ins = Element.prototype.insertAdjacentHTML;
+  Element.prototype.insertAdjacentHTML = function(pos, html){ return ins.call(this, pos, picRewrite(html)); };
+  // First tap loads that one picture (and does nothing else); the next tap works as usual.
+  document.addEventListener('click', e => {
+    const m = e.target.closest && e.target.closest('[data-zsave]'); if (!m) return;
+    e.preventDefault(); e.stopPropagation();
+    m.src = m.dataset.zsrc; m.removeAttribute('data-zsave'); m.removeAttribute('title');
+    if (m.tagName === 'VIDEO'){ m.controls = true; m.play && m.play().catch(() => {}); }
+  }, true);
+})();
+
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0YXB5Zmd0d2tqeWpyamRuaGtiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NDc3ODEsImV4cCI6MjA5NTAyMzc4MX0.y_-iPfb8Pcg9zh42h6RGVBsUVZm80LcA9sPlz_Gl_fA';
 const ZEN_FN = SB_URL + '/functions/v1/mw-zen';
 const STUDIO_FN = SB_URL + '/functions/v1/mw-studio';       // the new image service (concept library first)
@@ -1435,7 +1488,7 @@ function go(area){
   const review = area === 'review';
   if (review){ GAL.filter = 'review'; area = 'gallery'; RV.i = 0; RV.done = 0; } else if (area === 'gallery' && GAL.filter === 'review') GAL.filter = 'all';
   document.body.classList.toggle('review-mode', review);
-  const navKey = review ? 'attention' : (area === 'gallery' || area === 'marketing' || area === 'creatives' || area === 'wizard' || area === 'campaigns') ? 'marketing' : area;
+  const navKey = review ? 'attention' : (area === 'gallery' || area === 'marketing' || area === 'creatives' || area === 'wizard' || area === 'campaigns' || area === 'campaign') ? 'marketing' : area;
   if (area !== 'home') window.scrollTo(0, 0);                 // every page opens at the top
   document.querySelectorAll('.nav').forEach(b => { if (b.dataset.go === navKey) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
   el('planPage').hidden = area !== 'plan';
@@ -1443,6 +1496,9 @@ function go(area){
   el('adsPage').hidden = area !== 'ads';
   el('crvPage').hidden = area !== 'creatives' && area !== 'campaigns';
   el('wizPage').hidden = area !== 'wizard';
+  el('campPage').hidden = area !== 'campaign';
+  if (area === 'campaign'){ el('soon').hidden = true; el('landing').style.display = 'none'; el('convo').style.display = 'none';
+    ['wa','gallery','brand','mkt','settings'].forEach(id => el(id).hidden = true); studioTabs('campaigns'); renderCampaign(); return; }
   if (area === 'wizard'){ el('soon').hidden = true; el('landing').style.display = 'none'; el('convo').style.display = 'none';
     ['wa','gallery','brand','mkt','settings'].forEach(id => el(id).hidden = true); studioTabs(null); renderWizard(); return; }
   if (area === 'creatives' || area === 'campaigns'){ el('soon').hidden = true; el('landing').style.display = 'none'; el('convo').style.display = 'none';
@@ -1560,7 +1616,7 @@ function toggleChipMenu(btn, QS){
   m.querySelector('button').focus();
 }
 function showConvo(){
-  ['attnPage','adsPage','crvPage','wizPage','planPage','wa','gallery','brand','mkt','settings'].forEach(id => { const x = el(id); if (x) x.hidden = true; });
+  ['attnPage','adsPage','crvPage','wizPage','campPage','planPage','wa','gallery','brand','mkt','settings'].forEach(id => { const x = el(id); if (x) x.hidden = true; });
   if (typeof studioTabs === 'function') studioTabs(null);
   document.querySelectorAll('.nav').forEach(b => { if (b.dataset.go === 'home') b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
   el('landing').style.display = 'none';
@@ -1744,6 +1800,9 @@ async function renderWizard(){
       '<label>Anything else <span class="note">optional, in your own words</span><input id="wzNotes" value="' + esc(L.notes || '') + '" placeholder="e.g. include our pink chair, orange and purple, cute not scary"></label></div>';
   }
   if (step === 4) body = '<div class="wiz-card">' + chans.map(([k, l, d]) => '<label class="wiz-tog"><input type="checkbox" data-ch="' + k + '"' + (I.channels.includes(k) ? ' checked' : '') + '><span><b>' + l + '</b><small>' + d + '</small></span></label>').join('') +
+      (I.channels.includes('ads') || I.channels.includes('whatsapp') ? '<h3>Your decisions</h3>' : '') +
+      (I.channels.includes('ads') ? '<p class="note">How should the ads find customers?</p><div class="wiz-choice">' + [['A', 'Let Meta find new families', 'Meta\u2019s AI finds new customers nearby'], ['B', 'Also remind people who engaged', 'Plus a small audience who messaged or engaged but didn\u2019t book']].map(([k, t, d]) => '<button type="button" data-dec="ads" data-v="' + k + '" aria-pressed="' + ((I.choices || {}).ads === k) + '"><b>' + t + '</b><span>' + d + '</span></button>').join('') + '</div>' : '') +
+      (I.channels.includes('whatsapp') ? '<p class="note">Who gets the WhatsApp message?</p><div class="wiz-choice">' + [['A', 'Last year\u2019s customers for this occasion', 'People who came around this time last year (and opted in)'], ['B', 'Everyone who opted in', 'All customers who agreed to receive offers']].map(([k, t, d]) => '<button type="button" data-dec="whatsapp" data-v="' + k + '" aria-pressed="' + ((I.choices || {}).whatsapp === k) + '"><b>' + t + '</b><span>' + d + '</span></button>').join('') + '</div>' : '') +
       (I.channels.includes('ads') ? '<h3>Ads budget for ' + days + ' days</h3><div class="wiz-picks">' + picks.map(v => '<button type="button" data-bud="' + v + '" aria-pressed="' + (I.ads_budget === v) + '">AED ' + v.toLocaleString('en-US') + (v === sug ? '<small>suggested</small>' : '') + '</button>').join('') +
         '<label class="wiz-own">Your own<input id="wzBud" type="number" min="50" step="50" value="' + (picks.includes(I.ads_budget) ? '' : I.ads_budget || '') + '" placeholder="AED"></label></div>' +
         '<p class="wiz-exp" id="wzExp">Expected: ' + expect(I.ads_budget) + '</p>' + (WIZ.cap ? '<p class="note">About AED ' + Math.round((I.ads_budget || 0) / days) + ' a day. ' + (Math.round((I.ads_budget || 0) / days) > WIZ.cap ? 'That\u2019s above your AED ' + WIZ.cap + ' daily cap per ad, so Zen will spread it across more than one ad set (or you can raise the cap in Ads \u2192 Limits).' : 'Within your AED ' + WIZ.cap + ' daily cap per ad.') + '</p>' : '') : '') + '</div>';
@@ -1751,8 +1810,10 @@ async function renderWizard(){
       '<tr><th>Channels</th><td>' + I.channels.map(c => ({ whatsapp: 'WhatsApp', instagram: 'Instagram posts', ads: 'Meta ads' })[c]).join(' \u00B7 ') + '</td></tr>' +
       (I.channels.includes('ads') ? '<tr><th>Ads budget</th><td>AED ' + (I.ads_budget || 0).toLocaleString('en-US') + ' \u00B7 ' + expect(I.ads_budget) + '</td></tr>' : '') +
       '<tr><th>Offer</th><td>' + (WIZ.offerOn && I.offer ? esc(I.offer) : 'None') + '</td></tr>' +
+      ((I.choices || {}).ads ? '<tr><th>Ads find</th><td>' + ((I.choices.ads === 'A') ? 'New families (Meta\u2019s AI)' : 'New families plus reminders') + '</td></tr>' : '') +
+      ((I.choices || {}).whatsapp ? '<tr><th>WhatsApp to</th><td>' + ((I.choices.whatsapp === 'A') ? 'Last year\u2019s customers for this occasion' : 'Everyone who opted in') + '</td></tr>' : '') +
       '<tr><th>Look & feel</th><td>' + esc([I.look && I.look.mood, I.look && I.look.style, I.look && I.look.colours, I.look && ({ no_faces: 'no faces', faces: 'real faces', none: 'no people' })[I.look.people]].filter(Boolean).join(' \u00B7 ')) + (I.look && I.look.notes ? '<br><span class="note">' + esc(I.look.notes) + '</span>' : '') + '</td></tr></table>' +
-      '<p class="note">Zen plans every channel at the same time (about 2 minutes) and puts the plan in a conversation, with the bell. Nothing is sent, posted or spent until you approve.</p></div>';
+      ((I.choices || {}).ads ? '' : '') + '<p class="note">When you press Plan it, Zen plans every channel with your decisions, makes a picture for each post and for each ad set, and lays out the schedule. You then review everything on the campaign page. Nothing is sent, posted or spent until you approve.</p></div>';
   box.innerHTML = head + body + '<div class="wiz-nav">' + (step > 1 ? '<button class="btn btn-q" type="button" id="wzBack">Back</button>' : '<span></span>') +
     (step < 5 ? '<button class="btn btn-p" type="button" id="wzNext">Next</button>' : '<button class="btn btn-p" type="button" id="wzGo">Plan it</button>') + '</div><p class="note" id="wzNote" role="status"></p>';
   const save = () => {
@@ -1765,18 +1826,20 @@ async function renderWizard(){
   box.querySelectorAll('[data-ch]').forEach(c => c.onchange = () => { I.channels = [...box.querySelectorAll('[data-ch]:checked')].map(x => x.dataset.ch); if (I.channels.includes('ads') && !I.ads_budget) I.ads_budget = sug || 300; renderWizard(); });
   box.querySelectorAll('[data-bud]').forEach(b => b.onclick = () => { I.ads_budget = Number(b.dataset.bud); renderWizard(); });
   box.querySelectorAll('[data-lk]').forEach(b => b.onclick = () => { save(); I.look[b.dataset.lk] = b.dataset.v; renderWizard(); });
+  box.querySelectorAll('[data-dec]').forEach(b => b.onclick = () => { save(); I.choices = I.choices || {}; I.choices[b.dataset.dec] = b.dataset.v; renderWizard(); });
   const bud = el('wzBud'); if (bud) bud.oninput = () => { const v = Number(bud.value); if (v > 0) el('wzExp').textContent = 'Expected: ' + expect(v).replace(/<[^>]+>/g, ''); };
   if (el('wzBack')) el('wzBack').onclick = () => { save(); WIZ.step--; renderWizard(); };
   if (el('wzNext')) el('wzNext').onclick = () => {
     save();
     if (step === 1 && (!I.start || !I.end || I.end < I.start)){ el('wzNote').textContent = 'The end date must be on or after the start date.'; return; }
     if (step === 4 && !I.channels.length){ el('wzNote').textContent = 'Choose at least one channel.'; return; }
+    if (step === 4 && ((I.channels.includes('ads') && !(I.choices || {}).ads) || (I.channels.includes('whatsapp') && !(I.choices || {}).whatsapp))){ el('wzNote').textContent = 'Please answer the decisions above. Zen won\u2019t choose for you.'; return; }
     WIZ.step++; renderWizard(); };
   if (el('wzGo')) el('wzGo').onclick = async () => {
     const b = el('wzGo'); b.disabled = true; b.innerHTML = '<span class="spin"></span>Starting\u2026';
-    const r = await zen('campaign_start', { ref: WIZ.ref, changes: { start: I.start, end: I.end, offer: WIZ.offerOn ? I.offer : '', goal: WIZ.goal, look: I.look || {}, channels: I.channels, ads_budget: I.channels.includes('ads') ? I.ads_budget : null } }, 30000);
+    const r = await zen('campaign_start', { ref: WIZ.ref, changes: { start: I.start, end: I.end, offer: WIZ.offerOn ? I.offer : '', goal: WIZ.goal, look: I.look || {}, choices: I.choices || {}, channels: I.channels, ads_budget: I.channels.includes('ads') ? I.ads_budget : null } }, 30000);
     if (!r.ok){ b.disabled = false; b.textContent = 'Plan it'; el('wzNote').textContent = r.error; return; }
-    openThread(r.thread_id, r.name + ' campaign');                     // the plan arrives here, and the bell rings when it's ready
+    openCampaign(WIZ.ref);                                             // the campaign page shows progress, then everything for final review
   };
 }
 
@@ -1816,7 +1879,7 @@ async function loadNeeds(){
   box.querySelectorAll('[data-plan]').forEach(b => b.onclick = () => { const p = BELL.plans[+b.dataset.plan]; openCampaignPlan(p.ref, p.name); });   // always the plan as it stands now
 }
 document.addEventListener('click', e => {
-  const r = e.target.closest('[data-review]'); if (r){ openCampaignPlan(r.dataset.review, r.dataset.rname); return; }
+  const r = e.target.closest('[data-review]'); if (r){ openCampaign(r.dataset.review); return; }
   const a = e.target.closest('[data-again]'); if (a){ openWizard({ title: a.dataset.again, date: a.dataset.adate }); }
 });
 async function loadComingUp(){
@@ -2115,6 +2178,63 @@ function ago(iso){
   return new Date(iso).toLocaleDateString('en-GB', { day:'numeric', month:'short' });
 }
 
+// ---------- Campaign page: everything Zen prepared, waiting only for the owner's OK ----------
+const CP = { ref: null };
+function openCampaign(ref){ CP.ref = ref; go('campaign'); }
+async function renderCampaign(prepareNow){
+  const box = el('campPage');
+  box.innerHTML = '<div class="page-top"><h1>Campaign</h1></div><p class="note"><span class="spin"></span>Loading\u2026</p>';
+  let j = await zen('campaign_package', { ref: CP.ref }, 30000);
+  if (!j.ok || !j.campaign){ box.innerHTML = '<div class="page-top"><h1>Campaign</h1></div><p class="note">' + esc(j.error || 'This campaign couldn\u2019t be loaded just now. Try again in a moment.') + '</p>'; return; }
+  const C = j.campaign;
+  const poll = () => { clearTimeout(CP.t); CP.t = setTimeout(() => { if (!el('campPage').hidden && CP.ref) renderCampaign(); }, 8000); };
+  if (C.stage === 'planning' || C.stage === 'intake' || C.stage === 'preparing'){
+    box.innerHTML = '<div class="page-top"><h1>' + esc(C.name) + '</h1></div><div class="ads-empty"><b><span class="spin"></span>Planning your campaign</b><span>Zen is planning WhatsApp, Instagram and ads with your decisions, then making a picture for every post and ad. This page updates by itself.</span></div>';
+    return poll();
+  }
+  if ((!j.package || prepareNow) && C.stage === 'ready'){
+    box.innerHTML = '<div class="page-top"><h1>' + esc(C.name) + '</h1></div><p class="note"><span class="spin"></span>Zen is finishing the set-up: a picture and caption for every post, every ad set fully specified, the WhatsApp send laid out\u2026</p>';
+    const pr = await zen('campaign_prepare', { ref: CP.ref, force: !!prepareNow }, 150000);
+    if (!pr.ok){ box.innerHTML += '<p class="note">' + esc(pr.error || 'The set-up didn\u2019t finish. Try again.') + '</p>'; return; }
+    j = await zen('campaign_package', { ref: CP.ref }, 30000);
+  }
+  const P = j.package || { posts: [], adsets: [] }, fmt = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : '';
+  const ready = P.posts.filter(p => p.status === 'ready' || /scheduled/.test(p.status)).length, sched = P.posts.filter(p => /scheduled/.test(p.status)).length, making = P.posts.filter(p => p.status === 'making').length + P.adsets.reduce((t, a) => t + (a.creatives || []).filter(c => !c.url && c.version).length, 0);
+  const label = { making: ['Making the picture\u2026', 'v-off'], attaching: ['Finishing\u2026', 'v-off'], ready: ['Ready', 'v-watch'], needs_picture: ['Needs a picture', 'v-bad'], failed: ['Couldn\u2019t prepare', 'v-bad'], scheduled: ['Scheduled', 'v-good'], scheduled_practice: ['Scheduled (practice)', 'v-good'], approved_past_time: ['Time passed', 'v-off'] };
+  const money = v => 'AED ' + Math.round(v || 0).toLocaleString('en-US');
+  box.innerHTML = '<div class="page-top"><h1>' + esc(C.name) + '</h1><span class="pl-acts"><button class="btn btn-q" type="button" id="cpPlan">See the plan</button><button class="btn btn-q" type="button" id="cpAgain">Plan again</button><button class="btn btn-q" type="button" id="cpDel">Delete campaign</button></span></div>' +
+    '<p class="note">' + fmt(C.start) + ' \u2013 ' + fmt(C.end) + (C.offer ? ' \u00B7 Offer: ' + esc(C.offer) : '') + (C.budget ? ' \u00B7 Ads budget ' + money(C.budget) : '') + ' \u00B7 ' + (j.live ? 'Live' : 'Practice mode: nothing really posts or spends') + '</p>' +
+    '<div class="cp-ready"><span class="vb ' + (ready === P.posts.length && P.posts.length ? 'v-good' : 'v-watch') + '">' + ready + ' of ' + P.posts.length + ' posts ready</span>' +
+      '<span class="vb ' + (P.adsets.length ? 'v-good' : 'v-off') + '">' + P.adsets.length + ' ad set' + (P.adsets.length === 1 ? '' : 's') + ' set up</span>' +
+      '<span class="vb ' + (P.whatsapp ? 'v-good' : 'v-off') + '">' + (P.whatsapp ? 'WhatsApp ready' : 'No WhatsApp') + '</span>' + (sched ? '<span class="vb v-good">' + sched + ' scheduled</span>' : '') + (making ? '<span class="vb v-off"><span class="spin"></span>' + making + ' picture' + (making === 1 ? '' : 's') + ' being made</span>' : '') + '</div>' +
+    '<h2 class="cp-h">Instagram posts</h2><div class="sch-day">' + (P.posts.length ? P.posts.map(p => { const l = label[p.status] || [p.status, 'v-off'];
+      const pics = p.pictures && p.pictures.length > 1 ? '<span class="cp-stack" title="' + p.pictures.length + ' cards">' + p.pictures.slice(0, 3).map(u => '<img src="' + esc(u) + '" alt="">').join('') + '<b>' + p.pictures.length + '</b></span>' : null;
+      return '<div class="sch">' + (pics || (p.picture ? '<img src="' + esc(p.picture) + '" alt="">' : '<span class="sch-ph">' + (p.status === 'making' || p.status === 'attaching' ? '\u2026' : '?') + '</span>')) +
+        '<div class="sch-t"><b>' + esc(p.title) + '</b><small>' + fmt(p.date) + ' \u00B7 ' + esc(p.time || '') + ' \u00B7 ' + esc(p.type || 'post') + (p.type === 'carousel' ? ' \u00B7 ' + ((p.pictures || p.versions || []).length || '') + ' cards, one post' : '') + '</small><span class="sch-c">' + esc(p.caption || '') + '</span></div>' +
+        '<span class="vb ' + l[1] + '">' + esc(l[0]) + '</span><span></span></div>'; }).join('') : '<p class="note">No posts in this campaign.</p>') + '</div>' +
+    '<h2 class="cp-h">Meta ads</h2>' + (P.adsets.length ? '<div class="cp-ads">' + P.adsets.map(a => '<div class="cp-ad"><div class="cp-ad-h"><b>' + esc(a.name) + '</b><span class="vb v-watch">Set up \u00B7 goes to Meta when approved</span></div>' +
+        '<dl class="cp-kv"><dt>Goal</dt><dd>' + esc(a.objective) + '</dd><dt>Who sees it</dt><dd>' + esc(a.audience) + (a.retargeting ? ' (reminds people who engaged)' : '') + '</dd><dt>Where</dt><dd>' + esc(a.location) + '</dd>' +
+        '<dt>Placements</dt><dd>' + esc(a.placements) + '</dd><dt>Budget</dt><dd>' + money(a.daily_budget) + ' a day</dd><dt>Dates</dt><dd>' + fmt(a.start) + ' \u2013 ' + fmt(a.end) + '</dd></dl>' +
+        '<div class="cp-pics">' + (a.creatives || []).map(c => c.url ? '<img src="' + esc(c.url) + '" alt="" title="' + esc(c.label) + '">' : '<span class="sch-ph" title="' + esc(c.label) + '">\u2026</span>').join('') + '</div></div>').join('') + '</div>'
+      : '<p class="note">No ads in this campaign, or no option chosen yet.</p>') +
+    (P.whatsapp ? '<h2 class="cp-h">WhatsApp</h2><div class="cp-ad"><dl class="cp-kv"><dt>Who</dt><dd>' + esc(P.whatsapp.audience) + (P.whatsapp.size ? ' (' + P.whatsapp.size + ')' : '') + '</dd><dt>When</dt><dd>' + esc((P.whatsapp.send_at || '').replace('T', ' ')) + '</dd><dt>Message</dt><dd>' + esc(P.whatsapp.message) + '</dd><dt>Template</dt><dd>' + esc(P.whatsapp.template) + '</dd></dl></div>' : '') +
+    '<div class="crv-foot"><span>' + (sched ? sched + ' posts are scheduled. They post themselves at their times.' : 'Everything is prepared. Nothing goes out until you approve.') + '</span><span class="pl-acts">' +
+      '<button class="btn btn-q" type="button" id="cpRedo">Redo the set-up</button>' + (ready > sched ? '<button class="btn btn-p" type="button" id="cpGo">Approve and schedule ' + (ready - sched) + ' posts</button>' : '') + '</span></div><p class="note" id="cpNote" role="status"></p>';
+  el('cpPlan').onclick = () => openCampaignPlan(CP.ref, C.name);
+  el('cpAgain').onclick = () => openWizard({ title: C.name, date: C.occasion || C.end });
+  el('cpDel').onclick = async () => {
+    if (!confirm('Delete the ' + C.name + ' campaign? Its prepared posts are removed and nothing from it will be posted.')) return;
+    const r = await zen('campaign_delete', { ref: CP.ref }, 60000);
+    if (!r.ok){ el('cpNote').textContent = r.error; return; }
+    CP.ref = null; showCampaigns();
+  };
+  if (making) poll();
+  el('cpRedo').onclick = () => renderCampaign(true);
+  if (el('cpGo')) el('cpGo').onclick = async () => { const b = el('cpGo'); b.disabled = true; b.innerHTML = '<span class="spin"></span>Scheduling\u2026';
+    const r = await zen('campaign_schedule', { ref: CP.ref }, 120000);
+    if (!r.ok){ b.disabled = false; b.textContent = 'Approve and schedule'; el('cpNote').textContent = r.error; return; }
+    renderCampaign(); };
+}
 // Marketing → Campaigns: every campaign, newest first, each opening its plan as it stands now.
 async function showCampaigns(){
   go('campaigns'); const box = el('crvPage');
@@ -2126,7 +2246,7 @@ async function showCampaigns(){
       '<span class="vb ' + (c.status === 'Approved' ? 'v-good' : c.status === 'Waiting for your OK' ? 'v-watch' : 'v-off') + '" style="align-self:flex-start">' + esc(c.status) + '</span>' +
       '<div><button class="btn btn-s" type="button" data-camp="' + i + '">Open</button></div></div>').join('') + '</div>'
       : '<p class="note">No campaigns yet. Start one with New campaign.</p>');
-  box.querySelectorAll('[data-camp]').forEach(b => b.onclick = () => { const c = list[+b.dataset.camp]; openCampaignPlan(c.ref, c.name); });
+  box.querySelectorAll('[data-camp]').forEach(b => b.onclick = () => { const c = list[+b.dataset.camp]; if (c.status === 'Approved') openCampaign(c.ref); else openCampaignPlan(c.ref, c.name); });
 }
 // A campaign plan without a conversation: show the plan itself, ready to choose and approve from.
 async function openCampaignPlan(ref, name){
@@ -2947,6 +3067,7 @@ document.addEventListener('click', e => {
   const p = o.params || {};
   if (o.view === 'creatives'){ openCreatives(p.ref); return; }
   if (o.view === 'wizard'){ openWizard({ ref: p.ref }); return; }
+  if (o.view === 'campaign'){ openCampaign(p.ref); return; }
   if (o.view === 'create'){
     // A request from Home starts a fresh Create session, so it never mixes with earlier work.
     stopCreatePolling();
@@ -3796,6 +3917,8 @@ function subRow(id, label, detail){
 // Billing also shows Studio credits used this month.
 async function loadBillCredits(){ const box = el('billCredits'); if (!box) return; const u = await studio('usage', { tenant_id: tenant }, 15000);
   if (u.ok && u.usage) box.textContent = 'Studio: ' + (u.usage.credits || 0) + ' credits used this month (' + (u.usage.images || 0) + ' images, ' + (u.usage.videos || 0) + ' videos).'; }
+document.addEventListener('change', e => { if (e.target && e.target.id === 'picMode'){ try { localStorage.setItem(PIC_KEY, e.target.value); } catch (x) {}
+  const n = e.target.closest('.srow') && e.target.closest('.srow').querySelector('span'); if (n) n.textContent = e.target.value === 'tap' ? 'Saved. Pictures now load only when you tap them.' : 'Saved. Pictures load as you scroll to them.'; } });
 function showSet(id){
   if (id === 'ai') setTimeout(loadBillCredits, 0);
   const wrap = el('setwrap'); if (!wrap) return;
@@ -3835,6 +3958,8 @@ function renderSettings(){
         : 'Approving a plan records what Zen would do. Nothing is sent, spent or posted.') + '</span></div>' +
       '<span class="' + (S.live ? 'ok' : 'no') + '">' + (S.live ? 'Live' : 'Test mode') + '</span></div>' +
     (S.live ? '' : '<details class="srow why" style="display:block"><summary>How to go live</summary><p class="note" style="margin:8px 0 0">Add <code>' + esc(tenant) + '</code> to the <code>ZEN_LIVE_TENANTS</code> secret in Supabase. Try a test business first.</p></details>') +
+    '<div class="srow"><div class="txt"><b>Pictures</b><span>Load when I tap saves your data allowance: pictures show as \u201cTap to see picture\u201d until you open them. Text, plans and numbers always show.</span></div>' +
+      '<label class="sr" for="picMode">Pictures</label><select id="picMode"><option value="tap"' + (picMode() === 'tap' ? ' selected' : '') + '>Load when I tap</option><option value="all"' + (picMode() === 'all' ? ' selected' : '') + '>Load all pictures</option></select></div>' +
     '<div class="srow"><div class="txt"><b>Business</b><span>' + esc(tenantName) + '</span></div></div>' +
     '<div class="srow"><div class="txt"><b>Logged in as</b><span>' + esc((session && session.user && session.user.email) || '') + '</span></div><button class="btn btn-s" type="button" onclick="doLogout()">Log out</button></div>' +
     '<div id="adminRow"></div></div></div>';
