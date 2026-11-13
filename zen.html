@@ -5693,40 +5693,83 @@ const CAMPAIGN_LABELS = {nudge:'Nudge (gentle reminder)', lapsed:'Win-back (laps
 // the campaign's current enabled/off state rather than assuming true,
 // since flipping auto/manual shouldn't silently turn a disabled
 // campaign back on.
-// Win-back period (13 Nov 2026): send only to lapsed customers whose LAST visit was within this many
-// days. Saved as the lapsed rule's threshold_value_max; "none" = all time, as before. Waiting win-back
-// messages outside the period are removed on save; a wider period refills the list next morning.
-const LAPSED_WINDOWS = [[null,'All time'],[90,'Last 90 days'],[180,'Last 180 days'],[270,'Last 270 days']];
-function lapsedWindowNote(rule){
-  if (!rule || rule.threshold_value_max == null) return '';
-  const max = Number(rule.threshold_value_max);
-  const ov = rule.segment_overrides || {};
-  const starts = Object.keys(ov).length
-    ? Object.entries(ov).map(([k,v]) => [k==='girl'?'girls':k==='boy'?'boys':k, v && v.threshold_value!=null ? Number(v.threshold_value) : Number(rule.threshold_value)])
-    : [['customers', Number(rule.threshold_value)]];
-  const none = starts.filter(([,t]) => !isNaN(t) && t >= max).map(([k,t]) => k+' (win-back starts at '+t+' days)');
-  return none.length ? '<span style="color:#B8564A;">No '+none.join(' or ')+' can get it with this period.</span>' : '';
+// Win-back per customer group (13 Nov 2026): for each group (Boys, Girls) when win-back starts
+// ("lapsed after N days") and "only if their last visit was within N days". Saved in the lapsed rule's
+// segment_overrides; a group without its own period uses the rule's threshold_value_max (blank = all
+// time). Waiting win-back messages that no longer fit are removed on save; the rest follow next morning.
+const LAPSED_WINDOWS = [[null,'All time'],[90,'90 days'],[180,'180 days'],[270,'270 days'],[365,'365 days']];
+const LAPSED_GROUP_TITLE = { boy:'Boys', girl:'Girls', man:'Men', woman:'Women', kid:'Kids' };
+function lapsedGroups(rule){
+  const ov = (rule && rule.segment_overrides) || {};
+  return Object.keys(LAPSED_GROUP_TITLE).filter(g => ov[g]);
+}
+function lapsedEffective(rule, g){
+  const ov = ((rule && rule.segment_overrides) || {})[g] || {};
+  const start = ov.threshold_value != null ? Number(ov.threshold_value) : (rule && rule.threshold_value != null ? Number(rule.threshold_value) : null);
+  let within;
+  if (ov.threshold_value_max !== undefined && ov.threshold_value_max !== null) within = Number(ov.threshold_value_max) > 0 ? Number(ov.threshold_value_max) : null;
+  else within = rule && rule.threshold_value_max != null && Number(rule.threshold_value_max) > 0 ? Number(rule.threshold_value_max) : null;
+  return { start, within };
+}
+function lapsedWindowSelect(cur, onchange){
+  const opts = LAPSED_WINDOWS.slice();
+  if (cur != null && !opts.some(([v]) => v === cur)) opts.push([cur, cur+' days']);
+  return '<select style="border:1px solid var(--line);border-radius:6px;padding:2px 6px;font-size:inherit;" onchange="'+onchange+'">' +
+    opts.map(([v,l]) => '<option value="'+(v==null?'none':v)+'"'+((v==null ? cur==null : cur===v)?' selected':'')+'>'+l+'</option>').join('') + '</select>';
 }
 function lapsedWindowControl(rule, compact){
-  const cur = rule && rule.threshold_value_max != null ? Number(rule.threshold_value_max) : null;
-  return '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:'+(compact?'10.5px':'12px')+';color:var(--muted);'+(compact?'margin-bottom:8px;':'margin:2px 0;')+'">' +
-    '<span>Only if their last visit was within'+tip('Win-back goes only to lapsed customers whose last visit was within this period; customers away longer are left out. All time = everyone who is lapsed, as before.')+'</span>' +
-    '<select style="border:1px solid var(--line);border-radius:6px;padding:2px 6px;font-size:inherit;" onchange="setLapsedWindow(this.value)">' +
-      LAPSED_WINDOWS.map(([v,l]) => '<option value="'+(v==null?'none':v)+'"'+((v==null ? cur==null : cur===v)?' selected':'')+'>'+l+'</option>').join('') +
-    '</select>' + lapsedWindowNote(rule) + '</div>';
+  const box = 'display:flex;flex-direction:column;gap:4px;font-size:'+(compact?'10.5px':'12px')+';color:var(--muted);'+(compact?'margin-bottom:8px;':'margin:2px 0;');
+  const groups = lapsedGroups(rule);
+  const help = tip('Win-back starts when a customer has been away this many days, and goes only to those whose last visit was within the period; customers away longer are left out. All time = everyone past the start.');
+  if (!groups.length){
+    const e = lapsedEffective(rule, null);
+    return '<div style="'+box+'"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span>Only if their last visit was within'+help+'</span>' +
+      lapsedWindowSelect(e.within, 'setLapsedWindow(this.value)') + '</div></div>';
+  }
+  const inp = 'width:52px;border:1px solid var(--line);border-radius:6px;padding:2px 4px;font-size:inherit;';
+  return '<div style="'+box+'"><div>Win-back by group'+help+'</div>' + groups.map(g => {
+    const e = lapsedEffective(rule, g);
+    const bad = e.start != null && e.within != null && e.within <= e.start;
+    return '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
+      '<b style="min-width:42px;color:var(--ink,inherit);">'+LAPSED_GROUP_TITLE[g]+'</b>' +
+      '<span>away</span><input type="number" min="1" max="3650" value="'+(e.start==null?'':e.start)+'" style="'+inp+'" aria-label="'+LAPSED_GROUP_TITLE[g]+' win-back starts after (days)" onchange="setLapsedGroup(\''+g+'\',\'threshold_value\',this.value)"><span>days or more,</span>' +
+      '<span>last visit within</span>' + lapsedWindowSelect(e.within, 'setLapsedGroup(\''+g+'\',\'threshold_value_max\',this.value)') +
+      (bad ? '<span style="color:#B8564A;">No '+LAPSED_GROUP_TITLE[g].toLowerCase()+' can get it: the period ends before win-back starts.</span>' : '') +
+    '</div>';
+  }).join('') + '</div>';
+}
+async function lapsedRuleNow(){
+  const s = await call('get_settings', {});
+  return (s.ok ? (s.strategy||[]) : []).find(x=>x.campaign_key==='lapsed') || null;
+}
+function lapsedSaved(j, what){
+  HOME_CACHE.buckets = null;
+  toast('Saved — '+what+(j.removed ? ' '+j.removed+' waiting win-back message'+(j.removed===1?'':'s')+' no longer fit and were removed.' : '')+' The list updates tomorrow morning.', 'ok');
+  if (el('campList')) campaigns(); else whatsappSettingsPanel();
 }
 async function setLapsedWindow(value){
-  const s = await call('get_settings', {});
-  const rule = (s.ok ? (s.strategy||[]) : []).find(x=>x.campaign_key==='lapsed');
+  const rule = await lapsedRuleNow();
   if (!rule){ toast('Could not read the win-back settings', 'err'); return; }
   const j = await call('save_strategy', { campaign_key:'lapsed', enabled: !!rule.enabled, auto_send: !!rule.auto_send,
     auto_send_max_per_run: rule.auto_send_max_per_run || 25, threshold_value_max: value });
   if (!j.ok){ toast('Could not save: '+j.error, 'err'); return; }
-  toast(value === 'none'
-    ? 'Saved \u2014 win-back goes to everyone who is lapsed again. The list fills back up tomorrow morning.'
-    : 'Saved \u2014 '+(j.removed||0)+' waiting win-back message'+((j.removed||0)===1?'':'s')+' outside the period removed.', 'ok');
-  HOME_CACHE.buckets = null;
-  if (el('campList')) campaigns(); else whatsappSettingsPanel();
+  lapsedSaved(j, value === 'none' ? 'win-back goes to everyone who is lapsed.' : 'last visit within '+value+' days.');
+}
+async function setLapsedGroup(group, field, value){
+  const rule = await lapsedRuleNow();
+  if (!rule){ toast('Could not read the win-back settings', 'err'); return; }
+  if (field === 'threshold_value' && !(Number(value) >= 1)){ toast('Enter the number of days', 'err'); if (el('campList')) campaigns(); else whatsappSettingsPanel(); return; }
+  // Every group is sent with its current start and period, so a change to one never shifts another.
+  const ov = {};
+  lapsedGroups(rule).forEach(g => { const e = lapsedEffective(rule, g); ov[g] = { threshold_value: e.start, threshold_value_max: e.within == null ? 'none' : e.within }; });
+  ov[group] = ov[group] || {};
+  ov[group][field] = field === 'threshold_value' ? Number(value) : (value === 'none' ? 'none' : Number(value));
+  const j = await call('save_strategy', { campaign_key:'lapsed', enabled: !!rule.enabled, auto_send: !!rule.auto_send,
+    auto_send_max_per_run: rule.auto_send_max_per_run || 25, segment_overrides: ov });
+  if (!j.ok){ toast(j.error || 'Could not save', 'err'); if (el('campList')) campaigns(); else whatsappSettingsPanel(); return; }
+  if (!j.segment_overrides){ toast('The server has not been updated for per-group win-back yet, so nothing changed. Try again after the release.', 'err'); return; }
+  const g = LAPSED_GROUP_TITLE[group];
+  lapsedSaved(j, field === 'threshold_value' ? g+': win-back starts after '+value+' days.' : g+': last visit within '+(value==='none'?'all time':value+' days')+'.');
 }
 async function settingsToggleCampaignAuto(key, checked){
   const s = await call('get_settings', {});
