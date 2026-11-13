@@ -6165,6 +6165,7 @@ const CAMP_LABELS = {
   after_service:{ name:'Just been in', why:'A thank you, and how close to a free wash.' },
 };
 let CAMPAIGN_TYPES = [];
+let CAMP_LAPSED_RULE = null; // the win-back rule, for its "last visit within" choice on the card
 let CAMP_GLOBAL_HOLDOUT = 0; // set alongside CAMPAIGN_TYPES in campaigns() - the fallback when a campaign has no per-category override
 function customerNav(active){ return ''; }
 async function campaigns(){
@@ -6211,6 +6212,7 @@ async function campaigns(){
   const strategyByKey = {}; (settings.strategy||[]).forEach(s => { strategyByKey[s.campaign_key] = s; });
   const globalHoldout = (settings.tenant && settings.tenant.holdout_percent) || 0;
   CAMP_GLOBAL_HOLDOUT = globalHoldout;
+  CAMP_LAPSED_RULE = strategyByKey.lapsed || null;
 
   CAMPAIGN_TYPES = Object.entries(counts)
     .filter(([, n]) => Number(n) > 0)
@@ -6259,6 +6261,7 @@ function campRenderList(){
         '<input type="number" min="0" max="50" placeholder="auto" value="'+(t.holdout_percent!=null?t.holdout_percent:'')+'" style="width:52px;border:1px solid var(--line);border-radius:6px;padding:2px 6px;font-size:10.5px;" onchange="campSetHoldout(\''+t.key+'\',this.value)">' +
         '<span>%</span>' +
       '</div>' +
+      (t.key === 'lapsed' ? lapsedWindowControl(CAMP_LAPSED_RULE, true) : '') +
       '<div class="camp-foot">' +
         '<span class="camp-state">'+(t.auto?'Auto':'Manual')+
           tip(t.auto ? 'Zen sends these on its own, using your default WhatsApp settings. Nothing to approve.' : 'These wait in a queue for you to review and send.')+'</span>' +
@@ -6970,7 +6973,8 @@ async function whatsappSettingsPanel(){
     section('Campaign settings',
       '<p class="note" style="margin-top:0;">Automatic or manual, per campaign type \u2014 the same switch as on the Campaigns page.</p>' +
       '<div class="list">' + (settings.ok ? (settings.strategy||[]) : []).map(s =>
-        '<div class="list-row"><b>'+esc(CAMPAIGN_LABELS[s.campaign_key]||s.campaign_key)+'</b>'+switchControl(!!s.auto_send, 'settingsToggleCampaignAuto(\''+s.campaign_key+'\',this.checked)')+'</div>').join('') + '</div>' +
+        '<div class="list-row"><b>'+esc(CAMPAIGN_LABELS[s.campaign_key]||s.campaign_key)+'</b>'+switchControl(!!s.auto_send, 'settingsToggleCampaignAuto(\''+s.campaign_key+'\',this.checked)')+'</div>' +
+        (s.campaign_key === 'lapsed' ? '<div style="padding:0 12px 8px;">'+lapsedWindowControl(s, false)+'</div>' : '')).join('') + '</div>' +
       '<p class="note" style="margin-top:12px;">Which approved template the agent sends for each campaign type.</p>' +
       (mappings.ok
         ? ((mappings.mappings||[]).length
@@ -7051,6 +7055,41 @@ const CAMPAIGN_LABELS = {nudge:'Nudge (gentle reminder)', lapsed:'Win-back (laps
 // the campaign's current enabled/off state rather than assuming true,
 // since flipping auto/manual shouldn't silently turn a disabled
 // campaign back on.
+// Win-back period (13 Nov 2026): send only to lapsed customers whose LAST visit was within this many
+// days. Saved as the lapsed rule's threshold_value_max; "none" = all time, as before. Waiting win-back
+// messages outside the period are removed on save; a wider period refills the list next morning.
+const LAPSED_WINDOWS = [[null,'All time'],[90,'Last 90 days'],[180,'Last 180 days'],[270,'Last 270 days']];
+function lapsedWindowNote(rule){
+  if (!rule || rule.threshold_value_max == null) return '';
+  const max = Number(rule.threshold_value_max);
+  const ov = rule.segment_overrides || {};
+  const starts = Object.keys(ov).length
+    ? Object.entries(ov).map(([k,v]) => [k==='girl'?'girls':k==='boy'?'boys':k, v && v.threshold_value!=null ? Number(v.threshold_value) : Number(rule.threshold_value)])
+    : [['customers', Number(rule.threshold_value)]];
+  const none = starts.filter(([,t]) => !isNaN(t) && t >= max).map(([k,t]) => k+' (win-back starts at '+t+' days)');
+  return none.length ? '<span style="color:#B8564A;">No '+none.join(' or ')+' can get it with this period.</span>' : '';
+}
+function lapsedWindowControl(rule, compact){
+  const cur = rule && rule.threshold_value_max != null ? Number(rule.threshold_value_max) : null;
+  return '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:'+(compact?'10.5px':'12px')+';color:var(--muted);'+(compact?'margin-bottom:8px;':'margin:2px 0;')+'">' +
+    '<span>Only if their last visit was within'+tip('Win-back goes only to lapsed customers whose last visit was within this period; customers away longer are left out. All time = everyone who is lapsed, as before.')+'</span>' +
+    '<select style="border:1px solid var(--line);border-radius:6px;padding:2px 6px;font-size:inherit;" onchange="setLapsedWindow(this.value)">' +
+      LAPSED_WINDOWS.map(([v,l]) => '<option value="'+(v==null?'none':v)+'"'+((v==null ? cur==null : cur===v)?' selected':'')+'>'+l+'</option>').join('') +
+    '</select>' + lapsedWindowNote(rule) + '</div>';
+}
+async function setLapsedWindow(value){
+  const s = await call('get_settings', {});
+  const rule = (s.ok ? (s.strategy||[]) : []).find(x=>x.campaign_key==='lapsed');
+  if (!rule){ toast('Could not read the win-back settings', 'err'); return; }
+  const j = await call('save_strategy', { campaign_key:'lapsed', enabled: !!rule.enabled, auto_send: !!rule.auto_send,
+    auto_send_max_per_run: rule.auto_send_max_per_run || 25, threshold_value_max: value });
+  if (!j.ok){ toast('Could not save: '+j.error, 'err'); return; }
+  toast(value === 'none'
+    ? 'Saved \u2014 win-back goes to everyone who is lapsed again. The list fills back up tomorrow morning.'
+    : 'Saved \u2014 '+(j.removed||0)+' waiting win-back message'+((j.removed||0)===1?'':'s')+' outside the period removed.', 'ok');
+  HOME_CACHE.buckets = null;
+  if (el('campList')) campaigns(); else whatsappSettingsPanel();
+}
 async function settingsToggleCampaignAuto(key, checked){
   const s = await call('get_settings', {});
   const current = (s.ok ? (s.strategy||[]) : []).find(x=>x.campaign_key===key);
